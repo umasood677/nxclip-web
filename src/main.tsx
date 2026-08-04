@@ -398,7 +398,12 @@ try {
 import { Provider } from "react-redux";
 import { store } from "./store";
 
-createRoot(document.getElementById('root')!).render(
+const rootEl = document.getElementById("root");
+if (!rootEl) {
+  throw new Error("Root element #root not found");
+}
+
+createRoot(rootEl).render(
   <StrictMode>
     <ErrorBoundary>
       <HelmetProvider>

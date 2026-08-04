@@ -120,13 +120,20 @@ export const PublishDraftModal: React.FC<PublishDraftModalProps> = ({
     if (!item.id) return;
     setIsPublishing(true);
     try {
+      const status = (item.status || "").toLowerCase();
+      if (status === "moderation_rejected") {
+        await contentApi.editContent(item.id, {
+          title: validation.titleVal || undefined,
+          description: validation.captionVal || undefined,
+        });
+      }
       await contentApi.publish(item.id, {
         title: validation.titleVal,
         caption: validation.captionVal,
         description: validation.captionVal,
       });
 
-      toast.success("Draft published successfully! Your post is now live on the feed.");
+      toast.success("Draft submitted for moderation. You’ll be notified when it’s approved or rejected.");
       if (onPublishSuccess) {
         onPublishSuccess(item.id);
       }

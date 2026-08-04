@@ -978,7 +978,7 @@ export default function ClipEditor() {
                     <div className="space-y-1 flex-1">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-[9px] font-bold text-muted-foreground">{t('clip_editor.trim.precision_trim')}</span>
-                        <Badge variant="outline" className="text-[8px] h-4 py-0 font-mono">
+                        <Badge variant="outline" className="text-[8px] h-4 py-0 font-bold tracking-wider tabular-nums">
                           {formatTime(trimEnd - trimStart)}
                         </Badge>
                       </div>
@@ -1320,7 +1320,7 @@ export default function ClipEditor() {
               </Button>
               
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary text-[10px] font-black px-3 py-1">
+                <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider px-3 py-1">
                   {t('clip_editor.polish.polishing')}
                 </Badge>
               </div>
@@ -1575,7 +1575,7 @@ export default function ClipEditor() {
                           <Type size={18} className="text-primary" />
                           {t('clip_editor.polish.meme.title')}
                         </h3>
-                        <Badge variant="outline" className="text-[10px] font-black px-2 py-0.5 border-primary/20 text-primary bg-primary/5">
+                        <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 border-primary/20 text-primary bg-primary/5">
                           {t('clip_editor.polish.meme.beta')}
                         </Badge>
                       </div>

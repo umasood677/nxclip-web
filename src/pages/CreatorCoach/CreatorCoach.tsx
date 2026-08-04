@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "motion/react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { 
   Send, 
   Sparkles, 
@@ -44,9 +44,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../
 import { Badge } from "../../components/ui/badge";
 import { Dna, Rocket, Target, Users, Calendar, Save } from "lucide-react";
 import { WorkspaceExportDialog } from "../../components/WorkspaceExportDialog";
+import { WeekPlanGrid } from "../../components/WeekPlanGrid";
 import { identityApi, coachApi, contentApi } from "../../services/apiClient";
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import { selectAuthProfile, setAuthProfile } from "../../store/slices/authSlice";
+import { beginWeekPlanRenewal, weekPlanFromProfile } from "../../lib/weekPlan";
 
 interface Message {
   role: "user" | "model";
@@ -88,6 +90,11 @@ export default function CreatorCoach() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showWeekPlan, setShowWeekPlan] = useState(true);
+  const dispatch = useAppDispatch();
+  const reduxProfile = useAppSelector(selectAuthProfile);
+  const weekPlan = weekPlanFromProfile(reduxProfile);
+  const navigate = useNavigate();
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -218,9 +225,6 @@ export default function CreatorCoach() {
     setShuffledPrompts(shuffled);
   };
 
-  const dispatch = useAppDispatch();
-  const reduxProfile = useAppSelector(selectAuthProfile);
-  
   useEffect(() => {
     if (!auth.currentUser) {
       setLoading(false);
@@ -952,6 +956,15 @@ export default function CreatorCoach() {
               </div>
 
               <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="hidden sm:inline-flex h-9 gap-1.5 text-[10px] font-bold tracking-wider"
+                  onClick={() => setShowWeekPlan((v) => !v)}
+                >
+                  <Calendar size={14} />
+                  {showWeekPlan ? "Hide week plan" : "Week plan"}
+                </Button>
                 <div className="hidden md:flex flex-col items-end mr-4">
                   <p className="text-[9px] font-black text-muted-foreground tracking-widest leading-none mb-1">{t('coach.header.latency')}</p>
                   <p className="text-[10px] font-black text-brand-secondary font-mono">{t('coach.header.latency_value')} <span className="text-muted-foreground/30">±0.4</span></p>
@@ -1002,6 +1015,58 @@ export default function CreatorCoach() {
                 </Button>
               </div>
             </div>
+
+            {showWeekPlan && (
+              <div className="flex-none border-b border-border/10 bg-background/30 backdrop-blur-xl px-4 md:px-6 py-4 relative z-20 max-h-[42vh] overflow-y-auto">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-teal-700 dark:text-teal-300">
+                      Your week plan
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Saved from Creator Coach · not auto-renewed
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-[10px] font-bold"
+                      onClick={() => navigate("/profile?tab=plan")}
+                    >
+                      Open full plan
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-[10px] font-bold"
+                      onClick={() => {
+                        beginWeekPlanRenewal();
+                        navigate("/onboarding");
+                      }}
+                    >
+                      Plan a new week
+                    </Button>
+                  </div>
+                </div>
+                {weekPlan ? (
+                  <WeekPlanGrid plan={weekPlan} compact maxDays={3} />
+                ) : (
+                  <div className="rounded-xl border border-dashed border-border/60 p-4 text-center space-y-2">
+                    <p className="text-sm text-muted-foreground">No week plan yet.</p>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        beginWeekPlanRenewal();
+                        navigate("/onboarding");
+                      }}
+                    >
+                      Create your week plan
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Messages Area */}
             <ScrollArea className="flex-grow min-h-0 relative z-10" onScroll={handleScroll}>

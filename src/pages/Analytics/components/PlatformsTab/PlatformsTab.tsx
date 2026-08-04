@@ -39,7 +39,7 @@ export const PlatformsTab = memo(({ isLoading, platformFilter }: PlatformsTabPro
                 >
                   <p.icon size={20} />
                 </div>
-                <Badge className="h-5 text-[9px] font-bold font-mono border-brand-secondary/20 text-brand-secondary bg-brand-secondary/10" variant="outline">{p.growth}</Badge>
+                <Badge className="h-5 text-[9px] font-bold tracking-wider border-brand-secondary/20 text-brand-secondary bg-brand-secondary/10" variant="outline">{p.growth}</Badge>
               </div>
               <CardTitle className="text-base font-display font-black mt-4 tracking-tight">{p.name}</CardTitle>
             </CardHeader>

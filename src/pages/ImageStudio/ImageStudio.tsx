@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
@@ -6,9 +6,6 @@ import {
   Sparkles, 
   Download, 
   RefreshCw, 
-  Image as ImageIcon, 
-  Maximize2, 
-  History,
   X,
   Copy,
   Check,
@@ -19,84 +16,185 @@ import { Textarea } from "../../components/ui/textarea";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../components/ui/tabs";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../../components/ui/accordion";
 import { Badge } from "../../components/ui/badge";
 import { generateImage, generateCaptions, generateTitle, AIError } from "../../services/aiService";
-import { contentApi, ContentDto, resolveBaseGatewayUrl, extractValidImageUrl } from "../../services/apiClient";
+import { contentApi, ContentDto, resolveBaseGatewayUrl, extractValidImageUrl, contentMediaRevision, withContentMediaRevision } from "../../services/apiClient";
+import { getAccessToken } from "../../services/auth/authService";
 import { socketService } from "../../services/socketService";
 import { SEO } from "../../components/SEO";
 import { toast } from "sonner";
 import { cn, compressImageBase64, safeStringify } from "../../lib/utils";
 import { safeLocalStorage } from "../../lib/safeStorage";
-import { GenerationHistoryItem } from "./types";
+import { GenerationHistoryItem, OrderedReferenceChip, ReferenceUploadItem } from "./types";
 import { GeneratePanel } from "./components/GeneratePanel";
 import { CanvasPanel } from "./components/CanvasPanel";
 import { EditPanel } from "./components/EditPanel";
+import { RecentGenerationsGallery } from "./components/RecentGenerations";
 import { triggerHaptic } from "../../lib/vibration";
 import { AuthenticatedImage } from "../../components/AuthenticatedImage";
 import { DevTerminal, ApiCallLog } from "./components/DevTerminal";
+import { extensionForMimeType, toDownloadableBlob } from "../../lib/imageDownload";
 
 const SUGGESTION_POOL = [
-  "Cyberpunk neon street",
-  "Vintage pixel art gamer",
-  "Cinematic fantasy castle",
-  "Futuristic gaming setup",
-  "Adorable 3D mascot",
-  "Dark horror aesthetic",
-  "Synthwave sunset drive",
-  "Epic boss battle scene",
+  "Modern product launch visual",
+  "Founder portrait in a clean studio",
+  "Cinematic travel poster",
+  "Playful cartoon mascot",
+  "Minimal gradient social ad",
+  "Editorial fashion campaign",
   "Funny reaction meme",
-  "Cozy lofi gaming room",
-  "Post-apocalyptic ruins",
+  "Warm coffee shop scene",
+  "Luxury packaging mockup",
+  "Bold tech startup thumbnail",
   "Stylized anime landscape",
-  "Surreal dream world",
-  "High-octane racing",
-  "Magic forest at night"
+  "Dreamlike surreal artwork",
+  "Food hero shot",
+  "Nature documentary frame",
+  "Creative fitness campaign"
 ];
+
+/** Matches content-service plan-limits for FREE. */
+const FREE_DAILY_GENERATION_LIMIT = 15;
+const FREE_MAX_REFERENCE_IMAGES = 2;
+const PRO_MAX_REFERENCE_IMAGES = 4;
+
+function readUserPlan(): "FREE" | "PRO" | "STUDIO" {
+  try {
+    const token = getAccessToken();
+    if (!token) return "FREE";
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    const plan = String(payload.plan || "FREE").toUpperCase();
+    if (plan === "PRO" || plan === "STUDIO") return plan;
+    return "FREE";
+  } catch {
+    return "FREE";
+  }
+}
+
+function startOfUtcDayMs(): number {
+  const now = new Date();
+  return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+}
+
+function estimateGenerationsLeft(items: GenerationHistoryItem[], plan: string): number | null {
+  if (plan !== "FREE") return null; // unlimited / not metered in UI
+  const since = startOfUtcDayMs();
+  // Backend counts rows with prompt IS NOT NULL created today (UTC).
+  const used = items.filter((item) => {
+    if (!(item.prompt || "").trim()) return false;
+    return item.timestamp >= since;
+  }).length;
+  return Math.max(0, FREE_DAILY_GENERATION_LIMIT - used);
+}
+
+/** Bust browser/CDN cache so regenerate of the same /content/{id}/media URL actually refreshes. */
+function withCacheBust(url: string): string {
+  if (!url) return url;
+  try {
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      const u = new URL(url);
+      u.searchParams.set("v", String(Date.now()));
+      return u.toString();
+    }
+  } catch {
+    // fall through
+  }
+  const cleaned = url.replace(/([?&])v=[^&]*/g, "").replace(/[?&]$/, "");
+  const sep = cleaned.includes("?") ? "&" : "?";
+  return `${cleaned}${sep}v=${Date.now()}`;
+}
+
+/**
+ * Fetch media with cache:no-store and return a blob: URL so Studio preview
+ * shows the new bytes after in-place regenerate (same /content/{id}/media path).
+ */
+async function resolveFreshMediaPreview(url: string): Promise<string | null> {
+  if (!url) return null;
+  try {
+    const baseGateway = resolveBaseGatewayUrl();
+    let relative = url.trim();
+    if (relative.startsWith("http://") || relative.startsWith("https://")) {
+      try {
+        const u = new URL(relative);
+        relative = u.pathname + u.search;
+      } catch {
+        relative = relative.replace(/https?:\/\/[^/]+/, "");
+      }
+    }
+    if (!relative.startsWith("/")) relative = `/${relative}`;
+
+    const isGateway =
+      relative.startsWith("/content/") ||
+      relative.includes("/content/") ||
+      relative.startsWith("/api/gateway");
+    // Content-service absolute media URLs (Cloud Run) still share the /content/{id}/media path.
+    if (
+      !isGateway &&
+      !url.includes("api-gateway") &&
+      !url.includes("nxclip") &&
+      !url.includes("content-service") &&
+      !/\/content\/[^/]+\/media/.test(url)
+    ) {
+      return null;
+    }
+
+    const token = getAccessToken();
+    const busted = withCacheBust(relative);
+    const sep = busted.includes("?") ? "&" : "?";
+    const proxyUrl = `/api/gateway-proxy${busted}${
+      token ? `${sep}token=${encodeURIComponent(token)}` : ""
+    }`;
+
+    const res = await fetch(proxyUrl, {
+      cache: "no-store",
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    if (!blob || blob.size < 32) return null;
+    return URL.createObjectURL(blob);
+  } catch {
+    return null;
+  }
+}
 
 const STYLE_SPECIFIC_SUGGESTIONS: Record<string, string[]> = {
   realistic: [
-    "Ultra-detailed portrait of a cyberpunk hacker",
+    "Ultra-detailed portrait of a founder in a modern studio",
     "High-resolution landscape of a Scandinavian fjord",
-    "Close-up of a high-tech mechanical keyboard with RGB lighting",
+    "Close-up product photograph of a premium smartwatch",
     "Professional photograph of a modern desert villa",
     "Macro shot of a butterfly on a vibrant flower"
   ],
   cinematic: [
     "Wide shot of an abandoned space colony on a red planet",
-    "Dramatic silhouette of a knight standing against a sunset",
-    "Intense car chase through a rain-slicked futuristic city",
-    "Moodily lit epic fantasy library with floating candles",
-    "First-person view of a high-speed snowy mountain descent"
+    "Dramatic silhouette of a traveler standing against a sunset",
+    "Rain-slicked futuristic city street at blue hour",
+    "Moodily lit fantasy library with floating candles",
+    "Luxury product reveal with dramatic spotlight"
   ],
   cartoon: [
     "Cutesy 3D render of a baby dragon eating a taco",
-    "Stylized 2D animation character of a space adventurer",
+    "Stylized 2D character welcoming users to an app",
     "Colorful whimsical village made of giant candy",
     "Vector art mascot for a tech startup",
     "Retro Saturday morning cartoon style superhero"
   ],
-  thumbnail: [
-    "Aggressive red border gaming thumbnail with epic text",
-    "Bright high-contrast reaction face for a tech review",
-    "Money falling from the sky with a large success badge",
-    "Progression comparison from a noob to a pro in a sandbox game",
-    "Extreme fitness transformation with bold motivational quotes"
+  pixel_art: [
+    "16-bit adventure hero standing at a castle gate",
+    "Retro city plaza with animated billboards",
+    "Pixel spaceship flying through a starfield",
+    "Isometric creative studio with tiny desk props",
+    "8-bit platform scene with glowing portal"
   ],
   meme: [
     "Distorted surreal humor image with a confused cat",
-    "Classic impact font style template of a person winning",
+    "Classic reaction meme about shipping fast",
     "Deep-fried aesthetic of a common household object",
     "Wholesome drawing of a supportive animal friend",
-    "Nihilistic abstract art for a relatable 3am thought"
+    "Relatable late-night work meme"
   ]
 };
-
-const AVAILABLE_MODELS = [
-  { id: "gemini-3.1-flash-lite-image", label: "Gemini 3.1 Flash Lite Image (Fast)" },
-  { id: "gemini-3.1-flash-image", label: "Gemini 3.1 Flash Image (Standard)" },
-  { id: "gemini-3-pro-image", label: "Gemini 3 Pro Image (High Quality)" },
-];
 
 export default function ImageStudio() {
   const { t, i18n } = useTranslation();
@@ -108,10 +206,19 @@ export default function ImageStudio() {
     { id: "realistic", label: t('image_studio.style_presets.realistic') },
     { id: "cinematic", label: t('image_studio.style_presets.cinematic') },
     { id: "cartoon", label: t('image_studio.style_presets.cartoon') },
-    { id: "thumbnail", label: t('image_studio.style_presets.thumbnail') },
+    { id: "pixel_art", label: "Pixel Art" },
     { id: "meme", label: t('image_studio.style_presets.meme') },
   ];
   const [mode, setMode] = useState<"image" | "meme">("image");
+  const [memeMode, setMemeModeState] = useState<"ai" | "template" | "hybrid">("ai");
+  const setMemeMode = (next: "ai" | "template" | "hybrid") => {
+    setMemeModeState(next);
+    // Pure template cannot refine the previous draft in place.
+    if (next === "template") setForceNewGenerate(true);
+  };
+  const [memeTemplates, setMemeTemplates] = useState<import("../../services/apiClient").MemeTemplateDto[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [slotTexts, setSlotTexts] = useState<Record<string, string>>({});
   const [prompt, setPrompt] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -120,7 +227,6 @@ export default function ImageStudio() {
   const [aspectRatio, setAspectRatio] = useState("1:1");
 
   const [searchParams] = useSearchParams();
-  const [imageModel, setImageModel] = useState("gemini-3.1-flash-lite-image");
   const [activeSuggestions, setActiveSuggestions] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -138,6 +244,7 @@ export default function ImageStudio() {
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [variations, setVariations] = useState<string[]>([]);
   const [history, setHistory] = useState<GenerationHistoryItem[]>([]);
+  const [libraryImages, setLibraryImages] = useState<GenerationHistoryItem[]>([]);
 
   // Developer Console / Terminal state
   const [apiLogs, setApiLogs] = useState<ApiCallLog[]>([]);
@@ -247,31 +354,87 @@ export default function ImageStudio() {
 
   const fetchHistoryFromContentApi = async () => {
     try {
-      const contentList = await contentApi.getUserContentList();
-      if (Array.isArray(contentList) && contentList.length > 0) {
-        const mappedItems: GenerationHistoryItem[] = contentList.map(item => {
-          let itemTimestamp = Date.now();
-          if (item && item.createdAt) {
-            const parsedTime = new Date(item.createdAt).getTime();
-            if (!isNaN(parsedTime)) {
-              itemTimestamp = parsedTime;
-            }
-          }
-          return {
-            id: item?.id || Math.random().toString(),
-            url: item?.thumbnailUrl || (item as any)?.cdnUrl || "",
-            title: item?.title || "Untitled Creation",
-            prompt: item?.title || item?.description || "",
-            type: (item?.contentType as "image" | "meme") || "image",
-            style: item?.description?.includes("Generated style:") 
-              ? item.description.split("Generated style:")[1]?.split("with ratio:")[0]?.trim() || "cinematic"
-              : "cinematic",
-            timestamp: itemTimestamp
-          };
-        });
-        setHistory(mappedItems);
-      } else {
+      // Generations-only page (no uploads crowding) + full mine for reference picker.
+      const [studioList, contentList] = await Promise.all([
+        contentApi.getUserContentList(100, undefined, { excludeUploads: true }),
+        contentApi.getUserContentList(200),
+      ]);
+      if (!Array.isArray(contentList)) {
         setHistory([]);
+        setLibraryImages([]);
+        return;
+      }
+
+      const mapItem = (item: ContentDto): GenerationHistoryItem => {
+        let itemTimestamp = Date.now();
+        if (item.createdAt) {
+          const parsedTime = new Date(item.createdAt).getTime();
+          if (!isNaN(parsedTime)) itemTimestamp = parsedTime;
+        }
+        const baseUrl = extractValidImageUrl(item) || item.thumbnailUrl || item.cdnUrl || "";
+        // extractValidImageUrl already revision-busts; keep mediaRevision for React keys.
+        const mediaRevision = contentMediaRevision(item);
+        const url = baseUrl.includes("v=")
+          ? baseUrl
+          : withContentMediaRevision(baseUrl, mediaRevision);
+        const styleFromDesc = item.description?.includes("Generated style:")
+          ? item.description.split("Generated style:")[1]?.split("with ratio:")[0]?.trim()
+          : undefined;
+        return {
+          id: item.id,
+          url,
+          title: (item.title || "").trim() || undefined,
+          prompt: (item.prompt || item.refinePrompt || item.basePrompt || "").trim(),
+          basePrompt: (item.basePrompt || item.prompt || "").trim() || undefined,
+          refinePrompt: (item.refinePrompt || "").trim() || undefined,
+          type: item.contentType === "meme" || item.style === "meme" ? "meme" : "image",
+          style: item.style || styleFromDesc || undefined,
+          status: item.status,
+          aspectRatio: item.aspectRatio,
+          watermarked: item.watermarked,
+          storageKey: item.storageKey,
+          mediaRevision,
+          captions: item.captions,
+          hashtagSets: item.hashtagSets,
+          memeSpec: item.memeSpec,
+          timestamp: itemTimestamp,
+        };
+      };
+
+      const isStudioGeneration = (item: GenerationHistoryItem) => {
+        const key = item.storageKey || "";
+        if (key.startsWith("uploads/")) return false;
+        if (key.startsWith("generated/")) return true;
+        if ((item.prompt || item.basePrompt || "").trim().length >= 3) return true;
+        if (Array.isArray(item.captions) && item.captions.length > 0) return true;
+        if (item.style) return true;
+        return false;
+      };
+
+      const libraryMapped = contentList
+        .filter((item) => item && item.status !== "deleted" && item.contentType !== "clip")
+        .map(mapItem)
+        .filter((item) => Boolean(item.url))
+        .sort((a, b) => b.timestamp - a.timestamp);
+
+      const studioMapped = (Array.isArray(studioList) ? studioList : [])
+        .filter((item) => item && item.status !== "deleted" && item.contentType !== "clip")
+        .map(mapItem)
+        .filter((item) => Boolean(item.url) && isStudioGeneration(item))
+        .sort((a, b) => b.timestamp - a.timestamp);
+
+      setLibraryImages(libraryMapped);
+      setHistory(studioMapped.length > 0 ? studioMapped : libraryMapped.filter(isStudioGeneration));
+      const plan = readUserPlan();
+      const left = estimateGenerationsLeft(
+        [...studioMapped, ...libraryMapped.filter((i) => (i.prompt || "").trim())],
+        plan,
+      );
+      if (left !== null) {
+        setGenerationsLeft(left);
+        safeLocalStorage.setItem("nxclip_generations_left", String(left));
+      } else {
+        setGenerationsLeft(null);
       }
     } catch (err) {
       console.error("Failed to load history from Content API:", err);
@@ -281,19 +444,52 @@ export default function ImageStudio() {
   useEffect(() => {
     fetchHistoryFromContentApi();
 
-    const savedGens = safeLocalStorage.getItem("nxclip_generations_left");
-    if (savedGens !== null) {
-      const currentVal = Number(savedGens);
-      if (currentVal < 20) {
-        setGenerationsLeft(20);
-        safeLocalStorage.setItem("nxclip_generations_left", "20");
-      } else {
-        setGenerationsLeft(currentVal);
+    void (async () => {
+      try {
+        const res = await contentApi.getMemeTemplates();
+        setMemeTemplates(res.items || []);
+        if (res.items?.[0] && !selectedTemplateId) {
+          setSelectedTemplateId(res.items[0].id);
+        }
+      } catch (err) {
+        console.warn("Failed to load meme templates", err);
       }
-    } else {
-      setGenerationsLeft(20);
-    }
+    })();
   }, []);
+
+  useEffect(() => {
+    if (!selectedTemplateId) return;
+    const tpl = memeTemplates.find((t) => t.id === selectedTemplateId);
+    if (!tpl) return;
+    setSlotTexts((prev) => {
+      const next: Record<string, string> = {};
+      for (const slot of tpl.slots) {
+        next[slot.id] = prev[slot.id] || "";
+      }
+      return next;
+    });
+    // Keep the user's ratio if the template supports it; otherwise fall back to
+    // the template default so the preview and composed output stay in sync.
+    setAspectRatio((current) =>
+      tpl.supportedAspectRatios.includes(current as (typeof tpl.supportedAspectRatios)[number])
+        ? current
+        : tpl.defaultAspectRatio,
+    );
+  }, [selectedTemplateId, memeTemplates]);
+
+  // Switching into template/hybrid mode can leave an unsupported ratio selected.
+  useEffect(() => {
+    if (mode !== "meme" || memeMode === "ai") return;
+    const tpl = memeTemplates.find((t) => t.id === selectedTemplateId);
+    if (!tpl) return;
+    if (!tpl.supportedAspectRatios.includes(aspectRatio as (typeof tpl.supportedAspectRatios)[number])) {
+      setAspectRatio(tpl.defaultAspectRatio);
+    }
+  }, [mode, memeMode, selectedTemplateId, memeTemplates, aspectRatio]);
+
+  const setSlotText = (slotId: string, value: string) => {
+    setSlotTexts((prev) => ({ ...prev, [slotId]: value }));
+  };
 
   useEffect(() => {
     safeLocalStorage.setItem("nexaclip_image_history", safeStringify(history));
@@ -302,12 +498,56 @@ export default function ImageStudio() {
   // Meme state
   const [topText, setTopText] = useState("");
   const [bottomText, setBottomText] = useState("");
-  const [captionStyle, setCaptionStyle] = useState("impact");
 
-  // Advanced state
-  const [creativity, setCreativity] = useState([70]);
-  const [lighting, setLighting] = useState("natural");
+  // Prompt enhancers (folded into prompt — not separate API fields)
+  const [lighting, setLighting] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
+
+  // Reference images for generate / regenerate
+  const [referenceContentIds, setReferenceContentIds] = useState<string[]>([]);
+  const [referenceLibraryPreviews, setReferenceLibraryPreviews] = useState<Record<string, string>>({});
+  const [referenceUploads, setReferenceUploads] = useState<ReferenceUploadItem[]>([]);
+  /** When true, next Generate uses POST /content/generate (no previous image as base). */
+  const [forceNewGenerate, setForceNewGenerate] = useState(false);
+  const isUploadingReference = referenceUploads.some((u) => u.status === "uploading");
+  const userPlan = readUserPlan();
+  const maxReferences =
+    userPlan === "FREE" ? FREE_MAX_REFERENCE_IMAGES : PRO_MAX_REFERENCE_IMAGES;
+  const dailyGenerationLimit = userPlan === "FREE" ? FREE_DAILY_GENERATION_LIMIT : null;
+  const referencePlanHint = userPlan === "FREE" ? "Free" : userPlan === "PRO" ? "Pro" : "Studio";
+  const referenceUploadsRef = useRef(referenceUploads);
+  referenceUploadsRef.current = referenceUploads;
+  const hydratedNavKeyRef = useRef<string | null>(null);
+
+  /** Ordered ready content IDs matching UI Image 1…N (uploads then library picks). */
+  const orderedReadyReferenceIds = [
+    ...referenceUploads
+      .filter((u) => u.status === "ready" && u.id)
+      .map((u) => u.id as string),
+    ...referenceContentIds,
+  ];
+
+  const orderedReferenceChips: OrderedReferenceChip[] = [
+    ...referenceUploads.map((u, idx) => ({
+      key: `upload-${u.localId}`,
+      label: `Image ${idx + 1}`,
+      previewUrl: u.previewUrl,
+      status: u.status,
+      source: "upload" as const,
+      removeId: u.localId,
+    })),
+    ...referenceContentIds.map((id, idx) => {
+      const lib = libraryImages.find((h) => h.id === id);
+      return {
+        key: `library-${id}`,
+        label: `Image ${referenceUploads.length + idx + 1}`,
+        previewUrl: lib?.url || referenceLibraryPreviews[id] || "",
+        status: "ready" as const,
+        source: "library" as const,
+        removeId: id,
+      };
+    }),
+  ];
 
   const [brightness, setBrightness] = useState(100);
   const [contrast, setContrast] = useState(100);
@@ -318,6 +558,11 @@ export default function ImageStudio() {
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
   
   const [currentContentId, setCurrentContentId] = useState<string | null>(null);
+  const [contentStatus, setContentStatus] = useState<string | null>(null);
+  const [watermarked, setWatermarked] = useState(false);
+  /** Preview AI-suggestions prompts — kept even when published remix clears currentContentId. */
+  const [viewedBasePrompt, setViewedBasePrompt] = useState<string | undefined>();
+  const [viewedRefinePrompt, setViewedRefinePrompt] = useState<string | undefined>();
   const [generatedHashtags, setGeneratedHashtags] = useState<string[][]>([]);
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
   const [customTagInput, setCustomTagInput] = useState("");
@@ -325,45 +570,433 @@ export default function ImageStudio() {
   const [isPublished, setIsPublished] = useState(false);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  /** True only after the preview image has finished loading (keeps captions behind the image). */
+  const [previewReady, setPreviewReady] = useState(false);
+  /** Canvas library browser for reference picking (opened from Generate panel). */
+  const [libraryPickerOpen, setLibraryPickerOpen] = useState(false);
+  const historySectionRef = useRef<HTMLDivElement | null>(null);
+  const previewBlobUrlRef = useRef<string | null>(null);
+  const publishWatchRef = useRef<{ contentId: string; done: boolean } | null>(null);
 
-  // Initialize draft data from location state or search params
+  const applyViewedPrompts = (item: {
+    basePrompt?: string | null;
+    refinePrompt?: string | null;
+    prompt?: string | null;
+  }) => {
+    const base = (item.basePrompt || item.prompt || "").trim() || undefined;
+    const refine = (item.refinePrompt || "").trim() || undefined;
+    setViewedBasePrompt(base);
+    // Keep refine even when it matches base so Last refine stays visible after reopen.
+    setViewedRefinePrompt(refine);
+  };
+
+  const clearViewedPrompts = () => {
+    setViewedBasePrompt(undefined);
+    setViewedRefinePrompt(undefined);
+  };
+
+  const revokePreviewBlob = () => {
+    if (previewBlobUrlRef.current) {
+      URL.revokeObjectURL(previewBlobUrlRef.current);
+      previewBlobUrlRef.current = null;
+    }
+  };
+
+  const applyPreviewImage = async (mediaUrl: string) => {
+    setPreviewReady(false);
+    revokePreviewBlob();
+    const fresh = await resolveFreshMediaPreview(mediaUrl);
+    if (fresh) {
+      previewBlobUrlRef.current = fresh;
+      setResultImage(fresh);
+      setVariations([fresh]);
+      // Blob is local — mark ready so canvas leaves the baking state without waiting onLoad.
+      setPreviewReady(true);
+      return;
+    }
+    // Same /content/{id}/media path after refine — bust so AuthenticatedImage remounts.
+    const busted = withCacheBust(mediaUrl);
+    setResultImage(busted);
+    setVariations([busted]);
+  };
+
+  useEffect(() => {
+    return () => {
+      referenceUploadsRef.current.forEach((u) => {
+        if (u.previewUrl.startsWith("blob:")) URL.revokeObjectURL(u.previewUrl);
+      });
+      revokePreviewBlob();
+    };
+  }, []);
+
+  const willCreateNewImage =
+    forceNewGenerate ||
+    !currentContentId ||
+    isPublished ||
+    contentStatus === "generation_failed" ||
+    contentStatus === "published" ||
+    // Pure template memes are deterministic; AI + hybrid refine the same draft.
+    (mode === "meme" && memeMode === "template");
+
+  const activeDraftItem = currentContentId
+    ? history.find((h) => h.id === currentContentId)
+    : undefined;
+  // Prefer explicit viewed prompts so published remix (currentContentId=null) still shows Last refine.
+  const draftBasePrompt = viewedBasePrompt ?? activeDraftItem?.basePrompt;
+  const draftRefinePrompt = viewedRefinePrompt ?? activeDraftItem?.refinePrompt;
+
+  const isMemeContent = (item: { contentType?: string; style?: string; type?: string }) =>
+    item.contentType === "meme" ||
+    item.style === "meme" ||
+    item.type === "meme";
+
+  const clearReferences = () => {
+    referenceUploadsRef.current.forEach((u) => {
+      if (u.previewUrl.startsWith("blob:")) URL.revokeObjectURL(u.previewUrl);
+    });
+    setReferenceUploads([]);
+    setReferenceContentIds([]);
+    setReferenceLibraryPreviews({});
+  };
+
+  const markReferencesDirty = () => {
+    // Changing refs must not silently regenerate the previous output as multimodal base.
+    setForceNewGenerate(true);
+  };
+
+  const clearMemeFormOptions = () => {
+    setPrompt("");
+    setTopText("");
+    setBottomText("");
+    setSlotTexts({});
+    setTitle("");
+    setNegativePrompt("");
+    clearReferences();
+  };
+
+  const startFreshDraft = () => {
+    clearMemeFormOptions();
+    clearViewedPrompts();
+    setForceNewGenerate(true);
+    setCurrentContentId(null);
+    setContentStatus(null);
+    setIsPublished(false);
+    toast.message(mode === "meme" ? "Ready for a new meme" : "Ready for a new image", {
+      description: "Options cleared — Generate will create a new draft.",
+    });
+  };
+
+  const applyContentItemToStudio = (item: ContentDto, imgUrl?: string) => {
+    const resolvedUrl =
+      imgUrl || extractValidImageUrl(item) || item.thumbnailUrl || item.cdnUrl || "";
+    const isPublishedItem = item.status === "published";
+    const isMemeItem = isMemeContent(item);
+
+    clearReferences();
+    revokePreviewBlob();
+    applyViewedPrompts(item);
+    setPrompt(
+      item.refinePrompt ||
+        item.prompt ||
+        item.basePrompt ||
+        item.caption ||
+        item.description ||
+        item.title ||
+        "",
+    );
+    setTitle(item.title || item.caption || "");
+    setDescription(item.description || "");
+    setStyle(item.style || (isMemeItem ? "meme" : "cinematic"));
+    if (item.aspectRatio && ["1:1", "16:9", "9:16"].includes(item.aspectRatio)) {
+      setAspectRatio(item.aspectRatio);
+    }
+    setMode(isMemeItem ? "meme" : "image");
+    if (isMemeItem) {
+      const memeModeFromSpec =
+        item.memeSpec?.mode === "template" || item.memeSpec?.mode === "hybrid"
+          ? item.memeSpec.mode
+          : "ai";
+      setMemeModeState(memeModeFromSpec);
+      if (item.memeSpec?.templateId) {
+        setSelectedTemplateId(item.memeSpec.templateId);
+      }
+      if (item.memeSpec?.texts?.length) {
+        const next: Record<string, string> = {};
+        for (const entry of item.memeSpec.texts) {
+          if (entry?.slot) next[entry.slot] = entry.text || "";
+        }
+        setSlotTexts(next);
+      }
+    }
+    if (resolvedUrl) {
+      setPreviewReady(false);
+      const busted = withCacheBust(resolvedUrl);
+      setResultImage(busted);
+      setVariations([busted]);
+      void applyPreviewImage(resolvedUrl);
+    } else {
+      setResultImage(null);
+      setVariations([]);
+      setPreviewReady(false);
+    }
+    setContentStatus(item.status || null);
+    setWatermarked(Boolean(item.watermarked));
+    setIsPublished(isPublishedItem);
+    setIsPublishing(false);
+    setCaptionSuggestions(item.captions?.length ? item.captions : []);
+    setCaption(item.selectedCaption || item.caption || item.captions?.[0] || "");
+    setGeneratedHashtags(item.hashtagSets?.length ? item.hashtagSets : []);
+    setSelectedHashtags(item.selectedHashtags || item.hashtagSets?.[0] || []);
+    setError(null);
+
+    if (isPublishedItem) {
+      // Remix published work as a new create with the image as Reference Image 1.
+      setCurrentContentId(null);
+      setForceNewGenerate(true);
+      if (item.id) {
+        setReferenceContentIds([item.id]);
+        if (resolvedUrl) {
+          setReferenceLibraryPreviews({ [item.id]: resolvedUrl });
+        }
+      }
+    } else {
+      setCurrentContentId(item.id);
+      setForceNewGenerate(false);
+    }
+  };
+
+  const resetStudioSession = () => {
+    clearReferences();
+    revokePreviewBlob();
+    clearViewedPrompts();
+    setForceNewGenerate(false);
+    setCurrentContentId(null);
+    setContentStatus(null);
+    setIsPublished(false);
+    setIsPublishing(false);
+    setResultImage(null);
+    setVariations([]);
+    setPreviewReady(false);
+    setPrompt("");
+    setTitle("");
+    setDescription("");
+    setCaption("");
+    setCaptionSuggestions([]);
+    setGeneratedHashtags([]);
+    setSelectedHashtags([]);
+    setError(null);
+    setWatermarked(false);
+    setBrightness(100);
+    setContrast(100);
+    setSaturation(100);
+  };
+
+  // Initialize draft data from location state or search params (full replace — no additive leak)
   useEffect(() => {
     const draftIdFromParam = searchParams.get("draftId") || searchParams.get("editId");
+    const typeParam = searchParams.get("type");
+    const navKey = `${location.key}|${draftIdFromParam || ""}|${location.state?.draftId || ""}|${location.state?.studioSessionKey || ""}`;
+    if (hydratedNavKeyRef.current === navKey) return;
+    hydratedNavKeyRef.current = navKey;
 
-    if (location.state) {
-      if (location.state.prompt) setPrompt(location.state.prompt);
-      if (location.state.title) setTitle(location.state.title);
-      if (location.state.description) setDescription(location.state.description);
-      if (location.state.style) setStyle(location.state.style);
-      if (location.state.aspectRatio) setAspectRatio(location.state.aspectRatio);
-      if (location.state.mode) setMode(location.state.mode);
-      if (location.state.imageUrl) setResultImage(location.state.imageUrl);
-      if (location.state.draftId) setCurrentContentId(location.state.draftId);
-      if (location.state.caption) setCaption(location.state.caption);
-
-      if (location.state.draftId || location.state.imageUrl) {
-        toast.info(t("image_studio.draft_loaded", { defaultValue: "Continuing draft in Image Studio" }), { id: "draft-loaded" });
+    if (typeParam === "meme" || location.state?.mode === "meme") {
+      setMode("meme");
+      setStyle("meme");
+      if (typeParam === "template" || location.state?.memeMode === "template") {
+        setMemeMode("template");
       }
+    }
+
+    if (location.state && (location.state.draftId || location.state.imageUrl || location.state.item)) {
+      const state = location.state as {
+        draftId?: string;
+        title?: string;
+        prompt?: string;
+        imageUrl?: string;
+        mode?: "image" | "meme";
+        description?: string;
+        style?: string;
+        aspectRatio?: string;
+        status?: string;
+        caption?: string;
+        captions?: string[];
+        hashtagSets?: string[][];
+        watermarked?: boolean;
+        item?: ContentDto;
+      };
+
+      if (state.item?.id) {
+        applyContentItemToStudio(state.item, state.imageUrl);
+      } else {
+        clearReferences();
+        setPrompt(state.prompt || "");
+        setTitle(state.title || "");
+        setDescription(state.description || "");
+        if (state.style) setStyle(state.style);
+        if (state.aspectRatio && ["1:1", "16:9", "9:16"].includes(state.aspectRatio)) {
+          setAspectRatio(state.aspectRatio);
+        }
+        if (state.mode) setMode(state.mode);
+        if (state.imageUrl) {
+          setPreviewReady(false);
+          setResultImage(state.imageUrl);
+          setVariations([state.imageUrl]);
+        } else {
+          setResultImage(null);
+          setVariations([]);
+          setPreviewReady(false);
+        }
+        const status = state.status || null;
+        setContentStatus(status);
+        setWatermarked(Boolean(state.watermarked));
+        setIsPublished(status === "published");
+        setIsPublishing(false);
+        setCaption(state.caption || "");
+        setCaptionSuggestions(state.captions?.length ? state.captions : []);
+        setGeneratedHashtags(state.hashtagSets?.length ? state.hashtagSets : []);
+        setSelectedHashtags(state.hashtagSets?.[0] || []);
+        setError(null);
+
+        if (status === "published" && state.draftId) {
+          setCurrentContentId(null);
+          setForceNewGenerate(true);
+          setReferenceContentIds([state.draftId]);
+          if (state.imageUrl) {
+            setReferenceLibraryPreviews({ [state.draftId]: state.imageUrl });
+          }
+        } else {
+          setCurrentContentId(state.draftId || null);
+          setForceNewGenerate(false);
+        }
+        applyViewedPrompts({
+          basePrompt: state.prompt,
+          refinePrompt: undefined,
+          prompt: state.prompt,
+        });
+      }
+
+      toast.info(t("image_studio.draft_loaded", { defaultValue: "Continuing draft in Image Studio" }), {
+        id: "draft-loaded",
+      });
     } else if (draftIdFromParam) {
       (async () => {
         try {
-          const item = await contentApi.getContentById(draftIdFromParam, { suppressErrorLog: true });
+          const item =
+            (await contentApi.getUserContentById(draftIdFromParam, { suppressErrorLog: true }).catch(() => null)) ||
+            (await contentApi.getContentById(draftIdFromParam, { suppressErrorLog: true }));
           if (item) {
-            const imgUrl = extractValidImageUrl(item) || item.thumbnailUrl || (item.mediaUrl as string);
-            setPrompt(item.title || item.caption || item.description || "");
-            setTitle(item.title || item.caption || "Draft Creation");
-            if (item.description) setDescription(item.description);
-            if (imgUrl) setResultImage(imgUrl);
-            setCurrentContentId(item.id);
-            if (item.contentType === "meme") setMode("meme");
-            toast.info(t("image_studio.draft_loaded", { defaultValue: "Loaded draft into Image Studio" }), { id: "draft-param-loaded" });
+            applyContentItemToStudio(item);
+            toast.info(t("image_studio.draft_loaded", { defaultValue: "Loaded draft into Image Studio" }), {
+              id: "draft-param-loaded",
+            });
           }
         } catch (err) {
           console.error("Failed to load draft item by ID:", err);
         }
       })();
     }
-  }, [location.state, searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hydrate once per navigation key
+  }, [location.key, location.state, searchParams, t]);
+
+  const toggleReferenceContent = (id: string) => {
+    const isSelected = referenceContentIds.includes(id);
+    if (isSelected) {
+      markReferencesDirty();
+      setReferenceContentIds((prev) => prev.filter((x) => x !== id));
+      setReferenceLibraryPreviews((previews) => {
+        const next = { ...previews };
+        delete next[id];
+        return next;
+      });
+      return;
+    }
+    if (referenceContentIds.length + referenceUploads.length >= maxReferences) {
+      toast.message(`Max ${maxReferences} references`);
+      return;
+    }
+    markReferencesDirty();
+    const lib = libraryImages.find((h) => h.id === id);
+    setReferenceContentIds((prev) => [...prev, id]);
+    if (lib?.url) {
+      setReferenceLibraryPreviews((previews) => ({ ...previews, [id]: lib.url }));
+    }
+  };
+
+  const onRemoveReferenceUpload = (localId: string) => {
+    setReferenceUploads((prev) => {
+      const item = prev.find((u) => u.localId === localId);
+      if (item?.previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
+      return prev.filter((u) => u.localId !== localId);
+    });
+    markReferencesDirty();
+  };
+
+  const onClearReferences = () => {
+    clearReferences();
+    markReferencesDirty();
+  };
+
+  const onUploadReference = async (file: File) => {
+    if (referenceContentIds.length + referenceUploads.length >= maxReferences) {
+      toast.message(`Max ${maxReferences} references`);
+      return;
+    }
+    markReferencesDirty();
+    const localId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `ref-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const previewUrl = URL.createObjectURL(file);
+    setReferenceUploads((prev) => [
+      ...prev,
+      {
+        localId,
+        name: file.name || "Reference image",
+        previewUrl,
+        status: "uploading",
+      },
+    ]);
+    try {
+      const meta = await contentApi.uploadFile(file);
+      const refId = meta.assetId || meta.contentId;
+      if (!refId) throw new Error("Upload did not return an asset id");
+      setReferenceUploads((prev) =>
+        prev.map((u) =>
+          u.localId === localId ? { ...u, id: refId, status: "ready" as const } : u,
+        ),
+      );
+      toast.success("Reference uploaded");
+      void fetchHistoryFromContentApi();
+    } catch (err: any) {
+      setReferenceUploads((prev) => {
+        const item = prev.find((u) => u.localId === localId);
+        if (item?.previewUrl.startsWith("blob:")) {
+          URL.revokeObjectURL(item.previewUrl);
+        }
+        return prev.filter((u) => u.localId !== localId);
+      });
+      toast.error("Reference upload failed", { description: err?.message || "Try again" });
+    }
+  };
+
+  const buildEnhancedPrompt = (base: string) => {
+    let next = base.trim();
+    const lightingLabels: Record<string, string> = {
+      natural: "Natural",
+      neon: "Neon",
+      golden: "Golden hour",
+      dramatic: "Dramatic",
+    };
+    if (lighting) {
+      next = `${next}. Lighting: ${lightingLabels[lighting] || lighting}`;
+    }
+    if (negativePrompt.trim()) {
+      next = `${next}. Avoid: ${negativePrompt.trim()}`;
+    }
+    return next;
+  };
 
   const handleAddCustomTag = () => {
     const cleanTag = customTagInput.trim().replace(/^#+/, '').replace(/[^a-zA-Z0-9_]/g, '');
@@ -432,14 +1065,34 @@ export default function ImageStudio() {
   };
 
   const handleGenerate = () => {
-    if (!prompt) return;
+    if (mode === "meme" && (memeMode === "template" || memeMode === "hybrid")) {
+      if (!selectedTemplateId) {
+        toast.error("Pick a meme template");
+        return;
+      }
+      const tpl = memeTemplates.find((t) => t.id === selectedTemplateId);
+      const missing = tpl?.slots.find((s) => !(slotTexts[s.id] || "").trim());
+      if (missing) {
+        toast.error(`Fill the "${missing.label}" slot`);
+        return;
+      }
+      if (memeMode === "hybrid" && !prompt.trim()) {
+        toast.error("Hybrid mode needs a prompt for the AI base");
+        return;
+      }
+    } else if (!prompt) {
+      return;
+    }
+    if (isUploadingReference) {
+      toast.message("Wait for reference uploads to finish");
+      return;
+    }
     if (generationsLeft !== null && generationsLeft <= 0) {
       setError("No generations left today. Upgrade your plan for more!");
       triggerHaptic('warning');
       return;
     }
 
-    // Open terminal automatically to display the execution log in real-time
     setIsTerminalOpen(true);
     setIsTerminalMinimized(false);
 
@@ -448,21 +1101,83 @@ export default function ImageStudio() {
 
   const executeActualGeneration = async () => {
     setIsGenerating(true);
+    setLibraryPickerOpen(false);
     setError(null);
+    setPreviewReady(false);
+    revokePreviewBlob();
+    // Hide previous captions/hashtags until the new image is visible.
+    setCaptionSuggestions([]);
+    setCaption("");
+    setGeneratedHashtags([]);
+    setSelectedHashtags([]);
     triggerHaptic('heavy');
     
     const isMeme = mode === "meme";
-    const targetPrompt = isMeme
-      ? `${prompt}. Meme format with top text: "${topText}" and bottom text: "${bottomText}"`
-      : prompt;
+    const ratio = (["1:1", "16:9", "9:16"].includes(aspectRatio) ? aspectRatio : "1:1") as
+      | "1:1"
+      | "16:9"
+      | "9:16";
+    const studioStyle = isMeme ? "meme" : style;
+    const templateTexts = (Object.entries(slotTexts) as Array<[string, string]>)
+      .filter(([, text]) => text.trim())
+      .map(([slot, text]) => ({ slot, text: text.trim() }));
+    const aiCaptionTexts = [
+      ...(topText ? [{ slot: "top", text: topText }] : []),
+      ...(bottomText ? [{ slot: "bottom", text: bottomText }] : []),
+    ];
+    const targetPrompt = buildEnhancedPrompt(
+      isMeme && memeMode !== "template"
+        ? `${prompt}${topText || bottomText ? `. Meme captions — top: "${topText}" bottom: "${bottomText}"` : ""}`
+        : prompt,
+    );
     const canRegenerate =
       Boolean(currentContentId) &&
+      !forceNewGenerate &&
       !isPublished &&
-      !isMeme;
+      contentStatus !== "generation_failed" &&
+      contentStatus !== "published" &&
+      // AI + hybrid memes refine in place; pure template memes are deterministic
+      // from their text slots, so they always create a new asset.
+      !(isMeme && memeMode === "template");
+
+    // Send all ready refs as referenceContentIds in UI Image 1…N order (uploads then library).
+    const refs = {
+      referenceContentIds: orderedReadyReferenceIds.length
+        ? orderedReadyReferenceIds
+        : undefined,
+    };
+
+    const memePayload =
+      memeMode === "template"
+        ? {
+            mode: "template" as const,
+            templateId: selectedTemplateId || undefined,
+            aspectRatio: ratio,
+            texts: templateTexts,
+            title: title.trim() || undefined,
+          }
+        : memeMode === "hybrid"
+          ? {
+              mode: "hybrid" as const,
+              prompt: targetPrompt,
+              templateId: selectedTemplateId || undefined,
+              aspectRatio: ratio,
+              texts: templateTexts,
+              title: title.trim() || undefined,
+              ...refs,
+            }
+          : {
+              mode: "ai" as const,
+              prompt: targetPrompt,
+              aspectRatio: ratio,
+              texts: aiCaptionTexts,
+              title: title.trim() || undefined,
+              ...refs,
+            };
 
     const payload = isMeme
-      ? { mode: "ai", prompt: targetPrompt, style: "meme", aspectRatio, topText, bottomText }
-      : { prompt: targetPrompt, style, aspectRatio, model: "default" };
+      ? memePayload
+      : { prompt: targetPrompt, style: studioStyle, aspectRatio: ratio, ...refs };
     const apiPath = canRegenerate
       ? `/content/${currentContentId}/regenerate`
       : isMeme
@@ -471,30 +1186,43 @@ export default function ImageStudio() {
     const { id: generateLogId, traceId } = addApiLog("POST", apiPath, payload);
 
     try {
-      toast.info(canRegenerate ? "Regenerating draft…" : "Generating content from API...", {
-        description: isMeme ? "Meme Studio (POST /content/meme)" : `Style: ${style}`,
-      });
+      toast.info(
+        canRegenerate ? "Regenerating draft…" : "Generating content…",
+        {
+          description: isMeme
+            ? `Meme · ${memeMode}${selectedTemplateId ? ` · ${selectedTemplateId}` : ""}`
+            : `Style: ${studioStyle} · ${ratio}`,
+        },
+      );
       
       let apiResponse: any;
       if (canRegenerate && currentContentId) {
         apiResponse = await contentApi.regenerateImage(currentContentId, {
-          prompt: targetPrompt,
-          style,
-          aspectRatio,
-          model: "default",
+          // Omit short/empty prompts so the server reuses the stored prompt
+          // (needed for hybrid caption-only edits after the field is cleared).
+          prompt: targetPrompt.trim().length >= 3 ? targetPrompt : undefined,
+          style: studioStyle,
+          aspectRatio: ratio,
+          title: title.trim() || undefined,
+          // Hybrid memes recompose their caption overlay from these slots.
+          texts:
+            isMeme && memeMode === "hybrid" && templateTexts.length
+              ? templateTexts
+              : undefined,
+          ...refs,
         });
       } else if (isMeme) {
-        apiResponse = await contentApi.createMeme({
-          mode: "ai",
-          prompt: targetPrompt,
-          aspectRatio: (aspectRatio as "1:1" | "16:9" | "9:16") || "1:1",
-          texts: [
-            ...(topText ? [{ slot: "top", text: topText }] : []),
-            ...(bottomText ? [{ slot: "bottom", text: bottomText }] : []),
-          ],
-        });
+        apiResponse = await contentApi.createMeme(memePayload);
       } else {
-        apiResponse = await contentApi.generateImage(targetPrompt, style, aspectRatio, "default");
+        apiResponse = await contentApi.generateImage(
+          targetPrompt,
+          studioStyle,
+          ratio,
+          undefined,
+          refs.referenceContentIds,
+          undefined,
+          title.trim() || undefined,
+        );
       }
       const contentId = apiResponse.contentId || apiResponse.id || apiResponse.jobId;
 
@@ -502,37 +1230,129 @@ export default function ImageStudio() {
         throw new Error("Failed to generate content: No content ID returned.");
       }
 
-      const img = apiResponse.imageUrl || apiResponse.cdnUrl || apiResponse.thumbnailUrl;
+      const img =
+        extractValidImageUrl(apiResponse) ||
+        apiResponse.imageUrl ||
+        apiResponse.cdnUrl ||
+        apiResponse.thumbnailUrl;
       if (!img) {
         throw new Error("API response did not contain an image payload.");
       }
+      const bustedImg = withCacheBust(img);
       const thumb = apiResponse.thumbnailUrl || img;
 
-      // Log details into browser console
-      console.log("=== Image Studio API Response ===");
-      console.log("Content ID:", contentId);
-      console.log("Generated Image:", img.substring(0, 100) + "...");
-      console.log("=================================");
-
-      // Update generation log in DevTerminal with final URLs
       updateApiLogSuccess(
         generateLogId, 
         200, 
         {
           ...apiResponse,
-          cdnUrl: img,
+          cdnUrl: bustedImg,
           thumbnailUrl: thumb
         }, 
         `Generation completed inline. Content ID: ${contentId}`
       );
-      setResultImage(img);
-      setVariations([img]);
 
-      // Set publication draft states
+      // Prefer a no-store blob so refine of the same /content/{id}/media path updates the canvas.
+      await applyPreviewImage(img);
+
+      // Optimistically refresh the matching Recent Generations tile (same media path after refine).
+      const feedRevision = `local-${Date.now()}`;
+      const feedUrl = withContentMediaRevision(img, feedRevision);
+      const existingHistory = history.find((h) => h.id === contentId);
+      const isRefinePass = Boolean(existingHistory) && !willCreateNewImage;
+      const frozenBase = isRefinePass
+        ? (existingHistory!.basePrompt || existingHistory!.prompt || targetPrompt).trim() ||
+          targetPrompt
+        : targetPrompt.trim();
+      const nextPromptText = isRefinePass
+        ? targetPrompt.trim().length >= 3
+          ? targetPrompt.trim()
+          : (existingHistory!.refinePrompt || existingHistory!.prompt || frozenBase).trim()
+        : targetPrompt.trim();
+      applyViewedPrompts({
+        basePrompt: frozenBase,
+        refinePrompt: isRefinePass ? nextPromptText : undefined,
+        prompt: nextPromptText,
+      });
+
+      setHistory((prev) => {
+        const idx = prev.findIndex((h) => h.id === contentId);
+        if (idx < 0) {
+          return [
+            {
+              id: contentId,
+              url: feedUrl,
+              mediaRevision: feedRevision,
+              title: title.trim() || undefined,
+              prompt: targetPrompt,
+              basePrompt: targetPrompt,
+              refinePrompt: undefined,
+              type: isMeme ? "meme" : "image",
+              style: studioStyle,
+              status: "draft",
+              aspectRatio: ratio,
+              watermarked: Boolean(apiResponse.watermarked),
+              captions: apiResponse.captions,
+              hashtagSets: apiResponse.hashtagSets,
+              memeSpec: isMeme
+                ? {
+                    mode: memeMode,
+                    templateId: selectedTemplateId || undefined,
+                    texts: memeMode === "ai" ? undefined : templateTexts,
+                  }
+                : undefined,
+              timestamp: Date.now(),
+            },
+            ...prev,
+          ];
+        }
+        return prev.map((h) =>
+          h.id === contentId
+            ? {
+                ...h,
+                url: feedUrl,
+                mediaRevision: feedRevision,
+                prompt: nextPromptText,
+                basePrompt: frozenBase,
+                refinePrompt: nextPromptText,
+                title: title.trim() || h.title,
+                style: studioStyle,
+                status: "draft",
+                aspectRatio: ratio,
+                watermarked: Boolean(apiResponse.watermarked),
+                captions: apiResponse.captions ?? h.captions,
+                hashtagSets: apiResponse.hashtagSets ?? h.hashtagSets,
+              }
+            : h,
+        );
+      });
+
       setCurrentContentId(contentId);
+      setContentStatus("draft");
+      setWatermarked(Boolean(apiResponse.watermarked));
       setIsPublished(false);
       setIsPublishing(false);
       setDescription("");
+      // Drop refs after success so the next create cannot silently reuse stale Image 1…N.
+      clearReferences();
+      if (isMeme) {
+        // Clear the prompt so the field reads as "what should change next".
+        setPrompt("");
+        setTopText("");
+        setBottomText("");
+        setTitle("");
+        // Template memes are deterministic, so they must create a new asset.
+        // AI + hybrid stay attached so Refine edits this draft in place; hybrid
+        // keeps its slot texts so caption tweaks can be sent with the refine.
+        const templateOnly = memeMode === "template";
+        if (templateOnly) {
+          setSlotTexts({});
+          setCurrentContentId(null);
+        }
+        setForceNewGenerate(templateOnly);
+      } else {
+        setForceNewGenerate(false);
+      }
       
       if (apiResponse.captions) {
         setCaptionSuggestions(apiResponse.captions);
@@ -543,7 +1363,10 @@ export default function ImageStudio() {
         setSelectedHashtags(apiResponse.hashtagSets[0] || []);
       }
 
-      // Track the history reloading call
+      // Leave baking once generate finishes; applyPreviewImage already set previewReady for blob,
+      // otherwise Canvas waits on AuthenticatedImage onLoad → onPreviewReady.
+      setIsGenerating(false);
+
       const { id: listLogId } = addApiLog("GET", "/content/mine", undefined, traceId);
       try {
         await fetchHistoryFromContentApi();
@@ -553,7 +1376,8 @@ export default function ImageStudio() {
       }
 
       setGenerationsLeft(prev => {
-        const newVal = prev !== null ? Math.max(0, prev - 1) : 19;
+        if (readUserPlan() !== "FREE") return null;
+        const newVal = prev !== null ? Math.max(0, prev - 1) : Math.max(0, FREE_DAILY_GENERATION_LIMIT - 1);
         safeLocalStorage.setItem("nxclip_generations_left", String(newVal));
         return newVal;
       });
@@ -568,11 +1392,32 @@ export default function ImageStudio() {
       triggerHaptic('error');
       let errorMessage = "Failed to generate image. Please try a different prompt.";
       
-      // Update generation log in terminal as failed
       const statusCode = err?.statusCode || 500;
       updateApiLogFailed(generateLogId, statusCode, err, `Generation failed: ${err?.message || errorMessage}`);
 
-      if (err instanceof AIError) {
+      if (
+        statusCode === 403 &&
+        (err?.upgrade_url ||
+          err?.required_plan ||
+          /limit|plan|upgrade/i.test(
+            Array.isArray(err?.message) ? err.message.join(" ") : String(err?.message || ""),
+          ))
+      ) {
+        errorMessage = Array.isArray(err.message)
+          ? err.message.join(", ")
+          : err.message || "Daily generation limit reached.";
+        if (readUserPlan() === "FREE") {
+          setGenerationsLeft(0);
+          safeLocalStorage.setItem("nxclip_generations_left", "0");
+        }
+        toast.error("Plan limit reached", {
+          description: errorMessage,
+          action: {
+            label: "Upgrade",
+            onClick: () => navigate("/upgrade"),
+          },
+        });
+      } else if (err instanceof AIError) {
         errorMessage = err.message;
         toast.error("Image Generation Failed", {
           description: errorMessage,
@@ -582,7 +1427,7 @@ export default function ImageStudio() {
           } : undefined
         });
       } else if (err && typeof err === "object" && "message" in err) {
-        errorMessage = String((err as any).message);
+        errorMessage = Array.isArray(err.message) ? err.message.join(", ") : String(err.message);
         toast.error("Image Generation Failed", {
           description: errorMessage
         });
@@ -591,7 +1436,64 @@ export default function ImageStudio() {
           description: errorMessage
         });
       }
+      // A refine that fails leaves the draft untouched on the server, so the state
+      // stays as-is: marking it failed here would swap Refine for a Retry the
+      // server rejects, and push the next attempt into creating a new asset.
       setError(errorMessage);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleRetryGeneration = async () => {
+    if (!currentContentId) return;
+    setIsGenerating(true);
+    setError(null);
+    setPreviewReady(false);
+    setCaptionSuggestions([]);
+    setCaption("");
+    setGeneratedHashtags([]);
+    setSelectedHashtags([]);
+    const { id: generateLogId } = addApiLog("POST", `/content/${currentContentId}/retry-generation`, {});
+    try {
+      toast.info("Retrying failed generation…");
+      const apiResponse = await contentApi.retryGeneration(currentContentId);
+      const contentId = apiResponse.contentId || currentContentId;
+      const img =
+        extractValidImageUrl(apiResponse) ||
+        apiResponse.imageUrl ||
+        apiResponse.cdnUrl ||
+        apiResponse.thumbnailUrl;
+      if (!img) throw new Error("Retry did not return an image payload.");
+      updateApiLogSuccess(generateLogId, 200, apiResponse, "Retry completed");
+      await applyPreviewImage(img);
+      const feedRevision = `local-${Date.now()}`;
+      const feedUrl = withContentMediaRevision(img, feedRevision);
+      setHistory((prev) =>
+        prev.map((h) =>
+          h.id === contentId
+            ? { ...h, url: feedUrl, mediaRevision: feedRevision, status: "draft" }
+            : h,
+        ),
+      );
+      setCurrentContentId(contentId);
+      setContentStatus("draft");
+      setWatermarked(Boolean(apiResponse.watermarked));
+      if (apiResponse.captions) {
+        setCaptionSuggestions(apiResponse.captions);
+        setCaption(apiResponse.captions[0] || "");
+      }
+      if (apiResponse.hashtagSets) {
+        setGeneratedHashtags(apiResponse.hashtagSets);
+        setSelectedHashtags(apiResponse.hashtagSets[0] || []);
+      }
+      await fetchHistoryFromContentApi();
+      toast.success("Retry succeeded");
+    } catch (err: any) {
+      updateApiLogFailed(generateLogId, err?.statusCode || 500, err, "Retry failed");
+      setContentStatus("generation_failed");
+      setError(err?.message || "Retry failed");
+      toast.error("Retry failed", { description: err?.message });
     } finally {
       setIsGenerating(false);
     }
@@ -634,6 +1536,7 @@ export default function ImageStudio() {
     
     setIsPublishing(true);
     triggerHaptic('medium');
+    socketService.init();
     
     const { id: publishLogId, traceId } = addApiLog("POST", `/content/${currentContentId}/publish`, {
       title,
@@ -646,6 +1549,17 @@ export default function ImageStudio() {
       toast.info("Submitting draft to content moderation...", {
         description: "Checking content safety and feed projection."
       });
+
+      // After moderation_rejected, PATCH first so status returns to draft (backend also
+      // accepts edit-on-publish, but PATCH keeps Library / mine status in sync immediately).
+      if (contentStatus === "moderation_rejected") {
+        const desc = description || caption || undefined;
+        await contentApi.editContent(currentContentId, {
+          ...(title ? { title } : {}),
+          ...(desc ? { description: desc } : {}),
+        });
+        setContentStatus("draft");
+      }
       
       const publishRes = await contentApi.publish(currentContentId, {
         title,
@@ -655,6 +1569,7 @@ export default function ImageStudio() {
       });
 
       updateApiLogSuccess(publishLogId, 200, publishRes, "Content status set to [publishing]");
+      setContentStatus("publishing");
 
       const { id: listId } = addApiLog("GET", "/content/mine", undefined, traceId);
       
@@ -662,26 +1577,90 @@ export default function ImageStudio() {
       updateApiLogSuccess(listId, 200, { success: true }, "History list updated with published item.");
 
       toast.info("Submitted for moderation", {
-        description: "Waiting for content:moderation_complete — you can watch the Notifications page.",
+        description: "We'll notify you when it's published to the feed.",
       });
 
       const publishedId = currentContentId;
+      publishWatchRef.current = { contentId: publishedId, done: false };
+
+      const finishPublished = async () => {
+        const watch = publishWatchRef.current;
+        if (!watch || watch.contentId !== publishedId || watch.done) return;
+        watch.done = true;
+        setIsPublished(true);
+        setContentStatus("published");
+        toast.success("Published!", {
+          description: "Your content is live on the Home feed.",
+        });
+        setShowSuccessModal(true);
+        await fetchHistoryFromContentApi();
+      };
+
+      const finishRejected = async (reason?: string) => {
+        const watch = publishWatchRef.current;
+        if (!watch || watch.contentId !== publishedId || watch.done) return;
+        watch.done = true;
+        setContentStatus("moderation_rejected");
+        setIsPublished(false);
+        toast.error("Moderation rejected", {
+          description: reason || "Edit the draft and publish again.",
+        });
+        await fetchHistoryFromContentApi();
+      };
+
       const unsubMod = socketService.subscribe("content:moderation_complete", (_evt, payload) => {
         const data = (payload as { data?: any })?.data || payload;
         if (data?.contentId && data.contentId !== publishedId) return;
-        unsubMod();
-        void fetchHistoryFromContentApi();
-        if (data?.status === "approved" || data?.status === "published") {
-          setIsPublished(true);
-          toast.success("Moderation approved — content can appear on your Home feed.");
-          setShowSuccessModal(true);
-        } else {
-          toast.error("Moderation rejected", {
-            description: data?.reason || "Edit the draft and publish again.",
-          });
-          setIsPublished(false);
+        const status = String(data?.status || "").toLowerCase();
+        if (status === "published" || status === "approved") {
+          unsubMod();
+          void finishPublished();
+        } else if (status === "rejected") {
+          unsubMod();
+          void finishRejected(data?.reason);
         }
       });
+
+      // Poll as fallback when WS is down or notify arrives after refresh.
+      const startedAt = Date.now();
+      const pollMs = 2000;
+      const maxWaitMs = 90_000;
+      const poll = async () => {
+        const watch = publishWatchRef.current;
+        if (!watch || watch.contentId !== publishedId || watch.done) {
+          unsubMod();
+          return;
+        }
+        if (Date.now() - startedAt > maxWaitMs) {
+          unsubMod();
+          toast.message("Still publishing", {
+            description: "Moderation is taking longer than usual. Refresh history in a moment.",
+          });
+          return;
+        }
+        try {
+          const latest = await contentApi.getContentById(publishedId, { suppressErrorLog: true });
+          const status = String(latest?.status || "").toLowerCase();
+          if (status === "published") {
+            unsubMod();
+            await finishPublished();
+            return;
+          }
+          if (status === "moderation_rejected") {
+            unsubMod();
+            await finishRejected();
+            return;
+          }
+        } catch {
+          // Keep polling while publishing.
+        }
+        window.setTimeout(() => {
+          void poll();
+        }, pollMs);
+      };
+      window.setTimeout(() => {
+        void poll();
+      }, pollMs);
       
       triggerHaptic('success');
       setIsPublishModalOpen(false);
@@ -703,31 +1682,114 @@ export default function ImageStudio() {
   };
 
   const handleReuseGeneration = (item: GenerationHistoryItem) => {
-    setPrompt(item.prompt);
+    clearReferences();
+    revokePreviewBlob();
+    const published = item.status === "published";
+    const isMemeItem = isMemeContent(item);
+    setForceNewGenerate(published);
+    applyViewedPrompts(item);
+    // Editor field: prefer last refine for next edit; preview shows base + refine separately.
+    setPrompt(item.refinePrompt || item.basePrompt || item.prompt || "");
     setTitle(item.title || "");
-    setStyle(item.style || "cinematic");
-    if (item.type) {
-      setMode(item.type as "image" | "meme");
+    setStyle(item.style || (isMemeItem ? "meme" : "cinematic"));
+    if (item.aspectRatio && ["1:1", "16:9", "9:16"].includes(item.aspectRatio)) {
+      setAspectRatio(item.aspectRatio);
+    }
+    if (isMemeItem || item.type) {
+      setMode(isMemeItem ? "meme" : ((item.type as "image" | "meme") || "image"));
+    }
+    if (isMemeItem) {
+      const memeModeFromSpec =
+        item.memeSpec?.mode === "template" || item.memeSpec?.mode === "hybrid"
+          ? item.memeSpec.mode
+          : "ai";
+      setMemeModeState(memeModeFromSpec);
+      if (item.memeSpec?.templateId) {
+        setSelectedTemplateId(item.memeSpec.templateId);
+      }
+      if (item.memeSpec?.texts?.length) {
+        const next: Record<string, string> = {};
+        for (const entry of item.memeSpec.texts) {
+          if (entry?.slot) next[entry.slot] = entry.text || "";
+        }
+        setSlotTexts(next);
+      }
     }
     if (item.url) {
-      setResultImage(item.url);
+      setPreviewReady(false);
+      const busted = withCacheBust(item.url);
+      setResultImage(busted);
+      setVariations([busted]);
+      void applyPreviewImage(item.url);
     }
-    if (item.id) {
+    if (published) {
+      setCurrentContentId(null);
+      if (item.id) {
+        setReferenceContentIds([item.id]);
+        if (item.url) setReferenceLibraryPreviews({ [item.id]: item.url });
+      }
+    } else if (item.id) {
       setCurrentContentId(item.id);
     }
-    setIsPublished(false);
+    setContentStatus(item.status || "draft");
+    setWatermarked(Boolean(item.watermarked));
+    setIsPublished(published);
     setIsPublishing(false);
+    if (item.captions?.length) {
+      setCaptionSuggestions(item.captions);
+      setCaption(item.captions[0] || "");
+    } else {
+      setCaptionSuggestions([]);
+    }
+    if (item.hashtagSets?.length) {
+      setGeneratedHashtags(item.hashtagSets);
+      setSelectedHashtags(item.hashtagSets[0] || []);
+    } else {
+      setGeneratedHashtags([]);
+      setSelectedHashtags([]);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDownload = (url: string) => {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `nexaclip-gen-${Date.now()}.png`;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async (url: string) => {
+    try {
+      let downloadUrl = url;
+      if (url.includes("/content/") || url.includes("api-gateway") || url.startsWith("/")) {
+        const baseGateway = resolveBaseGatewayUrl();
+        let relative = url;
+        if (url.startsWith("http")) {
+          try {
+            const u = new URL(url);
+            relative = u.pathname + u.search;
+          } catch {
+            relative = url.replace(/https?:\/\/[^/]+/, "");
+          }
+        }
+        if (!relative.startsWith("/")) relative = `/${relative}`;
+        const { getAccessToken } = await import("../../services/auth/authService");
+        const token = getAccessToken();
+        const sep = relative.includes("?") ? "&" : "?";
+        downloadUrl = `/api/gateway-proxy${relative}${token ? `${sep}token=${encodeURIComponent(token)}` : ""}`;
+      }
+      const res = await fetch(downloadUrl);
+      let blob = await res.blob();
+      blob = await toDownloadableBlob(blob);
+
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `nxclip-${Date.now()}.${extensionForMimeType(blob.type)}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      window.open(url, "_blank");
+    }
+  };
+
+  const scrollToHistory = () => {
+    historySectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const clearHistory = async () => {
@@ -765,26 +1827,29 @@ export default function ImageStudio() {
             {/* Mobile Generate Panel */}
             <GeneratePanel 
               mode={mode} setMode={setMode}
+              memeMode={memeMode} setMemeMode={setMemeMode}
               prompt={prompt} setPrompt={setPrompt}
               title={title} setTitle={setTitle}
               isGeneratingTitle={isGeneratingTitle}
               handleGenerateTitle={handleGenerateTitle}
               style={style} setStyle={setStyle}
               aspectRatio={aspectRatio} setAspectRatio={setAspectRatio}
-              imageModel={imageModel} setImageModel={setImageModel}
               isGenerating={isGenerating}
               handleGenerate={handleGenerate}
               activeSuggestions={activeSuggestions}
               refreshSuggestions={refreshSuggestions}
               STYLE_PRESETS={STYLE_PRESETS}
-              AVAILABLE_MODELS={AVAILABLE_MODELS}
               handleSuggestionClick={handleSuggestionClick}
               generationsLeft={generationsLeft}
+              dailyGenerationLimit={dailyGenerationLimit}
               setIsQuickEditOpen={setIsQuickEditOpen}
               topText={topText} setTopText={setTopText}
               bottomText={bottomText} setBottomText={setBottomText}
-              captionStyle={captionStyle} setCaptionStyle={setCaptionStyle}
-              creativity={creativity} setCreativity={setCreativity}
+              memeTemplates={memeTemplates}
+              selectedTemplateId={selectedTemplateId}
+              setSelectedTemplateId={setSelectedTemplateId}
+              slotTexts={slotTexts}
+              setSlotText={setSlotText}
               lighting={lighting} setLighting={setLighting}
               negativePrompt={negativePrompt} setNegativePrompt={setNegativePrompt}
               caption={caption} setCaption={setCaption}
@@ -793,8 +1858,24 @@ export default function ImageStudio() {
               captionSuggestions={captionSuggestions}
               resultImage={resultImage}
               history={history}
+              libraryImages={libraryImages}
               handleReuseGeneration={handleReuseGeneration}
               setIsConfirmClearOpen={setIsConfirmClearOpen}
+              referenceContentIds={referenceContentIds}
+              toggleReferenceContent={toggleReferenceContent}
+              referenceUploads={referenceUploads}
+              orderedReferenceChips={orderedReferenceChips}
+              onUploadReference={onUploadReference}
+              onRemoveReferenceUpload={onRemoveReferenceUpload}
+              onClearReferences={onClearReferences}
+              isUploadingReference={isUploadingReference}
+              maxReferences={maxReferences}
+              referencePlanHint={referencePlanHint}
+              willCreateNewImage={willCreateNewImage}
+              onStartFreshDraft={startFreshDraft}
+              onScrollToHistory={scrollToHistory}
+              libraryPickerOpen={libraryPickerOpen}
+              onLibraryPickerOpenChange={setLibraryPickerOpen}
             />
           </TabsContent>
 
@@ -806,6 +1887,8 @@ export default function ImageStudio() {
               isGenerating={isGenerating}
               error={error}
               handleGenerate={handleGenerate}
+              handleRetry={handleRetryGeneration}
+              canRetry={contentStatus === "generation_failed"}
               handleDownload={handleDownload}
               variations={variations}
               setResultImage={setResultImage}
@@ -815,6 +1898,32 @@ export default function ImageStudio() {
               onPublishClick={() => setIsPublishModalOpen(true)}
               isPublishing={isPublishing}
               isPublished={isPublished}
+              watermarked={watermarked}
+              contentStatus={contentStatus}
+              mode={mode}
+              memeMode={memeMode}
+              memeTemplate={memeTemplates.find((t) => t.id === selectedTemplateId) || null}
+              slotTexts={slotTexts}
+              prompt={prompt}
+              basePrompt={draftBasePrompt}
+              refinePrompt={draftRefinePrompt}
+              willCreateNewImage={willCreateNewImage}
+              onStartFreshDraft={startFreshDraft}
+              previewReady={previewReady}
+              onPreviewReady={() => setPreviewReady(true)}
+              libraryPickerOpen={libraryPickerOpen}
+              onLibraryPickerOpenChange={setLibraryPickerOpen}
+              libraryImages={libraryImages}
+              referenceContentIds={referenceContentIds}
+              toggleReferenceContent={toggleReferenceContent}
+              maxReferences={maxReferences}
+              orderedReferenceChips={orderedReferenceChips}
+              captionSuggestions={captionSuggestions}
+              selectedCaption={caption}
+              generatedHashtags={generatedHashtags}
+              selectedHashtags={selectedHashtags}
+              onSelectCaption={setCaption}
+              onSelectHashtagSet={setSelectedHashtags}
             />
           </TabsContent>
 
@@ -830,6 +1939,7 @@ export default function ImageStudio() {
               isRemovingBg={isRemovingBg}
               handleRemoveBg={handleRemoveBg}
               onPublishClick={() => setIsPublishModalOpen(true)}
+              onViewHistoryClick={scrollToHistory}
               isPublishing={isPublishing}
               isPublished={isPublished}
             />
@@ -841,26 +1951,29 @@ export default function ImageStudio() {
         {/* LEFT PANEL - Controls */}
         <GeneratePanel 
           mode={mode} setMode={setMode}
+          memeMode={memeMode} setMemeMode={setMemeMode}
           prompt={prompt} setPrompt={setPrompt}
           title={title} setTitle={setTitle}
           isGeneratingTitle={isGeneratingTitle}
           handleGenerateTitle={handleGenerateTitle}
           style={style} setStyle={setStyle}
           aspectRatio={aspectRatio} setAspectRatio={setAspectRatio}
-          imageModel={imageModel} setImageModel={setImageModel}
           isGenerating={isGenerating}
           handleGenerate={handleGenerate}
           activeSuggestions={activeSuggestions}
           refreshSuggestions={refreshSuggestions}
           STYLE_PRESETS={STYLE_PRESETS}
-          AVAILABLE_MODELS={AVAILABLE_MODELS}
           handleSuggestionClick={handleSuggestionClick}
           generationsLeft={generationsLeft}
+          dailyGenerationLimit={dailyGenerationLimit}
           setIsQuickEditOpen={setIsQuickEditOpen}
           topText={topText} setTopText={setTopText}
           bottomText={bottomText} setBottomText={setBottomText}
-          captionStyle={captionStyle} setCaptionStyle={setCaptionStyle}
-          creativity={creativity} setCreativity={setCreativity}
+          memeTemplates={memeTemplates}
+          selectedTemplateId={selectedTemplateId}
+          setSelectedTemplateId={setSelectedTemplateId}
+          slotTexts={slotTexts}
+          setSlotText={setSlotText}
           lighting={lighting} setLighting={setLighting}
           negativePrompt={negativePrompt} setNegativePrompt={setNegativePrompt}
           caption={caption} setCaption={setCaption}
@@ -869,8 +1982,24 @@ export default function ImageStudio() {
           captionSuggestions={captionSuggestions}
           resultImage={resultImage}
           history={history}
+          libraryImages={libraryImages}
           handleReuseGeneration={handleReuseGeneration}
           setIsConfirmClearOpen={setIsConfirmClearOpen}
+          referenceContentIds={referenceContentIds}
+          toggleReferenceContent={toggleReferenceContent}
+          referenceUploads={referenceUploads}
+          orderedReferenceChips={orderedReferenceChips}
+          onUploadReference={onUploadReference}
+          onRemoveReferenceUpload={onRemoveReferenceUpload}
+          onClearReferences={onClearReferences}
+          isUploadingReference={isUploadingReference}
+          maxReferences={maxReferences}
+          referencePlanHint={referencePlanHint}
+          willCreateNewImage={willCreateNewImage}
+          onStartFreshDraft={startFreshDraft}
+          onScrollToHistory={scrollToHistory}
+          libraryPickerOpen={libraryPickerOpen}
+          onLibraryPickerOpenChange={setLibraryPickerOpen}
           className="w-80 h-full"
         />
 
@@ -881,6 +2010,8 @@ export default function ImageStudio() {
           isGenerating={isGenerating}
           error={error}
           handleGenerate={handleGenerate}
+          handleRetry={handleRetryGeneration}
+          canRetry={contentStatus === "generation_failed"}
           handleDownload={handleDownload}
           variations={variations}
           setResultImage={setResultImage}
@@ -890,6 +2021,32 @@ export default function ImageStudio() {
           onPublishClick={() => setIsPublishModalOpen(true)}
           isPublishing={isPublishing}
           isPublished={isPublished}
+          watermarked={watermarked}
+          contentStatus={contentStatus}
+          mode={mode}
+          memeMode={memeMode}
+          memeTemplate={memeTemplates.find((t) => t.id === selectedTemplateId) || null}
+          slotTexts={slotTexts}
+          prompt={prompt}
+          basePrompt={draftBasePrompt}
+          refinePrompt={draftRefinePrompt}
+          willCreateNewImage={willCreateNewImage}
+          onStartFreshDraft={startFreshDraft}
+          previewReady={previewReady}
+          onPreviewReady={() => setPreviewReady(true)}
+          libraryPickerOpen={libraryPickerOpen}
+          onLibraryPickerOpenChange={setLibraryPickerOpen}
+          libraryImages={libraryImages}
+          referenceContentIds={referenceContentIds}
+          toggleReferenceContent={toggleReferenceContent}
+          maxReferences={maxReferences}
+          orderedReferenceChips={orderedReferenceChips}
+          captionSuggestions={captionSuggestions}
+          selectedCaption={caption}
+          generatedHashtags={generatedHashtags}
+          selectedHashtags={selectedHashtags}
+          onSelectCaption={setCaption}
+          onSelectHashtagSet={setSelectedHashtags}
         />
 
         {/* RIGHT PANEL - Studio Tools */}
@@ -903,150 +2060,26 @@ export default function ImageStudio() {
           isRemovingBg={isRemovingBg}
           handleRemoveBg={handleRemoveBg}
           onPublishClick={() => setIsPublishModalOpen(true)}
+          onViewHistoryClick={scrollToHistory}
           isPublishing={isPublishing}
           isPublished={isPublished}
-          className="w-72" 
+          className="w-72 h-full" 
         />
       </div>
 
-      <div className="mt-8">
-        <Accordion className="w-full">
-          <AccordionItem value="history" className="border-border bg-card/30 rounded-lg px-8 overflow-hidden shadow-xl backdrop-blur-md">
-            <AccordionTrigger className="hover:no-underline py-6 group/trigger">
-              <div className="flex items-center justify-between w-full pr-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary transition-transform group-hover/trigger:scale-110">
-                    <History size={24} />
-                  </div>
-                  <div className={cn(isRTL ? "text-right" : "text-left")}>
-                    <h4 className="text-lg font-display font-bold text-foreground">{t('image_studio.history.title')}</h4>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">{t('image_studio.history.subtitle')}</p>
-                  </div>
-                </div>
-                {history.length > 0 && (
-                  <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary font-mono">
-                    {history.length} ITEMS
-                  </Badge>
-                )}
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-8">
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">
-                    Your last {history.length} generations are saved locally.
-                  </p>
-                  {history.length > 0 && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setIsConfirmClearOpen(true)}
-                      className="text-[10px] font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 uppercase tracking-wider"
-                    >
-                      Clear All
-                    </Button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {history.length === 0 ? (
-                      <div className="col-span-full py-20 flex flex-col items-center justify-center border-2 border-dashed border-border/50 rounded-lg bg-muted/10">
-                        <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mb-4">
-                          <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
-                        </div>
-                        <h5 className="text-sm font-bold text-foreground mb-1">No generations yet</h5>
-                        <p className="text-xs text-muted-foreground">Start creating above to build your history.</p>
-                      </div>
-                  ) : (
-                    history.map((item, i) => (
-                      <motion.div 
-                        key={item.timestamp || i}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        onClick={() => handleReuseGeneration(item)}
-                        className="group/hist relative flex flex-col p-4 rounded-lg bg-background/40 border border-border hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/5 cursor-pointer"
-                      >
-                        <div className="flex gap-4 mb-4">
-                          <div className="w-24 h-24 rounded-lg overflow-hidden shrink-0 border border-border relative group/thumb">
-                            <AuthenticatedImage 
-                              src={item.url} 
-                              className="w-full h-full object-cover" 
-                              referrerPolicy="no-referrer" 
-                            />
-                            <div className="absolute inset-0 bg-popover/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center">
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
-                                className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setResultImage(item.url);
-                                }}
-                              >
-                                <Maximize2 size={16} />
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex flex-col">
-                                <span className="text-[11px] font-bold text-foreground line-clamp-1 mb-0.5">
-                                  {item.title || "Untitled Creation"}
-                                </span>
-                                <span className="text-[10px] font-mono text-muted-foreground">
-                                  {new Date(item.timestamp).toLocaleDateString()}
-                                </span>
-                                <div className="flex gap-1 mt-1">
-                                  <Badge variant="secondary" className="w-fit text-[8px] h-4 px-1 uppercase tracking-tighter">
-                                    {item.style}
-                                  </Badge>
-                                  <Badge variant="outline" className="w-fit text-[8px] h-4 px-1 uppercase tracking-tighter border-primary/30 text-primary">
-                                    {item.type}
-                                  </Badge>
-                                </div>
-                              </div>
-                            </div>
-                            <p className="text-[11px] text-foreground/80 line-clamp-3 italic leading-relaxed">
-                              "{item.prompt}"
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-2">
-                          <Button 
-                            variant="secondary" 
-                            size="sm" 
-                            className="h-9 text-[10px] gap-2 font-bold uppercase tracking-wider"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleReuseGeneration(item);
-                            }}
-                          >
-                            <RefreshCw size={14} />
-                            Reuse Prompt
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="h-9 text-[10px] gap-2 font-bold uppercase tracking-wider"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDownload(item.url);
-                            }}
-                          >
-                            <Download size={14} />
-                            Download
-                          </Button>
-                        </div>
-                      </motion.div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+      <div ref={historySectionRef} className="mt-8">
+        <RecentGenerationsGallery
+          items={history}
+          onReuse={handleReuseGeneration}
+          onDownload={handleDownload}
+          onOpen={(item) => {
+            handleReuseGeneration(item);
+          }}
+          onClearAll={() => setIsConfirmClearOpen(true)}
+          onGenerateFirst={() => {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
       </div>
 
       {/* QUICK EDIT OVERLAY */}
@@ -1097,7 +2130,7 @@ export default function ImageStudio() {
                   />
                   <div className="absolute bottom-4 right-6">
                     <span className={cn(
-                      "text-xs font-mono transition-colors",
+                      "text-xs tabular-nums transition-colors",
                       prompt.length > 500 ? "text-red-500 font-bold" : 
                       prompt.length >= 450 ? "text-amber-500" : 
                       "text-muted-foreground"
@@ -1133,14 +2166,16 @@ export default function ImageStudio() {
               exit={{ scale: 0.95, opacity: 0 }}
               className="w-full max-w-md glass p-8 rounded-xl border border-border shadow-2xl"
             >
-              <h3 className="text-xl font-bold text-foreground mb-2">Clear History?</h3>
+              <h3 className="text-xl font-bold text-foreground mb-2">Delete all recent generations?</h3>
               <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
-                This will permanently delete your local generation history. This action cannot be undone.
+                This permanently removes every item in Recent Generations from your account
+                (soft-delete in the database and delete of the image files in storage).
+                It cannot be undone from the app. Reference uploads in Content Library are not cleared by this action.
               </p>
               <div className="flex justify-end gap-3">
                 <Button variant="ghost" onClick={() => setIsConfirmClearOpen(false)}>Cancel</Button>
                 <Button variant="destructive" className="font-bold" onClick={clearHistory}>
-                  Clear Everything
+                  Delete all generations
                 </Button>
               </div>
             </motion.div>
@@ -1195,7 +2230,7 @@ export default function ImageStudio() {
                           referrerPolicy="no-referrer"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-                          <span className="text-[10px] font-mono text-muted-foreground uppercase">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                             {aspectRatio} • Draft
                           </span>
                         </div>
@@ -1206,7 +2241,22 @@ export default function ImageStudio() {
                   {/* Form fields column */}
                   <div className="md:col-span-2 space-y-4">
                     <div className="space-y-1.5">
-                      <Label htmlFor="publish-title" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Post Title</Label>
+                      <div className="flex items-center justify-between gap-2">
+                        <Label htmlFor="publish-title" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Post Title</Label>
+                        {title.trim() ? (
+                          <button
+                            type="button"
+                            aria-label="Copy title"
+                            className="h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 flex items-center justify-center"
+                            onClick={() => {
+                              void navigator.clipboard.writeText(title.trim());
+                              toast.success("Title copied");
+                            }}
+                          >
+                            <Copy size={12} />
+                          </button>
+                        ) : null}
+                      </div>
                       <Input 
                         id="publish-title"
                         placeholder="Give your masterpiece a title..."
@@ -1218,7 +2268,22 @@ export default function ImageStudio() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label htmlFor="publish-caption" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Caption</Label>
+                      <div className="flex items-center justify-between gap-2">
+                        <Label htmlFor="publish-caption" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Caption</Label>
+                        {caption.trim() ? (
+                          <button
+                            type="button"
+                            aria-label="Copy caption"
+                            className="h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 flex items-center justify-center"
+                            onClick={() => {
+                              void navigator.clipboard.writeText(caption.trim());
+                              toast.success("Caption copied");
+                            }}
+                          >
+                            <Copy size={12} />
+                          </button>
+                        ) : null}
+                      </div>
                       <Textarea 
                         id="publish-caption"
                         placeholder="What's on your mind?"
@@ -1230,7 +2295,22 @@ export default function ImageStudio() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label htmlFor="publish-description" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Detailed Description</Label>
+                      <div className="flex items-center justify-between gap-2">
+                        <Label htmlFor="publish-description" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Detailed Description</Label>
+                        {description.trim() ? (
+                          <button
+                            type="button"
+                            aria-label="Copy description"
+                            className="h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 flex items-center justify-center"
+                            onClick={() => {
+                              void navigator.clipboard.writeText(description.trim());
+                              toast.success("Description copied");
+                            }}
+                          >
+                            <Copy size={12} />
+                          </button>
+                        ) : null}
+                      </div>
                       <Textarea 
                         id="publish-description"
                         placeholder="Provide an in-depth description or comments on your creation..."
@@ -1242,29 +2322,51 @@ export default function ImageStudio() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Hashtags / Tags</Label>
-                      <div className="flex flex-wrap gap-1.5 p-2.5 bg-muted/20 border border-border/50 rounded-lg min-h-[40px] items-center">
+                      <div className="flex items-center justify-between gap-2">
+                        <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Hashtags / Tags</Label>
+                        {selectedHashtags.length > 0 ? (
+                          <button
+                            type="button"
+                            aria-label="Copy hashtags"
+                            className="h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 flex items-center justify-center"
+                            onClick={() => {
+                              void navigator.clipboard.writeText(
+                                selectedHashtags.map((t) => `#${t}`).join(" "),
+                              );
+                              toast.success("Hashtags copied");
+                            }}
+                          >
+                            <Copy size={12} />
+                          </button>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-wrap gap-2 p-3 bg-muted/20 border border-border/50 rounded-xl min-h-[48px] items-center">
                         {selectedHashtags.length === 0 ? (
-                          <span className="text-xs text-muted-foreground px-1">No hashtags selected. Select AI suggestions below or add custom tags.</span>
+                          <span className="text-sm text-muted-foreground px-1">No hashtags selected. Select AI suggestions below or add custom tags.</span>
                         ) : (
                           selectedHashtags.map((tag) => (
-                            <Badge
+                            <button
                               key={tag}
-                              variant="secondary"
-                              className="text-[10px] font-mono py-0.5 px-2 flex items-center gap-1 border border-primary/15 bg-primary/5 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 transition-all cursor-pointer group animate-none"
+                              type="button"
+                              className={cn(
+                                "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium leading-snug",
+                                "bg-primary/15 text-foreground border border-primary/20",
+                                "hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 transition-colors",
+                              )}
                               onClick={() => setSelectedHashtags(prev => prev.filter(t => t !== tag))}
                               title="Click to remove"
+                              disabled={isPublishing}
                             >
                               #{tag}
-                              <X size={8} className="text-muted-foreground group-hover:text-destructive transition-colors" />
-                            </Badge>
+                              <X size={12} className="opacity-60" />
+                            </button>
                           ))
                         )}
                       </div>
                       
                       <div className="flex gap-2">
                         <div className="relative flex-1">
-                          <span className="absolute left-3 top-2.5 text-xs text-muted-foreground font-mono font-bold">#</span>
+                          <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-semibold">#</span>
                           <Input
                             placeholder="Add custom tag (press Enter or comma)..."
                             value={customTagInput}
@@ -1275,7 +2377,7 @@ export default function ImageStudio() {
                                 handleAddCustomTag();
                               }
                             }}
-                            className="pl-6 bg-muted/30 border-border/50 focus:border-primary/50 transition-all text-xs h-9"
+                            className="pl-7 bg-muted/30 border-border/50 focus:border-primary/50 transition-all text-sm h-9"
                             disabled={isPublishing}
                           />
                         </div>
@@ -1304,25 +2406,53 @@ export default function ImageStudio() {
                   {/* Caption Suggestions */}
                   {captionSuggestions.length > 0 && (
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Select AI Suggested Caption</Label>
+                      <div className="flex items-center justify-between gap-2">
+                        <Label className="text-xs text-muted-foreground">Select AI Suggested Caption</Label>
+                        <button
+                          type="button"
+                          aria-label="Copy all captions"
+                          className="h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 flex items-center justify-center"
+                          onClick={() => {
+                            void navigator.clipboard.writeText(captionSuggestions.slice(0, 3).join("\n\n"));
+                            toast.success("Captions copied");
+                          }}
+                        >
+                          <Copy size={12} />
+                        </button>
+                      </div>
                       <div className="grid grid-cols-1 gap-2">
                         {captionSuggestions.slice(0, 3).map((suggestion, idx) => {
                           const isSelected = caption === suggestion;
                           return (
-                            <button
+                            <div
                               key={idx}
-                              type="button"
-                              onClick={() => setCaption(suggestion)}
                               className={cn(
-                                "text-left p-3 rounded-lg border text-xs leading-relaxed transition-all",
+                                "rounded-lg border transition-all flex items-start gap-1",
                                 isSelected 
                                   ? "bg-primary/5 border-primary text-foreground shadow-sm shadow-primary/10" 
-                                  : "bg-muted/20 border-border/40 text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                                  : "bg-muted/20 border-border/40 text-muted-foreground"
                               )}
-                              disabled={isPublishing}
                             >
-                              {suggestion}
-                            </button>
+                              <button
+                                type="button"
+                                onClick={() => setCaption(suggestion)}
+                                className="flex-1 text-left p-3 text-xs leading-relaxed"
+                                disabled={isPublishing}
+                              >
+                                {suggestion}
+                              </button>
+                              <button
+                                type="button"
+                                aria-label="Copy caption"
+                                className="mt-2 mr-2 h-6 w-6 shrink-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 flex items-center justify-center"
+                                onClick={() => {
+                                  void navigator.clipboard.writeText(suggestion);
+                                  toast.success("Caption copied");
+                                }}
+                              >
+                                <Copy size={12} />
+                              </button>
+                            </div>
                           );
                         })}
                       </div>
@@ -1336,37 +2466,62 @@ export default function ImageStudio() {
                       <div className="grid grid-cols-1 gap-2">
                         {generatedHashtags.slice(0, 3).map((hashSet, idx) => {
                           const isSelected = JSON.stringify(selectedHashtags) === JSON.stringify(hashSet);
+                          const tagsText = hashSet.map((t) => `#${t}`).join(" ");
                           return (
-                            <button
+                            <div
                               key={idx}
-                              type="button"
-                              onClick={() => setSelectedHashtags(hashSet)}
                               className={cn(
-                                "text-left p-3 rounded-lg border transition-all flex flex-wrap gap-1.5 items-center",
+                                "rounded-xl border transition-all space-y-2 p-3",
                                 isSelected 
                                   ? "bg-primary/5 border-primary shadow-sm shadow-primary/10" 
-                                  : "bg-muted/20 border-border/40 hover:bg-muted/40"
+                                  : "bg-muted/20 border-border/40"
                               )}
-                              disabled={isPublishing}
                             >
-                              <span className={cn(
-                                "text-[10px] uppercase font-bold tracking-wider mr-2",
-                                isSelected ? "text-primary" : "text-muted-foreground"
-                              )}>
-                                Set {idx + 1}
-                              </span>
-                              {hashSet.map((tag, tIdx) => (
-                                <span 
-                                  key={tIdx}
+                              <div className="flex items-center justify-between gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedHashtags(hashSet)}
                                   className={cn(
-                                    "px-1.5 py-0.5 rounded text-[10px] font-mono",
-                                    isSelected ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                                    "text-[11px] uppercase font-semibold tracking-wider",
+                                    isSelected ? "text-primary" : "text-muted-foreground"
                                   )}
+                                  disabled={isPublishing}
                                 >
-                                  #{tag}
-                                </span>
-                              ))}
-                            </button>
+                                  Set {idx + 1}
+                                </button>
+                                <button
+                                  type="button"
+                                  aria-label={`Copy hashtag set ${idx + 1}`}
+                                  className="h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 flex items-center justify-center"
+                                  onClick={() => {
+                                    void navigator.clipboard.writeText(tagsText);
+                                    toast.success("Hashtags copied");
+                                  }}
+                                >
+                                  <Copy size={12} />
+                                </button>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedHashtags(hashSet)}
+                                className="w-full text-left"
+                                disabled={isPublishing}
+                              >
+                                <div className="flex flex-wrap gap-2">
+                                  {hashSet.map((tag, tIdx) => (
+                                    <span 
+                                      key={tIdx}
+                                      className={cn(
+                                        "inline-flex items-center rounded-md px-2.5 py-1 text-sm leading-snug font-medium",
+                                        isSelected ? "bg-primary/15 text-foreground" : "bg-muted/60 text-foreground/90"
+                                      )}
+                                    >
+                                      #{tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              </button>
+                            </div>
                           );
                         })}
                       </div>
@@ -1455,9 +2610,12 @@ export default function ImageStudio() {
                       <p className="text-xs text-muted-foreground truncate">{caption}</p>
                     )}
                     {selectedHashtags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
+                      <div className="flex flex-wrap gap-2 mt-1.5">
                         {selectedHashtags.map((tag, tIdx) => (
-                          <span key={tIdx} className="text-[8px] font-mono text-primary bg-primary/5 px-1 rounded border border-primary/10">
+                          <span
+                            key={tIdx}
+                            className="inline-flex items-center rounded-md px-2.5 py-1 text-sm font-medium leading-snug bg-primary/15 text-foreground border border-primary/15"
+                          >
                             #{tag}
                           </span>
                         ))}
@@ -1493,7 +2651,10 @@ export default function ImageStudio() {
                     <Button 
                       variant="ghost" 
                       className="hover:bg-foreground/5 font-bold h-10 text-xs"
-                      onClick={() => setShowSuccessModal(false)}
+                      onClick={() => {
+                        setShowSuccessModal(false);
+                        resetStudioSession();
+                      }}
                     >
                       Keep Creating
                     </Button>

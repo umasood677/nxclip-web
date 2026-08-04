@@ -15,6 +15,7 @@ import { setAuthUser, setAuthProfile } from "../../store/slices/authSlice";
 import { identityApi } from "../../services/apiClient";
 import { safeLocalStorage } from "../../lib/safeStorage";
 import { setPersistedUser } from "../../services/auth/authService";
+import { socketService } from "../../services/socketService";
 import { GoogleSignInButton } from "../../components/GoogleSignInButton";
 
 import logo from "@/contents/images/nexa-logo.png";
@@ -99,16 +100,24 @@ export default function Login() {
         photoURL: (res.user as any).avatarUrl || null,
         plan: res.user.plan.toLowerCase() as any,
         role: res.user.roles[0] as any,
-        onboardingCompleted: res.user.onboardingCompleted ?? false,
+        onboardingCompleted: res.user.onboardingCompleted === true,
         onboardingPlan: res.user.onboardingPlan ?? null,
         createdAt: res.user.createdAt,
       }));
 
-      const returnTo = safeLocalStorage.getItem("nx_return_to") || "/feed";
+      socketService.init();
+
+      const completed = res.user.onboardingCompleted === true;
+      const savedReturn = safeLocalStorage.getItem("nx_return_to");
       safeLocalStorage.removeItem("nx_return_to");
+      const returnTo = completed
+        ? savedReturn && savedReturn !== "/onboarding"
+          ? savedReturn
+          : "/feed"
+        : "/onboarding";
       toast.success("Successfully logged in via API Gateway");
       dispatch(setGlobalError(null));
-      navigate(returnTo);
+      navigate(returnTo, { replace: true });
     } catch (err: any) {
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
@@ -170,18 +179,24 @@ export default function Login() {
         photoURL: (res.user as any).avatarUrl || null,
         plan: res.user.plan.toLowerCase() as any,
         role: res.user.roles[0] as any,
-        onboardingCompleted: res.user.onboardingCompleted ?? false,
+        onboardingCompleted: res.user.onboardingCompleted === true,
         onboardingPlan: res.user.onboardingPlan ?? null,
         createdAt: res.user.createdAt,
       }));
 
-      const returnTo =
-        safeLocalStorage.getItem("nx_return_to") ||
-        (res.user.onboardingCompleted ? "/feed" : "/onboarding");
+      socketService.init();
+
+      const completed = res.user.onboardingCompleted === true;
+      const savedReturn = safeLocalStorage.getItem("nx_return_to");
       safeLocalStorage.removeItem("nx_return_to");
+      const returnTo = completed
+        ? savedReturn && savedReturn !== "/onboarding"
+          ? savedReturn
+          : "/feed"
+        : "/onboarding";
       toast.success("Signed in with Google");
       dispatch(setGlobalError(null));
-      navigate(returnTo);
+      navigate(returnTo, { replace: true });
     } catch (err: any) {
       const errMsg = Array.isArray(err?.message)
         ? err.message.join(", ")

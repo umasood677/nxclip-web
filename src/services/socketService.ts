@@ -40,6 +40,31 @@ export type SocketStatus = "disconnected" | "connecting" | "connected" | "simula
 type StatusCallback = (status: SocketStatus) => void;
 type EventCallback = (event: string, payload: any) => void;
 
+/**
+ * Socket.IO lives on **notification-service** (`/events`), not api-gateway.
+ * Set `VITE_NOTIFICATION_WS_URL` to the Cloud Run notification URL (no path), e.g.
+ * `https://notification-service-….run.app` — client appends `/events`.
+ * Local stack: defaults to `http://localhost:5006/events`.
+ */
+function resolveNotificationWsUrl(): string | null {
+  const fromEnv =
+    (import.meta.env.VITE_NOTIFICATION_WS_URL as string | undefined)?.trim() ||
+    (import.meta.env.VITE_WS_URL as string | undefined)?.trim();
+
+  if (fromEnv) {
+    const base = fromEnv.replace(/\/$/, "");
+    return base.endsWith("/events") ? base : `${base}/events`;
+  }
+
+  const gatewayUrl = resolveBaseGatewayUrl();
+  if (gatewayUrl.includes("localhost") || gatewayUrl.includes("127.0.0.1")) {
+    return "http://localhost:5006/events";
+  }
+
+  // api-gateway does not proxy Socket.IO — do not use `${gateway}/events`.
+  return null;
+}
+
 class SocketService {
   private socket: Socket | null = null;
   private status: SocketStatus = "disconnected";
@@ -48,10 +73,8 @@ class SocketService {
   private simulationTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
-    // Auto-init on construct if token is present
-    if (typeof window !== "undefined") {
-      this.init();
-    }
+    // Do not auto-connect on construct — wait for login / explicit init()
+    // so marketing pages do not spam failed handshakes with stale tokens.
   }
 
   /**
@@ -64,40 +87,41 @@ class SocketService {
 
     const token = getAccessToken();
     if (!token) {
-      console.log("[SocketService] No token found. Delaying connection...");
+      this.updateStatus("disconnected");
+      return;
+    }
+
+    const wsUrl = resolveNotificationWsUrl();
+    if (!wsUrl) {
+      console.info(
+        "[SocketService] Skipping live WS — set VITE_NOTIFICATION_WS_URL to the notification-service Cloud Run origin (Socket.IO is not on api-gateway).",
+      );
       this.updateStatus("disconnected");
       return;
     }
 
     try {
       this.updateStatus("connecting");
-      
-      // Determine the notifications-service WebSocket base URL
-      // Local is http://localhost:5006/events. In production or custom gateway environments, we adapt
-      const gatewayUrl = resolveBaseGatewayUrl();
-      const wsUrl = gatewayUrl.includes("localhost") 
-        ? "http://localhost:5006/events" 
-        : `${gatewayUrl}/events`;
-
-      console.log(`[SocketService] Initiating handshake with Live Notifications Service: ${wsUrl}`);
+      console.log(`[SocketService] Connecting to ${wsUrl}`);
 
       this.socket = io(wsUrl, {
         auth: { token },
         extraHeaders: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         withCredentials: true,
         transports: ["websocket", "polling"],
         autoConnect: true,
         reconnectionAttempts: 3,
         reconnectionDelay: 2000,
-        timeout: 5000,
+        timeout: 8000,
+        path: "/socket.io",
       });
 
       this.setupListeners();
     } catch (err) {
-      console.warn("[SocketService] Failed to establish native socket. Engaging simulated fallback...", err);
-      this.engageSimulationFallback();
+      console.warn("[SocketService] Failed to create socket:", err);
+      this.updateStatus("disconnected");
     }
   }
 
@@ -108,31 +132,31 @@ class SocketService {
     if (!this.socket) return;
 
     this.socket.on("connect", () => {
-      console.log("[SocketService] Connected to Notification Service WebSocket chamber.");
+      console.log("[SocketService] Connected to notification-service.");
       this.updateStatus("connected");
     });
 
     this.socket.on("connect_error", (error) => {
-      console.warn("[SocketService] Handshake connection error:", error.message);
-      // Fallback gracefully to simulated socket to keep development playground live and reactive
-      if (this.status !== "simulated") {
-        this.engageSimulationFallback();
-      }
-    });
-
-    this.socket.on("disconnect", (reason) => {
-      console.log("[SocketService] Disconnected:", reason);
-      if (reason === "io server disconnect") {
-        // Server kicked client, try reconnecting manually
-        this.socket?.connect();
-      } else if (reason === "transport close") {
+      console.warn("[SocketService] Connection error:", error.message);
+      this.cleanupNative();
+      // Simulation only in local/dev playground — not when pointed at production APIs
+      const gateway = resolveBaseGatewayUrl();
+      if (import.meta.env.DEV && gateway.includes("localhost")) {
         this.engageSimulationFallback();
       } else {
         this.updateStatus("disconnected");
       }
     });
 
-    // Register wild-card/bulk listeners for mandated events
+    this.socket.on("disconnect", (reason) => {
+      console.log("[SocketService] Disconnected:", reason);
+      if (reason === "io server disconnect") {
+        this.socket?.connect();
+      } else {
+        this.updateStatus("disconnected");
+      }
+    });
+
     const mandatedEvents = [
       "content:processing",
       "content:generation_complete",
@@ -143,15 +167,16 @@ class SocketService {
       "social:engagement",
       "system:update",
       "onboarding:complete",
+      "coach:token",
+      "coach:progress",
       "content:transcribing",
       "content:transcription_complete",
       "content:captions_ready",
-      "content:polish_complete"
+      "content:polish_complete",
     ];
 
     mandatedEvents.forEach((eventName) => {
       this.socket?.on(eventName, (data) => {
-        console.log(`[SocketService] Received live event [${eventName}]:`, data);
         this.triggerEventCallbacks(eventName, data);
       });
     });
@@ -162,7 +187,7 @@ class SocketService {
    */
   private engageSimulationFallback(): void {
     this.cleanupNative();
-    console.log("[SocketService] WebSocket is operating in simulated mode. Developer Suite stream active.");
+    console.log("[SocketService] Simulated mode (local playground only).");
     this.updateStatus("simulated");
   }
 

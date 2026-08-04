@@ -38,19 +38,19 @@ export default function Testimonials() {
   return (
     <section id="testimonials" className="ui-landing-section bg-muted/10">
       <div className="ui-container-landing relative z-10">
-        <div className="text-center mb-20">
+        <div className="text-center mb-10 md:mb-12">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="ui-landing-label"
+            className="ui-landing-label !mb-4"
           >
             <span>{t('testimonials.label')}</span>
           </motion.div>
-          <h2 className="ui-landing-title">
+          <h2 className="ui-landing-title mx-auto">
             {t('testimonials.title')} <br /><span className="brand-text-gradient">{t('testimonials.title_gradient')}</span>
           </h2>
-          <p className="ui-landing-description mx-auto">
+          <p className="ui-landing-description mx-auto !mb-0">
             {t('testimonials.description')}
           </p>
         </div>

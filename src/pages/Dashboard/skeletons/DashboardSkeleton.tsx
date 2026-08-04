@@ -88,23 +88,16 @@ ContentTypeCardSkeleton.displayName = "ContentTypeCardSkeleton";
 
 export const TopContentCardSkeleton = memo(() => {
   return (
-    <Card className="ui-top-content-card">
-      <div className="aspect-video relative rounded-md overflow-hidden bg-muted mb-4">
+    <Card className="ui-top-content-card !p-2">
+      <div className="relative w-full rounded-md overflow-hidden bg-muted mb-2" style={{ aspectRatio: "4 / 5" }}>
         <Skeleton className="w-full h-full" />
       </div>
-      <div className="space-y-4">
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <Skeleton className="h-4 w-12" />
-            <Skeleton className="h-3 w-16" />
-          </div>
-          <Skeleton className="h-4 w-5/6" />
+      <div className="space-y-1">
+        <div className="p-1.5 rounded bg-muted/10 border border-border/50 space-y-1">
+          <Skeleton className="h-2 w-14" />
+          <Skeleton className="h-2.5 w-full" />
         </div>
-        <div className="p-2.5 rounded bg-muted/10 border border-border/50 space-y-1.5">
-          <Skeleton className="h-2.5 w-24" />
-          <Skeleton className="h-3 w-full" />
-        </div>
-        <Skeleton className="w-full h-8" />
+        <Skeleton className="w-full h-6" />
       </div>
     </Card>
   );
@@ -181,41 +174,39 @@ export const DashboardSkeleton = memo(() => {
         ))}
       </div>
 
-      {/* --- Main Grid --- */}
-      <div className="ui-dashboard-grid">
-        {/* Left Column (Chart + Lists) */}
-        <div className="lg:col-span-8 space-y-6 md:space-y-8">
+      {/* --- Main Grid: ~70% / ~30% --- */}
+      <div className="ui-dashboard-grid-ops">
+        {/* Left Column */}
+        <div className="min-w-0 space-y-6 md:space-y-8">
           <ChartWidgetSkeleton />
 
-          {/* Section: Content Matrix */}
           <div className="space-y-4">
             <div className="space-y-2">
               <Skeleton className="h-5 w-48" />
               <Skeleton className="h-3 w-72" />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
               {Array.from({ length: 3 }).map((_, idx) => (
                 <ContentTypeCardSkeleton key={idx} />
               ))}
             </div>
           </div>
 
-          {/* Section: Top Performing Content */}
           <div className="space-y-4">
             <div className="space-y-2">
               <Skeleton className="h-5 w-48" />
               <Skeleton className="h-3 w-72" />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-              {Array.from({ length: 3 }).map((_, idx) => (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 pt-2">
+              {Array.from({ length: 4 }).map((_, idx) => (
                 <TopContentCardSkeleton key={idx} />
               ))}
             </div>
           </div>
         </div>
 
-        {/* Right Column (Sidebar Widgets) */}
-        <div className="lg:col-span-4 space-y-6 md:space-y-8">
+        {/* Right Column ~30% */}
+        <div className="min-w-0 space-y-4 md:space-y-5">
           <AICommandSkeleton />
           
           <div className="space-y-2">
@@ -226,12 +217,11 @@ export const DashboardSkeleton = memo(() => {
             <SidebarWidgetSkeleton itemsCount={3} />
           </div>
 
-          {/* Pulse Widget Skeleton */}
-          <div className="ui-sidebar-panel bg-muted/5 space-y-4">
+          <div className="ui-sidebar-panel bg-muted/5 space-y-3">
             <div className="space-y-2">
               <Skeleton className="h-5 w-32" />
             </div>
-            <div className="grid grid-cols-1 gap-3 pt-2">
+            <div className="grid grid-cols-1 gap-2.5 pt-1">
               {Array.from({ length: 4 }).map((_, idx) => (
                 <div key={idx} className="flex items-center gap-3">
                   <Skeleton className="h-8 w-8 rounded bg-muted" />
@@ -244,8 +234,7 @@ export const DashboardSkeleton = memo(() => {
             </div>
           </div>
 
-          {/* Amber Box Skeleton */}
-          <Card className="p-5 border-none bg-amber-500/5 rounded-xl space-y-2">
+          <Card className="p-4 border-none bg-amber-500/5 rounded-xl space-y-2">
             <div className="flex items-center gap-3">
               <Skeleton className="h-5 w-5 rounded bg-amber-500/20" />
               <Skeleton className="h-4 w-24 bg-amber-500/20" />

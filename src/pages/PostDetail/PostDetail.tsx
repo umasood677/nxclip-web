@@ -38,6 +38,7 @@ import { AuthenticatedImage } from "../../components/AuthenticatedImage";
 import { feedApi, contentApi, extractValidImageUrl, ContentDto, GLOBAL_FALLBACK_IMAGES } from "../../services/apiClient";
 import { toast } from "sonner";
 import { cn } from "../../lib/utils";
+import { extensionForMimeType, toDownloadableBlob } from "../../lib/imageDownload";
 
 export function generateMetadata(id: string | undefined) {
   return {
@@ -172,11 +173,12 @@ export default function PostDetail() {
     try {
       toast.info("Preparing download...");
       const response = await fetch(imageUrl);
-      const blob = await response.blob();
+      let blob = await response.blob();
+      blob = await toDownloadableBlob(blob);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${(title || "creation").toLowerCase().replace(/[^a-z0-9]/g, "_")}_nxclip.png`;
+      a.download = `${(title || "creation").toLowerCase().replace(/[^a-z0-9]+/g, "_")}_nxclip.${extensionForMimeType(blob.type)}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

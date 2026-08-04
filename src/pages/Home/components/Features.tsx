@@ -85,11 +85,11 @@ export default function Features() {
               className="ui-glass-card group flex flex-col h-full rounded-xl overflow-hidden"
             >
               {/* Image Container */}
-              <div className="ui-feature-card-image-wrap">
+              <div className="ui-feature-card-image-wrap bg-muted">
                 <img 
                   src={feature.image} 
                   alt={feature.title}
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-80 group-hover:opacity-100"
+                  className="w-full h-full object-cover transition-transform duration-1000 will-change-transform scale-[1.02] group-hover:scale-[1.08] opacity-80 group-hover:opacity-100"
                   referrerPolicy="no-referrer"
                 />
                 <div className={`absolute inset-0 bg-gradient-to-t ${feature.color} opacity-60 group-hover:opacity-40 transition-opacity`} />

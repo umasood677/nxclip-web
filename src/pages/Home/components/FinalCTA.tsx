@@ -24,7 +24,7 @@ export default function FinalCTA() {
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="ui-landing-label"
+            className="ui-landing-label !mb-4"
           >
             <span>{t('cta.label')}</span>
           </motion.div>
@@ -34,7 +34,7 @@ export default function FinalCTA() {
             <span className="brand-text-gradient">{t('cta.title_gradient')}</span>
           </h2>
           
-          <p className="max-w-2xl text-lg font-medium text-muted-foreground leading-relaxed mx-auto mb-16">
+          <p className="max-w-2xl text-lg font-medium text-muted-foreground leading-relaxed mx-auto mb-8">
             {t('cta.description')}
           </p>
 

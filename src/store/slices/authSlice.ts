@@ -37,7 +37,8 @@ const initialState: AuthState = {
   user: persistedUser,
   profile: null,
   isAuthenticated: !!persistedUser,
-  loading: !persistedUser, // immediately load if we don't have a cached session, otherwise wait for auth listener confirm
+  // Always gate UI until App finishes auth bootstrap (avoids white flash / wrong routes).
+  loading: true,
   error: null,
 };
 

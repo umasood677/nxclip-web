@@ -2,10 +2,13 @@ export type Plan = "free" | "pro" | "studio";
 
 export interface ContentPlanItem {
   day: string | number;
-  type?: "image" | "meme" | "clip";
+  type?: "image" | "meme" | "clip" | string;
+  contentType?: string;
   theme?: string;
   tip?: string;
   title?: string;
+  hook?: string;
+  icon?: string;
   description?: string;
   hashtags?: string[];
 }
@@ -15,6 +18,8 @@ export interface UserProfile {
   displayName: string | null;
   email: string | null;
   photoURL: string | null;
+  /** Banner / cover image */
+  coverUrl?: string | null;
   gameNiches?: string[];
   games?: string[];
   bio?: string;
@@ -35,6 +40,8 @@ export interface UserProfile {
     twitter?: string;
     tiktok?: string;
   };
+  /** Connected via OAuth (UI prep) */
+  connectedSocials?: Partial<Record<"youtube" | "instagram" | "tiktok" | "twitch" | "twitter", boolean>>;
   coachQuestionsRemaining?: number;
   contentPlan?: ContentPlanItem[];
   updatedAt?: string | number | Date | any;

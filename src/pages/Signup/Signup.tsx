@@ -246,19 +246,19 @@ export default function Signup() {
         photoURL: null,
         plan: res.user.plan.toLowerCase() as any,
         role: res.user.roles[0] as any,
-        onboardingCompleted: res.user.onboardingCompleted ?? false,
+        onboardingCompleted: res.user.onboardingCompleted === true,
         onboardingPlan: res.user.onboardingPlan ?? null,
         createdAt: res.user.createdAt,
       }));
 
       setSuccess(true);
       toast.success("Account Created via API Gateway!", {
-        description: "Checking system requirements and preparing dashboard."
+        description: "Let's set up your creator workspace."
       });
       setTimeout(() => {
-        const returnTo = safeLocalStorage.getItem("nx_return_to") || "/onboarding";
+        // New accounts always start coach onboarding (return URLs apply after they finish).
         safeLocalStorage.removeItem("nx_return_to");
-        navigate(returnTo, { replace: true });
+        navigate("/onboarding", { replace: true });
       }, 1000);
     } catch (err: any) {
       console.error("API Gateway signup error:", err);
@@ -306,16 +306,21 @@ export default function Signup() {
         photoURL: (res.user as any).avatarUrl || null,
         plan: res.user.plan.toLowerCase() as any,
         role: res.user.roles[0] as any,
-        onboardingCompleted: res.user.onboardingCompleted ?? false,
+        onboardingCompleted: res.user.onboardingCompleted === true,
         onboardingPlan: res.user.onboardingPlan ?? null,
         createdAt: res.user.createdAt,
       }));
 
       toast.success("Signed in with Google");
-      const returnTo =
-        safeLocalStorage.getItem("nx_return_to") ||
-        (res.user.onboardingCompleted ? "/feed" : "/onboarding");
+      const completed = res.user.onboardingCompleted === true;
+      const savedReturn = safeLocalStorage.getItem("nx_return_to");
       safeLocalStorage.removeItem("nx_return_to");
+      // Existing Google users with completed onboarding go to Feed; new/incomplete → coach.
+      const returnTo = completed
+        ? savedReturn && savedReturn !== "/onboarding"
+          ? savedReturn
+          : "/feed"
+        : "/onboarding";
       navigate(returnTo, { replace: true });
     } catch (err: any) {
       const errMsg = Array.isArray(err?.message)

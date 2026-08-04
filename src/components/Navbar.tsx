@@ -1,33 +1,56 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "motion/react";
-import { Menu, X, ChevronRight, ChevronLeft, Sun, Moon } from "lucide-react";
+import {
+  Menu,
+  X,
+  ChevronRight,
+  ChevronLeft,
+  Sun,
+  Moon,
+  User,
+  LayoutDashboard,
+  LogOut,
+} from "lucide-react";
 import { cn } from "../lib/utils";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useTheme } from "../contexts/ThemeContext";
 import { Button } from "./ui/button";
 import { Logo } from "./Logo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { CreatorAvatar } from "./CreatorAvatar";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { selectAuthUser, logoutUser } from "../store/slices/authSlice";
+import {
+  selectAuthUser,
+  selectAuthProfile,
+  logoutUser,
+} from "../store/slices/authSlice";
 import { identityApi } from "../services/apiClient";
 import { clearPersistedUser } from "../services/auth/authService";
 
 export default function Navbar() {
   const { t, i18n } = useTranslation();
-  const isAr = i18n.language === 'ar';
+  const isAr = i18n.language === "ar";
   const { theme, toggleTheme } = useTheme();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectAuthUser);
+  const profile = useAppSelector(selectAuthProfile);
   const navigate = useNavigate();
   const location = useLocation();
 
   const [activeHash, setActiveHash] = useState("");
 
+  const avatarSrc = profile?.photoURL || user?.photoURL || null;
+  const displayName = profile?.displayName || user?.displayName || t("nav.creator");
+  const displayEmail = profile?.email || user?.email || "";
+
   const handleLogout = async () => {
+    setShowUserMenu(false);
+    setIsMobileMenuOpen(false);
     try {
       await identityApi.logout();
     } catch (err) {
@@ -43,7 +66,6 @@ export default function Navbar() {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
 
-    // Intersection Observer for active section highlighting
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -52,7 +74,7 @@ export default function Navbar() {
           }
         });
       },
-      { threshold: 0.3, rootMargin: "-80px 0px -50% 0px" }
+      { threshold: 0.3, rootMargin: "-80px 0px -50% 0px" },
     );
 
     const sections = ["hero", "features", "pricing", "how-it-works"];
@@ -67,38 +89,43 @@ export default function Navbar() {
     };
   }, []);
 
+  // Close profile menu on route change
+  useEffect(() => {
+    setShowUserMenu(false);
+  }, [location.pathname]);
+
   const navLinks = [
-    { name: t('nav.home'), href: "/#hero" },
-    { name: t('nav.features'), href: "/#features" },
-    { name: t('nav.pricing'), href: "/#pricing" },
-    { name: t('nav.how_it_works'), href: "/#how-it-works" },
+    { name: t("nav.home"), href: "/#hero" },
+    { name: t("nav.features"), href: "/#features" },
+    { name: t("nav.pricing"), href: "/#pricing" },
+    { name: t("nav.how_it_works"), href: "/#how-it-works" },
   ];
 
   return (
     <nav
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-500 px-6",
-        isScrolled ? "py-4" : "py-8"
+        isScrolled ? "py-4" : "py-8",
       )}
     >
-      <div className={cn(
-        "ui-container-landing flex items-center justify-between px-6 py-2.5 rounded-full transition-all duration-700 ease-in-out",
-        isScrolled 
-          ? "bg-background/80 backdrop-blur-xl border border-border shadow-soft-lg" 
-          : "bg-transparent border-transparent"
-      )}>
-        {/* Logo */}
+      <div
+        className={cn(
+          "ui-container-landing flex items-center justify-between px-6 py-2.5 rounded-full transition-all duration-700 ease-in-out",
+          isScrolled
+            ? "bg-background/80 backdrop-blur-xl border border-border shadow-soft-lg"
+            : "bg-transparent border-transparent",
+        )}
+      >
         <Logo className={isAr ? "origin-right" : "origin-left"} />
 
-        {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-2">
           {navLinks.map((link) => {
             const isHomePage = location.pathname === "/";
             const linkHash = link.href.split("#")[1];
-            const isActive = isHomePage 
+            const isActive = isHomePage
               ? activeHash === `#${linkHash}` || (activeHash === "" && linkHash === "hero")
               : false;
-              
+
             return (
               <Button
                 key={link.name}
@@ -106,22 +133,18 @@ export default function Navbar() {
                 asChild
                 className={cn(
                   "transition-all px-4 h-9 rounded-full text-sm font-medium",
-                  isActive 
-                    ? "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary shadow-sm shadow-primary/5" 
-                    : "text-muted-foreground hover:text-primary hover:bg-muted/50"
+                  isActive
+                    ? "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary shadow-sm shadow-primary/5"
+                    : "text-muted-foreground hover:text-primary hover:bg-muted/50",
                 )}
               >
-                <Link to={link.href}>
-                  {link.name}
-                </Link>
+                <Link to={link.href}>{link.name}</Link>
               </Button>
             );
           })}
         </div>
 
-        {/* Actions */}
         <div className="hidden md:flex items-center gap-3">
-          {/* Theme Toggle */}
           <Button
             variant="ghost"
             size="icon"
@@ -134,34 +157,119 @@ export default function Navbar() {
           <LanguageSwitcher />
 
           {user ? (
-            <div className="flex items-center gap-3">
-              <Button 
+            <div className="flex items-center gap-2">
+              <Button
                 variant="link"
                 onClick={() => navigate("/dashboard")}
-                className="text-muted-foreground hover:text-primary transition-all px-4"
+                className="text-muted-foreground hover:text-primary transition-all px-3"
               >
-                {t('nav.dashboard')}
+                {t("nav.dashboard")}
                 {isAr ? (
                   <ChevronLeft size={14} className="mr-1" />
                 ) : (
                   <ChevronRight size={14} className="ml-1" />
                 )}
               </Button>
-              <Button 
-                variant="link"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-primary transition-all px-4"
-              >
-                {t('nav.signout')}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 p-0 rounded-full overflow-hidden border border-border"
-                onClick={() => navigate("/profile")}
-              >
-                <img src={user.photoURL || undefined} alt={user.displayName || t('nav.creator')} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-              </Button>
+
+              {/* Avatar opens profile menu (same pattern as TopBar) */}
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 p-0.5 rounded-full hover:bg-muted"
+                  onClick={() => setShowUserMenu((v) => !v)}
+                  aria-label="User profile menu"
+                  aria-expanded={showUserMenu}
+                >
+                  <CreatorAvatar
+                    src={avatarSrc}
+                    email={user.email || displayEmail}
+                    className="w-7 h-7"
+                  />
+                </Button>
+
+                <AnimatePresence>
+                  {showUserMenu && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowUserMenu(false)}
+                      />
+                      <motion.div
+                        initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                        className={cn(
+                          "absolute mt-2 w-56 bg-card rounded-lg shadow-lg border border-border z-50 overflow-hidden",
+                          isAr ? "left-0" : "right-0",
+                        )}
+                      >
+                        <div className="p-3 border-b border-border flex items-center gap-2.5">
+                          <CreatorAvatar
+                            src={avatarSrc}
+                            email={user.email || displayEmail}
+                            className="w-9 h-9 shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-[13px] font-bold text-foreground truncate">
+                              {displayName}
+                            </p>
+                            {displayEmail ? (
+                              <p className="text-[11px] text-muted-foreground truncate">
+                                {displayEmail}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                        <div className="p-1.5 flex flex-col gap-0.5">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={cn(
+                              "w-full items-center gap-2.5 px-2.5 py-1.5 text-[13px] text-muted-foreground hover:text-foreground h-auto",
+                              isAr ? "justify-end text-right" : "justify-start text-left",
+                            )}
+                            onClick={() => {
+                              setShowUserMenu(false);
+                              navigate("/profile");
+                            }}
+                          >
+                            <User size={14} />
+                            {t("top_bar.my_profile", { defaultValue: "My Profile" })}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={cn(
+                              "w-full items-center gap-2.5 px-2.5 py-1.5 text-[13px] text-muted-foreground hover:text-foreground h-auto",
+                              isAr ? "justify-end text-right" : "justify-start text-left",
+                            )}
+                            onClick={() => {
+                              setShowUserMenu(false);
+                              navigate("/dashboard");
+                            }}
+                          >
+                            <LayoutDashboard size={14} />
+                            {t("nav.dashboard")}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleLogout}
+                            className={cn(
+                              "w-full items-center gap-2.5 px-2.5 py-1.5 text-[13px] text-red-600 hover:bg-red-500/10 h-auto",
+                              isAr ? "justify-end text-right" : "justify-start text-left",
+                            )}
+                          >
+                            <LogOut size={14} />
+                            {t("nav.signout")}
+                          </Button>
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           ) : (
             <div className="flex items-center gap-3">
@@ -170,20 +278,19 @@ export default function Navbar() {
                 onClick={() => navigate("/login")}
                 className="text-muted-foreground hover:text-primary transition-all px-4"
               >
-                {t('nav.signin')}
+                {t("nav.signin")}
               </Button>
               <Button
                 variant="link"
                 onClick={() => navigate("/signup")}
                 className="text-muted-foreground hover:text-primary transition-all px-4"
               >
-                {t('nav.signup')}
+                {t("nav.signup")}
               </Button>
             </div>
           )}
         </div>
 
-        {/* Mobile Toggle */}
         <div className="flex items-center gap-2 md:hidden">
           <Button
             variant="ghost"
@@ -205,7 +312,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <>
@@ -226,7 +332,7 @@ export default function Navbar() {
                 {navLinks.map((link, idx) => {
                   const isHomePage = location.pathname === "/";
                   const linkHash = link.href.split("#")[1];
-                  const isActive = isHomePage 
+                  const isActive = isHomePage
                     ? activeHash === `#${linkHash}` || (activeHash === "" && linkHash === "hero")
                     : false;
 
@@ -237,7 +343,7 @@ export default function Navbar() {
                       asChild
                       className={cn(
                         "flex items-center justify-between p-3 h-auto rounded-lg transition-colors group cursor-pointer w-full text-left justify-start",
-                        isActive ? "bg-primary/10 text-primary" : "hover:bg-muted/50"
+                        isActive ? "bg-primary/10 text-primary" : "hover:bg-muted/50",
                       )}
                     >
                       <motion.div
@@ -249,60 +355,114 @@ export default function Navbar() {
                           setIsMobileMenuOpen(false);
                         }}
                       >
-                        <span className={cn(
-                          "text-[15px] font-semibold",
-                          isActive ? "text-primary" : "text-foreground/80 group-hover:text-foreground"
-                        )}>{link.name}</span>
+                        <span
+                          className={cn(
+                            "text-[15px] font-semibold",
+                            isActive
+                              ? "text-primary"
+                              : "text-foreground/80 group-hover:text-foreground",
+                          )}
+                        >
+                          {link.name}
+                        </span>
                         {isAr ? (
-                          <ChevronLeft size={14} className={cn(
-                            "transition-all",
-                            isActive ? "text-primary translate-x-0 opacity-100" : "text-muted-foreground opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0"
-                          )} />
+                          <ChevronLeft
+                            size={14}
+                            className={cn(
+                              "transition-all",
+                              isActive
+                                ? "text-primary translate-x-0 opacity-100"
+                                : "text-muted-foreground opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0",
+                            )}
+                          />
                         ) : (
-                          <ChevronRight size={14} className={cn(
-                            "transition-all",
-                            isActive ? "text-primary translate-x-0 opacity-100" : "text-muted-foreground opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0"
-                          )} />
+                          <ChevronRight
+                            size={14}
+                            className={cn(
+                              "transition-all",
+                              isActive
+                                ? "text-primary translate-x-0 opacity-100"
+                                : "text-muted-foreground opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0",
+                            )}
+                          />
                         )}
                       </motion.div>
                     </Button>
                   );
                 })}
-                
+
                 <div className="h-px bg-border/40 my-3 mx-2" />
-                
+
                 {user ? (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 }}
-                    className="space-y-3"
+                    className="space-y-2"
                   >
                     <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border border-border">
-                      <img src={user.photoURL || undefined} className="w-10 h-10 rounded-full border border-border" referrerPolicy="no-referrer" />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-foreground leading-tight">{user.displayName}</span>
-                        <span className="text-[10px] text-muted-foreground font-bold">{t('nav.creator')}</span>
+                      <CreatorAvatar
+                        src={avatarSrc}
+                        email={user.email || displayEmail}
+                        className="w-10 h-10 shrink-0"
+                      />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-bold text-foreground leading-tight truncate">
+                          {displayName}
+                        </span>
+                        {displayEmail ? (
+                          <span className="text-[10px] text-muted-foreground truncate">
+                            {displayEmail}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground font-bold">
+                            {t("nav.creator")}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => { navigate("/dashboard"); setIsMobileMenuOpen(false); }} 
-                        className="rounded-lg h-10 font-bold text-xs bg-muted/50"
-                      >
-                        {t('nav.dashboard')}
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={handleLogout} 
-                        className="rounded-lg h-10 font-bold text-xs text-muted-foreground"
-                      >
-                        {t('nav.signout')}
-                      </Button>
-                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigate("/profile");
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={cn(
+                        "w-full h-10 font-bold text-xs gap-2",
+                        isAr ? "justify-end" : "justify-start",
+                      )}
+                    >
+                      <User size={14} />
+                      {t("top_bar.my_profile", { defaultValue: "My Profile" })}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigate("/dashboard");
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={cn(
+                        "w-full h-10 font-bold text-xs gap-2",
+                        isAr ? "justify-end" : "justify-start",
+                      )}
+                    >
+                      <LayoutDashboard size={14} />
+                      {t("nav.dashboard")}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleLogout}
+                      className={cn(
+                        "w-full h-10 font-bold text-xs gap-2 text-red-600 hover:bg-red-500/10",
+                        isAr ? "justify-end" : "justify-start",
+                      )}
+                    >
+                      <LogOut size={14} />
+                      {t("nav.signout")}
+                    </Button>
                   </motion.div>
                 ) : (
                   <motion.div
@@ -316,13 +476,13 @@ export default function Navbar() {
                       variant="ghost"
                       className="w-full h-12 rounded-lg font-bold text-sm"
                     >
-                      {t('nav.signin')}
+                      {t("nav.signin")}
                     </Button>
                     <Button
                       onClick={() => navigate("/signup")}
                       className="w-full h-12 rounded-lg font-bold text-sm bg-primary shadow-soft"
                     >
-                      {t('nav.signup')}
+                      {t("nav.signup")}
                     </Button>
                   </motion.div>
                 )}

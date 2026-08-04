@@ -20,8 +20,9 @@ import { useAppDispatch, useAppSelector } from "./store/hooks";
 import { setAuthUser, setAuthProfile, setAuthLoading, SerializedUser, selectAuthUser, selectAuthProfile, selectAuthLoading, logoutUser } from "./store/slices/authSlice";
 import { selectAuthProvider } from "./store/slices/uiSlice";
 import { identityApi } from "./services/apiClient";
-import { getPersistedUser, setPersistedUser, useAuthToken, isLoggedInPersisted } from "./services/auth/authService";
+import { getPersistedUser, setPersistedUser, useAuthToken } from "./services/auth/authService";
 import { STORAGE_KEYS } from "./constants";
+import { contentPlanFromOnboarding, isRenewingWeekPlan } from "./lib/weekPlan";
 
 // --- Loading Component ---
 const PageLoader = () => {
@@ -231,7 +232,7 @@ const PageLoader = () => {
 };
 
 // --- Lazy Load Pages ---
-import Dashboard from "./pages/Dashboard/Dashboard";
+const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
 const ImageStudio = lazy(() => import("./pages/ImageStudio/ImageStudio"));
 const Analytics = lazy(() => import("./pages/Analytics/Analytics"));
 const CreatorCoach = lazy(() => import("./pages/CreatorCoach/CreatorCoach"));
@@ -240,6 +241,7 @@ const DevSuite = lazy(() => import("./pages/DevSuite/DevSuite"));
 const MigrationGuide = lazy(() => import("./pages/AdminPanel/MigrationGuide"));
 const DesignSystem = lazy(() => import("./pages/AdminPanel/DesignSystem"));
 const Home = lazy(() => import("./pages/Home/Home"));
+const HomeV2 = lazy(() => import("./pages/HomeV2/HomeV2"));
 const Onboarding = lazy(() => import("./pages/Onboarding/Onboarding"));
 const Features = lazy(() => import("./pages/Features/Features"));
 const Pricing = lazy(() => import("./pages/Pricing/Pricing"));
@@ -266,37 +268,39 @@ function AuthGuard({ children, profile, loading }: { children: React.ReactNode, 
   const user = useAppSelector(selectAuthUser);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (!user) {
-    // Store the attempted URL to redirect back after login
     if (location.pathname !== "/login" && location.pathname !== "/signup") {
       safeLocalStorage.setItem("nx_return_to", location.pathname);
     }
     return <Navigate to="/login" />;
   }
 
-  // Redirect to verify-email if user is not verified
   if (!user.emailVerified) {
     if (location.pathname !== "/verify-email") {
       return <Navigate to="/verify-email" />;
     }
   }
 
-  // Redirect to onboarding if profile is not found or not completed, and user is not already on the onboarding page
-  const isFinishingOnboarding = safeSessionStorage.getItem("finishing_onboarding") === "true";
-  
-  if ((!profile || !profile.onboardingCompleted) && location.pathname !== "/onboarding" && !isFinishingOnboarding) {
-    return <Navigate to="/onboarding" />;
+  // Wait for /users/me before deciding onboarding — never treat "profile still loading" as incomplete.
+  if (!profile) {
+    return <PageLoader />;
   }
 
-  // Clear the flag once we've successfully reached a protected route and profile is updated
-  if (profile?.onboardingCompleted && isFinishingOnboarding) {
+  const isFinishingOnboarding = safeSessionStorage.getItem("finishing_onboarding") === "true";
+
+  // Only incomplete users (skipped or never finished) are sent to coach — not every login.
+  if (
+    profile.onboardingCompleted !== true &&
+    location.pathname !== "/onboarding" &&
+    !isFinishingOnboarding
+  ) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  if (profile.onboardingCompleted === true && isFinishingOnboarding) {
     safeSessionStorage.removeItem("finishing_onboarding");
   }
 
@@ -304,7 +308,7 @@ function AuthGuard({ children, profile, loading }: { children: React.ReactNode, 
 }
 
 function AdminGuard({ children, profile, loading }: { children: React.ReactNode, profile: UserProfile | null, loading: boolean }) {
-  if (loading) return null;
+  if (loading) return <PageLoader />;
   const user = useAppSelector(selectAuthUser);
   const isAdmin = profile?.role === "admin" || (user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase()));
   if (!isAdmin) return <Navigate to="/dashboard" />;
@@ -312,15 +316,19 @@ function AdminGuard({ children, profile, loading }: { children: React.ReactNode,
 }
 
 function PublicGuard({ children, user, profile, loading }: { children: React.ReactNode, user: SerializedUser | null, profile: UserProfile | null, loading: boolean }) {
-  if (loading) return null;
+  if (loading) return <PageLoader />;
   if (user) {
     if (!user.emailVerified) {
       return <Navigate to="/verify-email" />;
     }
-    if (profile && !profile.onboardingCompleted) {
-      return <Navigate to="/onboarding" />;
+    // Profile may still be loading after login — wait before routing
+    if (!profile) {
+      return <PageLoader />;
     }
-    return <Navigate to="/feed" />;
+    if (profile.onboardingCompleted !== true) {
+      return <Navigate to="/onboarding" replace />;
+    }
+    return <Navigate to="/feed" replace />;
   }
   return <>{children}</>;
 }
@@ -354,13 +362,11 @@ export default function App() {
   }, [i18n.language]);
 
   useEffect(() => {
-    // Sync initial loading state based on presence of nx_logged_in flag
-    const initialLoading = isLoggedInPersisted();
-    dispatch(setAuthLoading(initialLoading));
-
     const parsed = getPersistedUser();
 
     if (parsed) {
+      // Keep loading until /users/me resolves so we do not mis-route on a null profile.
+      dispatch(setAuthLoading(true));
       dispatch(setAuthUser({
         uid: parsed.uid || parsed.id,
         email: parsed.email,
@@ -370,8 +376,9 @@ export default function App() {
       }));
     } else {
       dispatch(setAuthUser(null));
+      dispatch(setAuthProfile(null));
+      dispatch(setAuthLoading(false));
     }
-    dispatch(setAuthLoading(false));
   }, [dispatch]);
 
   useEffect(() => {
@@ -401,24 +408,40 @@ export default function App() {
             }
           }
 
+          const me = res?.user ?? res;
+          const finishing = safeSessionStorage.getItem("finishing_onboarding") === "true";
+          // Prefer server truth; keep optimistic complete only while finishing this session.
+          const completed =
+            me.onboardingCompleted === true ||
+            (finishing && profile?.onboardingCompleted === true);
+          const onboardingPlan = me.onboardingPlan ?? profile?.onboardingPlan ?? null;
           dispatch(setAuthProfile({
-            uid: res.id || res.uid || user.uid,
-            displayName: res.displayName || res.username || "Creator",
-            email: res.email || user.email,
-            photoURL: res.avatarUrl || null,
-            plan: (res.plan || "free").toLowerCase() as any,
-            role: (res.roles?.[0] || "creator") as any,
-            onboardingCompleted: res.onboardingCompleted ?? false,
-            onboardingPlan: res.onboardingPlan ?? null,
-            createdAt: res.createdAt || new Date().toISOString(),
+            uid: me.id || me.uid || user.uid,
+            displayName: me.displayName || me.username || "Creator",
+            email: me.email || user.email,
+            photoURL: me.avatarUrl || me.photoURL || null,
+            plan: (me.plan || "free").toLowerCase() as any,
+            role: (me.roles?.[0] || me.role || "creator") as any,
+            onboardingCompleted: completed,
+            onboardingPlan,
+            contentPlan: contentPlanFromOnboarding(onboardingPlan) ?? profile?.contentPlan,
+            createdAt: me.createdAt || new Date().toISOString(),
           }));
-          dispatch(setAuthLoading(false));
         }
       } catch (err: any) {
-        console.error("Critical: Failed to fetch gateway profile. User will be logged out.", err);
-        if (isSubscribed) {
+        if (!isSubscribed) return;
+        const status = err?.statusCode || err?.response?.status || err?.status;
+        if (status === 401 || status === 403) {
+          // Stale local session — clear quietly (refresh interceptor may already have fired)
           dispatch(logoutUser());
-          toast.error("Failed to sync your profile with the API Gateway. Please try logging in again.");
+          return;
+        }
+        console.error("Failed to fetch gateway profile:", err);
+        dispatch(logoutUser());
+        toast.error("Failed to sync your profile with the API Gateway. Please try logging in again.");
+      } finally {
+        if (isSubscribed) {
+          dispatch(setAuthLoading(false));
         }
       }
     };
@@ -451,6 +474,7 @@ export default function App() {
                 <Routes>
                   {/* Public Routes */}
                   <Route path="/" element={<Home />} />
+                  <Route path="/home-2" element={<HomeV2 />} />
                   <Route path="/features" element={<Features />} />
                   <Route path="/pricing" element={<Pricing />} />
                   <Route path="/p/:id" element={<PublicPostView />} />
@@ -476,6 +500,14 @@ export default function App() {
                       user ? (
                         !user.emailVerified ? (
                           <Navigate to="/verify-email" replace />
+                        ) : !profile ? (
+                          <div className="min-h-screen flex items-center justify-center bg-background">
+                            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                          </div>
+                        ) : profile.onboardingCompleted === true &&
+                          safeSessionStorage.getItem("finishing_onboarding") !== "true" &&
+                          !isRenewingWeekPlan() ? (
+                          <Navigate to="/feed" replace />
                         ) : (
                           <Onboarding />
                         )

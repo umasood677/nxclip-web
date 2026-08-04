@@ -1,13 +1,26 @@
-import { memo, useState, useEffect } from "react";
+import { memo, useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { 
-  Share2, MoreHorizontal, Check, 
-  Sparkles, BarChart3, Youtube, Instagram, Twitch, Trash2, ExternalLink, FileEdit,
-  Eye, Heart, MessageSquare, Link2
+import {
+  Share2,
+  MoreHorizontal,
+  Sparkles,
+  BarChart3,
+  Youtube,
+  Instagram,
+  Trash2,
+  ExternalLink,
+  FileEdit,
+  Eye,
+  Heart,
+  MessageSquare,
+  Link2,
+  Radio,
+  Clock,
+  UserRound,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { TiktokIcon } from "../../../components/TiktokIcon";
-import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import {
@@ -25,16 +38,18 @@ import {
 } from "../../../components/ui/tooltip";
 import { cn } from "../../../lib/utils";
 import { AuthenticatedImage } from "../../../components/AuthenticatedImage";
+import { CreatorAvatar } from "../../../components/CreatorAvatar";
+import { cssAspectRatio } from "../../../components/JustifiedGallery";
 import type { PlatformStatDto } from "../../../services/apiClient";
 
 const sanitizeImageUrl = (url?: string): string => {
   if (
-    !url || 
-    typeof url !== "string" || 
-    url.includes("gcs-mock-upload-bucket") || 
-    url.includes("mock-bucket") || 
-    url.includes("undefined") || 
-    url.includes("null") || 
+    !url ||
+    typeof url !== "string" ||
+    url.includes("gcs-mock-upload-bucket") ||
+    url.includes("mock-bucket") ||
+    url.includes("undefined") ||
+    url.includes("null") ||
     url.trim() === ""
   ) {
     return "";
@@ -46,20 +61,29 @@ const sanitizeImageUrl = (url?: string): string => {
   return trimmed;
 };
 
+export type SocialTargetStatus = "scheduled" | "publishing" | "live" | "failed";
+
+export interface SocialTarget {
+  platform: "youtube" | "instagram" | "tiktok" | string;
+  status: SocialTargetStatus;
+  /** ISO or display time when the post goes live on that platform */
+  scheduledAt?: string;
+  externalUrl?: string;
+}
+
 export interface Post {
   id: string | number;
   contentId?: string;
   userId?: string;
+  /** Author display name — only meaningful for other creators' posts */
   creator: string;
-  game: string;
+  game?: string;
   time: string;
   content: string;
   tags?: string[];
   contentType: "clip" | "meme" | "image" | "insight";
   platform: "tiktok" | "youtube" | "instagram" | "twitch" | "all";
-  /** @deprecated Prefer platformStats for product UX */
   likes: number;
-  /** @deprecated Prefer platformStats for product UX */
   comments: number;
   shares: number;
   saves: number;
@@ -72,18 +96,31 @@ export interface Post {
   isLiked?: boolean;
   planStep?: string;
   aiInsight?: string;
+  /** Content pipeline status from API (draft → published → …) */
   status?: string;
   platformStats?: PlatformStatDto[];
   wesScore?: number;
   socialRollup?: string;
+  aspectRatio?: string;
+  /** Per-platform social destinations (Live when posted to YT/IG/TikTok) */
+  socialTargets?: SocialTarget[];
+  /** True when this card is the current user's own content */
+  isOwn?: boolean;
+  /** Whether the viewer already follows this author */
+  isFollowing?: boolean;
 }
 
 interface PostCardProps {
   post: Post;
-  /** @deprecated Like UX removed — kept for call-site compatibility */
+  /** Numeric width/height when the card sits inside a JustifiedGallery slot. */
+  aspectRatio?: number;
+  /** Reports the loaded image's size so posts stored without a ratio can be laid out. */
+  onMediaLoad?: (naturalWidth: number, naturalHeight: number) => void;
   onLike?: (id: string | number) => void;
   onDelete?: (id: string | number) => void;
-  onFollow?: (userId: string) => void;
+  onFollow?: (userId: string, currentlyFollowing: boolean) => void;
+  /** Local UI update when scheduling to a social platform (prep for real integration) */
+  onSocialSchedule?: (postId: string | number, target: SocialTarget) => void;
   priority?: boolean;
   index?: number;
 }
@@ -96,307 +133,552 @@ function formatStat(value?: number, display?: string): string {
   return String(value);
 }
 
-function PlatformIcon({ platform }: { platform: string }) {
+function PlatformIcon({ platform, size = 11 }: { platform: string; size?: number }) {
   const p = platform.toLowerCase();
-  if (p === "youtube") return <Youtube size={11} className="text-red-500" />;
-  if (p === "instagram") return <Instagram size={11} className="text-pink-500" />;
-  if (p === "tiktok") return <TiktokIcon size={11} />;
-  return <Link2 size={11} />;
+  if (p === "youtube") return <Youtube size={size} className="text-red-500" />;
+  if (p === "instagram") return <Instagram size={size} className="text-pink-500" />;
+  if (p === "tiktok") return <TiktokIcon size={size} />;
+  return <Link2 size={size} />;
 }
 
-export const PostCard = memo(({ post, onDelete, onFollow, priority, index }: PostCardProps) => {
-  const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
-  const isAr = i18n.language === "ar";
+/** Resolve feed display status: Live supersedes Published once posted to social. */
+export function resolveFeedDisplayStatus(post: Post): {
+  key: string;
+  label: string;
+} {
+  const targets = post.socialTargets || [];
+  const hasLiveTarget =
+    targets.some((t) => t.status === "live") ||
+    post.socialRollup === "live" ||
+    post.status === "live" ||
+    (post.platformStats || []).some((s) => !!s.externalUrl);
 
-  const isPriority = priority ?? (typeof index === "number" && index < 4);
-  const stats = post.platformStats ?? [];
-  const hasLiveStats = stats.length > 0;
+  if (hasLiveTarget) return { key: "live", label: "Live" };
 
-  const [imgSrc, setImgSrc] = useState<string>(() => sanitizeImageUrl(post.image));
+  if (
+    targets.some((t) => t.status === "scheduled") ||
+    post.socialRollup === "scheduled" ||
+    post.status === "scheduled"
+  ) {
+    return { key: "scheduled", label: "Scheduled" };
+  }
 
-  useEffect(() => {
-    setImgSrc(sanitizeImageUrl(post.image));
-  }, [post.image]);
+  if (post.socialRollup === "publishing" || post.status === "publishing") {
+    return { key: "publishing", label: "Publishing" };
+  }
 
-  const handleImageError = () => {
-    setImgSrc("");
-  };
+  switch (post.status) {
+    case "published":
+    case "approved":
+      return { key: "published", label: "Published" };
+    case "draft":
+      return { key: "draft", label: "Draft" };
+    case "processing":
+      return { key: "processing", label: "Processing" };
+    case "generation_failed":
+      return { key: "failed", label: "Failed" };
+    case "moderation_rejected":
+      return { key: "rejected", label: "Rejected" };
+    default:
+      return {
+        key: post.status || "unknown",
+        label: (post.status || "Unknown").replace(/_/g, " "),
+      };
+  }
+}
 
-  const formattedTime = (() => {
-    if (!post.time) return t('common.time.just_now');
-    if (post.time.includes('h')) return t('common.time.hours_ago', { count: parseInt(post.time) || 1 });
-    if (post.time.includes('d')) return t('common.time.days_ago', { count: parseInt(post.time) || 1 });
-    if (post.time === 'now' || post.time === 'Just now') return t('common.time.just_now');
-    const dateObj = new Date(post.time);
-    return !isNaN(dateObj.getTime()) ? dateObj.toLocaleDateString() : post.time;
-  })();
+function statusBadgeClass(key: string): string {
+  switch (key) {
+    case "live":
+      return "bg-rose-500/90 text-white border-rose-400/40";
+    case "published":
+      return "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
+    case "scheduled":
+      return "bg-sky-500/20 text-sky-300 border-sky-500/40";
+    case "publishing":
+    case "processing":
+      return "bg-amber-500/20 text-amber-300 border-amber-500/40";
+    case "draft":
+      return "bg-blue-500/20 text-blue-300 border-blue-500/40";
+    case "failed":
+    case "rejected":
+      return "bg-red-500/20 text-red-300 border-red-500/40";
+    default:
+      return "bg-white/10 text-white/80 border-white/20";
+  }
+}
 
-  const getStatusBadgeClass = (status?: string) => {
-    switch (status) {
-      case "published":
-        return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
-      case "draft":
-        return "bg-blue-500/15 text-blue-400 border-blue-500/30";
-      case "processing":
-      case "publishing":
-        return "bg-amber-500/15 text-amber-400 border-amber-500/30";
-      case "generation_failed":
-      case "moderation_rejected":
-        return "bg-red-500/15 text-red-400 border-red-500/30";
-      default:
-        return "bg-background/80 text-muted-foreground border-border/80";
-    }
-  };
+export const PostCard = memo(
+  ({
+    post,
+    aspectRatio,
+    onMediaLoad,
+    onDelete,
+    onFollow,
+    onSocialSchedule,
+    priority,
+    index,
+  }: PostCardProps) => {
+    const { t, i18n } = useTranslation();
+    const navigate = useNavigate();
+    const isAr = i18n.language === "ar";
+    const [hovered, setHovered] = useState(false);
+    const [localTargets, setLocalTargets] = useState<SocialTarget[]>(post.socialTargets || []);
+    const [following, setFollowing] = useState(!!post.isFollowing);
 
-  const detailId = post.contentId || post.id;
+    useEffect(() => {
+      setLocalTargets(post.socialTargets || []);
+    }, [post.socialTargets]);
 
-  return (
-    <Card className="ui-post-card group h-full text-start flex flex-col border border-border/70 bg-card/60 backdrop-blur-md hover:border-primary/40 hover:bg-card/90 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 active:scale-[0.995] transition-all duration-300 ease-out rounded-2xl overflow-hidden">
-      <div className="ui-post-thumbnail relative aspect-video bg-muted/50 overflow-hidden rounded-t-2xl group/thumb">
-        <AuthenticatedImage 
-          src={post.image || imgSrc} 
-          fallbackSrc="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80"
-          alt={post.content || "Post creation image"} 
-          className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover/thumb:scale-105" 
-          priority={isPriority}
-          onError={handleImageError}
-        />
+    useEffect(() => {
+      setFollowing(!!post.isFollowing);
+    }, [post.isFollowing]);
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30 opacity-80 group-hover/thumb:opacity-70 transition-opacity duration-300" />
-        
-        {post.contentType === "clip" && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-10 h-10 rounded-full bg-background/80 backdrop-blur-md border border-white/20 flex items-center justify-center text-foreground shadow-lg transform group-hover/thumb:scale-110 transition-transform duration-300">
-              <BarChart3 className="w-4 h-4 text-primary hidden group-hover/thumb:block" />
-              <div className="w-0 h-0 border-y-[5px] border-y-transparent border-l-[9px] border-l-primary ms-0.5 group-hover/thumb:hidden" />
-            </div>
-          </div>
+    const isPriority = priority ?? (typeof index === "number" && index < 4);
+    const stats = post.platformStats ?? [];
+    const hasLiveStats = stats.length > 0;
+
+    const [imgSrc, setImgSrc] = useState<string>(() => sanitizeImageUrl(post.image));
+
+    useEffect(() => {
+      setImgSrc(sanitizeImageUrl(post.image));
+    }, [post.image]);
+
+    const formattedTime = (() => {
+      if (!post.time) return t("common.time.just_now");
+      if (post.time.includes("h")) return t("common.time.hours_ago", { count: parseInt(post.time) || 1 });
+      if (post.time.includes("d")) return t("common.time.days_ago", { count: parseInt(post.time) || 1 });
+      if (post.time === "now" || post.time === "Just now") return t("common.time.just_now");
+      const dateObj = new Date(post.time);
+      return !isNaN(dateObj.getTime()) ? dateObj.toLocaleDateString() : post.time;
+    })();
+
+    const detailId = post.contentId || post.id;
+    const tileAspect = cssAspectRatio(post.aspectRatio);
+    const displayStatus = useMemo(
+      () => resolveFeedDisplayStatus({ ...post, socialTargets: localTargets }),
+      [post, localTargets],
+    );
+
+    /** Author label: own posts → You; other creators → their name; skip junk fallbacks */
+    const authorLabel = (() => {
+      if (post.isOwn) return "You";
+      const name = (post.creator || "").trim();
+      if (!name || name === "Creator" || name === "Gaming" || name.toLowerCase() === "work") {
+        return null;
+      }
+      return name;
+    })();
+
+    const scheduleToSocial = (platform: "youtube" | "instagram" | "tiktok") => {
+      const scheduledAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      const target: SocialTarget = { platform, status: "scheduled", scheduledAt };
+      setLocalTargets((prev) => {
+        const without = prev.filter((t) => t.platform !== platform);
+        return [...without, target];
+      });
+      onSocialSchedule?.(detailId, target);
+      toast.success(`Scheduled to ${platform}`, {
+        description:
+          "Social publishing will go live when YouTube / Instagram / TikTok are connected. The post view is ready for Live status.",
+      });
+    };
+
+    const markLiveLocal = (platform: "youtube" | "instagram" | "tiktok") => {
+      const target: SocialTarget = {
+        platform,
+        status: "live",
+        scheduledAt: new Date().toISOString(),
+      };
+      setLocalTargets((prev) => {
+        const without = prev.filter((t) => t.platform !== platform);
+        return [...without, target];
+      });
+      onSocialSchedule?.(detailId, target);
+      toast.success(`Marked Live on ${platform}`, {
+        description: "Preview only — wire real publish APIs when social accounts are connected.",
+      });
+    };
+
+    const typeLabel =
+      post.contentType === "clip"
+        ? "Clip"
+        : post.contentType === "meme"
+          ? "Meme"
+          : post.contentType === "insight"
+            ? "Insight"
+            : "Image";
+
+    return (
+      <article
+        className={cn(
+          "ui-post-card group relative h-full overflow-hidden",
+          "rounded-xl border border-border/50 bg-card/40",
+          "shadow-[0_8px_30px_rgba(0,0,0,0.12)]",
+          "transition-shadow duration-200",
+          hovered && "shadow-[0_16px_40px_rgba(0,0,0,0.22)] z-10",
         )}
-
-        <div className="absolute top-2.5 start-2.5 flex flex-wrap gap-1.5 max-w-[calc(100%-40px)] z-10">
-          {post.game && (
-            <Badge className="bg-black/60 backdrop-blur-md text-zinc-200 border border-white/10 text-[9px] font-semibold h-5 px-2 whitespace-nowrap shadow-sm">
-              {post.game}
-            </Badge>
-          )}
-          {post.platform && post.platform !== "all" && (
-            <Badge className={cn(
-              "text-[9px] font-semibold h-5 px-2 border border-white/10 whitespace-nowrap flex items-center gap-1.5 shadow-sm capitalize",
-              post.platform === "tiktok" ? "bg-black/80 text-white" :
-              post.platform === "instagram" ? "bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white" : 
-              post.platform === "youtube" ? "bg-red-600/90 text-white" :
-              post.platform === "twitch" ? "bg-purple-600/90 text-white" :
-              "bg-zinc-800/80 text-zinc-200"
-            )}>
-              {post.platform === "tiktok" && <TiktokIcon size={10} />}
-              {post.platform === "youtube" && <Youtube size={10} />}
-              {post.platform === "instagram" && <Instagram size={10} />}
-              {post.platform === "twitch" && <Twitch size={10} />}
-              {post.platform}
-            </Badge>
-          )}
-          {typeof post.wesScore === "number" && post.wesScore > 0 && (
-            <Badge className="bg-amber-500/90 text-black text-[9px] font-bold h-5 px-2 border-none">
-              WES {Math.round(post.wesScore)}
-            </Badge>
-          )}
-        </div>
-
-        <div className="absolute bottom-2.5 start-2.5 flex items-center gap-1.5 z-10">
-           {post.contentType && (
-             <Badge className="bg-primary/90 backdrop-blur-md text-primary-foreground text-[9px] font-bold h-5 px-2 border border-primary/30 capitalize shadow-sm">
-               {post.contentType}
-             </Badge>
-           )}
-           {post.status && (
-             <Badge variant="outline" className={cn("backdrop-blur-md text-[9px] font-bold h-5 px-2 capitalize shadow-sm border", getStatusBadgeClass(post.status))}>
-               {post.status.replace('_', ' ')}
-             </Badge>
-           )}
-        </div>
-      </div>
-      
-      <CardContent className="p-3.5 md:p-4 flex-1 flex flex-col space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <h4 className="text-[13px] font-bold text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors" title={post.content}>
-              {post.content}
-            </h4>
-            <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-[10px] text-muted-foreground font-medium">
-                {formattedTime}
-              </span>
-              {post.creator && post.creator !== "You" && (
-                <button
-                  type="button"
-                  className="text-[10px] text-muted-foreground/70 font-medium hover:text-primary"
-                  onClick={() => post.userId && navigate(`/users/${post.userId}`)}
-                >
-                  • {post.creator}
-                </button>
-              )}
-            </div>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-               <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg shrink-0 text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
-                 <MoreHorizontal size={14} />
-               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align={isAr ? "start" : "end"} className="w-44 border-border/80 bg-popover/95 backdrop-blur-md text-[11px] font-bold shadow-xl">
-               {post.status === "draft" && (
-                 <DropdownMenuItem 
-                   className="gap-2 cursor-pointer focus:bg-primary/10 text-primary focus:text-primary font-bold" 
-                   onClick={() => navigate("/create/image", {
-                     state: {
-                       draftId: post.contentId || post.id,
-                       title: post.content || "",
-                       prompt: post.content || "",
-                       imageUrl: post.image,
-                       mode: post.contentType === "meme" ? "meme" : "image"
-                     }
-                   })}
-                 >
-                   <FileEdit size={12} /> Edit Draft
-                 </DropdownMenuItem>
-               )}
-               <DropdownMenuItem className="gap-2 cursor-pointer focus:bg-primary/10 focus:text-primary" onClick={() => navigate(`/feed/post/${detailId}`)}>
-                 <ExternalLink size={12} /> View Details
-               </DropdownMenuItem>
-               <DropdownMenuItem className="gap-2 cursor-pointer focus:bg-primary/10 focus:text-primary" onClick={() => navigate(`/feed/post/${detailId}`)}>
-                 <BarChart3 size={12} /> {t('home.post.view_stats')}
-               </DropdownMenuItem>
-               {post.userId && onFollow && (
-                 <DropdownMenuItem className="gap-2 cursor-pointer focus:bg-primary/10 focus:text-primary" onClick={() => onFollow(post.userId!)}>
-                   Follow Creator
-                 </DropdownMenuItem>
-               )}
-               <DropdownMenuItem className="gap-2 cursor-pointer focus:bg-primary/10 focus:text-primary" onClick={() => navigate(`/create/image`)}>
-                 <Sparkles size={12} /> {t('home.post.remix')}
-               </DropdownMenuItem>
-               {onDelete && (
-                 <>
-                   <DropdownMenuSeparator className="bg-border/60" />
-                   <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer" onClick={() => onDelete(post.contentId || post.id)}>
-                     <Trash2 size={12} /> Delete Post
-                   </DropdownMenuItem>
-                 </>
-               )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {post.tags && post.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 pt-0.5">
-            {post.tags.slice(0, 4).map((tag, i) => (
-              <span key={i} className="text-[9px] font-mono text-primary/90 bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-md transition-colors hover:bg-primary/20">
-                #{tag.replace(/^#/, '')}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {post.planStep && (
-          <div className="flex flex-wrap items-center gap-1.5 py-1 px-2.5 rounded-lg bg-muted/20 border border-border/60">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <Check size={11} className="text-emerald-400 shrink-0" />
-              <span className="text-[10px] font-medium text-muted-foreground truncate">{t('home.post.step', { step: post.planStep })}</span>
-            </div>
-            {post.status && (
-              <Badge variant="outline" className="ms-auto text-[8px] h-3.5 border-emerald-500/20 bg-emerald-500/10 text-emerald-400 whitespace-nowrap">
-                {post.status}
-              </Badge>
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <div className="relative h-full w-full overflow-hidden">
+          <AuthenticatedImage
+            src={post.image || imgSrc}
+            fallbackSrc="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80"
+            alt={post.content || "Post image"}
+            disableRemoteFallback={false}
+            priority={isPriority}
+            placeholderAspectRatio={tileAspect}
+            wrapperClassName="!absolute !inset-0 !h-full !w-full !bg-transparent overflow-hidden"
+            className={cn(
+              "absolute inset-0 h-full w-full cursor-pointer origin-center transition-transform duration-500 ease-out will-change-transform",
+              aspectRatio ? "object-cover" : "object-contain",
+              hovered && "scale-110",
             )}
-          </div>
-        )}
+            onClick={() => navigate(`/feed/post/${detailId}`)}
+            onLoad={(e) =>
+              onMediaLoad?.(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)
+            }
+            onError={() => setImgSrc("")}
+          />
 
-        {/* Social platformStats (product engagement) */}
-        {hasLiveStats ? (
-          <div className="mt-auto space-y-1.5 border border-border/50 bg-white/[0.02] rounded-xl p-2.5">
-            {stats.map((s) => (
-              <div key={s.platform} className="flex items-center gap-2 text-[10px]">
-                <PlatformIcon platform={s.platform} />
-                <span className="font-bold capitalize text-foreground/90 w-16 shrink-0">{s.platform}</span>
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Eye size={10} /> {formatStat(s.views, s.viewsDisplay)}
-                </span>
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Heart size={10} /> {formatStat(s.likes, s.likesDisplay)}
-                </span>
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <MessageSquare size={10} /> {formatStat(s.comments, s.commentsDisplay)}
-                </span>
-                {s.externalUrl && (
-                  <a
-                    href={s.externalUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="ms-auto text-primary hover:underline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    Open
-                  </a>
-                )}
+          {/* Create Hub–style dark overlay on hover */}
+          <div
+            className={cn(
+              "absolute inset-0 bg-black/55 transition-opacity duration-300 pointer-events-none z-[5]",
+              hovered ? "opacity-100" : "opacity-0",
+            )}
+          />
+
+          {post.contentType === "clip" && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none mb-16 z-[6]">
+              <div className="w-10 h-10 rounded-full bg-background/80 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg">
+                <div className="w-0 h-0 border-y-[5px] border-y-transparent border-l-[9px] border-l-primary ms-0.5" />
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="mt-auto border border-dashed border-border/60 bg-muted/10 rounded-xl p-2.5 text-center">
-            <p className="text-[10px] font-medium text-muted-foreground">
-              Connect social for live stats
-            </p>
-          </div>
-        )}
+            </div>
+          )}
 
-        {post.aiInsight && (
-          <div className="flex items-start gap-2 p-2 rounded-lg bg-primary/10 border border-primary/20 transition-colors hover:bg-primary/15">
-            <Sparkles size={12} className="text-primary mt-0.5 shrink-0" />
-            <p className="text-[10px] text-primary/90 leading-tight font-medium">{post.aiInsight}</p>
-          </div>
-        )}
-      </CardContent>
-
-      <div className="ui-post-action-row border-t border-border/60 px-3.5 py-2.5 bg-card/40 flex items-center justify-between">
-         <div className="flex items-center gap-2">
-            {post.userId && onFollow && (
+          {/* Hover actions — top of image */}
+          <div
+            className={cn(
+              "absolute top-2.5 end-2.5 z-20 flex items-center gap-1.5 transition-all duration-200",
+              hovered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1 pointer-events-none",
+            )}
+          >
+            {post.userId && onFollow && !post.isOwn && (
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-[9px] font-bold rounded-lg px-2.5"
-                onClick={() => onFollow(post.userId!)}
+                className={cn(
+                  "h-8 text-[10px] font-bold rounded-lg px-2.5 backdrop-blur-md border-white/20 text-white hover:bg-black/70",
+                  following ? "bg-white/20" : "bg-black/55",
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const next = !following;
+                  setFollowing(next);
+                  onFollow(post.userId!, following);
+                }}
               >
-                Follow
+                {following ? "Following" : "Follow"}
               </Button>
             )}
-            {post.socialRollup && post.socialRollup !== "idle" && (
-              <Badge variant="outline" className="text-[8px] h-5 capitalize">
-                {post.socialRollup}
-              </Badge>
-            )}
-         </div>
-         <div className="flex items-center gap-1.5">
-            <TooltipProvider>
+
+            {/* Share → social publish (colored square platform icons) */}
+            <DropdownMenu>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-lg bg-black/55 text-white/90 hover:text-white hover:bg-black/70 backdrop-blur-md border border-white/15"
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label="Publish to social"
+                      >
+                        <Share2 size={14} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent className="text-[10px] font-bold">Share to social</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <DropdownMenuContent
+                align={isAr ? "start" : "end"}
+                className="w-60 border-border bg-popover text-sm font-medium shadow-lg data-open:zoom-in-100 data-closed:zoom-out-100"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="px-2.5 py-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground">
+                  Publish / Schedule
+                </div>
+                <DropdownMenuItem
+                  className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
+                  onClick={() => scheduleToSocial("youtube")}
+                >
+                  <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-[#FF0000] shrink-0 [transform:translateZ(0)]">
+                    <Youtube size={14} strokeWidth={2.25} className="text-white" aria-hidden />
+                  </span>
+                  YouTube
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
+                  onClick={() => scheduleToSocial("instagram")}
+                >
+                  <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-gradient-to-br from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] shrink-0 [transform:translateZ(0)]">
+                    <Instagram size={14} strokeWidth={2.25} className="text-white" aria-hidden />
+                  </span>
+                  Instagram
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
+                  onClick={() => scheduleToSocial("tiktok")}
+                >
+                  <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-black shrink-0 border border-white/25 [transform:translateZ(0)]">
+                    <TiktokIcon size={14} className="text-white" />
+                  </span>
+                  TikTok
+                </DropdownMenuItem>
+                {(post.status === "published" ||
+                  displayStatus.key === "published" ||
+                  displayStatus.key === "scheduled") && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <div className="px-2.5 py-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground">
+                      Mark Live
+                    </div>
+                    <DropdownMenuItem
+                      className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
+                      onClick={() => markLiveLocal("youtube")}
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-[#FF0000] shrink-0 [transform:translateZ(0)]">
+                        <Youtube size={14} strokeWidth={2.25} className="text-white" aria-hidden />
+                      </span>
+                      Live on YouTube
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
+                      onClick={() => markLiveLocal("instagram")}
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-gradient-to-br from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] shrink-0 [transform:translateZ(0)]">
+                        <Instagram size={14} strokeWidth={2.25} className="text-white" aria-hidden />
+                      </span>
+                      Live on Instagram
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
+                      onClick={() => markLiveLocal("tiktok")}
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-black shrink-0 border border-white/25 [transform:translateZ(0)]">
+                        <TiktokIcon size={14} className="text-white" />
+                      </span>
+                      Live on TikTok
+                    </DropdownMenuItem>
+                  </>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal text-foreground/80"
+                  onClick={() => navigate("/profile")}
+                >
+                  <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-muted border border-border shrink-0">
+                    <UserRound size={14} strokeWidth={2.25} aria-hidden />
+                  </span>
+                  Connect accounts in Profile
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Copy post link */}
+            <TooltipProvider delayDuration={200}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 active:scale-90 transition-all duration-200">
-                    <Share2 size={13} />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-lg bg-black/55 text-white/90 hover:text-white hover:bg-black/70 backdrop-blur-md border border-white/15"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void navigator.clipboard?.writeText(
+                        `${window.location.origin}/feed/post/${detailId}`,
+                      );
+                      toast.success("Post link copied");
+                    }}
+                    aria-label="Copy post link"
+                  >
+                    <Link2 size={14} />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="text-[10px] font-bold">{t('home.post.share')}</TooltipContent>
+                <TooltipContent className="text-[10px] font-bold">Copy post link</TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <Button 
-              variant="outline" 
-              className="h-7 text-[9px] font-bold rounded-lg px-2.5 border-border/80 hover:bg-primary/10 hover:border-primary/40 hover:text-primary hover:shadow-sm active:scale-95 transition-all duration-200"
-              onClick={() => navigate(`/feed/post/${detailId}`)}
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-[10px] font-bold rounded-lg px-2.5 bg-black/55 border-white/20 text-white hover:bg-black/70 backdrop-blur-md"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/feed/post/${detailId}`);
+              }}
             >
-              {t('home.post.analytics')}
+              <BarChart3 size={12} className="me-1" />
+              {t("home.post.analytics")}
             </Button>
-         </div>
-      </div>
-    </Card>
-  );
-});
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg bg-black/55 text-white/90 hover:text-white hover:bg-black/70 backdrop-blur-md border border-white/15"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreHorizontal size={14} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align={isAr ? "start" : "end"}
+                className="w-52 border-border bg-popover text-sm font-medium shadow-lg data-open:zoom-in-100 data-closed:zoom-out-100"
+              >
+                {post.status === "draft" && (
+                  <DropdownMenuItem
+                    className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
+                    onClick={() =>
+                      navigate("/create/image", {
+                        state: {
+                          draftId: post.contentId || post.id,
+                          title: post.content || "",
+                          prompt: post.content || "",
+                          imageUrl: post.image,
+                          mode: post.contentType === "meme" ? "meme" : "image",
+                        },
+                      })
+                    }
+                  >
+                    <FileEdit size={15} strokeWidth={2} /> Edit Draft
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
+                  onClick={() => navigate(`/feed/post/${detailId}`)}
+                >
+                  <ExternalLink size={15} strokeWidth={2} /> View Details
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
+                  onClick={() => navigate("/create/image")}
+                >
+                  <Sparkles size={15} strokeWidth={2} /> {t("home.post.remix")}
+                </DropdownMenuItem>
+                {onDelete && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="gap-2.5 text-destructive focus:text-destructive cursor-pointer py-2 text-[13px] font-medium tracking-normal"
+                      onClick={() => onDelete(post.contentId || post.id)}
+                    >
+                      <Trash2 size={15} strokeWidth={2} /> Delete Post
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Permanent dark footer */}
+          <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none bg-gradient-to-t from-black/90 via-black/55 to-transparent pt-16 pb-3 px-3">
+            <div className="pointer-events-auto space-y-1.5 min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Badge
+                  className={cn(
+                    "text-[9px] font-bold h-5 px-2 border capitalize inline-flex items-center gap-1",
+                    statusBadgeClass(displayStatus.key),
+                  )}
+                >
+                  {displayStatus.key === "live" && <Radio size={10} className="animate-pulse" />}
+                  {displayStatus.key === "scheduled" && <Clock size={10} />}
+                  {displayStatus.label}
+                </Badge>
+                <Badge className="bg-primary/90 text-primary-foreground text-[9px] font-bold h-5 px-2 border-none capitalize">
+                  {typeLabel}
+                </Badge>
+                {localTargets.map((t) => (
+                  <Badge
+                    key={t.platform}
+                    variant="outline"
+                    className={cn(
+                      "text-[9px] h-5 px-1.5 border-white/20 text-white/90 gap-1 capitalize",
+                      t.status === "live" && "bg-rose-500/30 border-rose-400/40",
+                    )}
+                  >
+                    <PlatformIcon platform={t.platform} size={10} />
+                    {t.status === "live" ? "Live" : "Queued"}
+                  </Badge>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className="text-left w-full min-w-0"
+                onClick={() => navigate(`/feed/post/${detailId}`)}
+              >
+                <p className="text-[13px] font-semibold text-white leading-snug line-clamp-2 drop-shadow-sm">
+                  {post.content}
+                </p>
+              </button>
+
+              <div className="flex items-center gap-2 text-[10px] text-white/70 font-medium min-w-0">
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 min-w-0 hover:text-white transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (post.isOwn) {
+                      navigate("/profile");
+                      return;
+                    }
+                    if (post.userId) navigate(`/users/${post.userId}`);
+                  }}
+                  title={post.isOwn ? "Your profile" : "View creator"}
+                >
+                  <CreatorAvatar
+                    src={post.avatar}
+                    email={post.creator || post.userId || "creator"}
+                    size="sm"
+                    className="!h-5 !w-5 border-white/25 shrink-0"
+                  />
+                  <span className="truncate font-semibold text-white/90 max-w-[9rem]">
+                    {authorLabel || (post.isOwn ? "You" : "Creator")}
+                  </span>
+                </button>
+                <span className="shrink-0 opacity-70">· {formattedTime}</span>
+              </div>
+
+              {hasLiveStats && (
+                <div className="space-y-1 pt-0.5">
+                  {stats.slice(0, 2).map((s) => (
+                    <div key={s.platform} className="flex items-center gap-2 text-[10px] text-white/85">
+                      <PlatformIcon platform={s.platform} />
+                      <span className="capitalize font-semibold w-14 shrink-0">{s.platform}</span>
+                      <span className="flex items-center gap-1">
+                        <Eye size={10} /> {formatStat(s.views, s.viewsDisplay)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Heart size={10} /> {formatStat(s.likes, s.likesDisplay)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MessageSquare size={10} /> {formatStat(s.comments, s.commentsDisplay)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </article>
+    );
+  },
+);
 
 PostCard.displayName = "PostCard";

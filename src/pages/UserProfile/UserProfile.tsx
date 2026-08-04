@@ -22,8 +22,23 @@ import {
   type FeedItemDto,
 } from "../../services/apiClient";
 import { AuthenticatedImage } from "../../components/AuthenticatedImage";
+import {
+  JustifiedGallery,
+  JustifiedLayoutOptions,
+  parseAspectRatio,
+} from "../../components/JustifiedGallery";
 import { toast } from "sonner";
 
+const PROFILE_LAYOUT: JustifiedLayoutOptions = {
+  maxColumns: 6,
+  minTileEdge: 180,
+  minRowHeight: 330,
+  maxRowHeight: 430,
+};
+
+const getFeedRatio = (post: FeedItemDto) => parseAspectRatio(post.aspectRatio);
+const getFeedKey = (post: FeedItemDto) => String(post.id || post.contentId);
+const getFeedRatioKey = (post: FeedItemDto) => String(post.contentId || post.id);
 export default function UserProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -81,6 +96,7 @@ export default function UserProfile() {
           description: c.description || "",
           contentType: c.contentType || "image",
           thumbnailUrl: extractValidImageUrl(c) || c.thumbnailUrl || "",
+          aspectRatio: c.aspectRatio || c.aspect_ratio,
           platformStats: c.platformStats || [],
           publishedAt: c.publishedAt || c.createdAt,
         }));
@@ -231,29 +247,40 @@ export default function UserProfile() {
               No published creations yet.
             </p>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {posts.map((post, i) => {
-                const img = extractValidImageUrl(post) || post.thumbnailUrl;
-                const stats = post.platformStats || [];
+            <JustifiedGallery
+              items={posts}
+              getRatio={getFeedRatio}
+              getKey={getFeedKey}
+              getRatioKey={getFeedRatioKey}
+              options={PROFILE_LAYOUT}
+              renderItem={({ item, resolvedRatio, reportRatio, index }) => {
+                const img = extractValidImageUrl(item) || item.thumbnailUrl;
+                const stats = item.platformStats || [];
                 const views = stats.reduce((a, s) => a + (s.views || 0), 0);
                 const likes = stats.reduce((a, s) => a + (s.likes || 0), 0);
                 return (
-                  <motion.div 
-                    key={post.id || post.contentId} 
-                    initial={{ opacity: 0, scale: 0.9 }}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.96 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3, delay: i * 0.05 }}
-                    className="group relative aspect-square ui-card overflow-hidden cursor-pointer rounded-xl border-border/40"
-                    onClick={() => navigate(`/feed/post/${post.contentId || post.id}`)}
+                    transition={{ duration: 0.25, delay: Math.min(index * 0.03, 0.3) }}
+                    className="group relative h-full ui-card overflow-hidden cursor-pointer rounded-xl border-border/40"
+                    onClick={() => navigate(`/feed/post/${item.contentId || item.id}`)}
                   >
                     <AuthenticatedImage
                       src={img}
-                      alt={post.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      alt={item.title}
+                      className={cn(
+                        "absolute inset-0 h-full w-full transition-transform duration-500 group-hover:scale-110",
+                        resolvedRatio ? "object-cover" : "object-contain",
+                      )}
+                      wrapperClassName="!absolute !inset-0 !h-full !w-full !bg-transparent"
+                      onLoad={(e) =>
+                        reportRatio(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)
+                      }
                     />
-                    
+
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-4">
-                      <p className="text-white text-xs font-bold line-clamp-2 mb-2">{post.title}</p>
+                      <p className="text-white text-xs font-bold line-clamp-2 mb-2">{item.title}</p>
                       <div className="flex items-center justify-between text-white">
                         <div className="flex items-center gap-3">
                           {stats.length > 0 ? (
@@ -271,7 +298,7 @@ export default function UserProfile() {
                             <span className="text-[10px] font-medium opacity-80">Connect social for live stats</span>
                           )}
                         </div>
-                        {post.contentType === "clip" && (
+                        {item.contentType === "clip" && (
                           <div className="w-8 h-8 rounded-full bg-popover/20 backdrop-blur-xl flex items-center justify-center">
                             <Play size={14} className="fill-white ml-0.5" />
                           </div>
@@ -280,8 +307,8 @@ export default function UserProfile() {
                     </div>
                   </motion.div>
                 );
-              })}
-            </div>
+              }}
+            />
           )}
         </div>
       </div>

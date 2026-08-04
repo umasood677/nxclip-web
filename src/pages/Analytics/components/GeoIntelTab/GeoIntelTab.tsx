@@ -233,7 +233,7 @@ export const GeoIntelTab = memo(({ isLoading }: GeoIntelTabProps) => {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <Badge className="text-[7px] h-3.5 px-1.5 font-black uppercase bg-primary/10 text-primary border-none">{t(`geo.strategy_types.${strat.type}` as any)}</Badge>
-                    <span className="text-[9px] font-mono font-bold text-muted-foreground">{t('geo.matching', { count: strat.confidence })}</span>
+                    <span className="text-[9px] font-bold tracking-wider text-muted-foreground tabular-nums">{t('geo.matching', { count: strat.confidence })}</span>
                   </div>
                   <p className="text-[11px] font-medium text-foreground leading-relaxed mb-3">{t(`geo.insights.${strat.insightKey}` as any)}</p>
                   <div className="flex items-center justify-between">

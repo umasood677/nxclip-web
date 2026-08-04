@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { safeLocalStorage } from "../lib/safeStorage";
+import type { ReactNode } from "react";
 import { 
   Search, 
   Bell, 
@@ -34,6 +35,8 @@ import { selectAuthProfile, selectAuthUser, logoutUser } from "../store/slices/a
 import { selectAuthProvider } from "../store/slices/uiSlice";
 import { identityApi, notificationApi } from "../services/apiClient";
 import { clearPersistedUser } from "../services/auth/authService";
+import { normalizeNotificationList, type NormalizedNotification } from "../lib/notifications";
+import { socketService } from "../services/socketService";
 import {
   CommandDialog,
   CommandEmpty,
@@ -45,7 +48,13 @@ import {
   CommandSeparator,
 } from "./ui/command";
 
-export default function TopBar({ title }: { title?: string }) {
+interface TopBarProps {
+  title?: string;
+  subtitle?: string;
+  titleIcon?: ReactNode;
+}
+
+export default function TopBar({ title, subtitle, titleIcon }: TopBarProps) {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
   const dispatch = useAppDispatch();
@@ -54,9 +63,7 @@ export default function TopBar({ title }: { title?: string }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [open, setOpen] = useState(false);
-  const [notifPreview, setNotifPreview] = useState<
-    Array<{ id: string; title: string; body: string; read: boolean; createdAt?: string }>
-  >([]);
+  const [notifPreview, setNotifPreview] = useState<NormalizedNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const profile = useAppSelector(selectAuthProfile);
   const user = authUser;
@@ -70,17 +77,9 @@ export default function TopBar({ title }: { title?: string }) {
     const load = async () => {
       try {
         const res = await notificationApi.getNotifications(undefined, 8);
-        const items = Array.isArray(res) ? res : res?.items || [];
         if (cancelled) return;
-        setNotifPreview(
-          items.map((n) => ({
-            id: n.id,
-            title: n.title,
-            body: n.body,
-            read: n.read,
-            createdAt: n.createdAt,
-          })),
-        );
+        const items = normalizeNotificationList(res);
+        setNotifPreview(items);
         setUnreadCount(items.filter((n) => !n.read).length);
       } catch {
         if (!cancelled) {
@@ -90,8 +89,21 @@ export default function TopBar({ title }: { title?: string }) {
       }
     };
     void load();
+
+    socketService.init();
+    const refresh = () => {
+      void load();
+    };
+    const unsubs = [
+      socketService.subscribe("content:moderation_complete", refresh),
+      socketService.subscribe("content:generation_complete", refresh),
+      socketService.subscribe("content:generation_failed", refresh),
+      socketService.subscribe("onboarding:complete", refresh),
+    ];
+
     return () => {
       cancelled = true;
+      unsubs.forEach((u) => u());
     };
   }, []);
 
@@ -136,10 +148,22 @@ export default function TopBar({ title }: { title?: string }) {
         </div>
       )}
       <header className="h-14 bg-background/80 backdrop-blur-md border-b border-border sticky top-0 z-40 px-4 md:px-6 flex items-center justify-between transition-colors duration-300">
-      <div className="flex items-center gap-4">
-        <h1 className="text-sm md:text-base font-bold text-foreground truncate max-w-[150px] md:max-w-none">
-          {title || t('top_bar.dashboard')}
-        </h1>
+      <div className="flex items-center gap-3 min-w-0">
+        {titleIcon ? (
+          <div className="hidden sm:flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary shrink-0">
+            {titleIcon}
+          </div>
+        ) : null}
+        <div className="min-w-0">
+          <h1 className="text-sm md:text-base font-bold text-foreground truncate max-w-[160px] md:max-w-none">
+            {title || t('top_bar.dashboard')}
+          </h1>
+          {subtitle ? (
+            <p className="hidden md:block text-[11px] text-muted-foreground truncate max-w-md leading-tight mt-0.5">
+              {subtitle}
+            </p>
+          ) : null}
+        </div>
       </div>
 
       <div className="flex items-center gap-3 md:gap-5">
@@ -199,7 +223,7 @@ export default function TopBar({ title }: { title?: string }) {
                 <span>{t('top_bar.actions.ai_coach')}</span>
                 <CommandShortcut>⌘K</CommandShortcut>
               </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => navigate("/library"))}>
+              <CommandItem onSelect={() => runCommand(() => navigate("/my-content"))}>
                 <FolderHeart className={cn("h-4 w-4", isAr ? "ml-2" : "mr-2")} />
                 <span>{t('top_bar.actions.library')}</span>
                 <CommandShortcut>⌘L</CommandShortcut>
@@ -356,12 +380,12 @@ export default function TopBar({ title }: { title?: string }) {
             onClick={() => setShowUserMenu(!showUserMenu)}
             aria-label="User profile and navigation"
             aria-expanded={showUserMenu}
-            className="flex items-center gap-2 p-0.5 rounded-full hover:bg-muted transition-all"
+            className="flex items-center gap-2 p-0.5 rounded-full hover:bg-muted transition-all cursor-pointer"
           >
-            <CreatorAvatar 
-              src={user?.photoURL} 
-              email={user?.email} 
-              className="w-7 h-7" 
+            <CreatorAvatar
+              src={profile?.photoURL || user?.photoURL}
+              email={user?.email || profile?.email}
+              className="w-7 h-7"
             />
           </Button>
 

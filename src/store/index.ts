@@ -61,6 +61,9 @@ const authPersistenceMiddleware: Middleware = (_storeApi) => (next) => (action: 
     safeLocalStorage.removeItem("nx_remember_me");
     safeSessionStorage.removeItem(STORAGE_KEYS.PERSISTED_USER);
     safeSessionStorage.removeItem(STORAGE_KEYS.LOGGED_IN);
+    // Skip-onboarding pass only lasts this session; next login must re-prompt if incomplete.
+    safeSessionStorage.removeItem("finishing_onboarding");
+    safeSessionStorage.removeItem("renewing_week_plan");
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("nx_auth_state_changed"));
     }

@@ -8,6 +8,11 @@ import {
   ArrowRight,
   BrainCircuit,
   AlertCircle,
+  Gamepad2,
+  Compass,
+  Utensils,
+  ChefHat,
+  Sparkle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
@@ -15,19 +20,138 @@ import { Card } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
 import { cn } from "../../lib/utils";
+import { safeSessionStorage } from "../../lib/safeStorage";
+import {
+  clearWeekPlanRenewal,
+  contentPlanFromOnboarding,
+  isRenewingWeekPlan,
+} from "../../lib/weekPlan";
 import {
   coachApi,
   identityApi,
   type CoachQuestionResponse,
   type CoachPlanResponse,
+  type CoachStatusResponse,
 } from "../../services/apiClient";
 import { socketService } from "../../services/socketService";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { selectAuthUser, selectAuthProfile, setAuthProfile } from "../../store/slices/authSlice";
 
+function extractWeekPlan(result: CoachPlanResponse | Record<string, unknown>): CoachPlanResponse["plan"] | null {
+  const r = result as CoachPlanResponse & { data?: CoachPlanResponse };
+  const payload = r.plan ? r : r.data;
+  const plan = payload?.plan;
+  if (plan && Array.isArray(plan.days)) {
+    return {
+      introMessage: plan.introMessage || payload?.message || "Here is your personalized creator plan.",
+      days: plan.days.map((d) => ({
+        day: d.day,
+        icon: d.icon || "✨",
+        contentType: d.contentType || "Clip",
+        theme: d.theme || d.title || "",
+        title: d.title,
+        hook: d.hook,
+      })),
+      recommendedHashtags: plan.recommendedHashtags || [],
+      workspaceTheme: plan.workspaceTheme || {
+        primaryColor: "#0D9488",
+        motivationalQuote: "",
+      },
+    };
+  }
+  // Some gateways flatten days onto the root
+  const days = (result as { days?: CoachPlanResponse["plan"]["days"] }).days;
+  if (Array.isArray(days) && days.length > 0) {
+    return {
+      introMessage:
+        (result as { introMessage?: string; message?: string }).introMessage ||
+        (result as { message?: string }).message ||
+        "Here is your personalized creator plan.",
+      days: days.map((d) => ({
+        day: d.day,
+        icon: d.icon || "✨",
+        contentType: d.contentType || "Clip",
+        theme: d.theme || d.title || "",
+        title: d.title,
+        hook: d.hook,
+      })),
+      recommendedHashtags: (result as { recommendedHashtags?: string[] }).recommendedHashtags || [],
+      workspaceTheme: (result as { workspaceTheme?: CoachPlanResponse["plan"]["workspaceTheme"] })
+        .workspaceTheme || {
+        primaryColor: "#0D9488",
+        motivationalQuote: "",
+      },
+    };
+  }
+  return null;
+}
+
+function normalizeCoachQuestion(
+  q: CoachQuestionResponse,
+  statusHint?: CoachStatusResponse["status"],
+): CoachQuestionResponse {
+  return {
+    ...q,
+    chips: Array.isArray(q.chips) ? q.chips : [],
+    chipLabels: Array.isArray(q.chipLabels) ? q.chipLabels : undefined,
+    multiSelect: Boolean(q.multiSelect),
+    status: q.status ?? (statusHint === "ready_for_plan" ? "ready_for_plan" : undefined),
+  };
+}
+
+/** Step heading + short instruction — never echo the same paragraph twice. */
+function stepCopy(coach: CoachQuestionResponse): { heading: string; instruction: string } {
+  if (coach.question === 0 || coach.status === "category") {
+    return {
+      heading: "What kind of content do you create?",
+      instruction:
+        "Choose one category. Your Creator Coach will tailor questions and a week plan to that niche — about 90 seconds.",
+    };
+  }
+  if (coach.status === "ready_for_plan") {
+    return {
+      heading: "You're ready for a week plan",
+      instruction:
+        coach.message?.trim() ||
+        "We've saved your answers. Generate a personalized 7-day content plan to finish setup.",
+    };
+  }
+
+  const raw = (coach.message || "").trim();
+  const sentences = raw.split(/(?<=[.!?])\s+/).filter(Boolean);
+  if (sentences.length >= 2 && sentences[0].length <= 100) {
+    return {
+      heading: sentences[0],
+      instruction: sentences.slice(1).join(" "),
+    };
+  }
+  return {
+    heading: `Question ${coach.question}`,
+    instruction: raw || "Select an option below, or type your own answer.",
+  };
+}
+
+function categoryIcon(slug: string) {
+  const key = slug.toLowerCase();
+  if (key.includes("game")) return Gamepad2;
+  if (key.includes("travel")) return Compass;
+  if (key.includes("food") || key.includes("dining")) return Utensils;
+  if (key.includes("cook") || key.includes("recipe") || key.includes("bak")) return ChefHat;
+  return Sparkle;
+}
+
+function formatApiError(err: unknown): string {
+  const e = err as { message?: string | string[]; error?: string; statusCode?: number };
+  if (Array.isArray(e?.message)) return e.message.join(", ");
+  if (typeof e?.message === "string" && e.message) return e.message;
+  if (typeof e?.error === "string") return e.error;
+  if (err instanceof Error) return err.message;
+  return "Something went wrong";
+}
+
 /**
- * Creator Coach onboarding — driven by gateway `/coach/onboarding/*`
- * (frontend-integration-guide). Socket.IO connected before coach calls.
+ * Creator Coach onboarding — HTTP `/coach/onboarding/*`.
+ * Socket events are progress-only (no duplicate narration in the UI).
  */
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -42,13 +166,17 @@ export default function Onboarding() {
   const [selected, setSelected] = useState<string[]>([]);
   const [customAnswer, setCustomAnswer] = useState("");
   const [plan, setPlan] = useState<CoachPlanResponse["plan"] | null>(null);
-  const [coachStream, setCoachStream] = useState("");
+  const [progressHint, setProgressHint] = useState("");
 
   const syncProfileFromMe = useCallback(async () => {
     try {
       const me = await identityApi.getMe();
       const user = me?.user ?? me;
       if (!user) return;
+      const finishing = safeSessionStorage.getItem("finishing_onboarding") === "true";
+      const completed =
+        user.onboardingCompleted === true ||
+        (finishing && reduxProfile?.onboardingCompleted === true);
       dispatch(
         setAuthProfile({
           uid: user.id || user.uid || reduxUser?.uid || "",
@@ -57,9 +185,12 @@ export default function Onboarding() {
           photoURL: user.photoURL || user.avatarUrl || null,
           plan: (user.plan || reduxProfile?.plan || "free") as "free" | "pro" | "studio",
           role: user.role || reduxProfile?.role || "user",
-          onboardingCompleted: Boolean(user.onboardingCompleted),
-          onboardingPlan: user.onboardingPlan ?? null,
-          contentPlan: user.onboardingPlan?.days ?? reduxProfile?.contentPlan,
+          onboardingCompleted: completed,
+          onboardingPlan: user.onboardingPlan ?? reduxProfile?.onboardingPlan ?? null,
+          contentPlan:
+            contentPlanFromOnboarding(user.onboardingPlan) ??
+            contentPlanFromOnboarding(reduxProfile?.onboardingPlan) ??
+            reduxProfile?.contentPlan,
           createdAt: user.createdAt || reduxProfile?.createdAt || new Date().toISOString(),
         }),
       );
@@ -75,32 +206,67 @@ export default function Onboarding() {
       setLoading(true);
       setError("");
       try {
-        socketService.init();
-        let status: CoachQuestionResponse;
         try {
-          status = await coachApi.getStatus();
+          socketService.init();
         } catch {
-          status = await coachApi.start(undefined, false);
+          /* optional */
+        }
+
+        let question: CoachQuestionResponse | null = null;
+        const renewing = isRenewingWeekPlan();
+
+        if (renewing) {
+          // Completed users building a fresh week — skip "already completed" short-circuit.
+          question = normalizeCoachQuestion(await coachApi.start(undefined, true));
+        } else {
+        try {
+          const statusRes = await coachApi.getStatus();
+          if (cancelled) return;
+
+          if (statusRes.status === "completed") {
+            await syncProfileFromMe();
+            // Mark complete locally so AuthGuard will not bounce back to coach.
+            if (reduxProfile) {
+              dispatch(
+                setAuthProfile({
+                  ...reduxProfile,
+                  onboardingCompleted: true,
+                }),
+              );
+            }
+            navigate("/feed", { replace: true });
+            return;
+          }
+
+          if (statusRes.question) {
+            question = normalizeCoachQuestion(statusRes.question, statusRes.status);
+          } else if (statusRes.status === "ready_for_plan") {
+            question = {
+              message: "We've saved your answers. Generate your personalized week plan next.",
+              question: 5,
+              chips: [],
+              multiSelect: false,
+              category: statusRes.category,
+              totalQuestions: statusRes.totalQuestions,
+              answeredCount: statusRes.answeredCount,
+              status: "ready_for_plan",
+            };
+          }
+        } catch (statusErr) {
+          console.warn("[Onboarding] getStatus failed, calling start:", statusErr);
+        }
+
+        if (!question) {
+          question = normalizeCoachQuestion(await coachApi.start(undefined, false));
+        }
         }
 
         if (cancelled) return;
-
-        if (status.status === "completed") {
-          await syncProfileFromMe();
-          navigate("/dashboard", { replace: true });
-          return;
-        }
-
-        if (status.status === "ready_for_plan") {
-          setCoach(status);
-        } else {
-          setCoach(status);
-        }
+        setCoach(question);
         setSelected([]);
         setCustomAnswer("");
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : "Could not start Creator Coach onboarding.";
+        const message = formatApiError(err);
         setError(message);
         toast.error("Onboarding unavailable", { description: message });
       } finally {
@@ -110,40 +276,34 @@ export default function Onboarding() {
 
     void boot();
 
-    const unsubToken = socketService.subscribe("coach:token", (_e, payload) => {
-      const data = (payload as { data?: { token?: string }; token?: string })?.data
-        ?? payload;
-      const token = (data as { token?: string })?.token;
-      if (token) setCoachStream((prev) => prev + token);
-    });
     const unsubProgress = socketService.subscribe("coach:progress", (_e, payload) => {
-      const data = (payload as { data?: { message?: string }; message?: string })?.data
-        ?? payload;
+      const data =
+        (payload as { data?: { message?: string }; message?: string })?.data ?? payload;
       const msg = (data as { message?: string })?.message;
-      if (msg) toast.message("Coach", { description: msg });
+      if (msg) setProgressHint(msg);
     });
+    // Do not navigate away on socket complete — stay so the week plan can render.
     const unsubComplete = socketService.subscribe("onboarding:complete", () => {
-      void (async () => {
-        await syncProfileFromMe();
-        toast.success("Onboarding complete");
-        navigate("/dashboard", { replace: true });
-      })();
+      void syncProfileFromMe();
     });
 
     return () => {
       cancelled = true;
-      unsubToken();
       unsubProgress();
       unsubComplete();
     };
-  }, [navigate, syncProfileFromMe]);
+  }, [dispatch, navigate, reduxProfile, syncProfileFromMe]);
 
   const progressPct = useMemo(() => {
     if (!coach) return 0;
     if (coach.status === "ready_for_plan" || plan) return 95;
+    if (coach.question === 0) return 8;
     const total = Math.max(coach.totalQuestions || 5, 1);
-    return Math.min(90, Math.round(((coach.answeredCount || 0) / total) * 90));
+    return Math.min(90, Math.round(((coach.answeredCount || coach.question || 0) / total) * 85) + 10);
   }, [coach, plan]);
+
+  const copy = coach ? stepCopy(coach) : { heading: "", instruction: "" };
+  const isCategoryStep = Boolean(coach && (coach.question === 0 || coach.status === "category"));
 
   const toggleChip = (chip: string) => {
     if (!coach) return;
@@ -172,19 +332,17 @@ export default function Onboarding() {
 
     setSubmitting(true);
     setError("");
-    setCoachStream("");
+    setProgressHint("");
     try {
-      const next = await coachApi.answer(coach.question, answer);
+      const next = normalizeCoachQuestion(await coachApi.answer(coach.question, answer));
       setCoach(next);
       setSelected([]);
       setCustomAnswer("");
       if (next.status === "ready_for_plan") {
-        toast.success("Ready for your plan", {
-          description: "Generate your personalized week plan next.",
-        });
+        toast.success("Answers saved", { description: "Generate your week plan next." });
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to save answer";
+      const message = formatApiError(err);
       setError(message);
       toast.error("Answer failed", { description: message });
     } finally {
@@ -192,20 +350,49 @@ export default function Onboarding() {
     }
   };
 
+  const markOnboardingCompleteLocally = (weekPlan: CoachPlanResponse["plan"] | null) => {
+    const base = reduxProfile || {
+      uid: reduxUser?.uid || "",
+      displayName: reduxUser?.displayName || "Creator",
+      email: reduxUser?.email || "",
+      photoURL: reduxUser?.photoURL || null,
+      plan: "free" as const,
+      role: "creator" as const,
+      createdAt: new Date().toISOString(),
+    };
+    dispatch(
+      setAuthProfile({
+        ...base,
+        onboardingCompleted: true,
+        onboardingPlan: weekPlan,
+        contentPlan: contentPlanFromOnboarding(weekPlan),
+      }),
+    );
+    safeSessionStorage.setItem("finishing_onboarding", "true");
+  };
+
   const generatePlan = async () => {
     setSubmitting(true);
     setError("");
-    setCoachStream("");
+    setProgressHint("Creating your week plan…");
     try {
       const result = await coachApi.generatePlan();
-      setPlan(result.plan);
-      await syncProfileFromMe();
+      const weekPlan = extractWeekPlan(result);
+      if (!weekPlan) {
+        throw new Error("Plan was generated but could not be displayed. Please try again.");
+      }
+      setPlan(weekPlan);
+      // Optimistic complete so Feed is reachable even if identity persist lags.
+      markOnboardingCompleteLocally(weekPlan);
+      clearWeekPlanRenewal();
+      void syncProfileFromMe();
       toast.success("Your content plan is ready");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Plan generation failed";
+      const message = formatApiError(err);
       setError(message);
-      toast.error("Plan failed", { description: message });
+      toast.error("Plan generation failed", { description: message });
     } finally {
+      setProgressHint("");
       setSubmitting(false);
     }
   };
@@ -213,6 +400,7 @@ export default function Onboarding() {
   const finish = async (toStudio: boolean) => {
     setSubmitting(true);
     try {
+      markOnboardingCompleteLocally(plan);
       await syncProfileFromMe();
       toast.success("Welcome to nxClip");
       if (toStudio) {
@@ -222,24 +410,34 @@ export default function Onboarding() {
           state: { fromOnboarding: true, initialPrompt: theme },
         });
       } else {
-        navigate("/dashboard", { replace: true });
+        navigate("/feed", { replace: true });
       }
     } finally {
       setSubmitting(false);
     }
   };
 
+  /** Leave coach without completing — next login will prompt again. */
+  const skipOnboarding = () => {
+    safeSessionStorage.setItem("finishing_onboarding", "true");
+    toast.message("You can finish onboarding anytime", {
+      description: "We'll ask again next time you sign in.",
+    });
+    navigate("/feed", { replace: true });
+  };
+
   const restart = async () => {
     setSubmitting(true);
     setPlan(null);
     setError("");
+    setProgressHint("");
     try {
-      const status = await coachApi.start(undefined, true);
+      const status = normalizeCoachQuestion(await coachApi.start(undefined, true));
       setCoach(status);
       setSelected([]);
+      setCustomAnswer("");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Could not restart";
-      setError(message);
+      setError(formatApiError(err));
     } finally {
       setSubmitting(false);
     }
@@ -255,23 +453,26 @@ export default function Onboarding() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
-      <div className="relative z-10 max-w-2xl mx-auto px-4 py-12 md:py-16">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="h-11 w-11 rounded-2xl bg-primary/15 flex items-center justify-center">
-            <BrainCircuit className="h-5 w-5 text-primary" />
+      <div className="absolute inset-0 bg-gradient-to-br from-teal-500/[0.07] via-transparent to-amber-500/[0.05] pointer-events-none" />
+      <div
+        className={cn(
+          "relative z-10 mx-auto px-4 py-12 md:py-16",
+          plan ? "max-w-6xl" : "max-w-2xl",
+        )}
+      >
+        <header className="flex items-center gap-3 mb-8">
+          <div className="h-11 w-11 rounded-2xl bg-teal-500/15 flex items-center justify-center">
+            <BrainCircuit className="h-5 w-5 text-teal-600 dark:text-teal-400" />
           </div>
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Creator Coach</h1>
-            <p className="text-sm text-muted-foreground">
-              Personalized onboarding powered by nxClip AI
-            </p>
+            <p className="text-sm text-muted-foreground">Quick setup for your creator workspace</p>
           </div>
-        </div>
+        </header>
 
         <div className="h-1.5 rounded-full bg-muted mb-8 overflow-hidden">
           <motion.div
-            className="h-full bg-primary"
+            className="h-full bg-gradient-to-r from-teal-600 to-emerald-500"
             initial={{ width: 0 }}
             animate={{ width: `${progressPct}%` }}
             transition={{ type: "spring", stiffness: 120, damping: 20 }}
@@ -286,91 +487,146 @@ export default function Onboarding() {
           </Alert>
         )}
 
+        {progressHint && (
+          <p className="text-xs text-muted-foreground mb-4 flex items-center gap-2">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            {progressHint}
+          </p>
+        )}
+
         <AnimatePresence mode="wait">
           {plan ? (
             <motion.div
               key="plan"
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
+              className="space-y-8"
             >
-              <Card className="p-6 md:p-8 border-border/60 bg-card/80 backdrop-blur space-y-6">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-6 w-6 text-emerald-500 shrink-0 mt-0.5" />
-                  <div>
-                    <h2 className="text-xl font-semibold">Your week plan</h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {plan.introMessage || "Here is your personalized creator plan."}
+              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                <div className="max-w-2xl">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/25 bg-teal-500/10 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-teal-700 dark:text-teal-300 mb-3">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Week plan ready
+                  </div>
+                  <h2 className="text-3xl md:text-4xl font-semibold tracking-tight leading-tight">
+                    Your week plan
+                  </h2>
+                  <p className="text-muted-foreground mt-3 leading-relaxed">
+                    {plan.introMessage || "Here is your personalized creator plan."}
+                  </p>
+                  {plan.workspaceTheme?.motivationalQuote ? (
+                    <p className="mt-3 text-sm italic text-foreground/70 border-l-2 border-teal-500/40 pl-3">
+                      {plan.workspaceTheme.motivationalQuote}
                     </p>
-                  </div>
+                  ) : null}
                 </div>
-
-                <div className="space-y-3">
-                  {(plan.days || []).map((day) => (
-                    <div
-                      key={`${day.day}-${day.theme}`}
-                      className="rounded-xl border border-border/50 p-4 bg-muted/30"
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <Badge variant="outline">{day.day}</Badge>
-                        <span className="text-xs text-muted-foreground">{day.contentType}</span>
-                      </div>
-                      <p className="text-sm font-medium">{day.theme}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {plan.recommendedHashtags?.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {plan.recommendedHashtags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="font-normal">
-                        {tag.startsWith("#") ? tag : `#${tag}`}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <Button
-                    className="flex-1"
-                    disabled={submitting}
-                    onClick={() => void finish(true)}
-                  >
+                <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+                  <Button disabled={submitting} onClick={() => void finish(true)}>
                     Start creating
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                   <Button
                     variant="outline"
-                    className="flex-1"
                     disabled={submitting}
                     onClick={() => void finish(false)}
                   >
-                    Go to dashboard
+                    Go to Feed
                   </Button>
                 </div>
-              </Card>
+              </div>
+
+              <motion.div
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+                initial="hidden"
+                animate="show"
+                variants={{
+                  hidden: {},
+                  show: { transition: { staggerChildren: 0.06 } },
+                }}
+              >
+                {(plan.days || []).map((day, index) => {
+                  const heading = day.title || day.theme;
+                  const detail = day.hook || (day.title ? day.theme : "");
+                  return (
+                    <motion.article
+                      key={`${day.day}-${index}`}
+                      variants={{
+                        hidden: { opacity: 0, y: 14 },
+                        show: { opacity: 1, y: 0 },
+                      }}
+                      className={cn(
+                        "group relative overflow-hidden rounded-2xl border border-border/60",
+                        "bg-card/90 backdrop-blur-sm p-5 min-h-[200px] flex flex-col",
+                        "shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]",
+                        "hover:border-teal-500/35 hover:shadow-lg hover:shadow-teal-500/5 transition-all duration-300",
+                        index === 6 && "sm:col-span-2 lg:col-span-1",
+                      )}
+                    >
+                      <div
+                        className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full opacity-[0.12] blur-2xl bg-teal-500 group-hover:opacity-20 transition-opacity"
+                        aria-hidden
+                      />
+                      <div className="flex items-start justify-between gap-3 mb-4">
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-700/80 dark:text-teal-300/90">
+                            {day.day}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground mt-1">{day.contentType}</p>
+                        </div>
+                        <span
+                          className="text-2xl leading-none select-none"
+                          aria-hidden
+                        >
+                          {day.icon || "✨"}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-semibold tracking-tight leading-snug mb-2">
+                        {heading}
+                      </h3>
+                      {detail ? (
+                        <p className="text-sm text-muted-foreground leading-relaxed flex-1">
+                          {detail}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground leading-relaxed flex-1">
+                          {day.theme}
+                        </p>
+                      )}
+                      <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between">
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          Day {index + 1} of 7
+                        </span>
+                        <span className="h-1.5 w-1.5 rounded-full bg-teal-500/70" />
+                      </div>
+                    </motion.article>
+                  );
+                })}
+              </motion.div>
+
+              {plan.recommendedHashtags?.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {plan.recommendedHashtags.map((tag) => (
+                    <Badge key={tag} variant="secondary" className="font-normal">
+                      {tag.startsWith("#") ? tag : `#${tag}`}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </motion.div>
           ) : coach?.status === "ready_for_plan" ? (
-            <motion.div
-              key="ready"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
+            <motion.div key="ready" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
               <Card className="p-6 md:p-8 space-y-6">
-                <div className="flex items-center gap-2 text-primary">
-                  <Sparkles className="h-5 w-5" />
-                  <h2 className="text-lg font-semibold">Ready to generate your plan</h2>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {coach.message ||
-                    "We have everything we need. Generate your personalized content plan."}
-                </p>
-                {coachStream && (
-                  <p className="text-sm whitespace-pre-wrap text-foreground/90 border-l-2 border-primary/40 pl-3">
-                    {coachStream}
+                <div>
+                  <Badge variant="outline" className="mb-3 text-[10px] uppercase tracking-wider">
+                    Final step
+                  </Badge>
+                  <h2 className="text-xl font-semibold tracking-tight">{copy.heading}</h2>
+                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                    {copy.instruction}
                   </p>
-                )}
-                <div className="flex gap-3">
+                </div>
+                <div className="flex flex-wrap gap-3">
                   <Button disabled={submitting} onClick={() => void generatePlan()}>
                     {submitting ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -382,67 +638,117 @@ export default function Onboarding() {
                   <Button variant="ghost" disabled={submitting} onClick={() => void restart()}>
                     Restart
                   </Button>
+                  <Button variant="ghost" disabled={submitting} onClick={skipOnboarding}>
+                    Skip for now
+                  </Button>
                 </div>
               </Card>
             </motion.div>
           ) : coach ? (
             <motion.div
-              key={`q-${coach.question}-${coach.status}`}
+              key={`q-${coach.question}-${coach.status}-${coach.category ?? "none"}`}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
             >
               <Card className="p-6 md:p-8 space-y-6">
-                <div className="space-y-2">
-                  <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
-                    {coach.question === 0
-                      ? "Category"
-                      : `Question ${coach.question} / ${coach.totalQuestions || 5}`}
+                <div>
+                  <Badge variant="outline" className="mb-3 text-[10px] uppercase tracking-wider">
+                    {isCategoryStep
+                      ? "Step 1 · Category"
+                      : `Question ${coach.question} of ${coach.totalQuestions || 5}`}
                   </Badge>
-                  <h2 className="text-xl font-semibold leading-snug">{coach.message}</h2>
-                  {coach.category && (
-                    <p className="text-xs text-muted-foreground">Category: {coach.category}</p>
+                  <h2 className="text-xl font-semibold tracking-tight leading-snug">
+                    {copy.heading}
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                    {copy.instruction}
+                  </p>
+                  {coach.category && !isCategoryStep && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Niche: <span className="text-foreground/80">{coach.category}</span>
+                    </p>
                   )}
                 </div>
 
-                {coachStream && (
-                  <p className="text-sm whitespace-pre-wrap text-muted-foreground border-l-2 border-primary/30 pl-3">
-                    {coachStream}
-                  </p>
+                {isCategoryStep ? (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {(coach.chips || []).map((chip, i) => {
+                      const label = coach.chipLabels?.[i] || chip;
+                      const active = selected.includes(chip);
+                      const Icon = categoryIcon(chip);
+                      return (
+                        <button
+                          key={`cat-${chip}-${i}`}
+                          type="button"
+                          onClick={() => toggleChip(chip)}
+                          className={cn(
+                            "text-left rounded-2xl border p-4 transition-colors",
+                            active
+                              ? "border-primary bg-primary/10 shadow-sm"
+                              : "border-border/60 bg-muted/15 hover:bg-muted/35 hover:border-border",
+                          )}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div
+                              className={cn(
+                                "h-9 w-9 rounded-xl flex items-center justify-center shrink-0",
+                                active ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground",
+                              )}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold leading-snug">{label}</p>
+                              <p className="text-[11px] text-muted-foreground mt-1 truncate">
+                                {chip}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {(coach.chips || []).map((chip, i) => {
+                      const label = coach.chipLabels?.[i] || chip;
+                      const active = selected.includes(chip);
+                      return (
+                        <button
+                          key={`chip-${coach.question}-${i}-${chip}`}
+                          type="button"
+                          onClick={() => toggleChip(chip)}
+                          className={cn(
+                            "rounded-full border px-4 py-2 text-sm transition-colors",
+                            active
+                              ? "border-primary bg-primary/15 text-foreground"
+                              : "border-border/60 bg-muted/20 hover:bg-muted/40",
+                          )}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
-
-                <div className="flex flex-wrap gap-2">
-                  {(coach.chips || []).map((chip, i) => {
-                    const label = coach.chipLabels?.[i] || chip;
-                    const active = selected.includes(chip);
-                    return (
-                      <button
-                        key={chip}
-                        type="button"
-                        onClick={() => toggleChip(chip)}
-                        className={cn(
-                          "rounded-full border px-4 py-2 text-sm transition-colors",
-                          active
-                            ? "border-primary bg-primary/15 text-foreground"
-                            : "border-border/60 bg-muted/20 hover:bg-muted/40",
-                        )}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
 
                 <div className="space-y-2">
                   <label className="text-xs font-medium text-muted-foreground">
-                    Or type your own answer
+                    {isCategoryStep
+                      ? "Or describe your niche"
+                      : coach.multiSelect
+                        ? "Add more detail (optional)"
+                        : "Or type your own answer"}
                   </label>
                   <textarea
                     value={customAnswer}
                     onChange={(e) => setCustomAnswer(e.target.value)}
                     rows={3}
                     className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    placeholder="Write freely…"
+                    placeholder={
+                      isCategoryStep ? "e.g. Indie game reviews…" : "Write freely…"
+                    }
                   />
                 </div>
 
@@ -452,14 +758,15 @@ export default function Onboarding() {
                     disabled={submitting}
                     onClick={() => void submitAnswer()}
                   >
-                    {submitting ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : null}
+                    {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                     Continue
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                   <Button variant="ghost" disabled={submitting} onClick={() => void restart()}>
                     Restart
+                  </Button>
+                  <Button variant="ghost" disabled={submitting} onClick={skipOnboarding}>
+                    Skip for now
                   </Button>
                 </div>
               </Card>
@@ -468,6 +775,9 @@ export default function Onboarding() {
             <Card className="p-8 text-center space-y-4">
               <p className="text-muted-foreground">No coach session available.</p>
               <Button onClick={() => void restart()}>Start onboarding</Button>
+              <Button variant="ghost" onClick={skipOnboarding}>
+                Skip for now
+              </Button>
             </Card>
           )}
         </AnimatePresence>

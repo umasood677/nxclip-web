@@ -273,13 +273,18 @@ async function startServer() {
     }
   });
 
-  // API Proxy for Pexels
+  // API Proxy for Pexels photos
   app.get("/api/pexels/search", async (req, res) => {
     const { query = "gaming", per_page = 15, page = 1 } = req.query;
     const apiKey = process.env.PEXELS_API_KEY;
 
     if (!apiKey) {
-      return res.status(500).json({ error: "PEXELS_API_KEY is not configured" });
+      return res.status(200).json({
+        photos: [],
+        total_results: 0,
+        page: Number(page) || 1,
+        per_page: Number(per_page) || 15,
+      });
     }
 
     try {
@@ -302,6 +307,43 @@ async function startServer() {
     } catch (error) {
       console.error("Pexels API error:", error);
       res.status(500).json({ error: "Failed to fetch from Pexels" });
+    }
+  });
+
+  // API Proxy for Pexels videos (Home marketing motion slots)
+  app.get("/api/pexels/videos", async (req, res) => {
+    const { query = "gaming", per_page = 8, page = 1 } = req.query;
+    const apiKey = process.env.PEXELS_API_KEY;
+
+    if (!apiKey) {
+      return res.status(200).json({
+        videos: [],
+        total_results: 0,
+        page: Number(page) || 1,
+        per_page: Number(per_page) || 8,
+      });
+    }
+
+    try {
+      const response = await fetch(
+        `https://api.pexels.com/videos/search?query=${encodeURIComponent(String(query))}&per_page=${per_page}&page=${page}`,
+        {
+          headers: {
+            Authorization: apiKey,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return res.status(response.status).json(errorData);
+      }
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("Pexels Videos API error:", error);
+      res.status(500).json({ error: "Failed to fetch Pexels videos" });
     }
   });
 

@@ -586,10 +586,10 @@ export default function CreatePostDialog({ onPost }: CreatePostDialogProps) {
                                 {t('create_post.labels.trim_range')}
                               </Label>
                               <div className="flex items-center gap-2">
-                                <span className={cn("text-[10px] font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded", isAr && "dir-ltr")}>
+                                <span className={cn("text-[10px] font-bold tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded tabular-nums", isAr && "dir-ltr")}>
                                   {formatTime((trimRange[0] / 100) * duration)} - {formatTime((trimRange[1] / 100) * duration)}
                                 </span>
-                                <span className="text-[10px] font-mono text-muted-foreground">
+                                <span className="text-[10px] tabular-nums text-muted-foreground">
                                   ({Math.round(((trimRange[1] - trimRange[0]) / 100) * duration)}s)
                                 </span>
                               </div>

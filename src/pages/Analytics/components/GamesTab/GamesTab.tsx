@@ -74,7 +74,7 @@ export const GamesTab = memo(({ isLoading }: GamesTabProps) => {
                   </div>
                   <div className="space-y-1">
                     <p className="text-lg font-display font-black tracking-tight">{g.name}</p>
-                    <div className="flex items-center justify-between text-[10px] font-mono font-bold text-muted-foreground">
+                    <div className="flex items-center justify-between text-[10px] font-bold tracking-wider text-muted-foreground tabular-nums">
                       <span>{t('analytics.table.views')}: {t('analytics.overview.views_label', { count: (g.views/1000).toFixed(1) })}</span>
                       <span className={g.engagement > 10 ? "text-brand-secondary" : "text-destructive"}>{g.engagement}{i18n.language === 'ar' ? '٪' : '%'} {t('analytics.overview.engagement_label' as any, { defaultValue: 'ENG' })}</span>
                     </div>

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { apiGatewayInstance } from "./api/interceptors";
 import { safeLocalStorage, safeSessionStorage } from "../lib/safeStorage";
+import { measureImageFile } from "../lib/imageDimensions";
 import { STORAGE_KEYS, GATEWAY_CONFIG } from "../constants";
 import { getRefreshToken, clearPersistedUser } from "./auth/authService";
 
@@ -201,12 +202,20 @@ function getCachedResponse(key: string): any | null {
 }
 
 function setCachedResponse(key: string, data: any) {
+  // Never persist /content/mine lists — they change after every generate/upload and
+  // stale localStorage + browser 304s were hiding generations behind upload-only caches.
+  if (key.includes("/content/mine")) {
+    return;
+  }
   try {
     const serialized = JSON.stringify(data);
     safeLocalStorage.setItem(key, serialized);
     safeSessionStorage.setItem(key, serialized);
   } catch {}
 }
+
+/** null = auto-probe excludeUploads/_cb; false = legacy only; true = extended confirmed */
+let mineListSupportsExtendedQuery: boolean | null = null;
 
 /**
  * Core generic Axios-based orchestrator that injects distributed tracking headers,
@@ -217,14 +226,18 @@ async function performApiRequest<T = any>(
   path: string,
   options: RequestInit & { suppressErrorLog?: boolean } = {}
 ): Promise<T> {
-  const method = options.method || "GET";
+  const method = (options.method || "GET").toUpperCase();
   const cacheKey = `nx_api_cache_${method}_${path}`;
+  // Only reads may be answered from cache. Replaying an earlier response for a
+  // failed mutation reports success for work the server never did, so a broken
+  // refine or publish looks like it quietly did nothing.
+  const isReplayable = method === "GET";
 
   const breaker = getCircuitBreaker(path);
   const currentState = breaker.getState();
 
   if (currentState === "OPEN") {
-    const cached = getCachedResponse(cacheKey);
+    const cached = isReplayable ? getCachedResponse(cacheKey) : null;
     if (cached !== null) {
       console.log(`[Circuit Breaker Fallover] Serving cached response for ${method} ${path}`);
       return cached;
@@ -257,23 +270,28 @@ async function performApiRequest<T = any>(
     }
 
     breaker.recordSuccess();
-    setCachedResponse(cacheKey, result);
+    if (isReplayable) {
+      setCachedResponse(cacheKey, result);
+    }
     return result;
   } catch (error: any) {
-    const isNetworkError = !error?.statusCode;
-    const isServerError = error?.statusCode >= 500 && error?.statusCode < 600;
+    // Axios reports the status on the response; only proxy-shaped errors carry it
+    // at the top level. Reading just one of the two mistakes a 4xx for an outage.
+    const statusCode: number | undefined = error?.response?.status ?? error?.statusCode;
+    const isClientError = statusCode !== undefined && statusCode >= 400 && statusCode < 500;
+    const isServerError = statusCode !== undefined && statusCode >= 500 && statusCode < 600;
+    const isNetworkError = statusCode === undefined;
 
     if (isNetworkError || isServerError) {
       breaker.recordFailure();
     }
 
-    const isClientError = (error?.statusCode >= 400 && error?.statusCode < 500) || (error?.response?.status >= 400 && error?.response?.status < 500);
     if (!options.suppressErrorLog && !isClientError) {
       console.error(`[API Client] Request failed for ${path}:`, error);
     }
 
     // Try to serve from cache on failure if it's a server/network error
-    if (isNetworkError || isServerError) {
+    if (isReplayable && (isNetworkError || isServerError)) {
       const cached = getCachedResponse(cacheKey);
       if (cached !== null) {
         console.warn(`[API Client] Serving cached data for ${path} after failure.`);
@@ -313,6 +331,52 @@ export function clearApiCache() {
 }
 
 export const GLOBAL_FALLBACK_IMAGES = [];
+
+/** Fingerprint that changes after refine/publish (storageKey alone is stable per contentId). */
+export function contentMediaRevision(item: any): string {
+  if (!item || typeof item !== "object") return "";
+  if (item.updatedAt) return String(item.updatedAt);
+  if (item.updated_at) return String(item.updated_at);
+  const parts = [
+    item.storageKey || item.storage_key || "",
+    String(item.prompt || "").trim().slice(0, 96),
+    item.status || "",
+    Array.isArray(item.captions) ? String(item.captions[0] || "").slice(0, 48) : "",
+    item.jobId || item.job_id || "",
+    item.publishedAt || item.published_at || "",
+  ];
+  const joined = parts.join("|").replace(/^\|+|\|+$/g, "");
+  if (joined) return joined;
+  return String(item.id || item.contentId || "");
+}
+
+/** Bust `/content/{id}/media` URLs so thumbs remount after in-place regenerate. */
+export function withContentMediaRevision(url: string, revision: string): string {
+  if (!url || !revision) return url || "";
+  const token = revision.replace(/[^a-zA-Z0-9._-]/g, "").slice(-48) || String(Date.now());
+  try {
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      const u = new URL(url);
+      u.searchParams.set("v", token);
+      return u.toString();
+    }
+  } catch {
+    // fall through
+  }
+  const cleaned = url.replace(/([?&])v=[^&]*/g, "").replace(/[?&]$/, "");
+  const sep = cleaned.includes("?") ? "&" : "?";
+  return `${cleaned}${sep}v=${encodeURIComponent(token)}`;
+}
+
+function isContentMediaPath(url: string): boolean {
+  return /\/content\/[^/?#]+\/media\b/i.test(url);
+}
+
+function applyContentMediaRevisionIfNeeded(url: string, item: any): string {
+  if (!url || typeof item !== "object" || !isContentMediaPath(url)) return url;
+  const revision = contentMediaRevision(item);
+  return revision ? withContentMediaRevision(url, revision) : url;
+}
 
 export function extractValidImageUrl(item: any): string {
   if (!item) return "";
@@ -384,17 +448,17 @@ export function extractValidImageUrl(item: any): string {
         continue;
       }
       if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:image")) {
-        return trimmed;
+        return applyContentMediaRevisionIfNeeded(trimmed, item);
       }
       if (trimmed.startsWith("/")) {
         if (trimmed.startsWith("/content/")) {
           const baseGateway = resolveBaseGatewayUrl();
-          return `${baseGateway}${trimmed}`;
+          return applyContentMediaRevisionIfNeeded(`${baseGateway}${trimmed}`, item);
         }
         return `${window.location.origin}${trimmed}`;
       }
       if (trimmed.includes(".") || trimmed.includes("/") || trimmed.length > 20) {
-        return trimmed;
+        return applyContentMediaRevisionIfNeeded(trimmed, item);
       }
     }
   }
@@ -403,7 +467,10 @@ export function extractValidImageUrl(item: any): string {
   const contentId = item.id || item.contentId;
   if (contentId && typeof contentId === "string") {
     const baseGateway = resolveBaseGatewayUrl();
-    return `${baseGateway}/content/${contentId}/media`;
+    return applyContentMediaRevisionIfNeeded(
+      `${baseGateway}/content/${contentId}/media`,
+      item,
+    );
   }
 
   return "";
@@ -465,6 +532,8 @@ export interface FeedItemDto {
   description: string;
   contentType: string;
   thumbnailUrl: string;
+  /** Media frame ratio when known — used by justified galleries. */
+  aspectRatio?: string;
   /** @deprecated — ignore for product UX; use platformStats */
   likeCount?: number;
   commentCount?: number;
@@ -487,6 +556,31 @@ export interface CreateMemeRequestDto {
   aspectRatio?: "1:1" | "16:9" | "9:16";
   templateId?: string;
   texts?: Array<{ slot: string; text: string }>;
+  title?: string;
+  referenceContentIds?: string[];
+  referenceUploadIds?: string[];
+}
+
+export interface MemeTemplateSlotDto {
+  id: string;
+  label: string;
+  maxLength: number;
+  placeholder?: string;
+}
+
+export interface MemeTemplateDto {
+  id: string;
+  name: string;
+  description: string;
+  tags: string[];
+  defaultAspectRatio: "1:1" | "16:9" | "9:16";
+  supportedAspectRatios: Array<"1:1" | "16:9" | "9:16">;
+  slots: MemeTemplateSlotDto[];
+  previewGradient: string;
+}
+
+export interface MemeTemplateListResponseDto {
+  items: MemeTemplateDto[];
 }
 
 export interface UploadUrlResponseDto {
@@ -512,11 +606,30 @@ export async function putToUploadUrl(
         ? file
         : file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength);
 
-  const res = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": contentType },
-    body: body as BodyInit,
-  });
+  let res: Response;
+  try {
+    res = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": contentType },
+      body: body as BodyInit,
+    });
+  } catch (error: any) {
+    const message = String(error?.message || "");
+    const isLikelyCors =
+      uploadUrl.includes("storage.googleapis.com") &&
+      (message.toLowerCase().includes("failed to fetch") ||
+        message.toLowerCase().includes("networkerror"));
+
+    if (isLikelyCors) {
+      throw {
+        statusCode: 0,
+        message:
+          "Reference upload was blocked by GCS CORS. Add your frontend origin to the bucket CORS policy for signed PUT uploads, then retry.",
+        error: "GCS_CORS_BLOCKED",
+      } as ApiError;
+    }
+    throw error;
+  }
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -771,11 +884,24 @@ export interface ContentDto {
   publishedAt?: string;
   caption?: string;
   selectedCaption?: string;
+  captions?: string[];
+  hashtagSets?: string[][];
   hashtags?: string[];
   selectedHashtags?: string[];
   prompt?: string;
+  /** Original generation prompt — preserved across refine. */
+  basePrompt?: string;
+  /** Most recent refine instruction; absent until refined. */
+  refinePrompt?: string;
   style?: string;
   aspectRatio?: string;
+  watermarked?: boolean;
+  storageKey?: string;
+  memeSpec?: {
+    mode?: "ai" | "template" | "hybrid";
+    templateId?: string;
+    texts?: Array<{ slot: string; text: string }>;
+  };
   views?: number;
   likes?: number;
   comments?: number;
@@ -789,40 +915,76 @@ export const contentApi = {
   requestUploadUrl: async (
     fileName: string,
     mimeType: string,
-    fileSize: number
+    fileSize: number,
+    /** Measured pixel size, so the stored content carries a real aspect ratio. */
+    dimensions?: { width: number; height: number }
   ): Promise<UploadUrlResponseDto> => {
     return performApiRequest<UploadUrlResponseDto>(
       "/content/upload-url",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileName, mimeType, fileSize }),
+        body: JSON.stringify({ fileName, mimeType, fileSize, ...dimensions }),
       }
     );
   },
 
-  /** Journey B helper: request upload URL then binary PUT the file. */
+  /** Journey B helper: request upload URL, binary PUT, then confirm (cleans orphans on failure). */
   uploadFile: async (file: File): Promise<UploadUrlResponseDto> => {
-    const meta = await contentApi.requestUploadUrl(
-      file.name,
-      file.type || "application/octet-stream",
-      file.size
-    );
-    await putToUploadUrl(meta.uploadUrl, file, file.type || "application/octet-stream");
+    let meta: UploadUrlResponseDto | undefined;
+    // Measured before the request so the aspect ratio is stored with the content;
+    // failure here is not worth blocking an upload over.
+    const dimensions = await measureImageFile(file).catch(() => undefined);
+    try {
+      meta = await contentApi.requestUploadUrl(
+        file.name,
+        file.type || "application/octet-stream",
+        file.size,
+        dimensions
+      );
+      await putToUploadUrl(meta.uploadUrl, file, file.type || "application/octet-stream");
+    } catch (err) {
+      const orphanId = meta?.contentId || meta?.assetId;
+      if (orphanId) {
+        try {
+          await contentApi.deleteContent(orphanId);
+        } catch {
+          // best-effort orphan cleanup
+        }
+      }
+      throw err;
+    }
+
+    try {
+      await contentApi.confirmUpload(meta.contentId || meta.assetId);
+    } catch {
+      // Non-fatal: object may still be usable; confirm also deletes if missing
+    }
+
     return meta;
+  },
+
+  confirmUpload: async (id: string): Promise<ContentDto> => {
+    return performApiRequest<ContentDto>(`/content/${id}/confirm-upload`, {
+      method: "POST",
+    });
   },
 
   generateImage: async (
     prompt: string, 
     style = "cinematic", 
-    aspectRatio = "16:9", 
-    model = "default",
+    aspectRatio: "1:1" | "16:9" | "9:16" = "1:1", 
+    model?: string,
     referenceContentIds?: string[],
-    referenceUploadIds?: string[]
+    referenceUploadIds?: string[],
+    title?: string,
   ) => {
-    const payload: Record<string, any> = { prompt, style, aspectRatio, model };
+    const payload: Record<string, any> = { prompt, style, aspectRatio };
+    if (model && model !== "default") payload.model = model;
     if (referenceContentIds && referenceContentIds.length > 0) payload.referenceContentIds = referenceContentIds;
     if (referenceUploadIds && referenceUploadIds.length > 0) payload.referenceUploadIds = referenceUploadIds;
+    const trimmedTitle = title?.trim();
+    if (trimmedTitle) payload.title = trimmedTitle;
 
     return performApiRequest(
       "/content/generate",
@@ -843,6 +1005,9 @@ export const contentApi = {
       model?: string; 
       referenceContentIds?: string[]; 
       referenceUploadIds?: string[];
+      title?: string;
+      /** Hybrid memes only: updated caption slots for the overlay. */
+      texts?: Array<{ slot: string; text: string }>;
     }
   ): Promise<any> => {
     return performApiRequest(
@@ -866,6 +1031,13 @@ export const contentApi = {
     );
   },
 
+  getMemeTemplates: async (): Promise<MemeTemplateListResponseDto> => {
+    return performApiRequest<MemeTemplateListResponseDto>(
+      "/content/meme-templates",
+      { method: "GET" }
+    );
+  },
+
   getContentList: async (cursor?: string, limitCount = 20): Promise<{ items: ContentDto[]; nextCursor?: string }> => {
     const safeLimit = Math.min(Math.max(1, limitCount), 100);
     const path = `/content?limit=${safeLimit}` + (cursor ? `&cursor=${encodeURIComponent(cursor)}` : "");
@@ -875,21 +1047,77 @@ export const contentApi = {
     );
   },
 
-  getUserContentList: async (limitCount = 100, cursor?: string): Promise<ContentDto[]> => {
+  getUserContentList: async (
+    limitCount = 100,
+    cursor?: string,
+    options?: { excludeUploads?: boolean },
+  ): Promise<ContentDto[]> => {
     const pageLimit = Math.min(Math.max(1, limitCount || 100), 100);
+    // When filtering uploads client-side, over-fetch so generations still fill the page.
+    const fetchTarget = options?.excludeUploads
+      ? Math.min(Math.max(limitCount || 100, 200), 400)
+      : limitCount || 100;
     const allItems: ContentDto[] = [];
     let currentCursor = cursor;
     let hasMore = true;
     let pageCount = 0;
-    const maxPages = Math.ceil((limitCount || 100) / pageLimit);
+    const maxPages = Math.ceil(fetchTarget / pageLimit);
+
+    // Drop any previously persisted mine-list snapshots (upload-only 304 ghosts).
+    try {
+      safeLocalStorage.keys().forEach((k) => {
+        if (k.includes("nx_api_cache_GET_/content/mine")) safeLocalStorage.removeItem(k);
+      });
+      safeSessionStorage.keys().forEach((k) => {
+        if (k.includes("nx_api_cache_GET_/content/mine")) safeSessionStorage.removeItem(k);
+      });
+    } catch {
+      // ignore storage errors
+    }
+
+    // Cloud content-service still rejects unknown query keys until redeployed.
+    // Probe once per session; fall back to legacy query shape on 400.
+    const useExtendedMineQuery = mineListSupportsExtendedQuery !== false;
 
     while (hasMore && pageCount < maxPages) {
       pageCount++;
-      const url = `/content/mine?limit=${pageLimit}` + (currentCursor ? `&cursor=${encodeURIComponent(currentCursor)}` : "");
-      const res = await performApiRequest<any>(
-        url,
-        { method: "GET" }
-      );
+      const buildUrl = (extended: boolean) => {
+        const params = new URLSearchParams();
+        params.set("limit", String(pageLimit));
+        if (currentCursor) params.set("cursor", currentCursor);
+        if (extended) {
+          if (options?.excludeUploads) params.set("excludeUploads", "true");
+          params.set("_cb", String(Date.now() + pageCount));
+        }
+        return `/content/mine?${params.toString()}`;
+      };
+
+      const requestOpts = {
+        method: "GET" as const,
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+        },
+      };
+
+      let res: any;
+      try {
+        res = await performApiRequest<any>(
+          buildUrl(useExtendedMineQuery),
+          requestOpts,
+        );
+        if (mineListSupportsExtendedQuery === null && useExtendedMineQuery) {
+          mineListSupportsExtendedQuery = true;
+        }
+      } catch (err: any) {
+        const status = err?.statusCode || err?.status;
+        if (useExtendedMineQuery && status === 400) {
+          mineListSupportsExtendedQuery = false;
+          res = await performApiRequest<any>(buildUrl(false), requestOpts);
+        } else {
+          throw err;
+        }
+      }
 
       let items: ContentDto[] = [];
       let nextCursor: string | undefined = undefined;
@@ -904,14 +1132,18 @@ export const contentApi = {
 
       allItems.push(...items);
 
-      if (nextCursor && items.length > 0 && allItems.length < (limitCount || 100)) {
+      if (nextCursor && items.length > 0 && allItems.length < fetchTarget) {
         currentCursor = nextCursor;
       } else {
         hasMore = false;
       }
     }
 
-    return allItems;
+    const filtered = options?.excludeUploads
+      ? allItems.filter((item) => !item.storageKey?.startsWith("uploads/"))
+      : allItems;
+
+    return filtered.slice(0, limitCount || 100);
   },
 
   getContentById: async (id: string, options?: { suppressErrorLog?: boolean }): Promise<ContentDto> => {
@@ -939,8 +1171,8 @@ export const contentApi = {
     );
   },
 
-  retryGeneration: async (id: string): Promise<{ jobId: string; status: string }> => {
-    return performApiRequest<{ jobId: string; status: string }>(
+  retryGeneration: async (id: string): Promise<any> => {
+    return performApiRequest(
       `/content/${id}/retry-generation`,
       { method: "POST" }
     );
@@ -1309,10 +1541,15 @@ export const analyticsApi = {
 
 export interface NotificationDto {
   id: string;
-  userId: string;
-  title: string;
-  body: string;
-  read: boolean;
+  userId?: string;
+  /** Legacy / display-friendly fields (may be absent from API) */
+  title?: string;
+  body?: string;
+  read?: boolean;
+  /** Actual notification-service shape */
+  eventName?: string;
+  payload?: Record<string, unknown>;
+  readAt?: string | null;
   createdAt: string;
 }
 
@@ -1387,13 +1624,25 @@ export const notificationApi = {
 export interface CoachQuestionResponse {
   message: string;
   question: number; // 0 = category picker, 1-5 = question index
-  category: string | null;
+  category?: string | null;
   chips: string[];
   chipLabels?: string[];
   multiSelect: boolean;
-  totalQuestions: number;
+  totalQuestions?: number;
+  answeredCount?: number;
+  status?: "category" | "not_started" | "in_progress" | "ready_for_plan" | "completed";
+}
+
+/** GET /coach/onboarding/status — wrapper; current prompt is in `question`. */
+export interface CoachStatusResponse {
+  status: "not_started" | "category" | "in_progress" | "ready_for_plan" | "completed";
+  category: string | null;
+  nextQuestion: number;
   answeredCount: number;
-  status: "category" | "not_started" | "in_progress" | "ready_for_plan" | "completed";
+  totalQuestions: number;
+  answers: Record<string, string | string[]>;
+  categories: Array<{ id: string; label: string }>;
+  question: CoachQuestionResponse | null;
 }
 
 export interface CoachPlanResponse {
@@ -1407,6 +1656,8 @@ export interface CoachPlanResponse {
       icon: string;
       contentType: string;
       theme: string;
+      title?: string;
+      hook?: string;
     }>;
     recommendedHashtags: string[];
     workspaceTheme: {
@@ -1428,8 +1679,8 @@ export const coachApi = {
     );
   },
 
-  getStatus: async (): Promise<CoachQuestionResponse> => {
-    return performApiRequest<CoachQuestionResponse>(
+  getStatus: async (): Promise<CoachStatusResponse> => {
+    return performApiRequest<CoachStatusResponse>(
       "/coach/onboarding/status",
       { method: "GET" }
     );

@@ -1,15 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
-  MoreVertical, 
-  Eye, 
   Calendar,
   Image as ImageIcon,
   Video,
-  ExternalLink,
   Trash2,
   Download,
-  Clapperboard,
   FileEdit,
   Filter,
   Search,
@@ -17,15 +13,12 @@ import {
   Zap,
   X,
   FolderInput,
-  Upload,
   ArrowUpDown,
   LayoutGrid,
   List,
   ChevronDown,
-  Plus,
-  RefreshCw
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AuthenticatedImage } from "../../components/AuthenticatedImage";
 import { Button } from "../../components/ui/button";
@@ -34,25 +27,68 @@ import {
   DropdownMenuContent, 
   DropdownMenuItem, 
   DropdownMenuTrigger,
-  DropdownMenuSeparator
 } from "../../components/ui/dropdown-menu";
-import { contentApi, extractValidImageUrl, ContentDto } from "../../services/apiClient";
+import { contentApi, extractValidImageUrl, contentMediaRevision, ContentDto } from "../../services/apiClient";
 import { toast } from "sonner";
 import { cn } from "../../lib/utils";
 import { StatusBadge } from "./components/StatusBadge";
 import { ContentCard } from "./components/ContentCard";
+import { resolveLibraryTitle } from "./lib/title";
 
 import { LibrarySkeleton } from "./skeletons/LibrarySkeleton";
 import { EmptyState } from "../../components/common/EmptyState";
 import { PublishDraftModal } from "../../components/common/PublishDraftModal";
+import {
+  JustifiedGallery,
+  JustifiedLayoutOptions,
+  parseAspectRatio,
+} from "../../components/JustifiedGallery";
+import { resolveItemAspectRatio } from "./lib/aspectRatio";
+
+/**
+ * The library is a dense browsing surface. The row-height band is raised well
+ * above the default so tall media (9:16 covers and memes) stays readable, since
+ * one row height sizes every tile in the row.
+ */
+const LIBRARY_LAYOUT: JustifiedLayoutOptions = {
+  maxColumns: 6,
+  minTileEdge: 190,
+  minRowHeight: 360,
+  maxRowHeight: 460,
+};
+
+const getLibraryRatio = (item: ContentDto) => parseAspectRatio(resolveItemAspectRatio(item));
+const getLibraryKey = (item: ContentDto) => `${item.id}-${contentMediaRevision(item)}`;
+// Uploaded references are stored without an aspect ratio, so the tile measures
+// the image and reports it back under this key.
+const getLibraryRatioKey = getLibraryKey;
+
+const VALID_TYPES = new Set(["all", "clip", "image", "meme"]);
+const VALID_STATUSES = new Set([
+  "all",
+  "draft",
+  "published",
+  "processing",
+  "generation_failed",
+  "moderation_rejected",
+  "reference",
+]);
 
 export default function ContentLibrary() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === "rtl";
 
-  const [activeType, setActiveType] = useState<string>("all");
-  const [activeStatus, setActiveStatus] = useState<string>("all");
+  const typeFromUrl = searchParams.get("type") || "all";
+  const statusFromUrl = searchParams.get("status") || "all";
+
+  const [activeType, setActiveType] = useState<string>(
+    VALID_TYPES.has(typeFromUrl) ? typeFromUrl : "all",
+  );
+  const [activeStatus, setActiveStatus] = useState<string>(
+    VALID_STATUSES.has(statusFromUrl) ? statusFromUrl : "all",
+  );
   const [searchQuery, setSearchQuery] = useState("");
 
   const [items, setItems] = useState<ContentDto[]>([]);
@@ -70,12 +106,30 @@ export default function ContentLibrary() {
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [selectedItemForPublish, setSelectedItemForPublish] = useState<ContentDto | null>(null);
 
+  useEffect(() => {
+    const nextType = VALID_TYPES.has(typeFromUrl) ? typeFromUrl : "all";
+    const nextStatus = VALID_STATUSES.has(statusFromUrl) ? statusFromUrl : "all";
+    setActiveType(nextType);
+    setActiveStatus(nextStatus);
+  }, [typeFromUrl, statusFromUrl]);
+
+  const updateFilters = (type: string, status: string) => {
+    setActiveType(type);
+    setActiveStatus(status);
+    const next = new URLSearchParams(searchParams);
+    if (type && type !== "all") next.set("type", type);
+    else next.delete("type");
+    if (status && status !== "all") next.set("status", status);
+    else next.delete("status");
+    setSearchParams(next, { replace: true });
+  };
+
   const fetchContent = async (quiet = false) => {
     try {
       if (!quiet) setIsLoading(true);
       else setIsRefreshing(true);
       
-      const data = await contentApi.getUserContentList(200); // Fetch up to 200 items for the library
+      const data = await contentApi.getUserContentList(400); // Prefer generations surviving upload-heavy pages
       setItems(data);
     } catch (err) {
       console.error("Failed to load content:", err);
@@ -91,10 +145,18 @@ export default function ContentLibrary() {
   }, []);
 
   const filteredItems = items.filter(item => {
+    const isReference = Boolean(item.storageKey?.startsWith("uploads/"));
     const matchesType = activeType === "all" || item.contentType === activeType;
-    const matchesStatus = activeStatus === "all" || item.status === activeStatus;
+    let matchesStatus = true;
+    if (activeStatus === "reference") {
+      matchesStatus = isReference;
+    } else if (activeStatus === "draft") {
+      matchesStatus = !isReference && item.status === "draft";
+    } else if (activeStatus !== "all") {
+      matchesStatus = !isReference && item.status === activeStatus;
+    }
     const matchesSearch = searchQuery === "" || 
-      (item.title || item.caption || "").toLowerCase().includes(searchQuery.toLowerCase());
+      (item.title || item.caption || item.prompt || item.storageKey || "").toLowerCase().includes(searchQuery.toLowerCase());
     return matchesType && matchesStatus && matchesSearch;
   });
 
@@ -182,12 +244,20 @@ export default function ContentLibrary() {
       state: {
         draftId: item.id,
         title: item.title || item.caption || "",
-        prompt: item.title || item.caption || item.description || "",
+        prompt: item.prompt || item.caption || item.description || item.title || "",
         imageUrl: imgUrl,
         mode: item.contentType === "meme" ? "meme" : "image",
         description: item.description || "",
-        item: item
-      }
+        style: item.style || undefined,
+        aspectRatio: item.aspectRatio || undefined,
+        status: item.status,
+        caption: item.selectedCaption || item.caption || item.captions?.[0] || "",
+        captions: item.captions,
+        hashtagSets: item.hashtagSets,
+        watermarked: item.watermarked,
+        studioSessionKey: `${item.id}-${Date.now()}`,
+        item,
+      },
     });
     toast.info(t('content_library.editing_draft_notice', { defaultValue: 'Continuing draft in Image Studio...' }));
   };
@@ -209,61 +279,32 @@ export default function ContentLibrary() {
   }
 
   return (
-    <div className="min-h-screen bg-black/20">
-      <div className="space-y-8 w-full px-6 md:px-10 lg:px-12 py-10">
-        {/* Header Section */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 pb-8 border-b border-white/5">
-          <div className="space-y-1">
-            <h1 className="text-4xl font-display font-bold tracking-tighter text-white flex items-center gap-4">
-              <div className="p-2.5 rounded-2xl bg-primary/10 border border-primary/20">
-                <Clapperboard className="text-primary w-8 h-8" />
+    <div className="min-h-screen">
+      <div className="space-y-4 w-full">
+        {/* Compact toolbar — page title lives in TopBar */}
+        <div className="flex flex-col gap-3 w-full sticky top-14 z-20 bg-background/80 backdrop-blur-md py-2 border-b border-border/40">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full">
+            <div className="relative group flex-1 min-w-[200px]">
+              <input 
+                type="text" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('content_library.search_placeholder', { defaultValue: 'Search your library...' })}
+                className="w-full bg-zinc-900/40 border border-white/5 rounded-xl h-10 pl-11 pr-4 text-sm font-medium text-white placeholder:text-zinc-600 focus:outline-none focus:border-primary/50 focus:bg-zinc-900/60 transition-all"
+              />
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-primary transition-colors">
+                <Search size={16} />
               </div>
-              {t('content_library.title')}
-            </h1>
-            <p className="text-sm text-zinc-500 font-medium ml-14">
-              {t('content_library.subtitle', { defaultValue: 'Manage your AI-generated clips and images.' })}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setIsSelectionMode(!isSelectionMode)}
-              className={cn(
-                "h-11 px-5 rounded-xl gap-2 font-bold uppercase tracking-widest text-[11px]",
-                isSelectionMode ? "bg-primary text-primary-foreground" : "bg-zinc-900/40 border-white/5 text-white hover:bg-zinc-900"
-              )}
-            >
-              <FileEdit size={16} />
-              {isSelectionMode ? "Exit Selection" : "Bulk Select"}
-            </Button>
-          </div>
-        </div>
-
-          {/* Unified Filter Row - No wrapper/container as requested */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4 w-full pt-4">
-          {/* Search Input - Primary focus */}
-          <div className="relative group flex-1 min-w-[280px]">
-            <input 
-              type="text" 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('content_library.search_placeholder', { defaultValue: 'Search your library...' })}
-              className="w-full bg-zinc-900/40 border border-white/5 rounded-xl h-11 pl-12 pr-4 text-sm font-medium text-white placeholder:text-zinc-600 focus:outline-none focus:border-primary/50 focus:bg-zinc-900/60 transition-all"
-            />
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-primary transition-colors">
-              <Search size={18} />
             </div>
-          </div>
 
-          <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
             {/* Category Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="h-11 px-4 bg-zinc-900/40 border-white/5 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-xl gap-2.5 font-bold text-[11px] uppercase tracking-widest transition-all">
-                  <Filter size={14} className="text-primary" />
+                <Button variant="outline" className="h-10 px-3 bg-zinc-900/40 border-white/5 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-xl gap-2 font-bold text-[10px] uppercase tracking-widest transition-all">
+                  <Filter size={13} className="text-primary" />
                   Type: <span className="text-white">{activeType === 'all' ? 'All' : activeType}</span>
-                  <ChevronDown size={14} className="opacity-50" />
+                  <ChevronDown size={13} className="opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 bg-zinc-900/95 border-white/10 backdrop-blur-xl p-1.5 rounded-xl">
@@ -275,7 +316,7 @@ export default function ContentLibrary() {
                 ].map((f) => (
                   <DropdownMenuItem 
                     key={f.id}
-                    onClick={() => setActiveType(f.id)}
+                    onClick={() => updateFilters(f.id, activeStatus)}
                     className={cn(
                       "gap-3 py-2.5 cursor-pointer rounded-lg font-bold text-[10px] uppercase tracking-widest transition-colors",
                       activeType === f.id ? "bg-primary/10 text-primary" : "text-zinc-400 focus:bg-white/5 focus:text-white"
@@ -291,10 +332,10 @@ export default function ContentLibrary() {
             {/* Status Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="h-11 px-4 bg-zinc-900/40 border-white/5 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-xl gap-2.5 font-bold text-[11px] uppercase tracking-widest transition-all">
-                  <Zap size={14} className="text-primary" />
-                  Status: <span className="text-white">{activeStatus === 'all' ? 'All' : activeStatus === 'published' ? 'Live' : 'Draft'}</span>
-                  <ChevronDown size={14} className="opacity-50" />
+                <Button variant="outline" className="h-10 px-3 bg-zinc-900/40 border-white/5 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-xl gap-2 font-bold text-[10px] uppercase tracking-widest transition-all">
+                  <Zap size={13} className="text-primary" />
+                  Status: <span className="text-white">{activeStatus === 'all' ? 'All' : activeStatus === 'published' ? 'Live' : activeStatus === 'reference' ? 'Reference' : 'Draft'}</span>
+                  <ChevronDown size={13} className="opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 bg-zinc-900/95 border-white/10 backdrop-blur-xl p-1.5 rounded-xl">
@@ -302,10 +343,11 @@ export default function ContentLibrary() {
                   { id: "all", label: "All Status" },
                   { id: "published", label: "Live Creations" },
                   { id: "draft", label: "Drafts Only" },
+                  { id: "reference", label: "References" },
                 ].map((f) => (
                   <DropdownMenuItem 
                     key={f.id}
-                    onClick={() => setActiveStatus(f.id)}
+                    onClick={() => updateFilters(activeType, f.id)}
                     className={cn(
                       "gap-3 py-2.5 cursor-pointer rounded-lg font-bold text-[10px] uppercase tracking-widest transition-colors",
                       activeStatus === f.id ? "bg-primary/10 text-primary" : "text-zinc-400 focus:bg-white/5 focus:text-white"
@@ -320,10 +362,10 @@ export default function ContentLibrary() {
             {/* Sort Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="h-11 px-4 bg-zinc-900/40 border-white/5 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-xl gap-2.5 font-bold text-[11px] uppercase tracking-widest transition-all">
-                  <ArrowUpDown size={14} className="text-primary" />
+                <Button variant="outline" className="h-10 px-3 bg-zinc-900/40 border-white/5 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-xl gap-2 font-bold text-[10px] uppercase tracking-widest transition-all">
+                  <ArrowUpDown size={13} className="text-primary" />
                   Sort: <span className="text-white">{sortBy}</span>
-                  <ChevronDown size={14} className="opacity-50" />
+                  <ChevronDown size={13} className="opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 bg-zinc-900/95 border-white/10 backdrop-blur-xl p-1.5 rounded-xl">
@@ -346,31 +388,44 @@ export default function ContentLibrary() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <div className="h-8 w-px bg-white/5 mx-1" />
+            <div className="h-7 w-px bg-white/10 hidden sm:block" />
 
-            <div className="flex items-center p-1 bg-zinc-900/40 border border-white/5 rounded-xl">
+            <div className="flex items-center p-0.5 bg-zinc-900/40 border border-white/5 rounded-xl">
               <Button 
                 variant="ghost" 
                 size="icon"
                 onClick={() => setViewMode("grid")}
                 className={cn(
-                  "w-9 h-9 rounded-lg transition-all",
-                  viewMode === "grid" ? "bg-primary text-primary-foreground shadow-lg shadow-primary/10" : "text-zinc-500 hover:text-white"
+                  "w-8 h-8 rounded-lg transition-all",
+                  viewMode === "grid" ? "bg-primary text-primary-foreground" : "text-zinc-500 hover:text-white"
                 )}
               >
-                <LayoutGrid size={16} />
+                <LayoutGrid size={15} />
               </Button>
               <Button 
                 variant="ghost" 
                 size="icon"
                 onClick={() => setViewMode("list")}
                 className={cn(
-                  "w-9 h-9 rounded-lg transition-all",
-                  viewMode === "list" ? "bg-primary text-primary-foreground shadow-lg shadow-primary/10" : "text-zinc-500 hover:text-white"
+                  "w-8 h-8 rounded-lg transition-all",
+                  viewMode === "list" ? "bg-primary text-primary-foreground" : "text-zinc-500 hover:text-white"
                 )}
               >
-                <List size={16} />
+                <List size={15} />
               </Button>
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={() => setIsSelectionMode(!isSelectionMode)}
+              className={cn(
+                "h-10 px-3 rounded-xl gap-2 font-bold uppercase tracking-widest text-[10px]",
+                isSelectionMode ? "bg-primary text-primary-foreground" : "bg-zinc-900/40 border-white/5 text-white hover:bg-zinc-900"
+              )}
+            >
+              <FileEdit size={14} />
+              {isSelectionMode ? "Exit" : "Select"}
+            </Button>
             </div>
           </div>
         </div>
@@ -388,6 +443,7 @@ export default function ContentLibrary() {
                   setSearchQuery("");
                   setActiveType("all");
                   setActiveStatus("all");
+                  setSearchParams({}, { replace: true });
                 } else {
                   navigate('/create');
                 }
@@ -396,48 +452,63 @@ export default function ContentLibrary() {
               onSecondaryAction={!searchQuery ? () => navigate('/feed') : undefined}
             />
           </div>
+        ) : viewMode === "grid" ? (
+          <JustifiedGallery
+            items={sortedItems}
+            getRatio={getLibraryRatio}
+            getKey={getLibraryKey}
+            getRatioKey={getLibraryRatioKey}
+            options={LIBRARY_LAYOUT}
+            renderItem={({ item, resolvedRatio, reportRatio, index }) => (
+              <ContentCard
+                item={item}
+                index={index}
+                aspectRatio={resolvedRatio ?? undefined}
+                onMediaLoad={reportRatio}
+                onViewDetails={(id) => navigate(`/feed/post/${id}`)}
+                onDownload={handleDownload}
+                onDelete={handleDelete}
+                onEdit={handleEdit}
+                onPublish={handlePublishClick}
+                isRtl={isRtl}
+                isSelectionMode={isSelectionMode}
+                isSelected={selectedIds.has(item.id)}
+                onToggleSelect={() => toggleSelection(item.id)}
+              />
+            )}
+          />
         ) : (
-          <div className={cn(
-            "w-full",
-            viewMode === "grid" 
-              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-8" 
-              : "space-y-4"
-          )}>
+          <div className="w-full space-y-4">
             <AnimatePresence mode="popLayout">
               {sortedItems.map((item, idx) => (
-                <motion.div
-                  key={item.id}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3, delay: idx * 0.05 }}
-                >
-                  {viewMode === "grid" ? (
-                    <ContentCard
-                      item={item}
-                      index={idx}
-                      onViewDetails={(id) => navigate(`/feed/post/${id}`)}
-                      onDownload={handleDownload}
-                      onDelete={handleDelete}
-                      onEdit={handleEdit}
-                      onPublish={handlePublishClick}
-                      isRtl={isRtl}
-                      isSelectionMode={isSelectionMode}
-                      isSelected={selectedIds.has(item.id)}
-                      onToggleSelect={() => toggleSelection(item.id)}
-                    />
-                  ) : (
-                    <div 
-                      onClick={() => isSelectionMode ? toggleSelection(item.id) : navigate(`/feed/post/${item.id}`)}
+                  <motion.div
+                    key={`${item.id}-${contentMediaRevision(item)}`}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3, delay: Math.min(idx * 0.03, 0.3) }}
+                  >
+                    <div
+                      onClick={() =>
+                        isSelectionMode
+                          ? toggleSelection(item.id)
+                          : navigate(`/feed/post/${item.id}`)
+                      }
                       className={cn(
                         "group flex items-center gap-6 p-4 bg-zinc-900/40 border rounded-2xl transition-all cursor-pointer",
-                        selectedIds.has(item.id) ? "border-primary bg-primary/5" : "border-white/5 hover:border-white/10 hover:bg-zinc-900/60"
+                        selectedIds.has(item.id)
+                          ? "border-primary bg-primary/5"
+                          : "border-white/5 hover:border-white/10 hover:bg-zinc-900/60",
                       )}
                     >
                       <div className="relative w-32 aspect-video rounded-xl overflow-hidden bg-black shrink-0">
-                        <AuthenticatedImage 
-                          src={extractValidImageUrl(item) || "https://picsum.photos/seed/1/400/225"} 
+                        <AuthenticatedImage
+                          key={contentMediaRevision(item)}
+                          src={
+                            extractValidImageUrl(item) ||
+                            "https://picsum.photos/seed/1/400/225"
+                          }
                           className="w-full h-full object-cover"
                         />
                         {selectedIds.has(item.id) && (
@@ -450,31 +521,56 @@ export default function ContentLibrary() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-white truncate group-hover:text-primary transition-colors">
-                          {item.title || item.caption || "Untitled Creation"}
+                          {resolveLibraryTitle(item)}
                         </h3>
                         <div className="flex items-center gap-4 mt-2">
-                          <StatusBadge status={item.status as any || "draft"} />
+                          <StatusBadge
+                            status={
+                              item.storageKey?.startsWith("uploads/")
+                                ? ("reference" as any)
+                                : ((item.status as any) || "draft")
+                            }
+                          />
                           <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                             <Calendar size={12} />
                             {new Date(item.createdAt as string).toLocaleDateString()}
                           </span>
                           <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                            {item.contentType === 'clip' ? <Video size={12} /> : <ImageIcon size={12} />}
+                            {item.contentType === "clip" ? (
+                              <Video size={12} />
+                            ) : (
+                              <ImageIcon size={12} />
+                            )}
                             {item.contentType}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="text-zinc-500 hover:text-white" onClick={(e) => { e.stopPropagation(); handleDownload(item); }}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-zinc-500 hover:text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownload(item);
+                          }}
+                        >
                           <Download size={18} />
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-zinc-500 hover:text-rose-500" onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-zinc-500 hover:text-rose-500"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(item.id);
+                          }}
+                        >
                           <Trash2 size={18} />
                         </Button>
                       </div>
                     </div>
-                  )}
-                </motion.div>
+                  </motion.div>
               ))}
             </AnimatePresence>
           </div>

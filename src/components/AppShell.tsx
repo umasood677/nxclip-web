@@ -8,9 +8,13 @@ import { cn } from "../lib/utils";
 interface AppShellProps {
   children: ReactNode;
   title?: string;
+  subtitle?: string;
+  titleIcon?: ReactNode;
+  /** Tighten main padding for content-dense pages like the library */
+  dense?: boolean;
 }
 
-export default function AppShell({ children, title }: AppShellProps) {
+export default function AppShell({ children, title, subtitle, titleIcon, dense }: AppShellProps) {
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   return (
@@ -31,8 +35,15 @@ export default function AppShell({ children, title }: AppShellProps) {
           isCollapsed ? "lg:ms-16" : "lg:ms-60"
         )}
       >
-        <TopBar title={title} />
-        <main id="main-content" className="flex-grow p-4 md:p-8 w-full outline-none" tabIndex={-1}>
+        <TopBar title={title} subtitle={subtitle} titleIcon={titleIcon} />
+        <main
+          id="main-content"
+          className={cn(
+            "flex-grow w-full outline-none",
+            dense ? "p-3 md:p-4" : "p-4 md:p-8",
+          )}
+          tabIndex={-1}
+        >
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

@@ -1,8 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { 
-  Settings2, Loader2, Maximize2, Image as ImageIcon, Plus, Check,
-  Type as TypeIcon, History 
+  Settings2, Loader2, Maximize2, Image as ImageIcon, Plus, Check, History 
 } from "lucide-react";
 import { Card } from "../../../components/ui/card";
 import { Label } from "../../../components/ui/label";
@@ -10,21 +9,7 @@ import { Button } from "../../../components/ui/button";
 import { Slider } from "../../../components/ui/slider";
 import { ScrollArea } from "../../../components/ui/scroll-area";
 import { Separator } from "../../../components/ui/separator";
-import { Switch } from "../../../components/ui/switch";
-import { Input } from "../../../components/ui/input";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "../../../components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../../components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../../components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -35,23 +20,23 @@ import { EditPanelProps } from "../types";
 
 export function EditPanel({ 
   resultImage, brightness, setBrightness, contrast, setContrast, saturation, setSaturation, 
-  isUpscaling, handleUpscale, isRemovingBg, handleRemoveBg, onPublishClick, isPublishing, isPublished, className 
+  isUpscaling, handleUpscale, isRemovingBg, handleRemoveBg, onPublishClick, onViewHistoryClick, isPublishing, isPublished, className 
 }: EditPanelProps) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === "rtl";
 
   return (
-    <Card className={cn("flex flex-col border-border glass shrink-0", className, isRTL ? "direction-rtl" : "direction-ltr")}>
-      <Tabs defaultValue="adjust" className="flex-1 flex flex-col">
-        <div className="p-2 border-b border-border/50">
+    <Card className={cn("flex flex-col border-border glass shrink-0 h-full min-h-0 overflow-hidden", className, isRTL ? "direction-rtl" : "direction-ltr")}>
+      <Tabs defaultValue="adjust" className="flex-1 flex flex-col min-h-0">
+        <div className="p-2 border-b border-border/50 shrink-0">
           <TabsList className="grid w-full grid-cols-3 h-9">
             <TabsTrigger value="adjust" className="text-[10px] font-bold">{t('image_studio.edit.tabs.adjust')}</TabsTrigger>
-            <TabsTrigger value="text" className="text-[10px] font-bold">{t('image_studio.edit.tabs.text')}</TabsTrigger>
-            <TabsTrigger value="layers" className="text-[10px] font-bold">{t('image_studio.edit.tabs.layers')}</TabsTrigger>
+            <TabsTrigger value="text" className="text-[10px] font-bold">Text (Soon)</TabsTrigger>
+            <TabsTrigger value="layers" className="text-[10px] font-bold">Layers (Soon)</TabsTrigger>
           </TabsList>
         </div>
 
-        <ScrollArea className="flex-1 h-full">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="p-4">
             <TabsContent value="adjust" className="m-0 space-y-6">
               <div className="space-y-4">
@@ -82,7 +67,7 @@ export function EditPanel({
                             <TooltipContent side={isRTL ? "left" : "right"}>{t('image_studio.edit.brightness_tooltip')}</TooltipContent>
                           </Tooltip>
                         </div>
-                        <span className="text-[10px] text-muted-foreground font-mono">{brightness}%</span>
+                        <span className="text-[10px] tabular-nums text-muted-foreground">{brightness}%</span>
                       </div>
                       <Slider 
                         value={[brightness]} 
@@ -105,7 +90,7 @@ export function EditPanel({
                             <TooltipContent side={isRTL ? "left" : "right"}>{t('image_studio.edit.contrast_tooltip')}</TooltipContent>
                           </Tooltip>
                         </div>
-                        <span className="text-[10px] text-muted-foreground font-mono">{contrast}%</span>
+                        <span className="text-[10px] tabular-nums text-muted-foreground">{contrast}%</span>
                       </div>
                       <Slider 
                         value={[contrast]} 
@@ -128,7 +113,7 @@ export function EditPanel({
                             <TooltipContent side={isRTL ? "left" : "right"}>{t('image_studio.edit.saturation_tooltip')}</TooltipContent>
                           </Tooltip>
                         </div>
-                        <span className="text-[10px] text-muted-foreground font-mono">{saturation}%</span>
+                        <span className="text-[10px] tabular-nums text-muted-foreground">{saturation}%</span>
                       </div>
                       <Slider 
                         value={[saturation]} 
@@ -145,13 +130,16 @@ export function EditPanel({
               <Separator className="bg-border/50" />
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{t('image_studio.edit.quick_actions')}</Label>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  Adjustments below are preview-only for now. Exported media still comes from the saved content draft.
+                </p>
                 <div className="grid grid-cols-2 gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="text-[10px] h-12 flex flex-col gap-1 font-bold border-border/50 hover:border-primary/50"
+                        className="text-[10px] h-12 flex flex-col gap-1 font-bold border-border/50 opacity-70"
                         onClick={handleUpscale}
                         disabled={!resultImage || isUpscaling}
                       >
@@ -160,11 +148,11 @@ export function EditPanel({
                         ) : (
                           <Maximize2 className="h-3 w-3" />
                         )}
-                        {isUpscaling ? t('image_studio.edit.processing') : t('image_studio.edit.upscale')}
+                        {isUpscaling ? t('image_studio.edit.processing') : "Upscale (Soon)"}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      {t('image_studio.edit.upscale_tooltip')}
+                      Planned for a later media-processing update.
                     </TooltipContent>
                   </Tooltip>
                   
@@ -173,7 +161,7 @@ export function EditPanel({
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="text-[10px] h-12 flex flex-col gap-1 font-bold border-border/50 hover:border-primary/50"
+                        className="text-[10px] h-12 flex flex-col gap-1 font-bold border-border/50 opacity-70"
                         onClick={handleRemoveBg}
                         disabled={!resultImage || isRemovingBg}
                       >
@@ -182,11 +170,11 @@ export function EditPanel({
                         ) : (
                           <ImageIcon className="h-3 w-3" />
                         )}
-                        {isRemovingBg ? t('image_studio.edit.removing') : t('image_studio.edit.bg_remove')}
+                        {isRemovingBg ? t('image_studio.edit.removing') : "BG Remove (Soon)"}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      {t('image_studio.edit.bg_remove_tooltip')}
+                      Planned for a later media-processing update.
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -194,78 +182,26 @@ export function EditPanel({
             </TabsContent>
 
             <TabsContent value="text" className="m-0 space-y-6">
-              <div className="space-y-4">
-                <Label className="text-[10px] font-bold text-muted-foreground">{t('image_studio.edit.text_layers')}</Label>
-                <Button variant="outline" className={cn("w-full gap-2 text-xs font-bold border-border/50", isRTL && "flex-row-reverse")}>
-                  <Plus className="h-3 w-3" />
-                  {t('image_studio.edit.add_text')}
-                </Button>
-                <div className="p-3 rounded-xl border border-border/50 bg-muted/30 space-y-3">
-                  <Input placeholder={t('image_studio.edit.font_placeholder')} className={cn("h-9 text-xs bg-background/50 border-border/50", isRTL && "text-right")} />
-                  <div className={cn("grid grid-cols-2 gap-2", isRTL && "flex-row-reverse")}>
-                    <Select defaultValue="inter">
-                      <SelectTrigger className="h-8 text-[10px] bg-background/50 border-border/50">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="inter">Inter</SelectItem>
-                        <SelectItem value="impact">Impact</SelectItem>
-                        <SelectItem value="mono">Mono</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <div className={cn("flex gap-1", isRTL && "flex-row-reverse")}>
-                      <Button size="icon" variant="outline" className="h-8 w-8 border-border/50"><TypeIcon className="h-3 w-3" /></Button>
-                      <Button size="icon" variant="outline" className="h-8 w-8 border-border/50"><TypeIcon className="h-3 w-3" /></Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <Separator className="bg-border/50" />
-              <div className="space-y-3">
-                <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{t('image_studio.edit.presets')}</Label>
-                <div className="grid grid-cols-1 gap-1">
-                  {[
-                    { id: "gaming_meme", label: t('image_studio.edit.preset_labels.gaming_meme') },
-                    { id: "stream_alert", label: t('image_studio.edit.preset_labels.stream_alert') },
-                    { id: "thumbnail_title", label: t('image_studio.edit.preset_labels.thumbnail_title') }
-                  ].map(p => (
-                    <Button key={p.id} variant="ghost" className={cn("justify-start text-xs h-9 font-medium hover:bg-primary/5 hover:text-primary transition-colors", isRTL && "flex-row-reverse text-right")}>
-                      {p.label}
-                    </Button>
-                  ))}
-                </div>
+              <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-4 space-y-2">
+                <Label className="text-[10px] font-bold text-muted-foreground">Text tools are planned</Label>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Text overlays for freeform editing are not active yet. Meme text is currently handled through Meme Studio configuration on the left panel.
+                </p>
               </div>
             </TabsContent>
 
             <TabsContent value="layers" className="m-0 space-y-4">
-              <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{t('image_studio.edit.tabs.layers')}</Label>
-              <div className="space-y-2">
-                <div className={cn("flex items-center gap-3 p-3 rounded-xl bg-primary/10 border border-primary/20", isRTL && "flex-row-reverse")}>
-                  <div className="h-10 w-10 rounded-lg bg-muted overflow-hidden border border-border">
-                    {resultImage && <img src={resultImage} alt="layer bg" className="w-full h-full object-cover" />}
-                  </div>
-                  <div className={cn("flex-1", isRTL && "text-right")}>
-                    <p className="text-[10px] font-bold">{t('image_studio.edit.background_layer')}</p>
-                    <p className="text-[8px] text-muted-foreground font-bold">{t('image_studio.edit.ai_generation')}</p>
-                  </div>
-                  <Switch checked />
-                </div>
-                <div className={cn("flex items-center gap-3 p-3 rounded-xl border border-border/50 opacity-50", isRTL && "flex-row-reverse")}>
-                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center border border-border">
-                    <TypeIcon className="h-4 w-4" />
-                  </div>
-                  <div className={cn("flex-1", isRTL && "text-right")}>
-                    <p className="text-[10px] font-bold">Text Layer 1</p>
-                    <p className="text-[8px] text-muted-foreground font-bold">{t('image_studio.edit.empty_layer')}</p>
-                  </div>
-                  <Switch disabled />
-                </div>
+              <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-4 space-y-2">
+                <Label className="text-[10px] font-bold text-muted-foreground">Layer controls are planned</Label>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  This panel will later manage editable image/text layers. For now, the generated draft preview is the only active layer.
+                </p>
               </div>
             </TabsContent>
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t border-border/50 space-y-2">
+        <div className="p-4 border-t border-border/50 space-y-2 shrink-0 bg-background/90">
           {resultImage && (
             <Button 
               variant="brand-gradient" 
@@ -291,9 +227,17 @@ export function EditPanel({
               )}
             </Button>
           )}
-          <Button variant="secondary" className={cn("w-full text-xs gap-2 h-9 font-bold", isRTL && "flex-row-reverse")}>
-            <History className="h-3 w-3" />
-            {t('image_studio.edit.view_history')}
+          <Button
+            type="button"
+            variant="outline"
+            className={cn(
+              "w-full text-xs gap-2 h-10 font-bold border-border bg-muted/40 hover:bg-muted/70",
+              isRTL && "flex-row-reverse",
+            )}
+            onClick={onViewHistoryClick}
+          >
+            <History className="h-3.5 w-3.5" />
+            View History
           </Button>
         </div>
       </Tabs>

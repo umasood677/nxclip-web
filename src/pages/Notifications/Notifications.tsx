@@ -20,7 +20,8 @@ import { Badge } from "../../components/ui/badge";
 import { Card, CardContent } from "../../components/ui/card";
 import { cn } from "../../lib/utils";
 import { socketService, SocketStatus, WebSocketEnvelope } from "../../services/socketService";
-import { notificationApi, type NotificationDto } from "../../services/apiClient";
+import { notificationApi } from "../../services/apiClient";
+import { normalizeNotification, normalizeNotificationList } from "../../lib/notifications";
 import { toast } from "sonner";
 import { EmptyState } from "../../components/common/EmptyState";
 
@@ -47,31 +48,32 @@ const TYPE_CONFIG = {
   moderation: { icon: ShieldCheck, color: "text-indigo-400", bg: "bg-indigo-500/10" },
 };
 
-function inferType(title: string, body: string): ClientNotification["type"] {
-  const t = `${title} ${body}`.toLowerCase();
+function inferType(title: string, body: string, eventName?: string): ClientNotification["type"] {
+  const t = `${eventName || ""} ${title} ${body}`.toLowerCase();
   if (t.includes("moderat")) return "moderation";
   if (t.includes("bill") || t.includes("subscription")) return "billing";
   if (t.includes("analytic") || t.includes("report")) return "analytics";
-  if (t.includes("social") || t.includes("follow") || t.includes("comment")) return "social";
+  if (t.includes("social") || t.includes("follow") || t.includes("comment") || t.includes("engagement")) return "social";
   if (t.includes("trend")) return "trend";
-  if (t.includes("achieve") || t.includes("unlock")) return "achievement";
+  if (t.includes("achieve") || t.includes("unlock") || t.includes("onboarding")) return "achievement";
   return "system";
 }
 
-function mapDto(dto: NotificationDto): ClientNotification {
-  const type = inferType(dto.title || "", dto.body || "");
+function toClient(raw: Parameters<typeof normalizeNotification>[0]): ClientNotification {
+  const n = normalizeNotification(raw);
+  const type = inferType(n.title, n.body, n.eventName);
   const cfg = TYPE_CONFIG[type];
-  const created = dto.createdAt ? new Date(dto.createdAt) : new Date();
+  const created = n.createdAt ? new Date(n.createdAt) : new Date();
   return {
-    id: dto.id,
-    title: dto.title || "Notification",
-    description: dto.body || "",
+    id: n.id,
+    title: n.title,
+    description: n.body,
     icon: cfg.icon,
     color: cfg.color,
     bg: cfg.bg,
     time: created.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     date: created.toLocaleDateString(),
-    unread: !dto.read,
+    unread: !n.read,
     type,
   };
 }
@@ -112,8 +114,7 @@ export default function Notifications() {
     setLoading(true);
     try {
       const res = await notificationApi.getNotifications(undefined, 50);
-      const items = Array.isArray(res) ? res : res?.items || [];
-      setNotifications(items.map(mapDto));
+      setNotifications(normalizeNotificationList(res).map((n) => toClient(n as any)));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to load notifications";
       toast.error("Notifications", { description: message });
@@ -154,18 +155,23 @@ export default function Notifications() {
           "system",
         ),
       );
+      void loadNotifications();
     });
 
     const unsubModeration = socketService.subscribe("content:moderation_complete", (_e, payload) => {
       const data = (payload as WebSocketEnvelope<any>)?.data || payload;
-      const approved = data.status === "approved" || data.status === "published";
+      const status = String(data.status || "").toLowerCase();
+      const approved = status === "approved" || status === "published";
+      const published = status === "published";
       pushLive(
         fromSocket(
-          approved ? "Content approved" : "Content rejected",
+          published ? "Content published" : approved ? "Content approved" : "Content rejected",
           data.reason ||
-            (approved
-              ? "Your post cleared moderation and can appear on the feed."
-              : "Moderation rejected this draft — edit and re-publish."),
+            (published
+              ? "Your post is live on the Home feed."
+              : approved
+                ? "Your post cleared moderation and can appear on the feed."
+                : "Moderation rejected this draft — edit and re-publish."),
           "moderation",
         ),
       );
@@ -174,6 +180,7 @@ export default function Notifications() {
 
     const unsubOnboarding = socketService.subscribe("onboarding:complete", () => {
       pushLive(fromSocket("Onboarding complete", "Your Creator Coach plan is ready.", "achievement"));
+      void loadNotifications();
     });
 
     return () => {
@@ -220,18 +227,11 @@ export default function Notifications() {
   ];
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] px-4 py-8 md:px-8 max-w-3xl mx-auto">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+    <div className="min-h-[calc(100vh-4rem)] px-1 py-2 md:px-2 max-w-3xl mx-auto">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-            <Bell className="h-6 w-6 text-primary" />
-            Notifications
-            {unreadCount > 0 && (
-              <Badge className="rounded-full">{unreadCount}</Badge>
-            )}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Live updates from the gateway and notification service
+          <p className="text-sm text-muted-foreground">
+            Generation, moderation, and system updates from your account
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -245,6 +245,11 @@ export default function Notifications() {
             {wsStatus === "connected" ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
             {wsStatus}
           </Badge>
+          {unreadCount > 0 && (
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground tabular-nums">
+              {unreadCount} new
+            </span>
+          )}
           <Button variant="outline" size="sm" onClick={() => void loadNotifications()}>
             <RefreshCw className="h-4 w-4 mr-1" />
             Refresh
@@ -349,3 +354,4 @@ export default function Notifications() {
     </div>
   );
 }
+

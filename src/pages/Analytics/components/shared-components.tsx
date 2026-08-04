@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, type ElementType } from "react";
 import { useTranslation } from "react-i18next";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
@@ -45,8 +45,8 @@ CustomTooltip.displayName = "CustomTooltip";
 export interface MetricCardProps {
   title: string;
   value: string;
-  trend: number;
-  icon: React.ElementType;
+  trend?: number;
+  icon: ElementType;
   description?: string;
 }
 
@@ -62,13 +62,15 @@ export const MetricCard = memo(({ title, value, trend, icon: Icon, description }
           <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-xs transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:border-primary/40 group-hover:rotate-3">
             <Icon size={18} />
           </div>
-          <div className={cn(
-            "flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wider transition-transform duration-200 group-hover:scale-105",
-            trend > 0 ? "text-brand-secondary bg-brand-secondary/10 border border-brand-secondary/20" : "text-destructive bg-destructive/10 border border-destructive/20"
-          )}>
-            {trend > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-            {Math.abs(trend)}{i18n.language === 'ar' ? '٪' : '%'}
-          </div>
+          {typeof trend === "number" && trend !== 0 && (
+            <div className={cn(
+              "flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wider transition-transform duration-200 group-hover:scale-105",
+              trend > 0 ? "text-brand-secondary bg-brand-secondary/10 border border-brand-secondary/20" : "text-destructive bg-destructive/10 border border-destructive/20"
+            )}>
+              {trend > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+              {Math.abs(trend)}{i18n.language === 'ar' ? '٪' : '%'}
+            </div>
+          )}
         </div>
         <div>
           <h4 className="text-[10px] font-bold text-muted-foreground tracking-widest leading-none mb-1.5 uppercase transition-colors group-hover:text-muted-foreground/90">{title}</h4>

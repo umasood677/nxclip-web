@@ -75,23 +75,23 @@ export default function CreatorSpotlight() {
   return (
     <section className="ui-landing-section bg-muted/20">
       <div className="ui-container-landing relative z-10">
-        <div className="text-center mb-24">
+        <div className="text-center mb-10 md:mb-12">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="ui-landing-label"
+            className="ui-landing-label !mb-4"
           >
             <span>{t('spotlight.label')}</span>
           </motion.div>
           <h2 className="ui-landing-title mx-auto max-w-4xl">
             {t('spotlight.title')} <br /><span className="brand-text-gradient">{t('spotlight.title_gradient')}</span>
           </h2>
-          <p className="ui-landing-description mx-auto">
+          <p className="ui-landing-description mx-auto !mb-0">
             {t('spotlight.description')}
           </p>
           
-          <div className="flex items-center justify-center mt-12">
+          <div className="flex items-center justify-center mt-6">
             <div className="flex -space-x-3 rtl:space-x-reverse">
               {creators.map((c, i) => (
                 <div key={i} className="w-12 h-12 rounded-full border-2 border-background overflow-hidden glass">
@@ -115,11 +115,11 @@ export default function CreatorSpotlight() {
               transition={{ delay: index * 0.1, duration: 0.8 }}
               className="ui-glass-card group flex flex-col p-4 rounded-xl border-border/5 h-full bg-card/10 backdrop-blur-md"
             >
-              <div className="relative aspect-[4/5] rounded-xl overflow-hidden mb-6">
+              <div className="relative aspect-[4/5] rounded-xl overflow-hidden mb-6 bg-muted">
                 <img 
                   src={creator.avatar} 
                   alt={creator.handle}
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                  className="w-full h-full object-cover transition-transform duration-1000 will-change-transform scale-[1.02] group-hover:scale-[1.08]"
                   referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
