@@ -69,11 +69,11 @@ const CAPS: CapDef[] = [
   },
   {
     key: "clipEditor",
-    title: "Clip Editor",
+    title: "Clip Studio",
     line: "Trim, cut, and shape highlights in one flow.",
     chip: "Edit",
     path: "/create/clip",
-    cta: "Open Clip Editor",
+    cta: "Open Clip Studio",
     variant: "editor",
     span: "md:col-span-7 lg:col-span-8",
     height: "h-[240px] sm:h-[260px] md:h-[300px] lg:h-[320px]",

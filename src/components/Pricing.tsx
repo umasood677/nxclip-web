@@ -1,16 +1,71 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, ArrowRight, Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
+import { CheckCircle2, ArrowRight, Sparkles, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { Button } from "./ui/button";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { PRICING_PLANS } from "../lib/pricing-data";
+import { useAppSelector } from "../store/hooks";
+import { selectAuthUser, selectAuthProfile } from "../store/slices/authSlice";
+import { startProCheckout, toastBillingError } from "../services/billingService";
+import { toast } from "sonner";
 
 export default function Pricing() {
   const { t } = useTranslation();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const authUser = useAppSelector(selectAuthUser);
+  const profile = useAppSelector(selectAuthProfile);
+  const navigate = useNavigate();
+  const currentPlan = (profile?.plan || "free").toLowerCase();
+
+  const handlePlanCta = async (planId: string) => {
+    if (planId === "starter") {
+      if (authUser) {
+        navigate("/feed");
+      } else {
+        navigate("/signup");
+      }
+      return;
+    }
+
+    if (!authUser) {
+      navigate("/signup?next=/upgrade");
+      return;
+    }
+
+    if (currentPlan === "pro" || currentPlan === "studio") {
+      toast.message("You're already on a paid plan", {
+        description: "Manage billing from Settings.",
+      });
+      navigate("/settings");
+      return;
+    }
+
+    if (planId !== "pro" && planId !== "studio") {
+      navigate("/signup");
+      return;
+    }
+
+    setLoadingPlan(planId);
+    try {
+      if (planId === "studio") {
+        // Studio uses monthly/annual price ids when configured; fall back messaging.
+        const { startCheckout } = await import("../services/billingService");
+        await startCheckout(
+          billingCycle === "yearly" ? "studio_annual" : "studio_monthly",
+          billingCycle === "yearly" ? "annual" : "monthly",
+        );
+      } else {
+        await startProCheckout(billingCycle);
+      }
+    } catch (err) {
+      toastBillingError(err, "Could not start Stripe Checkout. Check Stripe env keys.");
+      setLoadingPlan(null);
+    }
+  };
 
   return (
     <section id="pricing" className="ui-landing-section">
@@ -155,18 +210,21 @@ export default function Pricing() {
                   <Button
                     variant={plan.popular ? "default" : "outline"}
                     size="xl"
-                    asChild
+                    disabled={loadingPlan === plan.id}
+                    onClick={() => void handlePlanCta(plan.id)}
                     className={cn(
                       "w-full font-bold",
                       plan.popular &&
                         "bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90",
                     )}
                   >
-                    <Link to="/signup">
-                      {plan.popular
-                        ? t("pricing.upgrade")
-                        : t("pricing.get_started")}
-                    </Link>
+                    {loadingPlan === plan.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : plan.popular ? (
+                      t("pricing.upgrade")
+                    ) : (
+                      t("pricing.get_started")
+                    )}
                   </Button>
                 </div>
               </motion.div>

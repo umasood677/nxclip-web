@@ -8,6 +8,9 @@ import {
   RefreshCw,
   ZoomIn,
   Move,
+  LayoutGrid,
+  Loader2,
+  Image as ImageIcon,
 } from "lucide-react";
 import {
   Dialog,
@@ -20,6 +23,14 @@ import {
 import { Button } from "./ui/button";
 import { Slider } from "./ui/slider";
 import { cn } from "../lib/utils";
+import { AuthenticatedImage } from "./AuthenticatedImage";
+import {
+  contentApi,
+  extractValidImageUrl,
+  resolveBaseGatewayUrl,
+  type ContentDto,
+} from "../services/apiClient";
+import { getAccessToken } from "../services/auth/authService";
 
 export type PhotoUploadVariant = "avatar" | "cover";
 
@@ -29,6 +40,56 @@ interface PhotoUploadDialogProps {
   onSelect: (photoDataUrl: string) => void;
   /** Avatar = circular crop; cover = rectangular banner crop. */
   variant?: PhotoUploadVariant;
+}
+
+type DialogMode = "choice" | "camera" | "library" | "preview";
+
+function isImageLikeContent(item: ContentDto): boolean {
+  const type = String(item.contentType || "").toLowerCase();
+  if (type === "clip" || type === "video") return false;
+  if (type === "image" || type === "meme") return true;
+  if (item.memeSpec || item.style === "meme") return true;
+  // Uploads / unknown still usable if they have a media URL
+  return !!extractValidImageUrl(item);
+}
+
+/** Resolve gated `/content/.../media` (or public URL) into a same-origin blob URL for canvas crop. */
+async function mediaSrcToObjectUrl(src: string): Promise<string> {
+  const targetUrl = src.trim();
+  if (!targetUrl) throw new Error("Empty media URL");
+  if (targetUrl.startsWith("data:") || targetUrl.startsWith("blob:")) return targetUrl;
+
+  const baseGateway = resolveBaseGatewayUrl();
+  const isGatewayUrl =
+    targetUrl.startsWith("/content/") ||
+    targetUrl.startsWith("/api/gateway") ||
+    targetUrl.startsWith(baseGateway) ||
+    targetUrl.includes("/content/") ||
+    /\/content\/[^/]+\/media/.test(targetUrl);
+
+  let fetchUrl = targetUrl;
+  if (isGatewayUrl) {
+    let relativePath = targetUrl;
+    if (targetUrl.startsWith("http://") || targetUrl.startsWith("https://")) {
+      try {
+        const u = new URL(targetUrl);
+        relativePath = u.pathname + u.search;
+      } catch {
+        relativePath = targetUrl.replace(/https?:\/\/[^/]+/, "");
+      }
+    }
+    if (!relativePath.startsWith("/")) relativePath = `/${relativePath}`;
+    const token = getAccessToken();
+    fetchUrl = `/api/gateway-proxy${relativePath}`;
+    if (token && !fetchUrl.includes("token=")) {
+      fetchUrl += `${fetchUrl.includes("?") ? "&" : "?"}token=${encodeURIComponent(token)}`;
+    }
+  }
+
+  const res = await fetch(fetchUrl, { credentials: "include" });
+  if (!res.ok) throw new Error(`Could not load library media (${res.status})`);
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
 }
 
 const AVATAR_FRAME = { w: 256, h: 256 };
@@ -73,7 +134,7 @@ export function PhotoUploadDialog({
   );
   const outSize = isCover ? COVER_OUT : AVATAR_OUT;
 
-  const [mode, setMode] = useState<"choice" | "camera" | "preview">("choice");
+  const [mode, setMode] = useState<DialogMode>("choice");
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +144,10 @@ export function PhotoUploadDialog({
   const [frameSize, setFrameSize] = useState(designFrame);
   const [dragging, setDragging] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [libraryItems, setLibraryItems] = useState<ContentDto[]>([]);
+  const [libraryLoading, setLibraryLoading] = useState(false);
+  const [libraryError, setLibraryError] = useState<string | null>(null);
+  const [pickingLibraryId, setPickingLibraryId] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -90,10 +155,18 @@ export function PhotoUploadDialog({
   const frameRef = useRef<HTMLDivElement>(null);
   const dragStart = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
   const offsetRef = useRef(offset);
   const zoomRef = useRef(zoom);
   offsetRef.current = offset;
   zoomRef.current = zoom;
+
+  const revokeObjectUrl = useCallback(() => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     streamRef.current = stream;
@@ -143,6 +216,7 @@ export function PhotoUploadDialog({
 
   const reset = useCallback(() => {
     stopStream();
+    revokeObjectUrl();
     setMode("choice");
     setSourceUrl(null);
     setError(null);
@@ -150,8 +224,52 @@ export function PhotoUploadDialog({
     setOffset({ x: 0, y: 0 });
     setImgSize({ w: 0, h: 0 });
     setConfirming(false);
+    setLibraryError(null);
+    setPickingLibraryId(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
-  }, [stopStream]);
+  }, [stopStream, revokeObjectUrl]);
+
+  const openLibrary = useCallback(async () => {
+    setMode("library");
+    setLibraryError(null);
+    setLibraryLoading(true);
+    try {
+      // Same source as Content Library (includes uploaded references, not only studio generations).
+      const items = await contentApi.getUserContentList(400);
+      setLibraryItems((items || []).filter(isImageLikeContent));
+    } catch (err) {
+      console.error("Failed to load content library:", err);
+      setLibraryError("Could not load your content library.");
+      setLibraryItems([]);
+    } finally {
+      setLibraryLoading(false);
+    }
+  }, []);
+
+  const pickFromLibrary = useCallback(
+    async (item: ContentDto) => {
+      const mediaSrc = extractValidImageUrl(item);
+      if (!mediaSrc || pickingLibraryId) return;
+      setPickingLibraryId(item.id);
+      setLibraryError(null);
+      try {
+        const objectUrl = await mediaSrcToObjectUrl(mediaSrc);
+        revokeObjectUrl();
+        objectUrlRef.current = objectUrl.startsWith("blob:") ? objectUrl : null;
+        setSourceUrl(objectUrl);
+        setZoom(1);
+        setOffset({ x: 0, y: 0 });
+        setImgSize({ w: 0, h: 0 });
+        setMode("preview");
+      } catch (err) {
+        console.error("Failed to open library image:", err);
+        setLibraryError("Could not open that creation. Try another one.");
+      } finally {
+        setPickingLibraryId(null);
+      }
+    },
+    [pickingLibraryId, revokeObjectUrl],
+  );
 
   const startCamera = async () => {
     try {
@@ -363,20 +481,24 @@ export function PhotoUploadDialog({
       ? isCover
         ? "Capture Cover"
         : "Capture Photo"
-      : mode === "preview"
-        ? isCover
-          ? "Adjust Cover"
-          : "Adjust Photo"
-        : isCover
-          ? "Cover Photo"
-          : "Profile Photo";
+      : mode === "library"
+        ? "Choose from Library"
+        : mode === "preview"
+          ? isCover
+            ? "Adjust Cover"
+            : "Adjust Photo"
+          : isCover
+            ? "Cover Photo"
+            : "Profile Photo";
 
   const description =
-    mode === "preview"
-      ? "Drag to reposition, use zoom to frame the shot, then confirm."
-      : isCover
-        ? "Upload a banner that fills your profile cover area."
-        : "Update your creator identity with a new visual signature.";
+    mode === "library"
+      ? "Pick a creation or uploaded reference from your Content Library, then crop it to fit."
+      : mode === "preview"
+        ? "Drag to reposition, use zoom to frame the shot, then confirm."
+        : isCover
+          ? "Upload a banner, take a photo, or reuse something from your library."
+          : "Update your creator identity — camera, upload, or Content Library.";
 
   return (
     <Dialog
@@ -391,7 +513,7 @@ export function PhotoUploadDialog({
       <DialogContent
         className={cn(
           "bg-card border-border p-0 overflow-hidden",
-          isCover ? "sm:max-w-xl" : "sm:max-w-md",
+          mode === "library" ? "sm:max-w-2xl" : isCover ? "sm:max-w-xl" : "sm:max-w-md",
         )}
       >
         <DialogHeader className="p-6 pb-0">
@@ -405,10 +527,10 @@ export function PhotoUploadDialog({
 
         <div className="p-6 min-h-[280px] flex flex-col items-center justify-center">
           {mode === "choice" && (
-            <div className="grid grid-cols-2 gap-4 w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
               <Button
                 variant="outline"
-                className="h-32 flex flex-col gap-3 group bg-muted/20 border-border/50 hover:border-primary/50 hover:bg-primary/5"
+                className="h-28 sm:h-32 flex flex-col gap-3 group bg-muted/20 border-border/50 hover:border-primary/50 hover:bg-primary/5"
                 onClick={startCamera}
               >
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
@@ -420,7 +542,7 @@ export function PhotoUploadDialog({
               </Button>
               <Button
                 variant="outline"
-                className="h-32 flex flex-col gap-3 group bg-muted/20 border-border/50 hover:border-primary/50 hover:bg-primary/5"
+                className="h-28 sm:h-32 flex flex-col gap-3 group bg-muted/20 border-border/50 hover:border-primary/50 hover:bg-primary/5"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
@@ -430,6 +552,18 @@ export function PhotoUploadDialog({
                   Upload File
                 </span>
               </Button>
+              <Button
+                variant="outline"
+                className="h-28 sm:h-32 flex flex-col gap-3 group bg-muted/20 border-border/50 hover:border-primary/50 hover:bg-primary/5"
+                onClick={() => void openLibrary()}
+              >
+                <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
+                  <LayoutGrid size={24} />
+                </div>
+                <span className="text-[10px] font-black tracking-widest uppercase">
+                  From Library
+                </span>
+              </Button>
               <input
                 type="file"
                 ref={fileInputRef}
@@ -437,6 +571,99 @@ export function PhotoUploadDialog({
                 accept="image/*"
                 onChange={handleFileUpload}
               />
+            </div>
+          )}
+
+          {mode === "library" && (
+            <div className="w-full space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Your images & memes
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-xs font-bold"
+                  onClick={() => {
+                    setLibraryError(null);
+                    setMode("choice");
+                  }}
+                >
+                  Back
+                </Button>
+              </div>
+
+              {libraryLoading ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
+                  <Loader2 className="animate-spin text-primary" size={28} />
+                  <p className="text-xs font-medium">Loading library…</p>
+                </div>
+              ) : libraryItems.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-14 text-center">
+                  <ImageIcon className="text-muted-foreground/40" size={36} />
+                  <p className="text-sm font-medium text-muted-foreground max-w-sm">
+                    {libraryError ||
+                      "No images or memes in your library yet. Create something in Image Studio first."}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="font-bold"
+                    onClick={() => setMode("choice")}
+                  >
+                    Choose another option
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  {libraryError ? (
+                    <p className="text-xs font-medium text-destructive text-center">{libraryError}</p>
+                  ) : null}
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[360px] overflow-y-auto custom-scrollbar pr-1">
+                    {libraryItems.map((item) => {
+                      const thumb = extractValidImageUrl(item);
+                      const busy = pickingLibraryId === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          disabled={!!pickingLibraryId}
+                          onClick={() => void pickFromLibrary(item)}
+                          className={cn(
+                            "relative aspect-square rounded-lg overflow-hidden border border-border bg-muted/40 group transition-all",
+                            "hover:border-primary/60 hover:ring-2 hover:ring-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                            busy && "opacity-70 ring-2 ring-primary",
+                            pickingLibraryId && !busy && "opacity-40",
+                          )}
+                          title={item.title || item.caption || "Select"}
+                        >
+                          {thumb ? (
+                            <AuthenticatedImage
+                              src={thumb}
+                              alt=""
+                              disableRemoteFallback
+                              className="!absolute !inset-0 !h-full !w-full !object-cover"
+                              wrapperClassName="!absolute !inset-0 !h-full !w-full !aspect-auto !bg-muted"
+                              placeholderAspectRatio="1 / 1"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <ImageIcon size={18} className="text-muted-foreground" />
+                            </div>
+                          )}
+                          {busy ? (
+                            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+                              <Loader2 className="animate-spin text-white" size={20} />
+                            </div>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -565,6 +792,7 @@ export function PhotoUploadDialog({
                   className="flex-1 gap-2 font-bold"
                   disabled={confirming}
                   onClick={() => {
+                    revokeObjectUrl();
                     setSourceUrl(null);
                     setZoom(1);
                     setOffset({ x: 0, y: 0 });
@@ -573,7 +801,7 @@ export function PhotoUploadDialog({
                   }}
                 >
                   <RotateCcw size={16} />
-                  Retake
+                  Choose again
                 </Button>
                 <Button
                   className="flex-1 gap-2 font-bold"

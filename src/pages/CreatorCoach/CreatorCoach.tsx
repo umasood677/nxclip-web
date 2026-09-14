@@ -1042,7 +1042,7 @@ export default function CreatorCoach() {
                       className="h-8 text-[10px] font-bold"
                       onClick={() => {
                         beginWeekPlanRenewal();
-                        navigate("/onboarding");
+                        navigate("/onboarding", { state: { renewWeekPlan: true } });
                       }}
                     >
                       Plan a new week
@@ -1058,7 +1058,7 @@ export default function CreatorCoach() {
                       size="sm"
                       onClick={() => {
                         beginWeekPlanRenewal();
-                        navigate("/onboarding");
+                        navigate("/onboarding", { state: { renewWeekPlan: true } });
                       }}
                     >
                       Create your week plan

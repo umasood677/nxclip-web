@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
-import { TiktokIcon } from "../../components/TiktokIcon";
 import {
   Camera,
   Edit3,
@@ -10,14 +9,10 @@ import {
   Zap,
   Lock,
   Loader2,
-  Twitch,
-  Youtube,
-  Instagram,
-  Twitter,
   Calendar,
-  type LucideIcon,
+  Radio,
 } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { PhotoUploadDialog } from "../../components/PhotoUploadDialog";
 import { ProfilePhoto } from "../../components/ProfilePhoto";
 import { WeekPlanGrid } from "../../components/WeekPlanGrid";
@@ -28,7 +23,12 @@ import { Progress } from "../../components/ui/progress";
 import { Badge } from "../../components/ui/badge";
 import { Button, buttonVariants } from "../../components/ui/button";
 import { cn } from "../../lib/utils";
-import { beginWeekPlanRenewal, contentPlanFromOnboarding, weekPlanFromProfile } from "../../lib/weekPlan";
+import { beginWeekPlanRenewal, contentPlanFromOnboarding, weekPlanFromProfile, beginOnboardingRevision } from "../../lib/weekPlan";
+import {
+  creatorFieldsFromIdentityMe,
+  onboardingSnapshotFromProfile,
+} from "../../lib/onboardingSnapshot";
+import { CreatorNicheTags } from "../../components/CreatorNicheTags";
 import { loadProfileExtras, saveProfileExtras, dataUrlToFile } from "../../lib/profileExtras";
 import {
   SOCIAL_CONNECT_PLATFORMS,
@@ -36,17 +36,33 @@ import {
 } from "../../lib/creatorNiches";
 import { useTranslation } from "react-i18next";
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
-import { selectAuthProfile, selectAuthUser, setAuthProfile, setAuthUser } from "../../store/slices/authSlice";
+import { selectAuthProfile, selectAuthUser, setAuthProfile, setAuthUser, selectResolvedUserPhoto } from "../../store/slices/authSlice";
 import {
   contentApi,
   extractValidImageUrl,
   feedApi,
   identityApi,
+  socialApi,
   type ContentDto,
+  type FeedItemDto,
   type PlatformStatDto,
+  type SocialPlatform,
+  type SocialAccountDto,
 } from "../../services/apiClient";
 import {
+  accountsMapFromList,
+  connectedMapFromAccounts,
+  notifyOpenerSocialOAuth,
+  socialAccountKindLabel,
+  socialAccountPrimaryName,
+  startSocialOAuth,
+} from "../../lib/socialConnect";
+import { SocialPlatformIcon, SocialPlatformTile } from "../../components/social/SocialPlatformIcon";
+import { ConnectedSocialAccountAvatar } from "../../components/social/ConnectedSocialAccountAvatar";
+import { SocialDisconnectDialog } from "../../components/social/SocialDisconnectDialog";
+import {
   PostCard,
+  resolveFeedDisplayStatus,
   type Post,
   type SocialTarget,
 } from "../HomeFeed/components/PostCard";
@@ -56,7 +72,7 @@ import {
   parseAspectRatio,
 } from "../../components/JustifiedGallery";
 
-type ProfileTab = "posts" | "scheduled" | "plan";
+type ProfileTab = "published" | "live" | "scheduled" | "plan";
 type PhotoTarget = "avatar" | "cover";
 
 const PROFILE_LAYOUT: JustifiedLayoutOptions = {
@@ -69,16 +85,6 @@ const PROFILE_LAYOUT: JustifiedLayoutOptions = {
 const getPostRatio = (post: Post) => parseAspectRatio(post.aspectRatio);
 const getPostKey = (post: Post) => String(post.id);
 const getPostRatioKey = (post: Post) => String(post.contentId || post.id);
-const SOCIAL_ICONS: Record<SocialPlatformId, LucideIcon | typeof TiktokIcon> = {
-  youtube: Youtube,
-  instagram: Instagram,
-  tiktok: TiktokIcon,
-  twitch: Twitch,
-  twitter: Twitter,
-};
-
-const SOCIAL_OAUTH_TOAST =
-  "Social OAuth coming soon — connect will publish Live posts and pull stats.";
 
 const resolveValidPostImage = (itemOrUrl: unknown): string => {
   const url =
@@ -185,25 +191,48 @@ const contentDtoToPost = (item: ContentDto, avatarUrl?: string | null): Post => 
     aiInsight: data.aiInsight,
     platformStats,
     socialTargets: socialTargetsFromPlatformStats(platformStats),
+    socialRollup: data.socialRollup,
     aspectRatio: data.aspectRatio,
     isOwn: true,
   };
 };
 
+function overlayFeedLive(post: Post, feedItem?: FeedItemDto): Post {
+  if (!feedItem) return post;
+  const platformStats = feedItem.platformStats ?? post.platformStats;
+  return {
+    ...post,
+    platformStats,
+    socialRollup: feedItem.socialRollup ?? post.socialRollup,
+    socialTargets: post.socialTargets ?? socialTargetsFromPlatformStats(platformStats),
+  };
+}
+
+function isLiveOnSocial(post: Post): boolean {
+  return resolveFeedDisplayStatus(post).key === "live";
+}
+
+function isScheduledOnSocial(post: Post): boolean {
+  const key = resolveFeedDisplayStatus(post).key;
+  return key === "scheduled" || key === "publishing";
+}
+
 function parseProfileTab(value: string | null): ProfileTab {
-  if (value === "plan" || value === "scheduled") return value;
-  return "posts";
+  if (value === "live" || value === "scheduled" || value === "plan") return value;
+  return "published";
 }
 
 export default function OwnProfile() {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === "rtl";
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<ProfileTab>(() =>
     parseProfileTab(searchParams.get("tab")),
   );
   const reduxProfile = useAppSelector(selectAuthProfile);
   const authUser = useAppSelector(selectAuthUser);
+  const resolvedUserPhoto = useAppSelector(selectResolvedUserPhoto);
   const [profile, setProfile] = useState<UserProfile | null>(reduxProfile);
   const [loading, setLoading] = useState(!reduxProfile);
   const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
@@ -213,13 +242,113 @@ export default function OwnProfile() {
   const [postsLoading, setPostsLoading] = useState(true);
   const [followerCount, setFollowerCount] = useState<number | null>(null);
   const [followingCount, setFollowingCount] = useState<number | null>(null);
+  const [connectedSocials, setConnectedSocials] = useState<
+    Partial<Record<SocialPlatformId, boolean>>
+  >({});
+  const [socialAccounts, setSocialAccounts] = useState<
+    Partial<Record<SocialPlatform, SocialAccountDto>>
+  >({});
+  const [socialBusy, setSocialBusy] = useState(false);
+  const [disconnectTarget, setDisconnectTarget] = useState<SocialPlatformId | null>(null);
+  const [highlightSocial, setHighlightSocial] = useState(false);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const weekPlan = weekPlanFromProfile(profile);
+  const onboarding = onboardingSnapshotFromProfile(profile);
+  const games = onboarding?.niches?.length
+    ? onboarding.niches
+    : profile?.creatorNiches?.length
+      ? profile.creatorNiches
+      : profile?.games || profile?.gameNiches || [];
 
   useEffect(() => {
     setActiveTab(parseProfileTab(searchParams.get("tab")));
   }, [searchParams]);
+
+  useEffect(() => {
+    const wantsSocial =
+      location.hash === "#profile-social-channels" ||
+      searchParams.get("focus") === "social";
+    if (loading || !wantsSocial) return;
+
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById("profile-social-channels");
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightSocial(true);
+    }, 280);
+    const clearHighlight = window.setTimeout(() => setHighlightSocial(false), 2800);
+
+    return () => {
+      window.clearTimeout(timer);
+      window.clearTimeout(clearHighlight);
+    };
+  }, [loading, location.hash, searchParams]);
+
+  useEffect(() => {
+    const status = searchParams.get("social");
+    const platform = searchParams.get("platform");
+    if (!status) return;
+    if (
+      notifyOpenerSocialOAuth({
+        status,
+        platform,
+        reason: searchParams.get("reason"),
+      })
+    ) {
+      return;
+    }
+    if (status === "connected") {
+      const key = platform as SocialPlatform | null;
+      if (key === "youtube" || key === "instagram" || key === "facebook" || key === "tiktok") {
+        setConnectedSocials((prev) => ({ ...prev, [key]: true }));
+        setSocialAccounts((prev) => ({
+          ...prev,
+          [key]: { platform: key, status: "connected" },
+        }));
+      }
+      toast.success(`${platform || "Channel"} connected`);
+      void socialApi.listAccounts().then((accounts) => {
+        setConnectedSocials(connectedMapFromAccounts(accounts));
+        setSocialAccounts(accountsMapFromList(accounts));
+      });
+      setHighlightSocial(true);
+      window.setTimeout(() => {
+        document.getElementById("profile-social-channels")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 200);
+      window.setTimeout(() => setHighlightSocial(false), 2800);
+    } else if (status === "error") {
+      toast.error(searchParams.get("reason") || "Could not connect that channel");
+    }
+    searchParams.delete("social");
+    searchParams.delete("platform");
+    searchParams.delete("reason");
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void socialApi
+      .listAccounts()
+      .then((accounts) => {
+        if (!cancelled) {
+          setConnectedSocials(connectedMapFromAccounts(accounts));
+          setSocialAccounts(accountsMapFromList(accounts));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setConnectedSocials({});
+          setSocialAccounts({});
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const mergeExtras = useCallback((base: UserProfile): UserProfile => {
     const extras = loadProfileExtras(base.uid);
@@ -235,6 +364,7 @@ export default function OwnProfile() {
       connectedSocials: {
         youtube: false,
         instagram: false,
+        facebook: false,
         tiktok: false,
         twitch: false,
         twitter: false,
@@ -254,18 +384,23 @@ export default function OwnProfile() {
       try {
         const res = await identityApi.getUserMe();
         const me = res?.user ?? res;
-        const onboardingPlan = me.onboardingPlan ?? null;
+        const creator = creatorFieldsFromIdentityMe(me as Record<string, unknown>);
+        const onboardingPlan = creator.onboardingPlan ?? me.onboardingPlan ?? null;
         const p = mergeExtras({
           uid: me.id || me.uid,
           displayName: me.displayName || me.username || "Creator",
           email: me.email,
           photoURL: me.avatarUrl || null,
+          coverUrl: me.coverUrl || null,
           bio: me.bio || "",
           plan: (me.plan || "free").toLowerCase() as UserProfile["plan"],
           role: (me.roles?.[0] || "creator") as UserProfile["role"],
           onboardingCompleted: me.onboardingCompleted === true,
           onboardingPlan,
-          contentPlan: contentPlanFromOnboarding(onboardingPlan),
+          creatorCategory: creator.creatorCategory,
+          creatorCategoryLabel: creator.creatorCategoryLabel,
+          creatorNiches: creator.creatorNiches,
+          contentPlan: contentPlanFromOnboarding(onboardingPlan) ?? contentPlanFromOnboarding(me.onboardingPlan),
           createdAt: me.createdAt || new Date().toISOString(),
         });
         setProfile(p);
@@ -284,11 +419,15 @@ export default function OwnProfile() {
   }, [navigate, dispatch, mergeExtras]);
 
   useEffect(() => {
+    if (!profile) return;
     let cancelled = false;
     const loadPosts = async () => {
       setPostsLoading(true);
       try {
-        const items = await contentApi.getUserContentList(100);
+        const [items, feed] = await Promise.all([
+          contentApi.getUserContentList(50),
+          feedApi.fetchPersonalFeed(undefined, 50).catch(() => ({ items: [] as FeedItemDto[] })),
+        ]);
         if (cancelled) return;
         const all = items || [];
         const published = all.filter(
@@ -300,7 +439,15 @@ export default function OwnProfile() {
           published.length > 0
             ? published
             : all.filter((i) => !i.storageKey?.startsWith("uploads/")).slice(0, 24);
-        setPosts(chosen.map((item) => contentDtoToPost(item, profile?.photoURL)));
+        const feedById = new Map(
+          (feed.items || []).map((row) => [String(row.contentId || row.id), row]),
+        );
+        setPosts(
+          chosen.map((item) => {
+            const post = contentDtoToPost(item, profile?.photoURL || resolvedUserPhoto);
+            return overlayFeedLive(post, feedById.get(String(post.contentId || post.id)));
+          }),
+        );
       } catch {
         if (!cancelled) setPosts([]);
       } finally {
@@ -311,9 +458,9 @@ export default function OwnProfile() {
     return () => {
       cancelled = true;
     };
-    // Load once on mount; avatar is stamped from current profile when mapping
+    // Re-run when profile arrives so avatar is stamped correctly
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [profile?.uid]);
 
   useEffect(() => {
     const uid = profile?.uid;
@@ -346,26 +493,42 @@ export default function OwnProfile() {
 
   const handleRenewWeekPlan = () => {
     beginWeekPlanRenewal();
-    navigate("/onboarding");
+    navigate("/onboarding", { state: { renewWeekPlan: true } });
   };
 
-  const games = profile?.games || profile?.gameNiches || [];
+  const handleReviseOnboarding = () => {
+    beginOnboardingRevision();
+    navigate("/onboarding", {
+      state: { renewWeekPlan: true, reviseOnboarding: true },
+    });
+  };
+
+  const hasConnectedSocial = useMemo(
+    () => SOCIAL_CONNECT_PLATFORMS.some((p) => !!connectedSocials[p.id]),
+    [connectedSocials],
+  );
+
+  const hasNicheIdentity = Boolean(
+    games.length > 0 ||
+      onboarding?.categoryLabel ||
+      weekPlan?.days?.length ||
+      profile?.creatorCategory ||
+      profile?.onboardingCompleted,
+  );
 
   const completion = useMemo(() => {
     if (!profile) return 0;
-    let score = 0;
     const fields = [
-      { weight: 20, check: () => !!profile.displayName && profile.displayName !== "Creator" },
-      { weight: 20, check: () => !!profile.bio && profile.bio.length > 10 },
-      { weight: 20, check: () => games.length > 0 },
-      { weight: 20, check: () => !!profile.photoURL },
-      { weight: 20, check: () => !!profile.onboardingCompleted },
+      () => !!profile.displayName && profile.displayName !== "Creator",
+      () => !!profile.bio && profile.bio.length > 10,
+      () => hasNicheIdentity,
+      () => !!profile.photoURL,
+      () => !!profile.onboardingCompleted,
+      () => hasConnectedSocial,
     ];
-    fields.forEach((f) => {
-      if (f.check()) score += f.weight;
-    });
-    return score;
-  }, [profile, games]);
+    const done = fields.filter((check) => check()).length;
+    return Math.round((done / fields.length) * 100);
+  }, [profile, hasNicheIdentity, hasConnectedSocial]);
 
   const missingFields = useMemo(() => {
     if (!profile) return [];
@@ -376,7 +539,7 @@ export default function OwnProfile() {
     if (!profile.bio || profile.bio.length <= 10) {
       missing.push(t("profile.missing_fields.bio"));
     }
-    if (games.length === 0) {
+    if (!hasNicheIdentity) {
       missing.push(t("profile.missing_fields.games"));
     }
     if (!profile.photoURL) {
@@ -385,8 +548,11 @@ export default function OwnProfile() {
     if (!profile.onboardingCompleted) {
       missing.push(t("profile.missing_fields.onboarding"));
     }
+    if (!hasConnectedSocial) {
+      missing.push(t("profile.missing_fields.socials"));
+    }
     return missing;
-  }, [profile, games, t]);
+  }, [profile, hasNicheIdentity, hasConnectedSocial, t]);
 
   const openPhotoDialog = (target: PhotoTarget) => {
     setPhotoTarget(target);
@@ -410,6 +576,7 @@ export default function OwnProfile() {
       }
 
       if (photoTarget === "cover") {
+        await identityApi.updateProfile({ coverUrl: mediaUrl });
         const extras = loadProfileExtras(profile.uid);
         saveProfileExtras(profile.uid, {
           ...extras,
@@ -477,28 +644,57 @@ export default function OwnProfile() {
     [],
   );
 
-  const handleSocialConnectClick = (platformId: SocialPlatformId) => {
-    toast.info(SOCIAL_OAUTH_TOAST);
-    if (!profile?.uid) return;
-    const extras = loadProfileExtras(profile.uid);
-    const connectedSocials = {
-      youtube: false,
-      instagram: false,
-      tiktok: false,
-      twitch: false,
-      twitter: false,
-      ...extras.connectedSocials,
-      ...profile.connectedSocials,
-      [platformId]: extras.connectedSocials?.[platformId] ?? false,
-    };
-    saveProfileExtras(profile.uid, {
-      ...extras,
-      niches: extras.niches || games,
-      socials: extras.socials || profile.socials,
-      coverUrl: profile.coverUrl ?? extras.coverUrl,
-      connectedSocials,
-    });
+  const handleSocialConnect = async (id: SocialPlatformId) => {
+    if (id === "twitch" || id === "twitter") {
+      toast.info("YouTube, Instagram, Facebook, and TikTok are available to connect.");
+      return;
+    }
+    if (connectedSocials[id]) {
+      setDisconnectTarget(id);
+      return;
+    }
+    try {
+      setSocialBusy(true);
+      const result = await startSocialOAuth(id as SocialPlatform, "/profile");
+      if (result.status === "redirecting") return;
+      if (result.status === "connected") {
+        toast.success(`${result.platform || id} connected`);
+        const accounts = await socialApi.listAccounts();
+        setConnectedSocials(connectedMapFromAccounts(accounts));
+        setSocialAccounts(accountsMapFromList(accounts));
+      } else if (result.status === "error") {
+        toast.error(result.reason || "Could not connect that channel");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Could not start connect");
+    } finally {
+      setSocialBusy(false);
+    }
   };
+
+  const confirmSocialDisconnect = async () => {
+    const id = disconnectTarget;
+    if (!id) return;
+    try {
+      setSocialBusy(true);
+      await socialApi.disconnectAccount(id as SocialPlatform);
+      setConnectedSocials((prev) => ({ ...prev, [id]: false }));
+      setSocialAccounts((prev) => {
+        const next = { ...prev };
+        delete next[id as SocialPlatform];
+        return next;
+      });
+      setDisconnectTarget(null);
+      toast.success(`${id} disconnected`);
+    } catch (err: any) {
+      toast.error(err?.message || "Could not disconnect");
+    } finally {
+      setSocialBusy(false);
+    }
+  };
+
+  const livePosts = useMemo(() => posts.filter(isLiveOnSocial), [posts]);
+  const scheduledPosts = useMemo(() => posts.filter(isScheduledOnSocial), [posts]);
 
   const statsDefinitions = [
     { key: "posts", value: String(posts.length) },
@@ -513,9 +709,9 @@ export default function OwnProfile() {
     { key: "engagement", value: "—", isPro: true },
   ];
 
-  const tabs: ProfileTab[] = ["posts", "scheduled", "plan"];
+  const tabs: ProfileTab[] = ["published", "scheduled", "plan", "live"];
 
-  if (loading) {
+  if (loading && !profile) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="animate-spin text-primary" size={32} />
@@ -557,6 +753,48 @@ export default function OwnProfile() {
                   <span className="text-primary">{completion}%</span>
                 </div>
                 <Progress value={completion} className="h-1.5 bg-muted" />
+                <div className={cn("flex flex-wrap items-center gap-1.5 pt-1", isRtl && "flex-row-reverse")}>
+                  {SOCIAL_CONNECT_PLATFORMS.map((platform) => {
+                    const isConnected = !!connectedSocials[platform.id];
+                    return (
+                      <button
+                        key={platform.id}
+                        type="button"
+                        title={
+                          isConnected
+                            ? `${platform.label} — ${t("profile.edit.connected_btn")}`
+                            : `${t("profile.edit.connect_btn")} ${platform.label}`
+                        }
+                        aria-label={
+                          isConnected
+                            ? `${platform.label} — ${t("profile.edit.connected_btn")}`
+                            : `${t("profile.edit.connect_btn")} ${platform.label}`
+                        }
+                        disabled={socialBusy && !isConnected}
+                        className={cn(
+                          "inline-flex size-6 shrink-0 items-center justify-center p-0 rounded-[5px] transition-opacity",
+                          isConnected ? "cursor-default" : "hover:opacity-80",
+                        )}
+                        onClick={() => {
+                          if (isConnected) {
+                            document
+                              .getElementById("profile-social-channels")
+                              ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                            return;
+                          }
+                          void handleSocialConnect(platform.id);
+                        }}
+                      >
+                        <SocialPlatformTile
+                          platform={platform.id}
+                          size={26}
+                          iconSize={18}
+                          muted={!isConnected}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <p className="text-[11px] text-muted-foreground font-medium leading-relaxed">
                 {t("profile.boost_visibility")}{" "}
@@ -587,30 +825,6 @@ export default function OwnProfile() {
               <p className="text-[9px] text-center text-muted-foreground font-bold uppercase tracking-widest">
                 {t("profile.takes_less_than")}
               </p>
-            </div>
-          </div>
-
-          <div className="mt-5 pt-4 border-t border-primary/10 relative z-10">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
-              Connect platforms
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {SOCIAL_CONNECT_PLATFORMS.map((platform) => {
-                const Icon = SOCIAL_ICONS[platform.id];
-                return (
-                  <Button
-                    key={platform.id}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 font-bold"
-                    onClick={() => handleSocialConnectClick(platform.id)}
-                  >
-                    <Icon size={14} />
-                    {platform.label}
-                  </Button>
-                );
-              })}
             </div>
           </div>
         </motion.div>
@@ -664,7 +878,7 @@ export default function OwnProfile() {
                 }}
               >
                 <ProfilePhoto
-                  src={profile?.photoURL}
+                  src={profile?.photoURL || resolvedUserPhoto}
                   email={auth.currentUser?.email}
                   className={cn(
                     "ui-profile-avatar !h-full !w-full",
@@ -719,27 +933,6 @@ export default function OwnProfile() {
             </div>
           </div>
 
-          {completion >= 100 && (
-            <div className="flex flex-wrap gap-2 mt-5">
-              {SOCIAL_CONNECT_PLATFORMS.map((platform) => {
-                const Icon = SOCIAL_ICONS[platform.id];
-                return (
-                  <Button
-                    key={platform.id}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 font-bold"
-                    onClick={() => handleSocialConnectClick(platform.id)}
-                  >
-                    <Icon size={14} />
-                    {platform.label}
-                  </Button>
-                );
-              })}
-            </div>
-          )}
-
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
             {statsDefinitions.map((stat) => (
               <div
@@ -768,21 +961,115 @@ export default function OwnProfile() {
             <p className="text-muted-foreground font-medium leading-relaxed max-w-2xl text-sm">
               {profile?.bio || t("profile.no_bio")}
             </p>
-            <div className={cn("flex flex-wrap gap-2", isRtl && "flex-row-reverse justify-end")}>
-              {games.map((game) => (
-                <span key={game} className="ui-badge-secondary px-3 py-1.5 text-xs">
-                  {game}
-                </span>
-              ))}
-              {games.length === 0 && (
-                <span className="text-xs text-muted-foreground italic">
-                  {t("profile.no_niches")}
-                </span>
+            <div className={cn("flex flex-wrap items-center gap-2", isRtl && "flex-row-reverse justify-end")}>
+              <CreatorNicheTags
+                categoryLabel={onboarding?.categoryLabel}
+                niches={games}
+                size="md"
+                emptyLabel={
+                  weekPlan || profile?.onboardingCompleted
+                    ? t("profile.niche_not_tagged")
+                    : t("profile.no_niches")
+                }
+              />
+              {(onboarding?.isLegacy || (!games.length && (weekPlan || profile?.onboardingCompleted))) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-[11px] font-bold"
+                  onClick={handleReviseOnboarding}
+                >
+                  {t("profile.strategy.revise_cta")}
+                </Button>
               )}
+            </div>
+
+            <div
+              id="profile-social-channels"
+              className={cn(
+                "space-y-4 pt-4 scroll-mt-24 rounded-xl transition-shadow duration-500",
+                highlightSocial && "ring-2 ring-primary/50 ring-offset-2 ring-offset-background p-3 -mx-1",
+              )}
+            >
+              <div className={cn("px-1", isRtl ? "text-right" : "text-left")}>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
+                  {t("profile.edit.social_links_label")}
+                </p>
+                <p className="text-[10px] text-muted-foreground/60 font-medium mt-1">
+                  {t("profile.edit.social_links_desc")}
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-3">
+                {SOCIAL_CONNECT_PLATFORMS.map((platform) => {
+                  const isConnected = !!connectedSocials[platform.id];
+                  const account = socialAccounts[platform.id as SocialPlatform];
+                  return (
+                    <div
+                      key={platform.id}
+                      className={cn(
+                        "flex items-center gap-4 p-4 rounded-xl border border-border/50 bg-muted/10",
+                        isRtl && "flex-row-reverse",
+                      )}
+                    >
+                      <ConnectedSocialAccountAvatar
+                        platform={platform.id as SocialPlatform}
+                        account={account}
+                        size={40}
+                        muted={!isConnected}
+                        className={cn(isConnected && "ring-2 ring-primary/40 rounded-full")}
+                      />
+                      <div className={cn("flex-1 min-w-0", isRtl && "text-right")}>
+                        <p className="text-sm font-bold text-foreground">{platform.label}</p>
+                        {isConnected && account ? (
+                          <>
+                            <p className="text-[12px] font-semibold text-foreground mt-0.5 truncate">
+                              {socialAccountPrimaryName(account)}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground font-medium mt-0.5 leading-snug">
+                              {socialAccountKindLabel(account)}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground font-medium mt-0.5 truncate">
+                            {platform.description}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant={isConnected ? "secondary" : "outline"}
+                        size="sm"
+                        className={cn(
+                          "shrink-0 h-9 px-4 font-bold text-xs",
+                          isConnected && "bg-primary/10 text-primary border-primary/20",
+                        )}
+                        disabled={socialBusy}
+                        onClick={() => void handleSocialConnect(platform.id)}
+                      >
+                        {isConnected
+                          ? t("profile.edit.disconnect_btn")
+                          : t("profile.edit.connect_btn")}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      <SocialDisconnectDialog
+        open={!!disconnectTarget}
+        platformLabel={
+          SOCIAL_CONNECT_PLATFORMS.find((p) => p.id === disconnectTarget)?.label ||
+          disconnectTarget ||
+          ""
+        }
+        busy={socialBusy}
+        onCancel={() => !socialBusy && setDisconnectTarget(null)}
+        onConfirm={() => void confirmSocialDisconnect()}
+      />
 
       <PhotoUploadDialog
         isOpen={isPhotoDialogOpen}
@@ -797,13 +1084,31 @@ export default function OwnProfile() {
             <button
               key={tab}
               type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`pb-3 text-xs font-bold uppercase tracking-widest transition-all relative whitespace-nowrap ${
+              onClick={() => {
+                setActiveTab(tab);
+                const next = new URLSearchParams(searchParams);
+                if (tab === "published") next.delete("tab");
+                else next.set("tab", tab);
+                setSearchParams(next, { replace: true });
+              }}
+              className={`inline-flex items-center gap-1.5 pb-3 text-xs font-bold uppercase tracking-widest transition-all relative whitespace-nowrap ${
                 activeTab === tab
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
+              {tab === "live" ? (
+                <span className="inline-flex items-center -space-x-1" aria-hidden>
+                  {(["youtube", "instagram", "facebook", "tiktok"] as const).map((platform) => (
+                    <span
+                      key={platform}
+                      className="inline-flex size-3.5 items-center justify-center rounded-full bg-background ring-1 ring-background"
+                    >
+                      <SocialPlatformIcon platform={platform} size={12} />
+                    </span>
+                  ))}
+                </span>
+              ) : null}
               {t(`profile.tabs.${tab}`)}
               {activeTab === tab && (
                 <motion.div
@@ -815,7 +1120,7 @@ export default function OwnProfile() {
           ))}
         </div>
 
-        {activeTab === "posts" &&
+        {activeTab === "published" &&
           (postsLoading ? (
             <div className="flex justify-center py-16">
               <Loader2 className="animate-spin text-primary" size={28} />
@@ -854,36 +1159,115 @@ export default function OwnProfile() {
             />
           ))}
 
-        {activeTab === "scheduled" && (
-          <div className="ui-card p-12 text-center space-y-4">
-            <Calendar className="mx-auto text-muted-foreground/30" size={40} />
-            <div className="space-y-2 max-w-md mx-auto">
-              <p className="text-foreground font-bold">No scheduled posts</p>
-              <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                Publish a creation, then schedule it to YouTube, Instagram, or TikTok.
-                Once it goes live on a platform, it will appear as Live with platform stats.
-              </p>
+        {activeTab === "live" &&
+          (postsLoading ? (
+            <div className="flex justify-center py-16">
+              <Loader2 className="animate-spin text-primary" size={28} />
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+          ) : livePosts.length === 0 ? (
+            <div className="ui-card p-12 text-center space-y-4">
+              <Radio className="mx-auto text-muted-foreground/30" size={40} />
+              <div className="space-y-2 max-w-md mx-auto">
+                <p className="text-foreground font-bold">No live posts yet</p>
+                <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                  Published posts appear here after they go Live on YouTube, Instagram, Facebook, or
+                  TikTok.
+                </p>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
                 className="font-bold"
-                onClick={() => navigate("/feed")}
+                onClick={() => {
+                  setActiveTab("published");
+                  const next = new URLSearchParams(searchParams);
+                  next.delete("tab");
+                  setSearchParams(next, { replace: true });
+                }}
               >
-                Open Home Feed
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="font-bold"
-                onClick={() => navigate("/dashboard")}
-              >
-                Go to Dashboard
+                View published
               </Button>
             </div>
-          </div>
-        )}
+          ) : (
+            <JustifiedGallery
+              items={livePosts}
+              getRatio={getPostRatio}
+              getKey={getPostKey}
+              getRatioKey={getPostRatioKey}
+              options={PROFILE_LAYOUT}
+              renderItem={({ item, resolvedRatio, reportRatio, index }) => (
+                <PostCard
+                  post={item}
+                  aspectRatio={resolvedRatio ?? undefined}
+                  onMediaLoad={reportRatio}
+                  index={index}
+                  priority={index < 4}
+                  onDelete={handleDeletePost}
+                  onSocialSchedule={handleSocialSchedule}
+                />
+              )}
+            />
+          ))}
+
+        {activeTab === "scheduled" &&
+          (postsLoading ? (
+            <div className="flex justify-center py-16">
+              <Loader2 className="animate-spin text-primary" size={28} />
+            </div>
+          ) : scheduledPosts.length === 0 ? (
+            <div className="ui-card p-12 text-center space-y-4">
+              <Calendar className="mx-auto text-muted-foreground/30" size={40} />
+              <div className="space-y-2 max-w-md mx-auto">
+                <p className="text-foreground font-bold">No scheduled posts</p>
+                <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                  Publish a creation, then schedule Live auto-post to YouTube, Instagram, Facebook,
+                  or TikTok from Post details or the feed Share menu.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="font-bold"
+                  onClick={() => {
+                    setActiveTab("published");
+                    const next = new URLSearchParams(searchParams);
+                    next.delete("tab");
+                    setSearchParams(next, { replace: true });
+                  }}
+                >
+                  View published
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="font-bold"
+                  onClick={() => navigate("/feed")}
+                >
+                  Open Home Feed
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <JustifiedGallery
+              items={scheduledPosts}
+              getRatio={getPostRatio}
+              getKey={getPostKey}
+              getRatioKey={getPostRatioKey}
+              options={PROFILE_LAYOUT}
+              renderItem={({ item, resolvedRatio, reportRatio, index }) => (
+                <PostCard
+                  post={item}
+                  aspectRatio={resolvedRatio ?? undefined}
+                  onMediaLoad={reportRatio}
+                  index={index}
+                  priority={index < 4}
+                  onDelete={handleDeletePost}
+                  onSocialSchedule={handleSocialSchedule}
+                />
+              )}
+            />
+          ))}
 
         {activeTab === "plan" && (
           <div className="space-y-5">
@@ -912,12 +1296,88 @@ export default function OwnProfile() {
                   variant="outline"
                   size="sm"
                   className="font-bold"
+                  onClick={handleReviseOnboarding}
+                >
+                  {t("profile.strategy.revise_cta")}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="font-bold"
                   onClick={handleRenewWeekPlan}
                 >
                   Plan a new week
                 </Button>
               </div>
             </div>
+
+            {onboarding ? (
+              <div className="rounded-xl border border-teal-500/20 bg-teal-500/5 p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-300">
+                      {t("profile.strategy.onboarding_title")}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {t("profile.strategy.onboarding_subtitle")}
+                    </p>
+                  </div>
+                  <CreatorNicheTags
+                    categoryLabel={onboarding.categoryLabel}
+                    niches={onboarding.niches}
+                  />
+                </div>
+                {(() => {
+                  const detailRows = onboarding.rows.filter((row) => row.key !== "niches");
+                  const hasFullAnswers = Boolean(
+                    onboarding.audience ||
+                      onboarding.goal ||
+                      onboarding.frequency ||
+                      onboarding.startPoint,
+                  );
+                  if (onboarding.isLegacy || !hasFullAnswers) {
+                    return (
+                      <div className="rounded-lg border border-dashed border-border bg-card/40 p-3 space-y-3">
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {t("profile.strategy.legacy_answers_note")}
+                        </p>
+                        <Button
+                          size="sm"
+                          className="font-bold"
+                          onClick={handleReviseOnboarding}
+                        >
+                          {t("profile.strategy.legacy_answers_cta")}
+                        </Button>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="space-y-3">
+                      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {detailRows.map((row) => (
+                          <div key={row.key} className="rounded-lg border border-border bg-card/60 p-3">
+                            <dt className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                              {t(`profile.strategy.fields.${row.key}`, { defaultValue: row.label })}
+                            </dt>
+                            <dd className="text-sm font-semibold text-foreground mt-1 leading-snug">
+                              {row.value}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="font-bold text-muted-foreground"
+                        onClick={handleReviseOnboarding}
+                      >
+                        {t("profile.strategy.revise_cta")}
+                      </Button>
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : null}
 
             {weekPlan ? (
               <WeekPlanGrid plan={weekPlan} />

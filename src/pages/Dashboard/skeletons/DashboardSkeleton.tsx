@@ -88,16 +88,23 @@ ContentTypeCardSkeleton.displayName = "ContentTypeCardSkeleton";
 
 export const TopContentCardSkeleton = memo(() => {
   return (
-    <Card className="ui-top-content-card !p-2">
-      <div className="relative w-full rounded-md overflow-hidden bg-muted mb-2" style={{ aspectRatio: "4 / 5" }}>
+    <Card className="ui-top-content-card !p-2.5 min-w-0">
+      <div className="relative w-full rounded-lg overflow-hidden bg-muted shrink-0" style={{ aspectRatio: "4 / 5", minHeight: 160 }}>
         <Skeleton className="w-full h-full" />
       </div>
-      <div className="space-y-1">
-        <div className="p-1.5 rounded bg-muted/10 border border-border/50 space-y-1">
-          <Skeleton className="h-2 w-14" />
-          <Skeleton className="h-2.5 w-full" />
+      <div className="space-y-2 pt-2.5 min-w-0">
+        <div className="flex gap-1">
+          <Skeleton className="h-5 w-16 rounded-full" />
+          <Skeleton className="h-5 w-12 rounded-full" />
         </div>
-        <Skeleton className="w-full h-6" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-4/5" />
+        <Skeleton className="h-3 w-24" />
+        <div className="p-2 rounded-md bg-muted/10 border border-border/50 space-y-1.5">
+          <Skeleton className="h-2.5 w-14" />
+          <Skeleton className="h-3 w-full" />
+        </div>
+        <Skeleton className="w-full h-7" />
       </div>
     </Card>
   );
@@ -197,7 +204,7 @@ export const DashboardSkeleton = memo(() => {
               <Skeleton className="h-5 w-48" />
               <Skeleton className="h-3 w-72" />
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 pt-2">
+            <div className="ui-dashboard-top-content-grid pt-2">
               {Array.from({ length: 4 }).map((_, idx) => (
                 <TopContentCardSkeleton key={idx} />
               ))}

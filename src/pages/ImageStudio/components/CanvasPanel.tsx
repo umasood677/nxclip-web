@@ -11,6 +11,7 @@ import {
   Link2,
   Loader2,
   Copy,
+  Clapperboard,
 } from "lucide-react";
 import { Card } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -22,10 +23,15 @@ import {
 import { cn } from "../../../lib/utils";
 import { toast } from "sonner";
 import { AuthenticatedImage } from "../../../components/AuthenticatedImage";
+import {
+  MediaTileSelectCheckbox,
+  mediaTileSelectionRing,
+} from "../../../components/MediaTileSelectCheckbox";
 import { CanvasPanelProps } from "../types";
-import { getStatusBadge } from "./RecentGenerations/statusStyles";
+import { getStatusBadge, getTypeBadge } from "./RecentGenerations/statusStyles";
 import { StatusPill } from "./RecentGenerations/StatusPill";
 import { MemeTemplatePreview } from "./MemeTemplatePreview";
+import { MemeWeekPlanCanvas } from "./MemeWeekPlanCanvas";
 import nxclipLogo from "../../../contents/images/nexa-logo.png";
 
 export function CanvasPanel({
@@ -46,6 +52,8 @@ export function CanvasPanel({
   setSaturation: _setSaturation,
   aspectRatio,
   onPublishClick,
+  onAnimateAsClipClick,
+  isAnimatingAsClip,
   isPublishing,
   isPublished,
   watermarked: _watermarked,
@@ -74,10 +82,27 @@ export function CanvasPanel({
   selectedHashtags = [],
   onSelectCaption,
   onSelectHashtagSet,
+  weekPlanCanvasOpen = false,
+  weekPlanDays = [],
+  weekPlanSelectedIndex = 0,
+  onWeekPlanSelectDay,
+  activeWeekPlan = null,
+  isActivatingWeekPlan = false,
+  isCancellingWeekPlan = false,
+  canActivateWeekPlan = false,
+  onActivateWeekPlan,
+  onCancelWeekPlan,
+  onUseWeekPlanDay,
+  onCloseWeekPlanCanvas,
+  memeTemplates = [],
 }: CanvasPanelProps) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === "rtl";
   const statusBadge = getStatusBadge(contentStatus || (isPublished ? "published" : "draft"));
+  const typeBadge = getTypeBadge({
+    type: mode === "meme" ? "meme" : "image",
+    style: mode === "meme" ? "meme" : undefined,
+  });
   const libraryCandidates = libraryImages.filter((h) => h.id && h.url);
   // Image + AI/hybrid meme can pick references in the canvas preview.
   const showLibraryBrowser =
@@ -124,6 +149,8 @@ export function CanvasPanel({
         return "aspect-video";
       case "9:16":
         return "aspect-[9/16]";
+      case "4:5":
+        return "aspect-[4/5]";
       default:
         return "aspect-square";
     }
@@ -136,6 +163,8 @@ export function CanvasPanel({
         return "w-full max-w-[36rem]";
       case "9:16":
         return "w-[46%] max-w-[13rem]";
+      case "4:5":
+        return "w-[52%] max-w-[14.5rem]";
       default:
         return "w-[60%] max-w-[16.8rem]";
     }
@@ -178,7 +207,31 @@ export function CanvasPanel({
           )}
         >
           <AnimatePresence mode="wait">
-            {showLibraryBrowser ? (
+            {weekPlanCanvasOpen && weekPlanDays.length > 0 ? (
+              <motion.div
+                key="week-plan"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="w-full h-full min-h-0"
+              >
+                <MemeWeekPlanCanvas
+                  templates={memeTemplates}
+                  days={weekPlanDays}
+                  selectedIndex={weekPlanSelectedIndex}
+                  onSelectDay={(index) => onWeekPlanSelectDay?.(index)}
+                  aspectRatio={effectiveAspectRatio}
+                  activePlan={activeWeekPlan}
+                  isActivating={isActivatingWeekPlan}
+                  isCancelling={isCancellingWeekPlan}
+                  canActivate={canActivateWeekPlan}
+                  onActivate={() => onActivateWeekPlan?.()}
+                  onCancel={() => onCancelWeekPlan?.()}
+                  onUseDay={() => onUseWeekPlanDay?.()}
+                  onClose={() => onCloseWeekPlanCanvas?.()}
+                />
+              </motion.div>
+            ) : showLibraryBrowser ? (
               <motion.div
                 key="library-picker"
                 initial={{ opacity: 0, y: 8 }}
@@ -233,11 +286,12 @@ export function CanvasPanel({
                             onClick={() => toggleReferenceContent?.(id)}
                             className={cn(
                               "relative aspect-square rounded-xl overflow-hidden border transition-all text-left",
-                              selected
-                                ? "border-primary ring-2 ring-primary/35"
-                                : atCap
-                                  ? "border-border/40 opacity-40 cursor-not-allowed"
-                                  : "border-border/50 hover:border-primary/50",
+                              mediaTileSelectionRing(selected),
+                              !selected && atCap
+                                ? "border-border/40 opacity-40 cursor-not-allowed"
+                                : !selected
+                                  ? "border-border/50 hover:border-white/25"
+                                  : "",
                             )}
                             title={item.title || item.prompt || "Library image"}
                           >
@@ -249,13 +303,29 @@ export function CanvasPanel({
                               disableRemoteFallback
                             />
                             {selected ? (
-                              <div className="absolute inset-0 bg-primary/30 flex items-center justify-center">
-                                <span className="text-xs font-bold text-white drop-shadow-md px-2 py-1 rounded-md bg-black/45 border border-white/20">
-                                  {orderIndex >= 0
-                                    ? orderedReferenceChips[orderIndex].label
-                                    : "Selected"}
-                                </span>
-                              </div>
+                              <>
+                                <MediaTileSelectCheckbox
+                                  checked
+                                  visible
+                                  badge={
+                                    orderIndex >= 0
+                                      ? orderedReferenceChips[orderIndex].label.replace(/\D/g, "") ||
+                                        orderIndex + 1
+                                      : undefined
+                                  }
+                                  className="absolute top-2 left-2 z-10 pointer-events-none"
+                                  ariaLabel={
+                                    orderIndex >= 0
+                                      ? orderedReferenceChips[orderIndex].label
+                                      : "Selected reference"
+                                  }
+                                />
+                                {orderIndex >= 0 ? (
+                                  <span className="absolute bottom-1.5 left-1.5 right-1.5 z-10 truncate rounded-md bg-black/50 px-1.5 py-0.5 text-center text-[9px] font-bold text-white/90 backdrop-blur-sm border border-white/10 pointer-events-none">
+                                    {orderedReferenceChips[orderIndex].label}
+                                  </span>
+                                ) : null}
+                              </>
                             ) : null}
                           </button>
                         );
@@ -459,7 +529,8 @@ export function CanvasPanel({
                     )}
 
                     {previewReady && !isGenerating && statusBadge ? (
-                      <div className="absolute top-3 left-3 z-20">
+                      <div className="absolute top-3 left-3 z-20 flex flex-wrap items-center gap-1.5">
+                        <StatusPill badge={typeBadge} />
                         <StatusPill badge={statusBadge} />
                       </div>
                     ) : null}
@@ -479,6 +550,24 @@ export function CanvasPanel({
                           isRTL ? "left-3" : "right-3",
                         )}
                       >
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label="Animate in Clip Studio"
+                              disabled={isAnimatingAsClip || isPublishing}
+                              onClick={onAnimateAsClipClick}
+                              className="h-8 w-8 rounded-full backdrop-blur-md text-white flex items-center justify-center border border-white/10 transition-all duration-200 bg-black/55 hover:bg-black/75 hover:scale-105 disabled:opacity-60"
+                            >
+                              {isAnimatingAsClip ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Clapperboard className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>Animate in Clip Studio</TooltipContent>
+                        </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <button
@@ -820,7 +909,8 @@ export function CanvasPanel({
                         }}
                         className={cn(
                           "w-16 h-16 rounded-lg overflow-hidden border shrink-0",
-                          resultImage === v ? "border-primary ring-2 ring-primary/30" : "border-border/50",
+                          mediaTileSelectionRing(resultImage === v),
+                          resultImage === v ? "" : "border-border/50",
                         )}
                       >
                         <AuthenticatedImage

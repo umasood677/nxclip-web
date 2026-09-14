@@ -27,11 +27,11 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 import VoiceNavigation from "./VoiceNavigation";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { CreatorAvatar } from "./CreatorAvatar";
+import { ProfilePhoto } from "./ProfilePhoto";
 import { cn } from "../lib/utils";
 import { ADMIN_EMAILS } from "../constants";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
-import { selectAuthProfile, selectAuthUser, logoutUser } from "../store/slices/authSlice";
+import { selectAuthProfile, selectAuthUser, selectResolvedUserPhoto, logoutUser } from "../store/slices/authSlice";
 import { selectAuthProvider } from "../store/slices/uiSlice";
 import { identityApi, notificationApi } from "../services/apiClient";
 import { clearPersistedUser } from "../services/auth/authService";
@@ -67,6 +67,7 @@ export default function TopBar({ title, subtitle, titleIcon }: TopBarProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const profile = useAppSelector(selectAuthProfile);
   const user = authUser;
+  const avatarSrc = useAppSelector(selectResolvedUserPhoto);
   const navigate = useNavigate();
 
   const isAdmin = profile?.role === "admin" || (user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase()));
@@ -98,6 +99,8 @@ export default function TopBar({ title, subtitle, titleIcon }: TopBarProps) {
       socketService.subscribe("content:moderation_complete", refresh),
       socketService.subscribe("content:generation_complete", refresh),
       socketService.subscribe("content:generation_failed", refresh),
+      socketService.subscribe("content:render_failed", refresh),
+      socketService.subscribe("content:render_complete", refresh),
       socketService.subscribe("onboarding:complete", refresh),
     ];
 
@@ -382,9 +385,10 @@ export default function TopBar({ title, subtitle, titleIcon }: TopBarProps) {
             aria-expanded={showUserMenu}
             className="flex items-center gap-2 p-0.5 rounded-full hover:bg-muted transition-all cursor-pointer"
           >
-            <CreatorAvatar
-              src={profile?.photoURL || user?.photoURL}
+            <ProfilePhoto
+              src={avatarSrc}
               email={user?.email || profile?.email}
+              shape="circle"
               className="w-7 h-7"
             />
           </Button>

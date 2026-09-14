@@ -2,6 +2,7 @@ import axios from "axios";
 import { apiGatewayInstance } from "./api/interceptors";
 import { safeLocalStorage, safeSessionStorage } from "../lib/safeStorage";
 import { measureImageFile } from "../lib/imageDimensions";
+import { isSourceUpload } from "../lib/isReferenceAsset";
 import { STORAGE_KEYS, GATEWAY_CONFIG } from "../constants";
 import { getRefreshToken, clearPersistedUser } from "./auth/authService";
 
@@ -499,7 +500,11 @@ export interface AuthResponseDto {
     createdAt: string;
     onboardingCompleted?: boolean;
     onboardingPlan?: Record<string, unknown> | null;
+    creatorCategory?: string | null;
+    creatorCategoryLabel?: string | null;
+    creatorNiches?: string[];
     avatarUrl?: string | null;
+    coverUrl?: string | null;
     bio?: string | null;
   };
   accessToken: string;
@@ -512,11 +517,15 @@ export interface TokenResponseDto {
 }
 
 export interface PlatformStatDto {
-  platform: "youtube" | "instagram" | "tiktok" | string;
+  platform: "youtube" | "instagram" | "tiktok" | "facebook" | string;
   externalUrl?: string;
   views?: number;
   likes?: number;
   comments?: number;
+  shares?: number;
+  reach?: number;
+  saves?: number;
+  followersOrSubscribers?: number;
   viewsDisplay?: string;
   likesDisplay?: string;
   commentsDisplay?: string;
@@ -553,12 +562,15 @@ export interface FeedListResponseDto {
 export interface CreateMemeRequestDto {
   mode: "ai" | "template" | "hybrid";
   prompt?: string;
-  aspectRatio?: "1:1" | "16:9" | "9:16";
+  aspectRatio?: "1:1" | "16:9" | "9:16" | "4:5";
   templateId?: string;
   texts?: Array<{ slot: string; text: string }>;
   title?: string;
   referenceContentIds?: string[];
   referenceUploadIds?: string[];
+  brandName?: string;
+  brandPersonality?: string;
+  humorIntensity?: number;
 }
 
 export interface MemeTemplateSlotDto {
@@ -566,6 +578,28 @@ export interface MemeTemplateSlotDto {
   label: string;
   maxLength: number;
   placeholder?: string;
+  role?: string;
+}
+
+export interface MemeDesignMetaDto {
+  category: string;
+  tone: string;
+  placement: string;
+  mood: string;
+  displayFont: string;
+  bodyFont: string;
+  headlineToken: string;
+  bodyToken: string;
+  headlineStyle: string;
+  idealWords: { min: number; max: number; primarySlots?: string[] };
+  recommendedImages: string[];
+  safeZones: {
+    face: { x: number; y: number; w: number; h: number };
+    text: Array<{ x: number; y: number; w: number; h: number }>;
+    negative: Array<{ x: number; y: number; w: number; h: number }>;
+  };
+  animation: string;
+  animationLabel: string;
 }
 
 export interface MemeTemplateDto {
@@ -573,14 +607,161 @@ export interface MemeTemplateDto {
   name: string;
   description: string;
   tags: string[];
-  defaultAspectRatio: "1:1" | "16:9" | "9:16";
-  supportedAspectRatios: Array<"1:1" | "16:9" | "9:16">;
+  defaultAspectRatio: "1:1" | "16:9" | "9:16" | "4:5";
+  supportedAspectRatios: Array<"1:1" | "16:9" | "9:16" | "4:5">;
   slots: MemeTemplateSlotDto[];
   previewGradient: string;
+  design: MemeDesignMetaDto;
 }
 
 export interface MemeTemplateListResponseDto {
   items: MemeTemplateDto[];
+}
+
+export interface RecommendMemeRequestDto {
+  idea?: string;
+  brandName?: string;
+  brandPersonality?: string;
+  humorIntensity?: number;
+  sceneTags?: string[];
+  imageDescription?: string;
+  contentId?: string;
+  imageBase64?: string;
+  imageMimeType?: string;
+  limit?: number;
+  fanOut?: number;
+}
+
+export interface RecommendMemeResponseDto {
+  sceneTags: string[];
+  detections: Array<{
+    tag: string;
+    confidence: number;
+    source: "provided" | "text_heuristic" | "vision";
+  }>;
+  rankings: Array<{
+    templateId: string;
+    name: string;
+    stars: number;
+    score: number;
+    reasons: string[];
+    category: string;
+    tone: string;
+    mood: string;
+    animation: string;
+    animationLabel: string;
+    idealWords: { min: number; max: number; primarySlots?: string[] };
+    recommendedImages: string[];
+    confidence: number;
+    confidenceLabel: "High" | "Medium" | "Exploratory";
+    contentScore: {
+      overall: number;
+      readability: number;
+      virality: number;
+      moodMatch: number;
+      sceneFit: number;
+    };
+  }>;
+  rewrites: Array<{
+    templateId: string;
+    name: string;
+    slots: Record<string, string>;
+    wordCount: number;
+    withinIdeal: boolean;
+    textFit: {
+      wordCount: number;
+      idealMin: number;
+      idealMax: number;
+      status: "short" | "ideal" | "long";
+      message: string;
+    };
+    humorIntensity?: number;
+    variantIndex?: number;
+  }>;
+  creativeBrief: string;
+  calendarPlan: Array<{
+    day: string;
+    templateId: string;
+    templateName: string;
+    theme: string;
+    hook: string;
+    bestTimeLocal: string;
+    platformTip: string;
+  }>;
+  subjectFocus?: { x: number; y: number };
+  fanOutConsidered: number;
+  visionSource?: "vision" | "heuristic" | "mock" | "text_only";
+}
+
+export interface CreateWeekPlanSlotDto {
+  day: string;
+  templateId: string;
+  templateName?: string;
+  theme?: string;
+  hook?: string;
+  bestTimeLocal: string;
+  platformTip?: string;
+  rewriteSlots?: Record<string, string>;
+}
+
+export interface CreateWeekPlanRequestDto {
+  slots: CreateWeekPlanSlotDto[];
+  timezone?: string;
+  idea?: string;
+  brandName?: string;
+  brandPersonality?: string;
+  humorIntensity?: number;
+  aspectRatio?: "1:1" | "16:9" | "9:16" | "4:5";
+}
+
+export interface WeekPlanSlotDto {
+  id: string;
+  day: string;
+  sortOrder: number;
+  templateId: string;
+  templateName?: string;
+  theme?: string;
+  hook?: string;
+  platformTip?: string;
+  bestTimeLocal: string;
+  publishAt: string;
+  contentId?: string;
+  status: string;
+  failureReason?: string;
+  texts?: Array<{ slot: string; text: string }>;
+}
+
+export interface WeekPlanDto {
+  id: string;
+  status: string;
+  timezone: string;
+  sourceIdea?: string;
+  brandName?: string;
+  aspectRatio: string;
+  createdAt: string;
+  cancelledAt?: string;
+  slots: WeekPlanSlotDto[];
+}
+
+export interface WeekPlanResponseDto {
+  plan: WeekPlanDto;
+}
+
+export interface ActiveWeekPlanResponseDto {
+  plan: WeekPlanDto | null;
+}
+
+export interface SuggestMemeCopyRequestDto {
+  templateId: string;
+  idea?: string;
+  brandName?: string;
+  brandPersonality?: string;
+  /** Preferred 0–5 (Elegant→Savage); legacy 0–100 still accepted. */
+  humorIntensity?: number;
+}
+
+export interface SuggestMemeCopyResponseDto {
+  suggestions: Array<Record<string, string>>;
 }
 
 export interface UploadUrlResponseDto {
@@ -642,6 +823,28 @@ export async function putToUploadUrl(
   return res;
 }
 
+let userMeInflight: Promise<any> | null = null;
+let userMeCache: { at: number; data: any } | null = null;
+const USER_ME_TTL_MS = 8_000;
+
+async function fetchUserMeCoalesced(): Promise<any> {
+  if (userMeCache && Date.now() - userMeCache.at < USER_ME_TTL_MS) {
+    return userMeCache.data;
+  }
+  if (userMeInflight) {
+    return userMeInflight;
+  }
+  userMeInflight = performApiRequest("/users/me", { method: "GET" })
+    .then((data) => {
+      userMeCache = { at: Date.now(), data };
+      return data;
+    })
+    .finally(() => {
+      userMeInflight = null;
+    });
+  return userMeInflight;
+}
+
 export const identityApi = {
   register: async (dto: RegisterDto): Promise<AuthResponseDto> => {
     return performApiRequest<AuthResponseDto>(
@@ -674,6 +877,17 @@ export const identityApi = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idToken }),
       }
+    );
+  },
+
+  /** Public GIS client id for Continue with Google (no auth required). */
+  getGoogleSignInConfig: async (): Promise<{ enabled: boolean; clientId: string | null }> => {
+    return performApiRequest<{ enabled: boolean; clientId: string | null }>(
+      "/auth/google/config",
+      {
+        method: "GET",
+        suppressErrorLog: true,
+      },
     );
   },
 
@@ -788,16 +1002,70 @@ export const identityApi = {
   },
 
   getUserMe: async (): Promise<any> => {
+    return fetchUserMeCoalesced();
+  },
+
+  createCheckout: async (dto: {
+    planId: string;
+    billingInterval?: "monthly" | "annual";
+  }): Promise<{ checkoutUrl: string; sessionId: string }> => {
     return performApiRequest(
-      "/users/me",
-      { method: "GET" }
+      "/billing/create-checkout",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dto),
+      },
+    );
+  },
+
+  getBillingStatus: async (): Promise<{
+    plan: string;
+    status: string;
+    cancelAtPeriodEnd: boolean;
+    currentPeriodStart?: string;
+    currentPeriodEnd?: string;
+    invoices: Array<{
+      id: string;
+      amountPaid: number;
+      currency: string;
+      status: string;
+      createdAt?: string;
+      invoicePdfUrl?: string;
+      hostedInvoiceUrl?: string;
+    }>;
+  }> => {
+    return performApiRequest("/billing/status", { method: "GET" });
+  },
+
+  cancelSubscription: async (): Promise<{
+    cancelAtPeriodEnd: boolean;
+    currentPeriodEnd?: string;
+    message: string;
+  }> => {
+    return performApiRequest("/billing/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+  },
+
+  confirmCheckoutSession: async (sessionId: string): Promise<AuthResponseDto> => {
+    return performApiRequest<AuthResponseDto>(
+      "/billing/confirm-session",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      },
     );
   },
 
   updateProfile: async (data: { 
     displayName?: string; 
     bio?: string; 
-    avatarUrl?: string; 
+    avatarUrl?: string;
+    coverUrl?: string;
     niches?: string[]; 
     socials?: any;
     email?: string;
@@ -902,11 +1170,49 @@ export interface ContentDto {
     templateId?: string;
     texts?: Array<{ slot: string; text: string }>;
   };
+    clipEditSpec?: {
+    inMs?: number;
+    outMs?: number;
+    aspect?: string;
+    creatorCategory?: string;
+    niches?: string[];
+    title?: string;
+    description?: string;
+    bgmTrackId?: string;
+    captions?: { topText?: string; bottomText?: string; styleId?: string; fontId?: string; burnWords?: boolean; topX?: number; topY?: number; bottomX?: number; bottomY?: number };
+    hooks?: Array<{ text: string; startMs: number; durationMs: number; styleId?: string }>;
+    silence?: { enabled?: boolean; minSilenceMs?: number };
+    crop?: { mode?: "face" | "center"; focusX?: number; focusY?: number };
+    fxPackId?: string;
+    sourceContentId?: string;
+    transcript?: string;
+    transcriptWords?: Array<{ word: string; startMs: number; endMs: number }>;
+    polishPrompt?: string;
+    animate?: {
+      mode?: "ken_burns" | "i2v" | string;
+      durationSec?: number;
+      motionPrompt?: string;
+      provider?: string;
+    };
+    voiceVolume?: number;
+    bgmVolume?: number;
+    masterVolume?: number;
+    enhance?: {
+      noiseReduced?: boolean;
+      colorCorrection?: number;
+      brightness?: number;
+      saturate?: number;
+      contrast?: number;
+    };
+    extras?: Record<string, unknown>;
+  };
+  renderStatus?: string;
   views?: number;
   likes?: number;
   comments?: number;
   shares?: number;
   engagement?: number;
+  platformStats?: PlatformStatDto[];
   creatorName?: string;
   creatorAvatar?: string;
 }
@@ -970,10 +1276,168 @@ export const contentApi = {
     });
   },
 
+  saveClipEdit: async (
+    id: string,
+    clipEditSpec: {
+      inMs: number;
+      outMs: number;
+      aspect?: string;
+      creatorCategory?: string;
+      niches?: string[];
+      title?: string;
+      description?: string;
+      bgmTrackId?: string;
+      captions?: { topText?: string; bottomText?: string; styleId?: string; fontId?: string; burnWords?: boolean; topX?: number; topY?: number; bottomX?: number; bottomY?: number };
+      hooks?: Array<{ text: string; startMs: number; durationMs: number; styleId?: string }>;
+      silence?: { enabled?: boolean; minSilenceMs?: number };
+      crop?: { mode?: "face" | "center"; focusX?: number; focusY?: number };
+      fxPackId?: string;
+      polishPrompt?: string;
+      voiceVolume?: number;
+      bgmVolume?: number;
+      masterVolume?: number;
+      extras?: Record<string, unknown>;
+    }
+  ): Promise<ContentDto> => {
+    return performApiRequest<ContentDto>(`/content/${id}/clip-edit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clipEditSpec }),
+    });
+  },
+
+  renderClip: async (
+    id: string,
+    body?: {
+      clipEditSpec?: {
+        inMs: number;
+        outMs: number;
+        aspect?: string;
+        creatorCategory?: string;
+        niches?: string[];
+        title?: string;
+        description?: string;
+        bgmTrackId?: string;
+        captions?: { topText?: string; bottomText?: string; styleId?: string; fontId?: string; burnWords?: boolean; topX?: number; topY?: number; bottomX?: number; bottomY?: number };
+        hooks?: Array<{ text: string; startMs: number; durationMs: number; styleId?: string }>;
+        silence?: { enabled?: boolean; minSilenceMs?: number };
+        crop?: { mode?: "face" | "center"; focusX?: number; focusY?: number };
+        fxPackId?: string;
+        polishPrompt?: string;
+        voiceVolume?: number;
+        bgmVolume?: number;
+        masterVolume?: number;
+        extras?: Record<string, unknown>;
+      };
+      watermark?: boolean;
+    }
+  ): Promise<{ contentId: string; jobId: string; status: string; renderStatus?: string }> => {
+    return performApiRequest(`/content/${id}/render`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body ?? {}),
+    });
+  },
+
+  transcribeClip: async (
+    id: string
+  ): Promise<{ contentId: string; jobId: string; status: string }> => {
+    return performApiRequest(`/content/${id}/transcribe`, {
+      method: "POST",
+    });
+  },
+
+  generateClipHooks: async (
+    id: string
+  ): Promise<{
+    contentId: string;
+    hooks: Array<{ text: string; startMs: number; durationMs: number; styleId?: string }>;
+    provider?: string;
+  }> => {
+    return performApiRequest(`/content/${id}/clip-hooks`, {
+      method: "POST",
+    });
+  },
+
+  generateClipCopy: async (
+    id: string,
+    body?: { title?: string; existingHashtags?: string[] },
+  ): Promise<{
+    contentId: string;
+    captions: string[];
+    hashtagSets: string[][];
+    provider?: string;
+  }> => {
+    return performApiRequest(`/content/${id}/clip-copy`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body ?? {}),
+    });
+  },
+
+  generateClipTitle: async (
+    id: string,
+    body?: { title?: string; prompt?: string },
+  ): Promise<{ contentId: string; title: string; provider?: string }> => {
+    return performApiRequest(`/content/${id}/clip-title`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body ?? {}),
+    });
+  },
+
+  suggestClipTimeline: async (
+    id: string,
+    body: {
+      kind: "highlights" | "smart_trim" | "transitions";
+      durationSec: number;
+      trimStartSec?: number;
+      trimEndSec?: number;
+    },
+  ): Promise<{
+    contentId: string;
+    provider?: string;
+    highlights?: Array<{ time: number; label: string }>;
+    smartTrim?: { start: number; end: number };
+    transitions?: Array<{ time: number; type: string; caption?: string; sfx?: string }>;
+  }> => {
+    return performApiRequest(`/content/${id}/clip-timeline`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  },
+
+  animateAsClip: async (
+    id: string,
+    body?: {
+      mode?: "ken_burns" | "i2v";
+      motionPrompt?: string;
+      durationSec?: number;
+    },
+  ): Promise<{ contentId: string; status: string; jobId?: string }> => {
+    return performApiRequest(`/content/${id}/animate-as-clip`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body ?? { mode: "ken_burns" }),
+    });
+  },
+
+  retryAnimate: async (
+    id: string,
+    body?: { sourceContentId?: string; mode?: "ken_burns" | "i2v"; durationSec?: number },
+  ): Promise<{ contentId: string; status: string; jobId?: string }> => {
+    return performApiRequest(`/content/${id}/retry-animate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body ?? {}),
+    });
+  },
+
   generateImage: async (
     prompt: string, 
     style = "cinematic", 
-    aspectRatio: "1:1" | "16:9" | "9:16" = "1:1", 
+    aspectRatio: "1:1" | "16:9" | "9:16" | "4:5" = "1:1", 
     model?: string,
     referenceContentIds?: string[],
     referenceUploadIds?: string[],
@@ -1008,6 +1472,11 @@ export const contentApi = {
       title?: string;
       /** Hybrid memes only: updated caption slots for the overlay. */
       texts?: Array<{ slot: string; text: string }>;
+      /** Hybrid memes: overlay layout to apply on refine (Director layout switch). */
+      templateId?: string;
+      brandName?: string;
+      brandPersonality?: string;
+      humorIntensity?: number;
     }
   ): Promise<any> => {
     return performApiRequest(
@@ -1035,6 +1504,56 @@ export const contentApi = {
     return performApiRequest<MemeTemplateListResponseDto>(
       "/content/meme-templates",
       { method: "GET" }
+    );
+  },
+
+  suggestMemeCopy: async (
+    dto: SuggestMemeCopyRequestDto,
+  ): Promise<SuggestMemeCopyResponseDto> => {
+    return performApiRequest<SuggestMemeCopyResponseDto>(
+      "/content/meme/suggest-copy",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dto),
+      },
+    );
+  },
+
+  recommendMemes: async (
+    dto: RecommendMemeRequestDto,
+  ): Promise<RecommendMemeResponseDto> => {
+    return performApiRequest<RecommendMemeResponseDto>(
+      "/content/meme/recommend",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dto),
+      },
+    );
+  },
+
+  createWeekPlan: async (
+    dto: CreateWeekPlanRequestDto,
+  ): Promise<WeekPlanResponseDto> => {
+    return performApiRequest<WeekPlanResponseDto>("/content/meme/week-plans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dto),
+    });
+  },
+
+  getActiveWeekPlan: async (): Promise<ActiveWeekPlanResponseDto> => {
+    return performApiRequest<ActiveWeekPlanResponseDto>(
+      "/content/meme/week-plans/active",
+      { method: "GET" },
+    );
+  },
+
+  cancelWeekPlan: async (planId: string): Promise<WeekPlanResponseDto> => {
+    return performApiRequest<WeekPlanResponseDto>(
+      `/content/meme/week-plans/${encodeURIComponent(planId)}/cancel`,
+      { method: "POST" },
     );
   },
 
@@ -1140,7 +1659,7 @@ export const contentApi = {
     }
 
     const filtered = options?.excludeUploads
-      ? allItems.filter((item) => !item.storageKey?.startsWith("uploads/"))
+      ? allItems.filter((item) => !isSourceUpload(item))
       : allItems;
 
     return filtered.slice(0, limitCount || 100);
@@ -1158,6 +1677,85 @@ export const contentApi = {
       `/content/mine/${id}`,
       { method: "GET", ...options }
     );
+  },
+
+  /**
+   * Dashboard Workflow Intelligence — AI-ranked actionable next steps per asset.
+   */
+  getWorkflowIntelligence: async (input?: {
+    niches?: string[];
+    creatorCategory?: string;
+    language?: string;
+    limit?: number;
+    weekGoals?: Array<{
+      day?: string;
+      contentType?: string;
+      theme?: string;
+      title?: string;
+      hook?: string;
+      path?: string;
+      isToday?: boolean;
+      status?: "pending" | "done";
+    }>;
+  }): Promise<{
+    suggestions: Array<{
+      id: string;
+      contentId: string;
+      contentType: "image" | "meme" | "clip";
+      title: string;
+      thumbnailUrl?: string;
+      action:
+        | "animate_i2v"
+        | "animate_ken_burns"
+        | "generate_hooks"
+        | "meme_ideas"
+        | "polish_render"
+        | "go_live"
+        | "open_studio";
+      headline: string;
+      reason: string;
+      priority: number;
+      ctaLabel: string;
+      href: string;
+      memeIdea?: string;
+    }>;
+    provider: string;
+    generatedAt: string;
+    evaluatedCount: number;
+    cacheHits?: number;
+    staleCount?: number;
+  }> => {
+    const params = new URLSearchParams();
+    if (input?.niches?.length) params.set("niches", input.niches.join(","));
+    if (input?.creatorCategory) params.set("creatorCategory", input.creatorCategory);
+    if (input?.language) params.set("language", input.language);
+    if (input?.limit) params.set("limit", String(input.limit));
+    if (input?.weekGoals?.length) {
+      params.set("weekGoals", JSON.stringify(input.weekGoals));
+    }
+    const qs = params.toString();
+    return performApiRequest(
+      `/content/intelligence/workflows${qs ? `?${qs}` : ""}`,
+      { method: "GET" },
+    );
+  },
+
+  /**
+   * Draft/upload items are only on GET /content/mine/:id.
+   * Published items are on GET /content/:id. Prefer mine for studio editors.
+   */
+  getOwnedContentById: async (
+    id: string,
+    options?: { suppressErrorLog?: boolean },
+  ): Promise<ContentDto> => {
+    try {
+      return await contentApi.getUserContentById(id, {
+        ...options,
+        suppressErrorLog: true,
+      });
+    } catch {
+      return contentApi.getContentById(id, options);
+    }
   },
 
   editContent: async (id: string, data: { title?: string; description?: string }): Promise<ContentDto> => {
@@ -1178,14 +1776,15 @@ export const contentApi = {
     );
   },
 
-  publish: async (id: string, data?: { title?: string; caption?: string; hashtags?: string[]; description?: string; thumbnailUrl?: string; imageUrl?: string; mediaUrl?: string }) => {
-    // Whitelist only allowed properties for NestJS PublishContentDto (title, caption, hashtags, description)
+  publish: async (id: string, data?: { title?: string; caption?: string; hashtags?: string[]; description?: string; thumbnailUrl?: string; imageUrl?: string; mediaUrl?: string; socialPlatforms?: SocialPlatform[] }) => {
+    // Whitelist only allowed properties for NestJS PublishContentDto
     const payload: Record<string, any> = {};
     if (data) {
       if (data.title) payload.title = data.title;
       if (data.caption) payload.caption = data.caption;
       if (data.hashtags && Array.isArray(data.hashtags) && data.hashtags.length > 0) payload.hashtags = data.hashtags;
       if (data.description) payload.description = data.description;
+      if (data.socialPlatforms && data.socialPlatforms.length > 0) payload.socialPlatforms = data.socialPlatforms;
     }
 
     return performApiRequest(
@@ -1312,7 +1911,7 @@ function normalizeFeedList(res: any): FeedListResponseDto {
 export const feedApi = {
   /** Explore / WES — Live+verified social posts. Returns `{ items, nextCursor }`. */
   getTrendingFeed: async (cursor?: string, limitCount = 20): Promise<FeedListResponseDto> => {
-    const safeLimit = Math.min(Math.max(1, limitCount), 100);
+    const safeLimit = Math.min(Math.max(1, limitCount), 50);
     const path =
       `/feed/trending?limit=${safeLimit}` +
       (cursor ? `&cursor=${encodeURIComponent(cursor)}` : "");
@@ -1326,7 +1925,7 @@ export const feedApi = {
   },
 
   fetchPersonalFeed: async (cursor?: string, limitCount = 20): Promise<FeedListResponseDto> => {
-    const safeLimit = Math.min(Math.max(1, limitCount), 100);
+    const safeLimit = Math.min(Math.max(1, limitCount), 50);
     const res = await performApiRequest<any>(
       `/feed?limit=${safeLimit}` + (cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""),
       { method: "GET" }
@@ -1409,15 +2008,31 @@ export const feedApi = {
 };
 
 // ==========================================
-// 3b. SOCIAL PERFORMANCE HUB (stubs — OAuth/adapters later)
+// 3b. SOCIAL PERFORMANCE HUB
 // ==========================================
 
-export type SocialPlatform = "youtube" | "instagram" | "tiktok";
+export type SocialPlatform = "youtube" | "instagram" | "tiktok" | "facebook";
+
+export type SocialAccountDto = {
+  platform: SocialPlatform;
+  displayName?: string | null;
+  externalAccountId?: string | null;
+  status?: string;
+  connectedAt?: string;
+  avatarUrl?: string | null;
+  accountType?: string | null;
+  username?: string | null;
+  pageName?: string | null;
+  login?: "instagram" | "facebook" | null;
+};
 
 export const socialApi = {
-  listAccounts: async (): Promise<any[]> => {
-    const res = await performApiRequest<any>("/social/accounts", { method: "GET" });
-    return Array.isArray(res) ? res : res?.items ?? res?.accounts ?? [];
+  listAccounts: async (): Promise<SocialAccountDto[]> => {
+    const res = await performApiRequest<{ items?: SocialAccountDto[] } | SocialAccountDto[]>(
+      "/social/accounts",
+      { method: "GET" },
+    );
+    return Array.isArray(res) ? res : res?.items ?? [];
   },
 
   connectAccount: async (platform: SocialPlatform, body?: Record<string, unknown>): Promise<any> => {
@@ -1434,6 +2049,30 @@ export const socialApi = {
 
   getDistributions: async (contentId: string): Promise<any> => {
     return performApiRequest(`/social/content/${contentId}/distributions`, { method: "GET" });
+  },
+
+  listLiveMetrics: async (): Promise<{
+    items: Array<{
+      contentId: string;
+      platform: string;
+      status: string;
+      externalUrl?: string;
+      scheduledAt?: string;
+      createdAt?: string;
+      updatedAt?: string;
+      metrics?: {
+        views?: number;
+        likes?: number;
+        comments?: number;
+        shares?: number;
+        reach?: number;
+        saves?: number;
+        followersOrSubscribers?: number;
+      };
+      lastSyncedAt?: string;
+    }>;
+  }> => {
+    return performApiRequest("/social/metrics", { method: "GET" });
   },
 
   linkExternalPost: async (contentId: string, body: Record<string, unknown>): Promise<any> => {
@@ -1479,6 +2118,30 @@ export interface DashboardMetricsDto {
   comments: number;
   followers: number;
   reach: number;
+  shares?: number;
+  saves?: number;
+}
+
+export interface AnalyticsTimeseriesPointDto {
+  date: string;
+  views: number;
+  likes: number;
+  comments: number;
+  followers: number;
+  reach: number;
+  shares: number;
+  saves: number;
+}
+
+export interface ContentAnalyticsMetricDto {
+  contentId: string;
+  views: number;
+  likes: number;
+  comments: number;
+  followers: number;
+  reach: number;
+  shares: number;
+  saves: number;
 }
 
 export interface WeeklyReportDto {
@@ -1494,9 +2157,26 @@ export interface WeeklyReportDto {
 }
 
 export const analyticsApi = {
-  fetchSummaryMetrics: async (): Promise<DashboardMetricsDto> => {
+  fetchSummaryMetrics: async (days?: number): Promise<DashboardMetricsDto> => {
+    const qs = days ? `?days=${days}` : "";
     return performApiRequest<DashboardMetricsDto>(
-      "/analytics/metrics",
+      `/analytics/metrics${qs}`,
+      { method: "GET" }
+    );
+  },
+
+  fetchTimeseries: async (days?: number): Promise<{ points: AnalyticsTimeseriesPointDto[] }> => {
+    const qs = days ? `?days=${days}` : "";
+    return performApiRequest<{ points: AnalyticsTimeseriesPointDto[] }>(
+      `/analytics/timeseries${qs}`,
+      { method: "GET" }
+    );
+  },
+
+  fetchContentMetrics: async (days?: number): Promise<{ items: ContentAnalyticsMetricDto[] }> => {
+    const qs = days ? `?days=${days}` : "";
+    return performApiRequest<{ items: ContentAnalyticsMetricDto[] }>(
+      `/analytics/content${qs}`,
       { method: "GET" }
     );
   },
@@ -1701,6 +2381,27 @@ export const coachApi = {
     return performApiRequest<CoachPlanResponse>(
       "/coach/onboarding/generate-plan",
       { method: "POST" }
+    );
+  },
+
+  getStrategyTip: async (input: {
+    drafts?: number;
+    published?: number;
+    live?: number;
+    scheduled?: number;
+    niches?: string[];
+    creatorCategory?: string;
+    hasWeekPlan?: boolean;
+    connectedSocials?: string[];
+    language?: string;
+  }): Promise<{ tip: string; provider: string; generatedAt: string }> => {
+    return performApiRequest(
+      "/coach/strategy-tip",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      },
     );
   },
 

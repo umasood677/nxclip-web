@@ -1,0 +1,1 @@
+import{j as o,cf as s,l as e}from"./index-X5dDExls.js";function i({className:a,orientation:t="horizontal",...r}){return o.jsx(s,{"data-slot":"separator",orientation:t,className:e("shrink-0 bg-border data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch",a),...r})}export{i as S};

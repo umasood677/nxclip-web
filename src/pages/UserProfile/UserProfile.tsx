@@ -28,6 +28,8 @@ import {
   parseAspectRatio,
 } from "../../components/JustifiedGallery";
 import { toast } from "sonner";
+import { useAppSelector } from "../../store/hooks";
+import { selectAuthUser } from "../../store/slices/authSlice";
 
 const PROFILE_LAYOUT: JustifiedLayoutOptions = {
   maxColumns: 6,
@@ -39,11 +41,22 @@ const PROFILE_LAYOUT: JustifiedLayoutOptions = {
 const getFeedRatio = (post: FeedItemDto) => parseAspectRatio(post.aspectRatio);
 const getFeedKey = (post: FeedItemDto) => String(post.id || post.contentId);
 const getFeedRatioKey = (post: FeedItemDto) => String(post.contentId || post.id);
+
+function isAuthMediaAvatar(src: string): boolean {
+  return (
+    src.startsWith("/content/") ||
+    (src.includes("/content/") && src.includes("/media")) ||
+    src.includes("api-gateway")
+  );
+}
+
 export default function UserProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === "rtl";
+  const authUser = useAppSelector(selectAuthUser);
+  const isOwnProfile = !!(authUser?.uid && id && String(authUser.uid) === String(id));
 
   const [loading, setLoading] = useState(true);
   const [followBusy, setFollowBusy] = useState(false);
@@ -54,7 +67,14 @@ export default function UserProfile() {
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [coverUrl, setCoverUrl] = useState("");
   const [posts, setPosts] = useState<FeedItemDto[]>([]);
+
+  useEffect(() => {
+    if (isOwnProfile) {
+      navigate("/profile", { replace: true });
+    }
+  }, [isOwnProfile, navigate]);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -78,6 +98,7 @@ export default function UserProfile() {
         setUsername(u.username || id.slice(0, 8));
         setBio(u.bio || "");
         setAvatarUrl(u.avatarUrl || "");
+        setCoverUrl(u.coverUrl || "");
       } else {
         setDisplayName(`Creator`);
         setUsername(id.slice(0, 8));
@@ -171,14 +192,37 @@ export default function UserProfile() {
         </Button>
 
         <div className="ui-profile-header">
-          <div className="ui-profile-cover" />
+          <div className="ui-profile-cover relative">
+            {coverUrl ? (
+              <AuthenticatedImage
+                src={coverUrl}
+                alt="Cover"
+                disableRemoteFallback
+                placeholderAspectRatio="3 / 1"
+                className="!absolute inset-0 !h-full !w-full !max-w-none !object-cover !object-center"
+                wrapperClassName="!absolute inset-0 !h-full !w-full !aspect-auto !bg-transparent"
+              />
+            ) : null}
+          </div>
           <div className="px-6 md:px-12 pb-12 relative">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
               <div className="flex flex-col md:flex-row md:items-end gap-6 text-start">
                 <div className="ui-profile-avatar-wrap -ml-0 md:-ml-0">
                   <div className="ui-profile-avatar overflow-hidden bg-muted">
                     {avatarUrl ? (
-                      <img src={avatarUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt="" />
+                      isAuthMediaAvatar(avatarUrl) ? (
+                        <AuthenticatedImage
+                          src={avatarUrl}
+                          alt=""
+                          disableRemoteFallback
+                          priority
+                          placeholderAspectRatio="1 / 1"
+                          className="!absolute inset-0 !h-full !w-full !object-cover !max-w-none"
+                          wrapperClassName="!absolute inset-0 !h-full !w-full !aspect-auto !bg-transparent"
+                        />
+                      ) : (
+                        <img src={avatarUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt="" />
+                      )
                     ) : (
                       <img
                         src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${id}`}
@@ -194,6 +238,7 @@ export default function UserProfile() {
                 </div>
               </div>
               <div className="flex gap-3 pb-2">
+                {!isOwnProfile ? (
                 <Button 
                   onClick={handleFollowToggle}
                   disabled={followBusy}
@@ -215,6 +260,7 @@ export default function UserProfile() {
                     </>
                   )}
                 </Button>
+                ) : null}
               </div>
             </div>
 

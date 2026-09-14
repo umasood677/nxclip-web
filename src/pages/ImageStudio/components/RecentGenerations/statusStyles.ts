@@ -1,5 +1,14 @@
 /** Map Content API status → clean glass status pills with a status dot */
 
+import {
+  contentKindLabel,
+  resolveContentKind,
+  type ContentKind,
+} from "../../../../lib/contentKind";
+import { isReferenceAsset } from "../../../../lib/isReferenceAsset";
+
+export { isReferenceAsset };
+
 export type StatusBadgeInfo = {
   label: string;
   /** Pill surface classes */
@@ -7,10 +16,6 @@ export type StatusBadgeInfo = {
   /** Colored indicator dot */
   dotClassName: string;
 };
-
-export function isReferenceAsset(item: { storageKey?: string | null }): boolean {
-  return Boolean(item.storageKey?.startsWith("uploads/"));
-}
 
 const PILL_BASE =
   "bg-black/45 text-white/95 border border-white/15 backdrop-blur-md shadow-sm";
@@ -59,6 +64,9 @@ export function getStatusBadge(status?: string): StatusBadgeInfo | null {
 export function getDisplayStatusBadge(item: {
   status?: string;
   storageKey?: string | null;
+  contentType?: string | null;
+  type?: string | null;
+  clipEditSpec?: unknown;
 }): StatusBadgeInfo | null {
   if (isReferenceAsset(item)) {
     return {
@@ -67,7 +75,33 @@ export function getDisplayStatusBadge(item: {
       dotClassName: "bg-violet-400",
     };
   }
+  const kind = resolveContentKind(item);
+  const status = (item.status || "").toLowerCase();
+  if (kind === "clip" && (status === "draft" || status === "processing") && item.storageKey) {
+    return {
+      label: "Generated",
+      className: PILL_BASE,
+      dotClassName: "bg-emerald-400",
+    };
+  }
   return getStatusBadge(item.status);
+}
+
+/** Always-on Image / Meme / Clip pill for gallery tiles. */
+export function getTypeBadge(item: {
+  contentType?: string | null;
+  type?: string | null;
+  style?: string | null;
+  memeSpec?: unknown;
+}): StatusBadgeInfo {
+  const kind: ContentKind = resolveContentKind(item);
+  const dotClassName =
+    kind === "meme" ? "bg-fuchsia-400" : kind === "clip" ? "bg-sky-400" : "bg-cyan-300";
+  return {
+    label: contentKindLabel(kind),
+    className: PILL_BASE,
+    dotClassName,
+  };
 }
 
 export function formatCreatedDate(timestamp: number | string): string {

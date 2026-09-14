@@ -171,6 +171,8 @@ class SocketService {
       "coach:progress",
       "content:transcribing",
       "content:transcription_complete",
+      "content:render_complete",
+      "content:render_failed",
       "content:captions_ready",
       "content:polish_complete",
     ];

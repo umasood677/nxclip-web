@@ -115,7 +115,7 @@ export default function Login() {
           ? savedReturn
           : "/feed"
         : "/onboarding";
-      toast.success("Successfully logged in via API Gateway");
+      toast.success("Welcome back to nxClip");
       dispatch(setGlobalError(null));
       navigate(returnTo, { replace: true });
     } catch (err: any) {
@@ -337,9 +337,9 @@ export default function Login() {
                 <div className="flex flex-col items-center justify-center py-0.5">
                   <div className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    <span className="font-semibold text-xs tracking-wider uppercase">Connecting to API Gateway...</span>
+                    <span className="font-semibold text-xs tracking-wider uppercase">Entering the AI studio...</span>
                   </div>
-                  <span className="text-[9px] text-white/70 font-normal tracking-wide mt-0.5 lowercase animate-pulse">Securing encrypted token handshake</span>
+                  <span className="text-[9px] text-white/70 font-normal tracking-wide mt-0.5 lowercase animate-pulse">Preparing your creative workspace</span>
                 </div>
               ) : (
                 <>

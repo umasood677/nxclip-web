@@ -26,7 +26,7 @@ export interface GenerationHistoryItem {
   timestamp: number;
 }
 
-export type ImageStudioAspectRatio = "1:1" | "16:9" | "9:16";
+export type ImageStudioAspectRatio = "1:1" | "16:9" | "9:16" | "4:5";
 export type ImageStudioStyle = "cinematic" | "meme" | "pixel_art" | "cartoon" | "realistic";
 
 /** Local upload chip shown in the References row (ordered left → right). */
@@ -84,6 +84,25 @@ export interface GeneratePanelProps {
   setSelectedTemplateId: (id: string | null) => void;
   slotTexts: Record<string, string>;
   setSlotText: (slotId: string, value: string) => void;
+  isSuggestingMemeCopy?: boolean;
+  onSuggestMemeCopy?: (opts?: { slotId?: string }) => void;
+  memeRecommendations?: import("../../services/apiClient").RecommendMemeResponseDto | null;
+  isRecommendingMemes?: boolean;
+  onRecommendMemes?: () => void;
+  onChooseMemeRecommendation?: (
+    templateId: string,
+    slots: Record<string, string>,
+  ) => void;
+  hasActiveWeekPlan?: boolean;
+  onOpenWeekPlan?: () => void;
+  memeBrandName?: string;
+  setMemeBrandName?: (value: string) => void;
+  memeVoiceIds?: import("./lib/memeVoice").MemeVoiceId[];
+  setMemeVoiceIds?: (value: import("./lib/memeVoice").MemeVoiceId[]) => void;
+  memeCustomVoice?: string;
+  setMemeCustomVoice?: (value: string) => void;
+  memeHumorIntensity?: number;
+  setMemeHumorIntensity?: (value: number) => void;
   lighting: string;
   setLighting: (l: string) => void;
   negativePrompt: string;
@@ -146,6 +165,8 @@ export interface CanvasPanelProps {
   setSaturation: (val: number) => void;
   aspectRatio: string;
   onPublishClick?: () => void;
+  onAnimateAsClipClick?: () => void;
+  isAnimatingAsClip?: boolean;
   isPublishing?: boolean;
   isPublished?: boolean;
   watermarked?: boolean;
@@ -182,6 +203,20 @@ export interface CanvasPanelProps {
   selectedHashtags?: string[];
   onSelectCaption?: (caption: string) => void;
   onSelectHashtagSet?: (tags: string[]) => void;
+  /** Canvas week-plan workspace (Director opt-in). */
+  weekPlanCanvasOpen?: boolean;
+  weekPlanDays?: import("./components/MemeWeekPlanCanvas").WeekPlanDayView[];
+  weekPlanSelectedIndex?: number;
+  onWeekPlanSelectDay?: (index: number) => void;
+  activeWeekPlan?: import("../../services/apiClient").WeekPlanDto | null;
+  isActivatingWeekPlan?: boolean;
+  isCancellingWeekPlan?: boolean;
+  canActivateWeekPlan?: boolean;
+  onActivateWeekPlan?: () => void;
+  onCancelWeekPlan?: () => void;
+  onUseWeekPlanDay?: () => void;
+  onCloseWeekPlanCanvas?: () => void;
+  memeTemplates?: import("../../services/apiClient").MemeTemplateDto[];
 }
 
 export interface EditPanelProps {
@@ -197,6 +232,8 @@ export interface EditPanelProps {
   isRemovingBg: boolean;
   handleRemoveBg: () => void;
   onPublishClick?: () => void;
+  onAnimateAsClipClick?: () => void;
+  isAnimatingAsClip?: boolean;
   onViewHistoryClick?: () => void;
   isPublishing?: boolean;
   isPublished?: boolean;

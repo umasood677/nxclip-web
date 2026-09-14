@@ -6,6 +6,20 @@ import uiReducer from "./slices/uiSlice";
 import { safeLocalStorage, safeSessionStorage } from "../lib/safeStorage";
 import { STORAGE_KEYS } from "../constants";
 
+function readPersistedUserJson(raw: string | null): Record<string, unknown> {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function hasAuthTokens(user: Record<string, unknown>): boolean {
+  return !!(user.accessToken || user.refreshToken || user.token || user.jwtToken || user.idToken);
+}
+
 // Custom middleware to automatically synchronize the auth state to local storage or session storage
 const authPersistenceMiddleware: Middleware = (_storeApi) => (next) => (action: any) => {
   const result = next(action);
@@ -13,31 +27,50 @@ const authPersistenceMiddleware: Middleware = (_storeApi) => (next) => (action: 
   if (action.type === "auth/setAuthUser") {
     const user = action.payload;
     if (user) {
-      const isRemembered = safeLocalStorage.getItem("nx_remember_me") === "true";
+      const rememberFlag = safeLocalStorage.getItem("nx_remember_me");
+      // Prefer the bucket that already holds tokens so profile-only setAuthUser
+      // never strips access/refresh tokens or moves them to the wrong storage.
+      const localExisting = readPersistedUserJson(
+        safeLocalStorage.getItem(STORAGE_KEYS.PERSISTED_USER),
+      );
+      const sessionExisting = readPersistedUserJson(
+        safeSessionStorage.getItem(STORAGE_KEYS.PERSISTED_USER),
+      );
+      const tokenSource = hasAuthTokens(localExisting)
+        ? localExisting
+        : hasAuthTokens(sessionExisting)
+          ? sessionExisting
+          : rememberFlag === "false"
+            ? sessionExisting
+            : localExisting;
+
+      const isRemembered =
+        rememberFlag === "true" ||
+        (rememberFlag !== "false" && hasAuthTokens(localExisting));
       const storage = isRemembered ? safeLocalStorage : safeSessionStorage;
+
+      // Profile updates from Redux omit tokens — always keep existing ones.
+      const mergedUser = {
+        ...tokenSource,
+        ...user,
+        accessToken:
+          (user as any).accessToken ||
+          tokenSource.accessToken ||
+          tokenSource.token ||
+          tokenSource.jwtToken ||
+          tokenSource.idToken,
+        refreshToken: (user as any).refreshToken || tokenSource.refreshToken,
+      };
       
-      let existingUser = {};
-      try {
-        const saved = storage.getItem(STORAGE_KEYS.PERSISTED_USER);
-        if (saved) {
-          existingUser = JSON.parse(saved);
-        }
-      } catch (e) {
-        console.error("Error reading existing user for merge:", e);
-      }
-      
-      const mergedUser = { ...existingUser, ...user };
-      
+      storage.setItem(STORAGE_KEYS.PERSISTED_USER, JSON.stringify(mergedUser));
+      storage.setItem(STORAGE_KEYS.LOGGED_IN, "true");
       if (isRemembered) {
-        safeLocalStorage.setItem(STORAGE_KEYS.PERSISTED_USER, JSON.stringify(mergedUser));
-        safeLocalStorage.setItem(STORAGE_KEYS.LOGGED_IN, "true");
-        // Clear session storage version
+        if (rememberFlag !== "true") {
+          safeLocalStorage.setItem("nx_remember_me", "true");
+        }
         safeSessionStorage.removeItem(STORAGE_KEYS.PERSISTED_USER);
         safeSessionStorage.removeItem(STORAGE_KEYS.LOGGED_IN);
       } else {
-        safeSessionStorage.setItem(STORAGE_KEYS.PERSISTED_USER, JSON.stringify(mergedUser));
-        safeSessionStorage.setItem(STORAGE_KEYS.LOGGED_IN, "true");
-        // Clear local storage version
         safeLocalStorage.removeItem(STORAGE_KEYS.PERSISTED_USER);
         safeLocalStorage.removeItem(STORAGE_KEYS.LOGGED_IN);
       }

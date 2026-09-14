@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "motion/react";
-import { CheckCircle2, XCircle, Sparkles, ChevronRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { CheckCircle2, XCircle, Sparkles, ChevronRight, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import Navbar from "../../components/Navbar";
 import { SEO } from "../../components/SEO";
 import Footer from "../../components/Footer";
 import { cn } from "../../lib/utils";
-import { buttonVariants } from "../../components/ui/button";
+import { Button, buttonVariants } from "../../components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { Badge } from "../../components/ui/badge";
 import { 
@@ -26,6 +27,9 @@ import {
 } from "../../components/ui/accordion";
 import { TooltipProvider } from "../../components/ui/tooltip";
 import { PRICING_PLANS, PLAN_RECOMMENDATIONS } from "../../lib/pricing-data";
+import { useAppSelector } from "../../store/hooks";
+import { selectAuthUser, selectAuthProfile } from "../../store/slices/authSlice";
+import { startCheckout, startProCheckout, toastBillingError } from "../../services/billingService";
 
 export const metadata = {
   title: "Pricing & Plans",
@@ -35,6 +39,51 @@ export const metadata = {
 export default function PricingPage() {
   const { t, i18n } = useTranslation();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const authUser = useAppSelector(selectAuthUser);
+  const profile = useAppSelector(selectAuthProfile);
+  const navigate = useNavigate();
+  const currentPlan = (profile?.plan || "free").toLowerCase();
+
+  const handlePlanCta = async (planId: string) => {
+    if (planId === "starter") {
+      navigate(authUser ? "/feed" : "/signup");
+      return;
+    }
+
+    if (!authUser) {
+      navigate("/signup?next=/upgrade");
+      return;
+    }
+
+    if (currentPlan === "pro" || currentPlan === "studio") {
+      toast.message("You're already on a paid plan", {
+        description: "Manage billing from Settings → Billing.",
+      });
+      navigate("/settings");
+      return;
+    }
+
+    if (planId !== "pro" && planId !== "studio") {
+      navigate("/signup");
+      return;
+    }
+
+    setLoadingPlan(planId);
+    try {
+      if (planId === "studio") {
+        await startCheckout(
+          billingCycle === "yearly" ? "studio_annual" : "studio_monthly",
+          billingCycle === "yearly" ? "annual" : "monthly",
+        );
+      } else {
+        await startProCheckout(billingCycle);
+      }
+    } catch (err) {
+      toastBillingError(err, "Could not start Stripe Checkout. Check Stripe env keys.");
+      setLoadingPlan(null);
+    }
+  };
 
   return (
     <div className="min-h-screen ui-bg-landing flex flex-col">
@@ -169,19 +218,28 @@ export default function PricingPage() {
                   </ul>
                 </div>
 
-                <Link
-                  to="/signup"
+                <Button
+                  type="button"
+                  variant={plan.popular ? "default" : "outline"}
+                  size="lg"
+                  disabled={loadingPlan === plan.id}
+                  onClick={() => void handlePlanCta(plan.id)}
                   className={cn(
-                    buttonVariants({ variant: plan.popular ? "default" : "outline", size: "lg" }),
                     "w-full h-13 font-black text-xs uppercase tracking-[0.2em] transition-all group rounded-xl",
                     plan.popular 
                       ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20" 
                       : "bg-muted/60 border-border hover:bg-muted hover:border-primary/40"
                   )}
                 >
-                  {plan.cta}
-                  <ChevronRight size={15} className="ml-1.5 transition-transform group-hover:translate-x-1 rtl:rotate-180 shrink-0" />
-                </Link>
+                  {loadingPlan === plan.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      {plan.cta}
+                      <ChevronRight size={15} className="ml-1.5 transition-transform group-hover:translate-x-1 rtl:rotate-180 shrink-0" />
+                    </>
+                  )}
+                </Button>
               </motion.div>
             ))}
           </div>

@@ -28,6 +28,7 @@ import { ApiSettings } from "../../components/Settings/ApiSettings";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { selectAuthProfile, setAuthProfile } from "../../store/slices/authSlice";
 import { identityApi } from "../../services/apiClient";
+import { toastBillingError } from "../../services/billingService";
 
 const SettingsSkeleton = memo(() => (
   <div className="space-y-10 animate-in fade-in duration-500">
@@ -103,8 +104,60 @@ export default function Settings() {
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [billingStatus, setBillingStatus] = useState<Awaited<
+    ReturnType<typeof identityApi.getBillingStatus>
+  > | null>(null);
+  const [billingBusy, setBillingBusy] = useState(false);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (activeSection !== "billing" || !profile) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const status = await identityApi.getBillingStatus();
+        if (!cancelled) setBillingStatus(status);
+      } catch (err) {
+        console.warn("Billing status unavailable", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSection, profile?.plan]);
+
+  // Stripe status has no interval field; derive it from the current period length.
+  const billingInterval = (() => {
+    const start = billingStatus?.currentPeriodStart;
+    const end = billingStatus?.currentPeriodEnd;
+    if (!start || !end) return null;
+    const days = (new Date(end).getTime() - new Date(start).getTime()) / 86_400_000;
+    if (!Number.isFinite(days) || days <= 0) return null;
+    return days > 180 ? "annual" : "monthly";
+  })();
+
+  const renewalDate = billingStatus?.currentPeriodEnd
+    ? new Date(billingStatus.currentPeriodEnd).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : null;
+
+  const handleCancelSubscription = async () => {
+    setBillingBusy(true);
+    try {
+      const res = await identityApi.cancelSubscription();
+      toast.success(res.message || "Subscription will cancel at period end");
+      const status = await identityApi.getBillingStatus();
+      setBillingStatus(status);
+    } catch (err) {
+      toastBillingError(err, "Could not cancel subscription");
+    } finally {
+      setBillingBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!auth.currentUser) {
@@ -123,6 +176,7 @@ export default function Settings() {
             displayName: res.displayName || res.username || "Creator",
             email: res.email,
             photoURL: res.avatarUrl || null,
+            coverUrl: res.coverUrl || null,
             plan: (res.plan || "free").toLowerCase() as any,
             role: (res.roles?.[0] || "creator") as any,
             onboardingCompleted: res.onboardingCompleted ?? false,
@@ -185,7 +239,7 @@ export default function Settings() {
         setProfile(updated);
       }
 
-      navigate("/onboarding", { state: { fromReset: true } });
+      navigate("/onboarding", { state: { fromReset: true, renewWeekPlan: true } });
     } catch (err) {
       console.error("Failed to reset onboarding:", err);
       handleFirestoreError(err, OperationType.UPDATE, `profile/onboarding`);
@@ -315,6 +369,13 @@ export default function Settings() {
                         <span className="text-sm font-bold text-foreground font-mono">
                           {profile?.plan === "pro" ? t('settings.billing.pricing.pro') : profile?.plan === "studio" ? t('settings.billing.pricing.studio') : t('settings.billing.pricing.free')}
                         </span>
+                        {billingInterval && (
+                          <Badge variant="outline" className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest">
+                            {billingInterval === "annual"
+                              ? t('settings.billing.interval.annual')
+                              : t('settings.billing.interval.monthly')}
+                          </Badge>
+                        )}
                       </div>
                       
                       <div className="space-y-1">
@@ -337,10 +398,23 @@ export default function Settings() {
                           </div>
                         </div>
                         <div className="space-y-1">
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('settings.billing.next_billing')}</p>
-                          <p className="text-xs font-bold text-foreground">
-                            {profile?.plan === "free" ? t('settings.billing.na') : t('common.date_format', { month: t('common.months.may'), day: 20, year: 2026 })}
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                            {billingStatus?.cancelAtPeriodEnd
+                              ? t('settings.billing.access_until')
+                              : t('settings.billing.next_renewal')}
                           </p>
+                          <p className="text-xs font-bold text-foreground">
+                            {profile?.plan === "free" || !renewalDate
+                              ? t('settings.billing.na')
+                              : renewalDate}
+                          </p>
+                          {!billingStatus?.cancelAtPeriodEnd && renewalDate && billingInterval && (
+                            <p className="text-[10px] font-medium text-muted-foreground">
+                              {billingInterval === "annual"
+                                ? t('settings.billing.renews_annually')
+                                : t('settings.billing.renews_monthly')}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -355,13 +429,16 @@ export default function Settings() {
                           {t('settings.billing.upgrade')}
                         </button>
                       ) : (
-                        <button className="px-8 py-3 bg-muted text-foreground rounded-md font-bold border border-border hover:bg-muted/80 transition-all">
-                          {t('settings.billing.cancel')}
+                        <button
+                          disabled={billingBusy || billingStatus?.cancelAtPeriodEnd}
+                          onClick={() => void handleCancelSubscription()}
+                          className="px-8 py-3 bg-muted text-foreground rounded-md font-bold border border-border hover:bg-muted/80 transition-all disabled:opacity-50"
+                        >
+                          {billingStatus?.cancelAtPeriodEnd
+                            ? "Cancellation scheduled"
+                            : t('settings.billing.cancel')}
                         </button>
                       )}
-                      <button className="text-[11px] font-bold text-muted-foreground hover:text-foreground underline transition-colors text-center">
-                        {t('settings.billing.payment_methods')}
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -372,26 +449,43 @@ export default function Settings() {
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('settings.billing.last_12_months')}</p>
                   </div>
                   
-                  {profile?.plan === "free" ? (
+                  {!billingStatus?.invoices?.length ? (
                     <div className="py-12 text-center bg-muted/20 rounded-xl border border-dashed border-border">
                       <p className="text-sm font-medium text-muted-foreground italic">{t('settings.billing.empty_history')}</p>
                     </div>
                   ) : (
                     <div className="divide-y divide-border border border-border rounded-xl overflow-hidden bg-card">
-                      {[1, 2].map(i => (
-                        <div key={i} className="flex items-center justify-between p-6 hover:bg-muted/30 transition-all">
+                      {billingStatus.invoices.map((inv) => (
+                        <div key={inv.id} className="flex items-center justify-between p-6 hover:bg-muted/30 transition-all">
                           <div className="flex items-center gap-5">
                             <div className="w-10 h-10 bg-muted/50 rounded-lg flex items-center justify-center text-muted-foreground ring-1 ring-border">
                               <CreditCard size={18} />
                             </div>
                             <div>
-                              <p className="text-[13px] font-bold text-foreground leading-none mb-1">{t('settings.billing.invoice_label', { id: i })}</p>
-                              <p className="text-[11px] text-muted-foreground font-medium">{t('common.date_format', { month: t('common.months.april'), day: 20 - i, year: 2026 })}</p>
+                              <p className="text-[13px] font-bold text-foreground leading-none mb-1">
+                                Invoice {inv.id.slice(-8)}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground font-medium">
+                                {inv.createdAt
+                                  ? new Date(inv.createdAt).toLocaleDateString()
+                                  : inv.status}
+                              </p>
                             </div>
                           </div>
                           <div className="text-right rtl:text-left">
-                            <p className="text-[13px] font-display font-bold text-foreground tracking-tight leading-none mb-1">{t('common.currency', { amount: "12.00" })}</p>
-                            <button className="text-[10px] font-bold text-primary hover:underline uppercase tracking-widest">{t('settings.billing.download_pdf')}</button>
+                            <p className="text-[13px] font-display font-bold text-foreground tracking-tight leading-none mb-1">
+                              {(inv.amountPaid / 100).toFixed(2)} {inv.currency?.toUpperCase()}
+                            </p>
+                            {(inv.invoicePdfUrl || inv.hostedInvoiceUrl) && (
+                              <a
+                                href={inv.invoicePdfUrl || inv.hostedInvoiceUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] font-bold text-primary hover:underline uppercase tracking-widest"
+                              >
+                                {t('settings.billing.download_pdf')}
+                              </a>
+                            )}
                           </div>
                         </div>
                       ))}

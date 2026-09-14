@@ -26,17 +26,25 @@ import { selectAuthProfile } from "../../store/slices/authSlice";
 import {
   contentApi,
   extractValidImageUrl,
+  socialApi,
   type ContentDto,
 } from "../../services/apiClient";
 import { AuthenticatedImage } from "../../components/AuthenticatedImage";
+import { AuthenticatedMediaPreview } from "../../components/AuthenticatedMediaPreview";
 import { resolveLibraryTitle } from "../ContentLibrary/lib/title";
 import {
   isReferenceAsset,
   getDisplayStatusBadge,
+  getTypeBadge,
+  formatCreatedDate,
+  formatCreatedTime,
 } from "../ImageStudio/components/RecentGenerations/statusStyles";
 import { StatusPill } from "../ImageStudio/components/RecentGenerations/StatusPill";
 import { EmptyState } from "../../components/common/EmptyState";
 import { beginWeekPlanRenewal, weekPlanFromProfile } from "../../lib/weekPlan";
+import { resolveContentKind } from "../../lib/contentKind";
+import { isNxClipGeneratedClip, isSourceUpload } from "../../lib/isReferenceAsset";
+import { toast } from "sonner";
 
 const tools = [
   {
@@ -86,30 +94,84 @@ const tools = [
   },
 ];
 
-function typeLabel(contentType?: string) {
-  const t = (contentType || "image").toLowerCase();
-  if (t === "clip") return "Clip";
-  if (t === "meme") return "Meme";
-  return "Image";
+function isFailedAnimateClip(item: ContentDto): boolean {
+  if (resolveContentKind(item) !== "clip") return false;
+  const spec = item.clipEditSpec as { animate?: unknown; sourceContentId?: string } | undefined;
+  const isAnimate =
+    Boolean(spec?.animate) || Boolean(spec?.sourceContentId) || isNxClipGeneratedClip(item);
+  if (!isAnimate) return false;
+  const status = (item.status || "").toLowerCase();
+  if (status === "generation_failed") return true;
+  const renderFailed = String(item.renderStatus || "").toLowerCase() === "failed";
+  return renderFailed && !item.storageKey;
 }
 
-function openCreation(navigate: ReturnType<typeof useNavigate>, item: ContentDto) {
+function sourceStillIdFromClip(item: ContentDto): string | undefined {
+  const spec = item.clipEditSpec as { sourceContentId?: string } | undefined;
+  return typeof spec?.sourceContentId === "string" ? spec.sourceContentId : undefined;
+}
+
+async function openCreation(
+  navigate: ReturnType<typeof useNavigate>,
+  item: ContentDto,
+): Promise<void> {
   const id = item.id;
   if (item.status === "published") {
     navigate(`/feed/post/${id}`);
     return;
   }
-  if (item.contentType === "clip") {
-    navigate("/create/clip", { state: { contentId: id } });
+
+  if (resolveContentKind(item) === "clip") {
+    if (isFailedAnimateClip(item)) {
+      try {
+        toast.info("Retrying animation…");
+        await contentApi.retryAnimate(id, {
+          sourceContentId: sourceStillIdFromClip(item),
+        });
+        toast.message("Animation started", {
+          description: "Opening Clip Studio — preview appears when the MP4 is ready.",
+        });
+        navigate(`/create/clip/${id}/edit?step=polish`);
+        return;
+      } catch (err) {
+        const sourceId = sourceStillIdFromClip(item);
+        toast.error(err instanceof Error ? err.message : "Retry failed", {
+          description: sourceId
+            ? "Opening the source still so you can animate again."
+            : undefined,
+        });
+        if (sourceId) {
+          navigate(`/create/image?editId=${sourceId}&suggest=animate_ken_burns`);
+          return;
+        }
+        return;
+      }
+    }
+    navigate(`/create/clip/${id}/edit?step=${item.storageKey ? "polish" : "trim"}`);
     return;
   }
+
+  if ((item.status || "").toLowerCase() === "generation_failed") {
+    navigate("/create/image", {
+      state: {
+        draftId: id,
+        title: item.title || "",
+        prompt: item.prompt || "",
+        imageUrl: extractValidImageUrl(item),
+        mode: resolveContentKind(item) === "meme" ? "meme" : "image",
+        status: item.status,
+      },
+    });
+    return;
+  }
+
   navigate("/create/image", {
     state: {
       draftId: id,
       title: item.title || "",
       prompt: item.prompt || "",
       imageUrl: extractValidImageUrl(item),
-      mode: item.contentType === "meme" ? "meme" : "image",
+      mode: resolveContentKind(item) === "meme" ? "meme" : "image",
     },
   });
 }
@@ -121,30 +183,91 @@ function isUnfinished(item: ContentDto): boolean {
     s === "processing" ||
     s === "publishing" ||
     s === "generation_failed" ||
-    s === "moderation_rejected"
+    s === "moderation_rejected" ||
+    String(item.renderStatus || "").toLowerCase() === "failed"
   );
 }
 
-function isPublishedNotLive(item: ContentDto): boolean {
-  const s = (item.status || "").toLowerCase();
-  if (s !== "published" && s !== "approved") return false;
+function hasLiveDistribution(item: ContentDto): boolean {
   const stats = (item as { platformStats?: { externalUrl?: string }[] }).platformStats;
-  const hasLive = Array.isArray(stats) && stats.some((p) => !!p.externalUrl);
-  return !hasLive;
+  return Array.isArray(stats) && stats.some((p) => !!p.externalUrl);
+}
+
+/** Feed-published, or a generated clip with master media — next step is publish / social Live. */
+function isReadyToGoLive(item: ContentDto): boolean {
+  if (isFailedAnimateClip(item)) return false;
+  const s = (item.status || "").toLowerCase();
+  if (
+    s === "deleted" ||
+    s === "archived" ||
+    s === "generation_failed" ||
+    s === "moderation_rejected" ||
+    s === "processing" ||
+    s === "publishing"
+  ) {
+    return false;
+  }
+  if (hasLiveDistribution(item)) return false;
+  if (s === "published" || s === "approved") return true;
+  return (
+    resolveContentKind(item) === "clip" &&
+    Boolean(item.storageKey) &&
+    s === "draft" &&
+    isNxClipGeneratedClip(item)
+  );
+}
+
+function formatHubStamp(iso?: string | null): string | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return null;
+  return `${formatCreatedDate(t)} · ${formatCreatedTime(t)}`;
+}
+
+function earliestLiveAt(
+  rows: Array<{
+    contentId: string;
+    status?: string;
+    externalUrl?: string;
+    scheduledAt?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    lastSyncedAt?: string;
+  }>,
+): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const row of rows) {
+    const live = (row.status || "").toLowerCase() === "live" || Boolean(row.externalUrl);
+    if (!live) continue;
+    const iso = row.scheduledAt || row.createdAt || row.updatedAt || row.lastSyncedAt;
+    if (!iso) continue;
+    const prev = map.get(row.contentId);
+    if (!prev || new Date(iso).getTime() < new Date(prev).getTime()) {
+      map.set(row.contentId, iso);
+    }
+  }
+  return map;
 }
 
 function ActionThumb({
   item,
   cta,
   onOpen,
+  liveAt,
 }: {
   item: ContentDto;
   cta: string;
   onOpen: () => void;
+  liveAt?: string;
 }) {
   const imageUrl = extractValidImageUrl(item);
   const title = resolveLibraryTitle(item);
   const statusBadge = getDisplayStatusBadge(item);
+  const typeBadge = getTypeBadge(item);
+  const isClip = resolveContentKind(item) === "clip";
+  const createdStamp = formatHubStamp(item.createdAt);
+  const publishedStamp = formatHubStamp(item.publishedAt);
+  const liveStamp = formatHubStamp(liveAt);
 
   return (
     <button
@@ -154,14 +277,28 @@ function ActionThumb({
     >
       <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
         {imageUrl ? (
-          <AuthenticatedImage
-            key={imageUrl}
-            src={imageUrl}
-            alt={title}
-            disableRemoteFallback
-            placeholderAspectRatio="1 / 1"
-            wrapperClassName="!absolute inset-0 !h-full !w-full !aspect-auto overflow-hidden [&>img]:!absolute [&>img]:inset-0 [&>img]:!h-full [&>img]:!w-full [&>img]:!object-cover [&>img]:transition-transform [&>img]:duration-400 group-hover:[&>img]:scale-110"
-          />
+          isClip ? (
+            <AuthenticatedMediaPreview
+              key={imageUrl}
+              src={imageUrl}
+              item={item}
+              kind="video"
+              alt={title}
+              showPlayBadge
+              loadingCompact
+              disableRemoteFallback
+              wrapperClassName="!absolute inset-0 !h-full !w-full !aspect-auto overflow-hidden [&>video]:!absolute [&>video]:inset-0 [&>video]:!h-full [&>video]:!w-full [&>video]:!object-cover"
+            />
+          ) : (
+            <AuthenticatedImage
+              key={imageUrl}
+              src={imageUrl}
+              alt={title}
+              disableRemoteFallback
+              placeholderAspectRatio="1 / 1"
+              wrapperClassName="!absolute inset-0 !h-full !w-full !aspect-auto overflow-hidden [&>img]:!absolute [&>img]:inset-0 [&>img]:!h-full [&>img]:!w-full [&>img]:!object-cover [&>img]:transition-transform [&>img]:duration-400 group-hover:[&>img]:scale-110"
+            />
+          )
         ) : (
           <div className="flex h-full w-full items-center justify-center">
             <ImageIcon className="h-5 w-5 text-muted-foreground/40" />
@@ -170,12 +307,15 @@ function ActionThumb({
       </div>
       <div className="min-w-0 flex-1 space-y-1 py-0.5">
         <div className="flex flex-wrap items-center gap-1.5">
+          <StatusPill badge={typeBadge} />
           {statusBadge ? <StatusPill badge={statusBadge} /> : null}
-          <span className="text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded-md bg-primary/15 text-primary">
-            {typeLabel(item.contentType)}
-          </span>
         </div>
         <p className="text-[13px] font-semibold text-foreground line-clamp-1">{title}</p>
+        <div className="space-y-0.5 text-[10px] leading-snug text-muted-foreground font-medium">
+          {createdStamp ? <p>Created {createdStamp}</p> : null}
+          {publishedStamp ? <p>Published {publishedStamp}</p> : null}
+          {liveStamp ? <p>Live {liveStamp}</p> : null}
+        </div>
         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-primary">
           {cta}
           <ChevronRight size={12} />
@@ -193,16 +333,20 @@ export default function CreateHub() {
   const weekPlan = weekPlanFromProfile(reduxProfile);
 
   const [items, setItems] = useState<ContentDto[]>([]);
+  const [liveAtById, setLiveAtById] = useState<Map<string, string>>(() => new Map());
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await contentApi.getUserContentList(48, undefined, {
-        excludeUploads: true,
-      });
+      const [data, metrics] = await Promise.all([
+        contentApi.getUserContentList(100, undefined, {
+          excludeUploads: true,
+        }),
+        socialApi.listLiveMetrics().catch(() => ({ items: [] as Array<{ contentId: string }> })),
+      ]);
       const filtered = data
-        .filter((item) => !isReferenceAsset(item))
+        .filter((item) => !isSourceUpload(item) && !isReferenceAsset(item))
         .filter((item) => {
           const s = (item.status || "").toLowerCase();
           return s !== "deleted" && s !== "archived";
@@ -213,9 +357,11 @@ export default function CreateHub() {
             new Date(a.updatedAt || a.createdAt || 0).getTime(),
         );
       setItems(filtered);
+      setLiveAtById(earliestLiveAt(metrics.items ?? []));
     } catch (err) {
       console.error("Failed to load hub actions:", err);
       setItems([]);
+      setLiveAtById(new Map());
     } finally {
       setLoading(false);
     }
@@ -225,12 +371,18 @@ export default function CreateHub() {
     void load();
   }, [load]);
 
-  const continueItems = useMemo(
-    () => items.filter(isUnfinished).slice(0, 4),
+  const readyItems = useMemo(
+    () => items.filter(isReadyToGoLive).slice(0, 4),
     [items],
   );
-  const readyItems = useMemo(
-    () => items.filter(isPublishedNotLive).slice(0, 4),
+  const continueItems = useMemo(() => {
+    const unfinished = items.filter((item) => isUnfinished(item) && !isReadyToGoLive(item));
+    const newestClip = unfinished.find((item) => isNxClipGeneratedClip(item));
+    const rest = unfinished.filter((item) => item.id !== newestClip?.id);
+    return [newestClip, ...rest].filter((item): item is ContentDto => !!item).slice(0, 4);
+  }, [items]);
+  const recentClips = useMemo(
+    () => items.filter((item) => isNxClipGeneratedClip(item)).slice(0, 4),
     [items],
   );
   const weekDays = weekPlan?.days?.slice(0, 2) ?? [];
@@ -257,7 +409,7 @@ export default function CreateHub() {
             {t("create.header.plan")}
           </h2>
           <p className="text-xs md:text-sm text-muted-foreground font-medium">
-            Pick a tool, finish what’s open, then go Live — Library holds everything else.
+            Pick a tool, finish what’s open, then go Live. Generated clips show below and in Library.
           </p>
         </div>
         <Button
@@ -359,7 +511,7 @@ export default function CreateHub() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            navigate("/pricing");
+                            navigate("/upgrade");
                           }}
                         >
                           <Lock size={12} className={isAr ? "ml-1" : "mr-1"} />
@@ -392,6 +544,45 @@ export default function CreateHub() {
         </AnimatePresence>
       </div>
 
+      {recentClips.length > 0 ? (
+        <div className="mt-5 md:mt-6">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Video size={16} className="text-teal-600 dark:text-teal-400" />
+              <h3 className="text-sm font-bold text-foreground">Recent clips</h3>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-[11px] font-bold text-muted-foreground"
+              onClick={() => navigate("/my-content")}
+            >
+              All in Library
+              <ChevronRight size={12} className="ms-0.5" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            {recentClips.map((item) => (
+              <ActionThumb
+                key={item.id}
+                item={item}
+                liveAt={liveAtById.get(item.id)}
+                cta={
+                  isFailedAnimateClip(item)
+                    ? "Fix & retry"
+                    : item.status === "published"
+                      ? "Open post"
+                      : item.storageKey
+                        ? "Polish clip"
+                        : "Open clip"
+                }
+                onOpen={() => void openCreation(navigate, item)}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {/* Action lanes — not a mini Library */}
       <div className="mt-5 md:mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="border-border bg-card rounded-xl overflow-hidden">
@@ -423,13 +614,17 @@ export default function CreateHub() {
                 <ActionThumb
                   key={item.id}
                   item={item}
+                  liveAt={liveAtById.get(item.id)}
                   cta={
+                    isFailedAnimateClip(item) ||
                     (item.status || "").includes("fail") ||
                     (item.status || "").includes("reject")
                       ? "Fix & retry"
-                      : "Resume"
+                      : resolveContentKind(item) === "clip"
+                        ? "Polish clip"
+                        : "Resume"
                   }
-                  onOpen={() => openCreation(navigate, item)}
+                  onOpen={() => void openCreation(navigate, item)}
                 />
               ))
             )}
@@ -443,7 +638,7 @@ export default function CreateHub() {
               <CardTitle className="text-sm font-bold">Ready to go Live</CardTitle>
             </div>
             <p className="text-[11px] text-muted-foreground font-medium">
-              Published on Feed — push to social
+              Generated clips and Feed posts waiting to publish or go Live
             </p>
           </CardHeader>
           <CardContent className="px-4 pb-4 space-y-2">
@@ -455,26 +650,38 @@ export default function CreateHub() {
               <div className="rounded-xl border border-dashed border-border p-4 text-center space-y-2">
                 <AlertCircle size={18} className="mx-auto text-muted-foreground/50" />
                 <p className="text-[12px] font-medium text-muted-foreground">
-                  Publish from Studio or Library, then schedule Live from Feed.
+                  Animate a still or publish from Studio — clips with media land here.
                 </p>
                 <Button
                   size="sm"
                   variant="outline"
                   className="h-8 text-[11px] font-bold"
-                  onClick={() => navigate("/feed")}
+                  onClick={() => navigate("/create/clip")}
                 >
-                  Open Feed
+                  Open Clip Studio
                 </Button>
               </div>
             ) : (
-              readyItems.map((item) => (
-                <ActionThumb
-                  key={item.id}
-                  item={item}
-                  cta="Go Live"
-                  onOpen={() => navigate(`/feed/post/${item.id}`)}
-                />
-              ))
+              readyItems.map((item) => {
+                const published =
+                  (item.status || "").toLowerCase() === "published" ||
+                  (item.status || "").toLowerCase() === "approved";
+                return (
+                  <ActionThumb
+                    key={item.id}
+                    item={item}
+                    liveAt={liveAtById.get(item.id)}
+                    cta={published ? "Go Live" : "Publish"}
+                    onOpen={() => {
+                      if (published) {
+                        navigate(`/feed/post/${item.id}`);
+                        return;
+                      }
+                      void openCreation(navigate, item);
+                    }}
+                  />
+                );
+              })
             )}
           </CardContent>
         </Card>

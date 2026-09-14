@@ -33,6 +33,12 @@ export interface UserProfile {
   onboardingCompleted?: boolean;
   /** Persisted Coach plan JSON from backend, or null until onboarding finishes */
   onboardingPlan?: Record<string, unknown> | null;
+  /** Category slug from onboarding (Gaming, Travel, …) */
+  creatorCategory?: string | null;
+  /** Friendly category label */
+  creatorCategoryLabel?: string | null;
+  /** Sub-niches from onboarding Q1 */
+  creatorNiches?: string[];
   socials?: {
     twitch?: string;
     youtube?: string;
@@ -41,7 +47,7 @@ export interface UserProfile {
     tiktok?: string;
   };
   /** Connected via OAuth (UI prep) */
-  connectedSocials?: Partial<Record<"youtube" | "instagram" | "tiktok" | "twitch" | "twitter", boolean>>;
+  connectedSocials?: Partial<Record<"youtube" | "instagram" | "tiktok" | "facebook" | "twitch" | "twitter", boolean>>;
   coachQuestionsRemaining?: number;
   contentPlan?: ContentPlanItem[];
   updatedAt?: string | number | Date | any;

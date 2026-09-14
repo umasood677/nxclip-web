@@ -49,6 +49,14 @@ import { toast } from "sonner";
 import { GeneratePanelProps } from "../types";
 import { ScrollableSuggestions } from "./ScrollableSuggestions";
 import { AuthenticatedImage } from "../../../components/AuthenticatedImage";
+import { MemeDirectorPanel } from "./MemeDirectorPanel";
+import {
+  HUMOR_LEVEL_HINTS,
+  HUMOR_LEVEL_LABELS,
+  MEME_VOICE_PRESETS,
+  toggleMemeVoice,
+  type MemeVoiceId,
+} from "../lib/memeVoice";
 
 const PROMPT_HELPERS = [
   "cinematic lighting",
@@ -106,6 +114,22 @@ export function GeneratePanel({
   setSelectedTemplateId,
   slotTexts,
   setSlotText,
+  isSuggestingMemeCopy = false,
+  onSuggestMemeCopy,
+  memeRecommendations = null,
+  isRecommendingMemes = false,
+  onRecommendMemes,
+  onChooseMemeRecommendation,
+  hasActiveWeekPlan = false,
+  onOpenWeekPlan,
+  memeBrandName = "",
+  setMemeBrandName,
+  memeVoiceIds = ["elegant"],
+  setMemeVoiceIds,
+  memeCustomVoice = "",
+  setMemeCustomVoice,
+  memeHumorIntensity = 2,
+  setMemeHumorIntensity,
   lighting,
   setLighting,
   negativePrompt,
@@ -151,6 +175,35 @@ export function GeneratePanel({
   const supportedRatios = activeTemplate?.supportedAspectRatios || null;
 
   const selectedTemplate = memeTemplates.find((t) => t.id === selectedTemplateId) || null;
+  const selectedTextFit = React.useMemo(() => {
+    if (!selectedTemplate?.design?.idealWords) return null;
+    const range = selectedTemplate.design.idealWords;
+    const keys = range.primarySlots?.length
+      ? range.primarySlots
+      : selectedTemplate.slots.map((slot) => slot.id);
+    const wordCount = keys.reduce(
+      (sum, key) =>
+        sum +
+        (slotTexts[key] || "")
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean).length,
+      0,
+    );
+    return {
+      wordCount,
+      min: range.min,
+      max: range.max,
+      status:
+        wordCount === 0
+          ? "empty"
+          : wordCount < range.min
+            ? "short"
+            : wordCount > range.max
+              ? "long"
+              : "ideal",
+    };
+  }, [selectedTemplate, slotTexts]);
   // Only template/hybrid memes are constrained by the template's supported ratios;
   // AI meme + plain image can use any aspect ratio.
   const aspectRatioConstraint =
@@ -303,10 +356,118 @@ export function GeneratePanel({
                   </p>
                 </div>
 
+                {/* Voice + humor — always visible in Meme Studio (all modes). */}
+                <div className="space-y-3 rounded-xl border border-teal-500/30 bg-teal-500/[0.07] p-3">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-bold uppercase tracking-wider text-foreground">
+                      Brand
+                    </Label>
+                    <Input
+                      value={memeBrandName}
+                      onChange={(e) => setMemeBrandName?.(e.target.value.slice(0, 48))}
+                      placeholder="Brand name"
+                      className="h-9 border-border/60 bg-background/60 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <Label className="text-[11px] font-bold uppercase tracking-wider text-foreground">
+                        Voice
+                      </Label>
+                      <span className="text-[10px] text-muted-foreground">
+                        Multi-select
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                      {MEME_VOICE_PRESETS.map((voice) => {
+                        const active = memeVoiceIds.includes(voice.id as MemeVoiceId);
+                        return (
+                          <button
+                            key={voice.id}
+                            type="button"
+                            onClick={() =>
+                              setMemeVoiceIds?.(
+                                toggleMemeVoice(memeVoiceIds, voice.id as MemeVoiceId),
+                              )
+                            }
+                            className={cn(
+                              "rounded-lg border px-2.5 py-1.5 text-left text-[11px] font-semibold transition-colors",
+                              active
+                                ? "border-teal-400 bg-teal-500/25 text-teal-50 ring-1 ring-teal-400/40"
+                                : "border-border/70 bg-background/50 text-foreground/85 hover:border-teal-500/40 hover:bg-teal-500/10",
+                            )}
+                          >
+                            {voice.label}
+                            {active ? " ●" : ""}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {memeVoiceIds.includes("custom") && (
+                      <Input
+                        value={memeCustomVoice}
+                        onChange={(e) =>
+                          setMemeCustomVoice?.(e.target.value.slice(0, 120))
+                        }
+                        placeholder="Custom instruction (optional tone notes)"
+                        className="h-9 border-border/60 bg-background/60 text-xs"
+                      />
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2 text-[11px]">
+                      <Label className="font-bold uppercase tracking-wider text-foreground">
+                        Humor
+                      </Label>
+                      <span className="tabular-nums font-medium text-teal-100">
+                        {HUMOR_LEVEL_LABELS[memeHumorIntensity] || "Playful"}
+                        <span className="font-normal text-muted-foreground">
+                          {" "}
+                          · {HUMOR_LEVEL_HINTS[memeHumorIntensity] || "Playful"}
+                        </span>
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={5}
+                      step={1}
+                      value={memeHumorIntensity}
+                      onChange={(e) =>
+                        setMemeHumorIntensity?.(Number(e.target.value))
+                      }
+                      className="h-2 w-full cursor-pointer accent-teal-400"
+                      aria-label="Humor from Elegant to Savage"
+                    />
+                    <div className="flex justify-between text-[10px] font-medium text-foreground/70">
+                      <span>Elegant</span>
+                      <span>Savage</span>
+                    </div>
+                  </div>
+                </div>
+
                 {(memeMode === "template" || memeMode === "hybrid") && (
                   <div className="space-y-2">
+                    {onRecommendMemes && onChooseMemeRecommendation && (
+                      <MemeDirectorPanel
+                        templates={memeTemplates}
+                        response={memeRecommendations}
+                        aspectRatio={aspectRatio}
+                        selectedTemplateId={selectedTemplateId}
+                        withBaseImage={memeMode === "hybrid"}
+                        isLoading={isRecommendingMemes}
+                        canAnalyze={Boolean(
+                          prompt.trim() ||
+                            Object.values(slotTexts).some((value) => value.trim()),
+                        )}
+                        onAnalyze={onRecommendMemes}
+                        onChoose={onChooseMemeRecommendation}
+                        hasActiveWeekPlan={hasActiveWeekPlan}
+                        onOpenWeekPlan={onOpenWeekPlan}
+                      />
+                    )}
                     <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Template
+                      All layouts
                     </Label>
                     <div className="grid grid-cols-2 gap-2">
                       {memeTemplates.map((tpl) => {
@@ -332,19 +493,104 @@ export function GeneratePanel({
                         );
                       })}
                     </div>
+                    {selectedTemplateId === "rich_vs_reality" && memeMode === "hybrid" && (
+                      <p className="text-[10px] text-amber-200/90 leading-relaxed rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-2">
+                        Best results: attach <span className="font-semibold">two references</span> —
+                        Image 1 = Rich (left), Image 2 = Reality (right). Without refs we generate
+                        two centered AI panels and split-compose them.
+                      </p>
+                    )}
                     {selectedTemplateId && (
                       <div className="space-y-2 pt-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Text slots
+                          </Label>
+                          {onSuggestMemeCopy && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={isSuggestingMemeCopy || isGenerating}
+                              onClick={() => onSuggestMemeCopy()}
+                              className="h-7 px-2 text-[10px] gap-1"
+                            >
+                              {isSuggestingMemeCopy ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                <Sparkles size={12} />
+                              )}
+                              Generate Copy for Me
+                            </Button>
+                          )}
+                        </div>
+                        {selectedTextFit && selectedTextFit.status !== "empty" && (
+                          <div
+                            className={cn(
+                              "flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-[10px]",
+                              selectedTextFit.status === "ideal"
+                                ? "border-emerald-500/20 bg-emerald-500/[0.07] text-emerald-200"
+                                : "border-amber-500/20 bg-amber-500/[0.07] text-amber-100",
+                            )}
+                          >
+                            <span className="min-w-0 flex-1">
+                              {selectedTextFit.status === "ideal"
+                                ? `✓ ${selectedTextFit.wordCount} words — ideal for this layout`
+                                : selectedTextFit.status === "long"
+                                  ? `⚠ ${selectedTextFit.wordCount} words — likely to feel crowded`
+                                  : `ℹ ${selectedTextFit.wordCount} words — this layout can carry more`}
+                            </span>
+                            {selectedTextFit.status !== "ideal" && onSuggestMemeCopy ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={isSuggestingMemeCopy || isGenerating}
+                                onClick={() => onSuggestMemeCopy()}
+                                className="h-6 shrink-0 px-2 text-[9px]"
+                              >
+                                {isSuggestingMemeCopy ? (
+                                  <Loader2 className="mr-1 h-2.5 w-2.5 animate-spin" />
+                                ) : (
+                                  <Sparkles className="mr-1 h-2.5 w-2.5" />
+                                )}
+                                Rewrite
+                              </Button>
+                            ) : (
+                              <span className="shrink-0 font-bold tabular-nums">
+                                Ideal {selectedTextFit.min}–{selectedTextFit.max}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         {(
                           memeTemplates.find((t) => t.id === selectedTemplateId)?.slots || []
                         ).map((slot) => (
                           <div key={slot.id} className="space-y-1">
-                            <div className="flex justify-between px-0.5">
+                            <div className="flex items-center justify-between gap-2 px-0.5">
                               <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                                 {slot.label}
                               </Label>
-                              <span className="text-[10px] tabular-nums text-muted-foreground">
-                                {(slotTexts[slot.id] || "").length}/{slot.maxLength}
-                              </span>
+                              <div className="flex items-center gap-1.5">
+                                {onSuggestMemeCopy && (
+                                  <button
+                                    type="button"
+                                    disabled={isSuggestingMemeCopy || isGenerating}
+                                    onClick={() => onSuggestMemeCopy({ slotId: slot.id })}
+                                    className="inline-flex items-center gap-0.5 rounded-md border border-border/50 bg-muted/20 px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground transition-colors hover:border-violet-500/40 hover:text-violet-100 disabled:opacity-50"
+                                  >
+                                    {isSuggestingMemeCopy ? (
+                                      <Loader2 size={10} className="animate-spin" />
+                                    ) : (
+                                      <Sparkles size={10} />
+                                    )}
+                                    Auto
+                                  </button>
+                                )}
+                                <span className="text-[10px] tabular-nums text-muted-foreground">
+                                  {(slotTexts[slot.id] || "").length}/{slot.maxLength}
+                                </span>
+                              </div>
                             </div>
                             <Input
                               value={slotTexts[slot.id] || ""}
@@ -396,7 +642,7 @@ export function GeneratePanel({
             <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Aspect ratio
             </Label>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-4 gap-1.5">
               {[
                 {
                   id: "1:1",
@@ -405,23 +651,32 @@ export function GeneratePanel({
                   icon: <Square className="h-3 w-3 shrink-0" />,
                 },
                 {
-                  id: "16:9",
-                  label: "Landscape",
-                  ratio: "16:9",
-                  icon: <RectangleHorizontal className="h-3 w-3 shrink-0" />,
+                  id: "4:5",
+                  label: "Feed",
+                  ratio: "4:5",
+                  icon: <RectangleVertical className="h-3 w-3 shrink-0" />,
                 },
                 {
                   id: "9:16",
-                  label: "Portrait",
+                  label: "Reel",
                   ratio: "9:16",
                   icon: <RectangleVertical className="h-3 w-3 shrink-0" />,
+                },
+                {
+                  id: "16:9",
+                  label: "Wide",
+                  ratio: "16:9",
+                  icon: <RectangleHorizontal className="h-3 w-3 shrink-0" />,
                 },
               ].map((item) => {
                 const active = aspectRatio === item.id;
                 // Template/hybrid memes only compose in the ratios the template
                 // supports; other ratios render a broken, letterboxed layout.
                 const unsupported =
-                  !!aspectRatioConstraint && !aspectRatioConstraint.includes(item.id);
+                  !!aspectRatioConstraint &&
+                  !aspectRatioConstraint.includes(
+                    item.id as (typeof aspectRatioConstraint)[number],
+                  );
                 return (
                   <button
                     key={item.id}
@@ -460,7 +715,7 @@ export function GeneratePanel({
                 );
               })}
             </div>
-            {aspectRatioConstraint && aspectRatioConstraint.length < 3 ? (
+            {aspectRatioConstraint && aspectRatioConstraint.length < 4 ? (
               <p className="text-[10px] text-muted-foreground leading-snug">
                 {selectedTemplate?.name} supports {aspectRatioConstraint.join(", ")} only.
               </p>
@@ -497,6 +752,12 @@ export function GeneratePanel({
                   : ` · max ${maxReferences}`}
                 .
               </p>
+              {selectedRefCount >= 2 ? (
+                <p className="text-[10px] text-muted-foreground leading-relaxed rounded-lg border border-border/60 bg-muted/20 px-2.5 py-2">
+                  Say which image is which in your prompt, e.g. “update the face in
+                  Image 1 with the face from Image 2” or “use Image 2’s face on Image 1”.
+                </p>
+              ) : null}
 
               <div className="grid grid-cols-2 gap-2">
                 <Button
@@ -781,7 +1042,7 @@ export function GeneratePanel({
               variant="link"
               className="h-auto p-0 text-[10px] text-primary/70"
               onClick={() => {
-                window.location.href = "/pricing";
+                window.location.href = "/upgrade";
               }}
             >
               Upgrade
@@ -1015,7 +1276,7 @@ export function GeneratePanel({
                       </p>
                     ) : null}
                     <div className="flex items-center gap-1.5">
-                      {item.style ? (
+                      {item.style && item.style.toLowerCase() !== "meme" ? (
                         <Badge variant="outline" className="text-[8px] h-4 px-1">
                           {item.style}
                         </Badge>

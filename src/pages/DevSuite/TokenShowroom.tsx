@@ -25,6 +25,7 @@ import {
   FileText
 } from "lucide-react";
 import { toast } from "sonner";
+import { SelectCheckbox } from "../../components/MediaTileSelectCheckbox";
 
 // Helper utility for conditionally joining classNames
 function cn(...classes: any[]) {
@@ -568,17 +569,11 @@ export default function TokenShowroom() {
 
                   {selectedDemoComp === "checkbox" && (
                     <div className="flex items-center gap-3 bg-zinc-900/60 p-4 border border-white/5 rounded-xl w-72">
-                      <button
+                      <SelectCheckbox
+                        checked={demoCheckboxChecked}
                         onClick={() => setDemoCheckboxChecked(!demoCheckboxChecked)}
-                        className={cn(
-                          "w-5 h-5 rounded border flex items-center justify-center transition-all shrink-0",
-                          demoCheckboxChecked 
-                            ? "bg-purple-500 border-purple-500 text-white" 
-                            : "border-white/20 hover:border-white/30 bg-transparent"
-                        )}
-                      >
-                        {demoCheckboxChecked && <Check size={12} strokeWidth={3} />}
-                      </button>
+                        className="w-5 h-5 shrink-0"
+                      />
                       <div>
                         <span className="text-xs font-bold text-white block">Patient Active Node</span>
                         <span className="text-[10px] text-zinc-500 font-mono block">Status: {demoCheckboxChecked ? "Selected" : "Idle"}</span>
@@ -1106,17 +1101,10 @@ export default function TokenShowroom() {
                                 )}
                               >
                                 <td className="p-3 pl-4">
-                                  <button
+                                  <SelectCheckbox
+                                    checked={isSelected}
                                     onClick={() => toggleSelectPatient(pt.id)}
-                                    className={cn(
-                                      "w-4 h-4 rounded border flex items-center justify-center transition-all",
-                                      isSelected 
-                                        ? "bg-purple-500 border-purple-500 text-white" 
-                                        : "border-white/20 hover:border-white/30 bg-transparent"
-                                    )}
-                                  >
-                                    {isSelected && <Check size={10} strokeWidth={3} />}
-                                  </button>
+                                  />
                                 </td>
                                 <td className="px-4 py-3 flex items-center gap-3">
                                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/5 flex items-center justify-center text-[10px] font-bold text-white shrink-0 font-mono">

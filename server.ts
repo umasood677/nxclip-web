@@ -9,7 +9,7 @@ dotenv.config();
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
 
@@ -22,6 +22,15 @@ async function startServer() {
       return res.status(500).json({ error: "GEMINI_API_KEY is not configured" });
     }
 
+    const aliases: Record<string, string> = {
+      "gemini-flash-latest": "gemini-2.5-flash",
+      "gemini-pro-latest": "gemini-2.5-pro",
+      "gemini-2.0-flash": "gemini-2.5-flash",
+    };
+    const requested = typeof model === "string" ? model.trim() : "";
+    const primary = aliases[requested] || requested || "gemini-2.5-flash";
+    const models = [...new Set([primary, "gemini-2.5-flash", "gemini-2.5-flash-lite"])];
+
     try {
       const ai = new GoogleGenAI({ 
         apiKey,
@@ -31,23 +40,45 @@ async function startServer() {
           }
         }
       });
-      
-      const response = await ai.models.generateContent({
-        model,
-        contents,
-        config
-      });
-      
-      res.json({ 
-        text: response.text,
-        candidates: response.candidates 
-      });
+
+      let lastError: unknown;
+      for (const candidate of models) {
+        try {
+          const response = await ai.models.generateContent({
+            model: candidate,
+            contents,
+            config,
+          });
+          return res.json({
+            text: response.text,
+            candidates: response.candidates,
+          });
+        } catch (error: any) {
+          lastError = error;
+          const msg = String(error?.message || error || "");
+          const retryable =
+            /404|NOT_FOUND|not found|not supported|429|RESOURCE_EXHAUSTED|quota/i.test(msg);
+          const invalidKey = /API key not valid|API_KEY_INVALID/i.test(msg);
+          if (invalidKey || !retryable) throw error;
+        }
+      }
+      throw lastError;
     } catch (error: any) {
+      const msg = String(error?.message || error || "");
       const isQuota = error?.status === "RESOURCE_EXHAUSTED" || 
                       error?.status === 429 || 
-                      error?.message?.includes("RESOURCE_EXHAUSTED") || 
-                      error?.message?.includes("429") || 
-                      error?.message?.includes("Quota exceeded");
+                      msg.includes("RESOURCE_EXHAUSTED") || 
+                      msg.includes("429") || 
+                      msg.includes("Quota exceeded");
+      const invalidKey = /API key not valid|API_KEY_INVALID/i.test(msg);
+
+      if (invalidKey) {
+        return res.status(401).json({
+          error:
+            "Local GEMINI_API_KEY is invalid. Set a valid key in nxclip-web/.env.local — polish still works without it.",
+          isQuotaExhausted: false,
+        });
+      }
 
       if (!isQuota) {
         console.error("Gemini API error:", error?.message || error);
@@ -58,9 +89,8 @@ async function startServer() {
       res.status(isQuota ? 429 : 500).json({ 
         error: isQuota 
           ? "Gemini AI quota exceeded. Please try again in a few minutes." 
-          : (error?.message || "Failed to generate content from Gemini"),
+          : (msg || "Failed to generate content from Gemini"),
         isQuotaExhausted: isQuota,
-        details: error
       });
     }
   });
@@ -713,7 +743,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
   });
 }
 

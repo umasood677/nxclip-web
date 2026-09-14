@@ -22,6 +22,14 @@ function onRefreshed(token: string) {
   refreshSubscribers = [];
 }
 
+function isInvalidRefreshError(err: unknown): boolean {
+  const status =
+    (err as { response?: { status?: number }; status?: number })?.response?.status ??
+    (err as { status?: number })?.status;
+  // Only treat client auth failures as hard session end — not network/5xx.
+  return status === 400 || status === 401 || status === 403;
+}
+
 // Create custom Axios instance with default credentials configuration for Dual-Layer authentication cookie transmission
 export const apiGatewayInstance = axios.create({
   withCredentials: true,
@@ -116,56 +124,67 @@ apiGatewayInstance.interceptors.response.use(
       isRefreshing = true;
       const refreshToken = getRefreshToken();
 
-      if (refreshToken) {
-        try {
-          console.log("[Axios Interceptor] Access token expired (401). Attempting automatic token refresh...");
-          
-          // Request new access token using standard axios (to avoid attaching interceptor headers incorrectly)
-          let refreshUrl = `${resolveBaseGatewayUrl()}/auth/refresh`;
-          const headers: Record<string, string> = {};
-          
-          if (typeof window !== "undefined") {
-            const realGatewayUrl = resolveBaseGatewayUrl();
-            refreshUrl = `/api/gateway-proxy/auth/refresh`;
-            headers["X-Target-Gateway-Url"] = realGatewayUrl;
-          }
-          
-          const refreshResponse = await axios.post(refreshUrl, { refreshToken }, { headers });
+      if (!refreshToken) {
+        isRefreshing = false;
+        onRefreshed("");
+        clearPersistedUser();
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("nx_session_expired"));
+        }
+        return Promise.reject(error);
+      }
 
-          if (refreshResponse.status === 200 || refreshResponse.status === 201) {
-            const tokenData = refreshResponse.data;
-            const newAccessToken = tokenData.accessToken;
-            const newRefreshToken = tokenData.refreshToken || refreshToken;
+      try {
+        console.log("[Axios Interceptor] Access token expired (401). Attempting automatic token refresh...");
+        
+        // Request new access token using standard axios (to avoid interceptor recursion)
+        let refreshUrl = `${resolveBaseGatewayUrl()}/auth/refresh`;
+        const headers: Record<string, string> = {};
+        
+        if (typeof window !== "undefined") {
+          const realGatewayUrl = resolveBaseGatewayUrl();
+          refreshUrl = `/api/gateway-proxy/auth/refresh`;
+          headers["X-Target-Gateway-Url"] = realGatewayUrl;
+        }
+        
+        const refreshResponse = await axios.post(
+          refreshUrl,
+          { refreshToken },
+          { headers, withCredentials: true },
+        );
 
-            // Update local/session storage
-            updateAccessToken(newAccessToken, newRefreshToken);
-            triggerTokenStateUpdate();
+        if (refreshResponse.status === 200 || refreshResponse.status === 201) {
+          const tokenData = refreshResponse.data;
+          const newAccessToken = tokenData.accessToken;
+          const newRefreshToken = tokenData.refreshToken || refreshToken;
 
-            console.log("[Axios Interceptor] Token refreshed successfully. Retrying original request...");
+          updateAccessToken(newAccessToken, newRefreshToken);
+          triggerTokenStateUpdate();
 
-            isRefreshing = false;
-            onRefreshed(newAccessToken);
+          console.log("[Axios Interceptor] Token refreshed successfully. Retrying original request...");
 
-            // Retry original request with new token
-            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-            return apiGatewayInstance(originalRequest);
-          } else {
-            throw new Error(`Refresh returned status ${refreshResponse.status}`);
-          }
-        } catch (refreshErr) {
-          console.warn("[Axios Interceptor] Session refresh attempt handled:", refreshErr);
           isRefreshing = false;
-          onRefreshed("");
-          
-          // Clear active session and dispatch session expired event
+          onRefreshed(newAccessToken);
+
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return apiGatewayInstance(originalRequest);
+        }
+
+        throw new Error(`Refresh returned status ${refreshResponse.status}`);
+      } catch (refreshErr) {
+        console.warn("[Axios Interceptor] Session refresh attempt handled:", refreshErr);
+        isRefreshing = false;
+        onRefreshed("");
+
+        // Only hard-logout when the refresh token itself is rejected.
+        // Transient network / gateway 5xx must keep the session so later retries can succeed.
+        if (isInvalidRefreshError(refreshErr)) {
           clearPersistedUser();
           if (typeof window !== "undefined") {
             window.dispatchEvent(new Event("nx_session_expired"));
           }
-          return Promise.reject(error);
         }
-      } else {
-        isRefreshing = false;
+        return Promise.reject(error);
       }
     }
 

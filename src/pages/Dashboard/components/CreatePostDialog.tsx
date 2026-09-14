@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../../../lib/utils";
-import { GoogleGenAI, Type as GeminiType } from "@google/genai";
+import { generateContent } from "../../../services/aiService";
 import { ContentPlanItem } from "../../../types";
 
 interface PlanInput {
@@ -102,8 +102,6 @@ export default function CreatePostDialog({ onPost }: CreatePostDialogProps) {
     setIsGenerating(true);
     setCaptionError(null);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      
       let mediaPart;
       if (mediaType === "image") {
         // Since 'media' is a blob URL from URL.createObjectURL, we need to fetch it and convert to base64
@@ -143,18 +141,18 @@ export default function CreatePostDialog({ onPost }: CreatePostDialogProps) {
       
       const parts = mediaPart ? [mediaPart, { text: prompt }] : [{ text: prompt }];
 
-      const result = await ai.models.generateContent({
+      const result = await generateContent({
         model: "gemini-3.6-flash",
         contents: { parts },
         config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: GeminiType.OBJECT,
+            type: "OBJECT",
             properties: {
-              caption: { type: GeminiType.STRING },
+              caption: { type: "STRING" },
               hashtags: { 
-                type: GeminiType.ARRAY,
-                items: { type: GeminiType.STRING }
+                type: "ARRAY",
+                items: { type: "STRING" }
               }
             },
             required: ["caption", "hashtags"]
@@ -162,7 +160,7 @@ export default function CreatePostDialog({ onPost }: CreatePostDialogProps) {
         }
       });
 
-      const data = JSON.parse(result.text);
+      const data = JSON.parse(result.text || "{}");
       setContent(data.caption);
       setTagsInput(data.hashtags.join(", "));
     } catch (error) {
@@ -177,8 +175,6 @@ export default function CreatePostDialog({ onPost }: CreatePostDialogProps) {
     setIsGeneratingPlan(true);
     setPlanError(null);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      
       const prompt = `You are an expert social media strategist for gaming creators. Create a highly effective 7-day content plan for a creator based on these details:
       - Games: ${planInput.games}
       - Audience: ${planInput.audience}
@@ -194,22 +190,22 @@ export default function CreatePostDialog({ onPost }: CreatePostDialogProps) {
 
       Return the response as a JSON array of objects.`;
 
-      const result = await ai.models.generateContent({
+      const result = await generateContent({
         model: "gemini-3.6-flash",
         contents: [{ text: prompt }],
         config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: GeminiType.ARRAY,
+            type: "ARRAY",
             items: {
-              type: GeminiType.OBJECT,
+              type: "OBJECT",
               properties: {
-                day: { type: GeminiType.INTEGER },
-                title: { type: GeminiType.STRING },
-                description: { type: GeminiType.STRING },
+                day: { type: "INTEGER" },
+                title: { type: "STRING" },
+                description: { type: "STRING" },
                 hashtags: { 
-                  type: GeminiType.ARRAY,
-                  items: { type: GeminiType.STRING }
+                  type: "ARRAY",
+                  items: { type: "STRING" }
                 }
               },
               required: ["day", "title", "description", "hashtags"]
@@ -218,7 +214,7 @@ export default function CreatePostDialog({ onPost }: CreatePostDialogProps) {
         }
       });
 
-      const data = JSON.parse(result.text);
+      const data = JSON.parse(result.text || "[]");
       setContentPlan(data);
     } catch (error) {
       console.error("AI Plan Generation Error:", error);

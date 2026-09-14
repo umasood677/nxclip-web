@@ -1,23 +1,23 @@
 import React, { memo, useCallback, useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
-  Check,
-  Clapperboard,
   Copy,
   Download,
   ExternalLink,
   FileEdit,
-  Image as ImageIcon,
   Info,
   MoreHorizontal,
   Trash2,
   UploadCloud,
-  Video,
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ContentDto, contentMediaRevision, extractValidImageUrl } from "../../../services/apiClient";
-import { AuthenticatedImage } from "../../../components/AuthenticatedImage";
+import { AuthenticatedMediaPreview } from "../../../components/AuthenticatedMediaPreview";
+import {
+  MediaTileSelectCheckbox,
+  mediaTileSelectionRing,
+} from "../../../components/MediaTileSelectCheckbox";
 import {
   Tooltip,
   TooltipContent,
@@ -29,9 +29,11 @@ import {
   formatCreatedDate,
   formatCreatedTime,
   getDisplayStatusBadge,
+  getTypeBadge,
   isReferenceAsset,
 } from "../../ImageStudio/components/RecentGenerations/statusStyles";
 import { StatusPill } from "../../ImageStudio/components/RecentGenerations/StatusPill";
+import { resolveContentKind } from "../../../lib/contentKind";
 import { isIncompleteLibraryItem, resolveLibraryTitle } from "../lib/title";
 import { resolveItemAspectRatio } from "../lib/aspectRatio";
 import { cssAspectRatio, normalizeAspectToken } from "../../../components/JustifiedGallery";
@@ -138,10 +140,11 @@ function ContentCardComponent({
   const incomplete = isIncompleteLibraryItem(item) || !thumb || imageFailed;
   const resolvedAspect = resolveItemAspectRatio(item);
   const tileAspect = cssAspectRatio(resolvedAspect);
-  const type = (item.contentType || "image") as string;
+  const type = resolveContentKind(item);
   const isReference = isReferenceAsset(item);
   const isDraft = !isReference && item.status === "draft";
   const statusBadge = getDisplayStatusBadge(item);
+  const typeBadge = getTypeBadge(item);
 
   const createdTs = item.createdAt ? new Date(item.createdAt).getTime() : Date.now();
   const createdDate = formatCreatedDate(createdTs);
@@ -175,14 +178,11 @@ function ContentCardComponent({
   }, [detailOpen, closeDetail]);
 
   const typeLabel =
-    type === "clip" || type === "video"
+    type === "clip"
       ? t("content_library.types.clip", { defaultValue: "Clip" })
       : type === "meme"
         ? t("content_library.types.meme", { defaultValue: "Meme" })
         : t("content_library.types.image", { defaultValue: "Image" });
-
-  const TypeIcon =
-    type === "clip" || type === "video" ? Video : type === "meme" ? Clapperboard : ImageIcon;
 
   const handlePrimaryClick = () => {
     if (isSelectionMode && onToggleSelect) {
@@ -203,8 +203,9 @@ function ContentCardComponent({
         "relative h-full group/card rounded-[24px] overflow-hidden",
         "bg-card/40 border shadow-[0_8px_30px_rgba(0,0,0,0.12)]",
         "transition-shadow duration-200",
+        mediaTileSelectionRing(isSelected),
         isSelected
-          ? "border-primary ring-2 ring-primary/40 shadow-[0_16px_40px_rgba(0,0,0,0.25)]"
+          ? "shadow-[0_16px_40px_rgba(0,0,0,0.28)] z-10"
           : "border-border/40",
         hovered && !isSelected && "shadow-[0_16px_40px_rgba(0,0,0,0.22)] z-10",
       )}
@@ -252,8 +253,9 @@ function ContentCardComponent({
             </button>
           </div>
         ) : (
-          <AuthenticatedImage
+          <AuthenticatedMediaPreview
             key={mediaRevision || thumb}
+            item={item}
             src={thumb}
             alt={displayTitle}
             disableRemoteFallback
@@ -264,54 +266,31 @@ function ContentCardComponent({
             loadTimeoutMs={10000}
             className={cn(
               "absolute inset-0 h-full w-full transition-[filter] duration-200 cursor-pointer",
-              // Unknown ratio: letterbox rather than crop captions off a meme.
               aspectRatio ? "object-cover" : "object-contain",
               hovered && "brightness-[0.88]",
               isSelected && "brightness-[0.8]",
             )}
             onClick={handlePrimaryClick}
-            onLoad={(e) =>
-              onMediaLoad?.(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)
-            }
+            onLoad={(e) => {
+              const el = e.currentTarget;
+              if (el instanceof HTMLImageElement) {
+                onMediaLoad?.(el.naturalWidth, el.naturalHeight);
+              }
+            }}
             onError={() => setImageFailed(true)}
+            showPlayBadge={type === "clip"}
           />
         )}
 
-        {/* Selection checkbox — top-left, clear of right toolbar */}
-        <div
-          className={cn(
-            "absolute z-30 transition-all duration-200 top-2.5 left-2.5",
-            isSelectionMode || isSelected || hovered
-              ? "opacity-100 scale-100"
-              : "opacity-0 scale-90 pointer-events-none",
-          )}
-        >
-          <button
-            type="button"
-            role="checkbox"
-            aria-checked={isSelected}
-            aria-label={isSelected ? "Deselect" : "Select"}
+        <div className="absolute z-30 top-3 left-3">
+          <MediaTileSelectCheckbox
+            checked={isSelected}
+            visible={isSelectionMode || isSelected || hovered}
             onClick={(e) => {
               e.stopPropagation();
               onToggleSelect?.();
             }}
-            className={cn(
-              "flex h-7 w-7 items-center justify-center rounded-md transition-all duration-150",
-              "bg-black/45 backdrop-blur-md shadow-[0_2px_10px_rgba(0,0,0,0.35)]",
-              "hover:bg-black/55",
-            )}
-          >
-            <span
-              className={cn(
-                "flex h-[18px] w-[18px] items-center justify-center rounded-[4px] border-2 transition-colors",
-                isSelected
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-white/90 bg-white/95",
-              )}
-            >
-              {isSelected ? <Check className="h-3 w-3" strokeWidth={3.5} /> : null}
-            </span>
-          </button>
+          />
         </div>
 
         {/* Hover toolbar — right side only; delete lives under More */}
@@ -460,21 +439,8 @@ function ContentCardComponent({
         >
           <div className="pointer-events-auto space-y-1.5 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
+              <StatusPill badge={typeBadge} />
               {statusBadge ? <StatusPill badge={statusBadge} /> : null}
-              <AnimatePresence initial={false}>
-                {hovered && !incomplete ? (
-                  <motion.span
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: TRANSITION_MS }}
-                    className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-black/45 backdrop-blur-md border border-white/15 text-white/95 inline-flex items-center gap-1"
-                  >
-                    <TypeIcon size={11} className="text-white/80" />
-                    {typeLabel}
-                  </motion.span>
-                ) : null}
-              </AnimatePresence>
             </div>
             <button
               type="button"
@@ -504,7 +470,9 @@ function ContentCardComponent({
                   <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-white/75 font-medium">
                     <span>{createdDate}</span>
                     <span>{createdTime}</span>
-                    {item.style ? <span className="capitalize">{item.style}</span> : null}
+                    {item.style && String(item.style).toLowerCase() !== "meme" ? (
+                      <span className="capitalize">{item.style}</span>
+                    ) : null}
                     {resolvedAspect ? <span>{normalizeAspectToken(resolvedAspect)}</span> : null}
                   </div>
                 </motion.div>
@@ -541,12 +509,14 @@ function ContentCardComponent({
                       draggable={false}
                     />
                   ) : (
-                    <AuthenticatedImage
+                    <AuthenticatedMediaPreview
                       key={mediaRevision || thumb}
+                      item={item}
                       src={thumb}
                       alt=""
                       disableRemoteFallback
                       className="w-full h-full object-cover"
+                      showPlayBadge={type === "clip"}
                     />
                   )}
                 </div>
@@ -612,7 +582,7 @@ function ContentCardComponent({
                 <DetailRow label="Type">
                   <span className="text-white/90 capitalize">{typeLabel}</span>
                 </DetailRow>
-                {item.style ? (
+                {item.style && String(item.style).toLowerCase() !== "meme" ? (
                   <DetailRow label="Style">
                     <span className="text-white/90 capitalize">{item.style}</span>
                   </DetailRow>

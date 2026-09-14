@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import type { MemeTemplateDto } from "../../../services/apiClient";
 import { cn } from "../../../lib/utils";
 import { canvasSizeForAspect, renderMemeSvg, type MemeSvgAspect } from "../lib/memeSvg";
@@ -17,6 +17,10 @@ interface MemeTemplatePreviewProps {
   aspectRatio: string;
   /** Hybrid mode: an AI image will fill the background behind the overlay. */
   withBaseImage?: boolean;
+  /** Optional vision focus for safe-zone crop preview. */
+  subjectFocus?: { x: number; y: number };
+  /** Preview recommended motion with CSS + optional SVG animate hints. */
+  showMotion?: boolean;
   className?: string;
 }
 
@@ -61,8 +65,11 @@ export const MemeTemplatePreview = ({
   slotTexts,
   aspectRatio,
   withBaseImage,
+  subjectFocus,
+  showMotion,
   className,
 }: MemeTemplatePreviewProps) => {
+  const instanceId = useId().replace(/:/g, "");
   const markup = useMemo(() => {
     const supported = template.supportedAspectRatios.includes(
       aspectRatio as MemeTemplateDto["defaultAspectRatio"],
@@ -91,7 +98,18 @@ export const MemeTemplatePreview = ({
       // Preview mirrors free-plan output so users see the brand mark placement.
       watermark: true,
       brandLogoHref: logoDataUri,
-      idPrefix: `tplprev-${template.id}`,
+      idPrefix: `tplprev-${template.id}-${instanceId}`,
+      faceSafeZone: template.design?.safeZones?.face,
+      subjectFocus,
+      animate: !!showMotion,
+      animation: template.design?.animation as
+        | "slow_push_in"
+        | "slow_dolly"
+        | "dramatic_fade"
+        | "zoom_cuts"
+        | "parallax_drift"
+        | "static_hold"
+        | undefined,
     });
 
     return (
@@ -102,11 +120,27 @@ export const MemeTemplatePreview = ({
         .replace(/(<svg\b[^>]*?)\swidth="\d+"\sheight="\d+"/, "$1")
         .trim()
     );
-  }, [template, slotTexts, aspectRatio, withBaseImage]);
+  }, [template, slotTexts, aspectRatio, withBaseImage, instanceId, subjectFocus, showMotion]);
+
+  const motionClass =
+    showMotion && template.design?.animation
+      ? {
+          slow_push_in: "animate-[meme-push_6s_ease-in-out_infinite]",
+          slow_dolly: "animate-[meme-dolly_7s_ease-in-out_infinite]",
+          dramatic_fade: "animate-[meme-fade_5s_ease-in-out_infinite]",
+          zoom_cuts: "animate-[meme-zoom_2.4s_ease-in-out_infinite]",
+          parallax_drift: "animate-[meme-drift_8s_ease-in-out_infinite]",
+          static_hold: "",
+        }[template.design.animation] || ""
+      : "";
 
   return (
     <div
-      className={cn("[&>svg]:block [&>svg]:h-full [&>svg]:w-full", className)}
+      className={cn(
+        "[&>svg]:block [&>svg]:h-full [&>svg]:w-full overflow-hidden",
+        motionClass,
+        className,
+      )}
       role="img"
       aria-label={`${template.name} layout preview`}
       // Renderer escapes all user text before it reaches the markup.

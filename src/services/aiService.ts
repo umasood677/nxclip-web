@@ -17,6 +17,33 @@ export class AIError extends Error {
   }
 }
 
+const GEMINI_TEXT_MODEL = "gemini-2.5-flash";
+
+const GEMINI_MODEL_ALIASES: Record<string, string> = {
+  "gemini-flash-latest": GEMINI_TEXT_MODEL,
+  "gemini-pro-latest": "gemini-2.5-pro",
+  "gemini-2.0-flash": GEMINI_TEXT_MODEL,
+};
+
+/** Map retired / alias model ids to a current Gemini text model. */
+export function resolveGeminiTextModel(model?: string): string {
+  const raw = (model || "").trim();
+  if (!raw) return GEMINI_TEXT_MODEL;
+  return GEMINI_MODEL_ALIASES[raw] ?? raw;
+}
+
+/** Browser-safe Gemini text/JSON generation via the local Express proxy (keeps GEMINI_API_KEY server-side). */
+export async function generateContent(payload: {
+  model: string;
+  contents: unknown;
+  config?: Record<string, unknown>;
+}): Promise<{ text?: string; candidates?: unknown }> {
+  return callAIProxy({
+    ...payload,
+    model: resolveGeminiTextModel(payload.model),
+  });
+}
+
 async function callAIProxy(payload: any) {
   try {
     const response = await fetch("/api/ai/generate", {

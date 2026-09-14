@@ -28,7 +28,6 @@ import { UserProfile, NotificationItem } from "../types";
 import { Button, buttonVariants } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Logo } from "./Logo";
-import { CreatorAvatar } from "./CreatorAvatar";
 import {
   Tooltip,
   TooltipContent,
@@ -36,7 +35,8 @@ import {
 } from "./ui/tooltip";
 import { ADMIN_EMAILS } from "../constants";
 import { useAppSelector } from "../store/hooks";
-import { selectAuthProfile } from "../store/slices/authSlice";
+import { selectAuthProfile, selectResolvedUserPhoto, selectResolvedDisplayName } from "../store/slices/authSlice";
+import { ProfilePhoto } from "./ProfilePhoto";
 import { socketService } from "../services/socketService";
 
 import { NotificationPanel } from "./NotificationPanel";
@@ -49,7 +49,7 @@ const navItems = [
 
 const toolItems = [
   { icon: ImageIcon, label: "Image Studio", href: "/create/image", translationKey: "nav.image_studio" },
-  { icon: Video, label: "Clip Editor", href: "/create/clip", translationKey: "nav.clip_editor" },
+  { icon: Video, label: "Clip Studio", href: "/create/clip", translationKey: "nav.clip_editor" },
 ];
 
 const supportItems = [
@@ -126,11 +126,21 @@ const NavLink = ({ item, isActive, isCollapsed, t, i18n, badgeCount }: { item: {
 export default function SideNav({ isCollapsed, setIsCollapsed }: SideNavProps) {
   const { t, i18n } = useTranslation();
   const profile = useAppSelector(selectAuthProfile);
+  const avatarSrc = useAppSelector(selectResolvedUserPhoto);
+  const displayName = useAppSelector(selectResolvedDisplayName);
   const location = useLocation();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const isAdmin = profile?.role === "admin" || (auth.currentUser?.email && ADMIN_EMAILS.includes(auth.currentUser.email.toLowerCase()));
+
+  const currentPlan = (profile?.plan || "free").toLowerCase();
+  const planCta =
+    currentPlan === "studio"
+      ? { to: "/settings", label: t("nav.manage_studio"), variant: "outline" as const }
+      : currentPlan === "pro"
+        ? { to: "/upgrade", label: t("nav.upgrade_studio"), variant: "brand-gradient" as const }
+        : { to: "/upgrade", label: t("nav.upgrade_pro"), variant: "brand-gradient" as const };
 
   useEffect(() => {
     // Initial simulation if empty
@@ -256,7 +266,7 @@ export default function SideNav({ isCollapsed, setIsCollapsed }: SideNavProps) {
             )}
             <div className="space-y-0.5">
               {toolItems.map((item) => {
-                const isActive = item.label === "Clip Editor"
+                const isActive = item.href === "/create/clip"
                   ? location.pathname.startsWith("/create/clip")
                   : location.pathname === item.href;
                 return <NavLink key={item.href} item={item} isActive={isActive} isCollapsed={isCollapsed} t={t} i18n={i18n} />;
@@ -292,22 +302,22 @@ export default function SideNav({ isCollapsed, setIsCollapsed }: SideNavProps) {
         <Tooltip>
           <TooltipTrigger asChild>
             <Link
-              to="/pricing"
+              to={planCta.to}
               className={cn(
-                buttonVariants({ variant: "brand-gradient", size: "lg" }),
+                buttonVariants({ variant: planCta.variant, size: "lg" }),
                 "w-full justify-center gap-3 px-3"
               )}
             >
-              <Zap size={16} className="shrink-0 text-primary-foreground" fill="currentColor" />
+              <Zap size={16} className="shrink-0" fill="currentColor" />
               {!isCollapsed && (
                 <span className="text-[12px] font-bold tracking-wider">
-                  {t('nav.upgrade_pro')}
+                  {planCta.label}
                 </span>
               )}
             </Link>
           </TooltipTrigger>
           <TooltipContent side="right" className="font-bold text-[10px] tracking-widest">
-            {t('nav.upgrade_pro')}
+            {planCta.label}
           </TooltipContent>
         </Tooltip>
         
@@ -447,16 +457,17 @@ export default function SideNav({ isCollapsed, setIsCollapsed }: SideNavProps) {
         aria-label="View My Profile"
         onKeyDown={(e) => e.key === 'Enter' && navigate("/profile")}
         onClick={() => navigate("/profile")}>
-          <CreatorAvatar 
-            src={profile?.photoURL} 
-            email={profile?.email} 
-            className="w-8 h-8 rounded border border-border overflow-hidden shrink-0" 
+          <ProfilePhoto
+            src={avatarSrc}
+            email={profile?.email}
+            shape="circle"
+            className="w-8 h-8 rounded-full border border-border overflow-hidden shrink-0"
           />
           {!isCollapsed && (
             <div className="flex-grow min-w-0">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[13px] font-bold text-foreground truncate leading-none">
-                  {profile?.displayName || "Creator"}
+                  {displayName || profile?.displayName || "Creator"}
                 </p>
                 <Badge variant={profile?.plan === "free" ? "secondary" : "brand-gradient"} className="h-4 px-1.5 text-[8px] tracking-tighter shrink-0 border-none">
                   {profile?.plan === "pro" ? "Pro" : profile?.plan === "studio" ? "Studio" : "Free"}

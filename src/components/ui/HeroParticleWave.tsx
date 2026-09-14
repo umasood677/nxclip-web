@@ -8,7 +8,8 @@ import {
   Play, 
   Share2,
   Youtube,
-  Instagram
+  Instagram,
+  Facebook
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { cn } from "../../lib/utils";
@@ -37,10 +38,9 @@ interface HeroParticleWaveProps {
 }
 
 const ICONS = [
-  Youtube, Instagram, TiktokIcon, // Social platforms
+  Youtube, Instagram, Facebook, TiktokIcon, // Social platforms
   Zap, Sparkles, TrendingUp, // Status icons
-  Youtube, Instagram, TiktokIcon, // Repeat for higher frequency
-  Youtube, Instagram, TiktokIcon, // Repeat for higher frequency
+  Youtube, Instagram, Facebook, TiktokIcon,
   Twitch, Video, Play, Share2
 ];
 

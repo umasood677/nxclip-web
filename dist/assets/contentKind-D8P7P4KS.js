@@ -1,0 +1,1 @@
+function t(e){const r=String(e.contentType||e.type||"").trim().toLowerCase();return r==="clip"||r==="video"?"clip":r==="meme"||String(e.style||"").trim().toLowerCase()==="meme"||e.memeSpec&&typeof e.memeSpec=="object"?"meme":"image"}function n(e){return e==="meme"?"Meme":e==="clip"?"Clip":"Image"}export{n as c,t as r};

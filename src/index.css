@@ -603,6 +603,10 @@ body.dark,
     @apply grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,30%)] gap-5 md:gap-6 items-start;
   }
 
+  .ui-dashboard-top-content-grid {
+    @apply grid w-full gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4;
+  }
+
   .ui-dashboard-main {
     @apply lg:col-span-8 xl:col-span-9 space-y-6 md:space-y-8;
   }
@@ -636,7 +640,11 @@ body.dark,
   }
 
   .ui-top-content-card {
-    @apply p-4 rounded-lg border border-border bg-card hover:bg-muted/30 transition-all;
+    @apply rounded-lg border border-border bg-card hover:bg-muted/30 transition-all;
+  }
+
+  .ui-top-content-card .relative.rounded-lg {
+    @apply bg-muted;
   }
 
   .ui-pulse-card {
@@ -1115,5 +1123,69 @@ body.dark,
   }
   .animate-voice-bar-4 {
     animation: voice-bar-pulse-4 0.6s ease-in-out infinite;
+  }
+
+  /* Meme Director motion previews */
+  @keyframes meme-push {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.045); }
+  }
+  @keyframes meme-dolly {
+    0%, 100% { transform: translateY(0) scale(1.02); }
+    50% { transform: translateY(-1.5%) scale(1.05); }
+  }
+  @keyframes meme-fade {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.88; }
+  }
+  @keyframes meme-zoom {
+    0%, 100% { transform: scale(1); }
+    40% { transform: scale(1.06); }
+    55% { transform: scale(1.02); }
+  }
+  @keyframes meme-drift {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(1.5%); }
+  }
+
+  /* Muted tile skeleton — soft static gradients, slow breathe (Google Photos / Flow style) */
+  @keyframes media-tile-breathe {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 0.72; }
+  }
+
+  .media-tile-loading {
+    background: linear-gradient(145deg, #3a3a3a 0%, #2e2e2e 46%, #343434 100%);
+  }
+
+  .media-tile-loading::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      128deg,
+      rgba(148, 163, 184, 0.07) 0%,
+      transparent 42%,
+      rgba(71, 85, 105, 0.05) 68%,
+      rgba(88, 28, 135, 0.04) 100%
+    );
+    animation: media-tile-breathe 5s ease-in-out infinite;
+  }
+
+  .media-tile-loading::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      315deg,
+      transparent 35%,
+      rgba(255, 255, 255, 0.025) 50%,
+      transparent 65%
+    );
+    opacity: 0.6;
+  }
+
+  .media-tile-loading--compact {
+    background: linear-gradient(145deg, #383838 0%, #2c2c2c 50%, #323232 100%);
   }
 }

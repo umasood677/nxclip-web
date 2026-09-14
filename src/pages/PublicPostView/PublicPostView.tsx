@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-import { Eye, Heart, MessageSquare, Sparkles, Loader2, Youtube, Instagram } from "lucide-react";
+import { Eye, Heart, MessageSquare, Sparkles, Loader2 } from "lucide-react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { SEO } from "../../components/SEO";
-import { TiktokIcon } from "../../components/TiktokIcon";
+import { SocialPlatformIcon } from "../../components/social/SocialPlatformIcon";
 import { AuthenticatedImage } from "../../components/AuthenticatedImage";
 import {
   contentApi,
@@ -18,11 +18,7 @@ import { getPersistedUser } from "../../services/auth/authService";
 import { toast } from "sonner";
 
 function PlatformMark({ platform }: { platform: string }) {
-  const p = platform.toLowerCase();
-  if (p === "youtube") return <Youtube size={16} className="text-red-500" />;
-  if (p === "instagram") return <Instagram size={16} className="text-pink-500" />;
-  if (p === "tiktok") return <TiktokIcon size={16} />;
-  return null;
+  return <SocialPlatformIcon platform={platform} size={16} />;
 }
 
 export default function PublicPostView() {

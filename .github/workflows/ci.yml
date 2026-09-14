@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Production build
+        env:
+          VITE_API_GATEWAY_URL: https://api-gateway-216098834386.us-central1.run.app
+          VITE_API_GATEWAY_URL_PRODUCTION: https://api-gateway-216098834386.us-central1.run.app
+          NODE_ENV: production
+        run: npm run build

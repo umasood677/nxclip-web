@@ -23,6 +23,7 @@ import { identityApi } from "./services/apiClient";
 import { getPersistedUser, setPersistedUser, useAuthToken } from "./services/auth/authService";
 import { STORAGE_KEYS } from "./constants";
 import { contentPlanFromOnboarding, isRenewingWeekPlan } from "./lib/weekPlan";
+import { creatorFieldsFromIdentityMe } from "./lib/onboardingSnapshot";
 
 // --- Loading Component ---
 const PageLoader = () => {
@@ -257,6 +258,8 @@ const UserProfilePage = lazy(() => import("./pages/UserProfile/UserProfile"));
 const OwnProfile = lazy(() => import("./pages/OwnProfile/OwnProfile"));
 const EditProfile = lazy(() => import("./pages/EditProfile/EditProfile"));
 const ContentLibrary = lazy(() => import("./pages/ContentLibrary/ContentLibrary"));
+const BillingSuccessPage = lazy(() => import("./pages/Billing/BillingSuccessPage"));
+const BillingCancelPage = lazy(() => import("./pages/Billing/BillingCancelPage"));
 const UpgradePage = lazy(() => import("./pages/UpgradePage/UpgradePage"));
 const Settings = lazy(() => import("./pages/Settings/Settings"));
 const Notifications = lazy(() => import("./pages/Notifications/Notifications"));
@@ -331,6 +334,47 @@ function PublicGuard({ children, user, profile, loading }: { children: React.Rea
     return <Navigate to="/feed" replace />;
   }
   return <>{children}</>;
+}
+
+/** Allows completed users back into Coach when renewing / changing niche. */
+function OnboardingEntry({
+  user,
+  profile,
+}: {
+  user: SerializedUser;
+  profile: UserProfile | null;
+}) {
+  const location = useLocation();
+  const navState = (location.state || {}) as {
+    renewWeekPlan?: boolean;
+    fromReset?: boolean;
+    fromStudio?: string;
+    reviseOnboarding?: boolean;
+  };
+
+  if (!user.emailVerified) {
+    return <Navigate to="/verify-email" replace />;
+  }
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const allowReentry =
+    safeSessionStorage.getItem("finishing_onboarding") === "true" ||
+    isRenewingWeekPlan() ||
+    navState.renewWeekPlan === true ||
+    navState.fromReset === true ||
+    navState.reviseOnboarding === true;
+
+  if (profile.onboardingCompleted === true && !allowReentry) {
+    return <Navigate to="/feed" replace />;
+  }
+
+  return <Onboarding />;
 }
 
 export default function App() {
@@ -414,31 +458,43 @@ export default function App() {
           const completed =
             me.onboardingCompleted === true ||
             (finishing && profile?.onboardingCompleted === true);
-          const onboardingPlan = me.onboardingPlan ?? profile?.onboardingPlan ?? null;
+          const creator = creatorFieldsFromIdentityMe(me as Record<string, unknown>);
+          const onboardingPlan = creator.onboardingPlan ?? profile?.onboardingPlan ?? null;
           dispatch(setAuthProfile({
+            ...profile,
             uid: me.id || me.uid || user.uid,
             displayName: me.displayName || me.username || "Creator",
             email: me.email || user.email,
             photoURL: me.avatarUrl || me.photoURL || null,
+            coverUrl: me.coverUrl || profile?.coverUrl || null,
             plan: (me.plan || "free").toLowerCase() as any,
             role: (me.roles?.[0] || me.role || "creator") as any,
             onboardingCompleted: completed,
             onboardingPlan,
+            creatorCategory: creator.creatorCategory,
+            creatorCategoryLabel: creator.creatorCategoryLabel,
+            creatorNiches: creator.creatorNiches,
             contentPlan: contentPlanFromOnboarding(onboardingPlan) ?? profile?.contentPlan,
-            createdAt: me.createdAt || new Date().toISOString(),
+            createdAt: me.createdAt || profile?.createdAt || new Date().toISOString(),
           }));
         }
       } catch (err: any) {
         if (!isSubscribed) return;
         const status = err?.statusCode || err?.response?.status || err?.status;
         if (status === 401 || status === 403) {
-          // Stale local session — clear quietly (refresh interceptor may already have fired)
+          // Auth truly failed after refresh attempt — clear quietly
+          // (nx_session_expired may already have fired from the interceptor)
           dispatch(logoutUser());
           return;
         }
+        // Network / 5xx / gateway blips must NOT force logout mid-session.
         console.error("Failed to fetch gateway profile:", err);
-        dispatch(logoutUser());
-        toast.error("Failed to sync your profile with the API Gateway. Please try logging in again.");
+        toast.error(
+          t(
+            "profile_sync_failed",
+            "Could not refresh your profile. Your session is still active — retry in a moment.",
+          ),
+        );
       } finally {
         if (isSubscribed) {
           dispatch(setAuthLoading(false));
@@ -450,7 +506,9 @@ export default function App() {
     return () => {
       isSubscribed = false;
     };
-  }, [user, dispatch]);
+    // Only re-run when the signed-in user changes — a new `user` object
+    // after setAuthUser was retriggering /users/me and amplifying 429s.
+  }, [user?.uid, dispatch]);
 
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
@@ -494,27 +552,15 @@ export default function App() {
                   />
 
                   {/* Auth Routes */}
-                  <Route 
-                    path="/onboarding" 
+                  <Route
+                    path="/onboarding"
                     element={
                       user ? (
-                        !user.emailVerified ? (
-                          <Navigate to="/verify-email" replace />
-                        ) : !profile ? (
-                          <div className="min-h-screen flex items-center justify-center bg-background">
-                            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                          </div>
-                        ) : profile.onboardingCompleted === true &&
-                          safeSessionStorage.getItem("finishing_onboarding") !== "true" &&
-                          !isRenewingWeekPlan() ? (
-                          <Navigate to="/feed" replace />
-                        ) : (
-                          <Onboarding />
-                        )
+                        <OnboardingEntry user={user} profile={profile} />
                       ) : (
                         <Navigate to="/login" replace />
                       )
-                    } 
+                    }
                   />
                   
                   <Route element={<AuthGuard profile={profile} loading={loading}><DashboardLayout /></AuthGuard>}>
@@ -533,6 +579,8 @@ export default function App() {
                     <Route path="/profile/edit" element={<EditProfile />} />
                     <Route path="/users/:id" element={<UserProfilePage />} />
                     <Route path="/upgrade" element={<UpgradePage />} />
+                    <Route path="/billing/success" element={<BillingSuccessPage />} />
+                    <Route path="/billing/cancel" element={<BillingCancelPage />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/notifications" element={<Notifications />} />
                     <Route 

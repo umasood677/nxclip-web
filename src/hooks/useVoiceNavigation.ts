@@ -63,23 +63,28 @@ export function useVoiceNavigation() {
       ]
     },
     {
-      name: "Editor",
+      name: "Clip Studio",
       path: "/create/clip",
       triggers: [
         "editor",
+        "clip studio",
         "clip editor",
         "video editor",
         "go to editor",
         "open editor",
         "show editor",
         "navigate to editor",
+        "go to clip studio",
         "go to clip editor",
+        "open clip studio",
+        "استوديو المقاطع",
         "المحرر",
         "معدل المقاطع",
         "محرر الفيديو",
         "تعديل",
         "تعديل الفيديو",
-        "افتح المحرر"
+        "افتح المحرر",
+        "افتح استوديو المقاطع"
       ]
     },
     {

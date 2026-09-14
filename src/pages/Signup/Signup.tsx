@@ -252,8 +252,8 @@ export default function Signup() {
       }));
 
       setSuccess(true);
-      toast.success("Account Created via API Gateway!", {
-        description: "Let's set up your creator workspace."
+      toast.success("Welcome to nxClip", {
+        description: "Your AI creator workspace is ready — let's set it up."
       });
       setTimeout(() => {
         // New accounts always start coach onboarding (return URLs apply after they finish).
@@ -261,8 +261,8 @@ export default function Signup() {
         navigate("/onboarding", { replace: true });
       }, 1000);
     } catch (err: any) {
-      console.error("API Gateway signup error:", err);
-      let errMsg = "Failed to create account via API Gateway. Please try again.";
+      console.error("Signup error:", err);
+      let errMsg = "Couldn't create your account. Please try again.";
       if (err) {
         if (err.message) {
           errMsg = Array.isArray(err.message) ? err.message.join(", ") : err.message;
@@ -643,9 +643,9 @@ export default function Signup() {
                 <div className="flex flex-col items-center justify-center py-0.5">
                   <div className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    <span className="font-semibold text-xs tracking-wider uppercase">Registering via API Gateway...</span>
+                    <span className="font-semibold text-xs tracking-wider uppercase">Opening your AI workspace...</span>
                   </div>
-                  <span className="text-[9px] text-white/70 font-normal tracking-wide mt-0.5 lowercase animate-pulse">Initializing user registry handshake</span>
+                  <span className="text-[9px] text-white/70 font-normal tracking-wide mt-0.5 lowercase animate-pulse">Setting up your creator profile</span>
                 </div>
               ) : success ? (
                 <Check size={20} />

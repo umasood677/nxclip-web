@@ -55,6 +55,23 @@ function describeEvent(eventName: string, payload: Record<string, unknown> = {})
         title: "Transcription ready",
         body: `Transcript is ready${contentId ? ` for ${contentId}…` : ""}.`,
       };
+    case "content:render_complete":
+      return {
+        title: "Clip render ready",
+        body: `Your export is ready${contentId ? ` for ${contentId}…` : ""}.`,
+      };
+    case "content:render_failed": {
+      const friendly =
+        /credits|spending limit|permission-denied|quota/i.test(reason)
+          ? "Animation provider is out of credits or over its limit. Retry later, or ask an admin to top up xAI/Vertex / switch AI_VIDEO_PROVIDER."
+          : reason;
+      return {
+        title: "Clip animation failed",
+        body:
+          friendly ||
+          `Animate failed${contentId ? ` for ${contentId}…` : ""}. Open the draft in Image Studio and try again.`,
+      };
+    }
     case "content:processing":
       return {
         title: "Processing content",

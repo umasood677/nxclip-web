@@ -146,5 +146,16 @@ export const selectAuthError = createSelector(
   (auth) => auth.error
 );
 
+/** Profile photo from /users/me, falling back to persisted auth user. */
+export const selectResolvedUserPhoto = createSelector(
+  [selectAuthProfile, selectAuthUser],
+  (profile, user) => profile?.photoURL || user?.photoURL || null,
+);
+
+export const selectResolvedDisplayName = createSelector(
+  [selectAuthProfile, selectAuthUser],
+  (profile, user) => profile?.displayName || user?.displayName || null,
+);
+
 export default authSlice.reducer;
 

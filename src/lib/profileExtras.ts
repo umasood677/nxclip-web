@@ -12,7 +12,7 @@ export interface ProfileExtras {
     tiktok?: string;
   };
   /** OAuth connection flags (prep until real social OAuth ships) */
-  connectedSocials?: Partial<Record<"youtube" | "instagram" | "tiktok" | "twitch" | "twitter", boolean>>;
+  connectedSocials?: Partial<Record<"youtube" | "instagram" | "tiktok" | "facebook" | "twitch" | "twitter", boolean>>;
 }
 
 function key(uid: string) {

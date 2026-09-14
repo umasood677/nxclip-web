@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { 
-  Settings2, Loader2, Maximize2, Image as ImageIcon, Plus, Check, History 
+  Settings2, Loader2, Maximize2, Image as ImageIcon, Plus, Check, History, Clapperboard
 } from "lucide-react";
 import { Card } from "../../../components/ui/card";
 import { Label } from "../../../components/ui/label";
@@ -20,7 +20,7 @@ import { EditPanelProps } from "../types";
 
 export function EditPanel({ 
   resultImage, brightness, setBrightness, contrast, setContrast, saturation, setSaturation, 
-  isUpscaling, handleUpscale, isRemovingBg, handleRemoveBg, onPublishClick, onViewHistoryClick, isPublishing, isPublished, className 
+  isUpscaling, handleUpscale, isRemovingBg, handleRemoveBg, onPublishClick, onAnimateAsClipClick, isAnimatingAsClip, onViewHistoryClick, isPublishing, isPublished, className 
 }: EditPanelProps) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === "rtl";
@@ -203,6 +203,25 @@ export function EditPanel({
 
         <div className="p-4 border-t border-border/50 space-y-2 shrink-0 bg-background/90">
           {resultImage && (
+            <>
+            <Button
+              variant="outline"
+              className={cn("w-full text-xs gap-2 h-9 font-bold", isRTL && "flex-row-reverse")}
+              onClick={onAnimateAsClipClick}
+              disabled={isAnimatingAsClip || isPublishing}
+            >
+              {isAnimatingAsClip ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Animating…
+                </>
+              ) : (
+                <>
+                  <Clapperboard className="h-4 w-4" />
+                  Animate in Clip Studio
+                </>
+              )}
+            </Button>
             <Button 
               variant="brand-gradient" 
               className={cn("w-full text-xs gap-2 h-9 font-bold shadow-lg shadow-primary/20", isRTL && "flex-row-reverse")}
@@ -226,6 +245,7 @@ export function EditPanel({
                 </>
               )}
             </Button>
+            </>
           )}
           <Button
             type="button"

@@ -20,7 +20,8 @@ import {
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AuthenticatedImage } from "../../components/AuthenticatedImage";
+import { AuthenticatedMediaPreview } from "../../components/AuthenticatedMediaPreview";
+import { MediaTileSelectCheckbox, mediaTileSelectionRing } from "../../components/MediaTileSelectCheckbox";
 import { Button } from "../../components/ui/button";
 import { 
   DropdownMenu, 
@@ -44,6 +45,8 @@ import {
   parseAspectRatio,
 } from "../../components/JustifiedGallery";
 import { resolveItemAspectRatio } from "./lib/aspectRatio";
+import { contentKindLabel, resolveContentKind } from "../../lib/contentKind";
+import { isReferenceAsset } from "../ImageStudio/components/RecentGenerations/statusStyles";
 
 /**
  * The library is a dense browsing surface. The row-height band is raised well
@@ -145,8 +148,9 @@ export default function ContentLibrary() {
   }, []);
 
   const filteredItems = items.filter(item => {
-    const isReference = Boolean(item.storageKey?.startsWith("uploads/"));
-    const matchesType = activeType === "all" || item.contentType === activeType;
+    const isReference = isReferenceAsset(item);
+    const matchesType =
+      activeType === "all" || resolveContentKind(item) === activeType;
     let matchesStatus = true;
     if (activeStatus === "reference") {
       matchesStatus = isReference;
@@ -233,12 +237,24 @@ export default function ContentLibrary() {
     }
   };
 
-  const handleDownload = (item: ContentDto) => {
-    const url = extractValidImageUrl(item) || (item.mediaUrl as string) || `https://picsum.photos/seed/${item.id}/1280/720`;
-    window.open(url, '_blank');
+  const handleDownload = async (item: ContentDto) => {
+    try {
+      const { downloadContentMedia } = await import("../../lib/downloadContentMedia");
+      await downloadContentMedia(item);
+      toast.success("Download started");
+    } catch (err) {
+      console.error("Download failed:", err);
+      toast.error(err instanceof Error ? err.message : "Download failed");
+    }
   };
 
   const handleEdit = (item: ContentDto) => {
+    const kind = resolveContentKind(item);
+    if (kind === "clip") {
+      navigate(`/create/clip/${item.id}/edit?step=trim`);
+      toast.info("Opening Clip Studio…");
+      return;
+    }
     const imgUrl = extractValidImageUrl(item) || item.thumbnailUrl || (item.mediaUrl as string);
     navigate("/create/image", {
       state: {
@@ -246,7 +262,7 @@ export default function ContentLibrary() {
         title: item.title || item.caption || "",
         prompt: item.prompt || item.caption || item.description || item.title || "",
         imageUrl: imgUrl,
-        mode: item.contentType === "meme" ? "meme" : "image",
+        mode: kind === "meme" ? "meme" : "image",
         description: item.description || "",
         style: item.style || undefined,
         aspectRatio: item.aspectRatio || undefined,
@@ -465,7 +481,18 @@ export default function ContentLibrary() {
                 index={index}
                 aspectRatio={resolvedRatio ?? undefined}
                 onMediaLoad={reportRatio}
-                onViewDetails={(id) => navigate(`/feed/post/${id}`)}
+                onViewDetails={(id) => {
+                  const item = items.find((i) => i.id === id);
+                  if (item && resolveContentKind(item) === "clip") {
+                    navigate(`/create/clip/${id}/edit?step=trim`);
+                    return;
+                  }
+                  if (item && item.status !== "published") {
+                    handleEdit(item);
+                    return;
+                  }
+                  navigate(`/feed/post/${id}`);
+                }}
                 onDownload={handleDownload}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
@@ -490,34 +517,52 @@ export default function ContentLibrary() {
                     transition={{ duration: 0.3, delay: Math.min(idx * 0.03, 0.3) }}
                   >
                     <div
-                      onClick={() =>
-                        isSelectionMode
-                          ? toggleSelection(item.id)
-                          : navigate(`/feed/post/${item.id}`)
-                      }
+                      onClick={() => {
+                        if (isSelectionMode) {
+                          toggleSelection(item.id);
+                          return;
+                        }
+                        if (resolveContentKind(item) === "clip") {
+                          navigate(`/create/clip/${item.id}/edit?step=trim`);
+                          return;
+                        }
+                        if (item.status !== "published") {
+                          handleEdit(item);
+                          return;
+                        }
+                        navigate(`/feed/post/${item.id}`);
+                      }}
                       className={cn(
                         "group flex items-center gap-6 p-4 bg-zinc-900/40 border rounded-2xl transition-all cursor-pointer",
+                        mediaTileSelectionRing(selectedIds.has(item.id)),
                         selectedIds.has(item.id)
-                          ? "border-primary bg-primary/5"
+                          ? "bg-zinc-900/55"
                           : "border-white/5 hover:border-white/10 hover:bg-zinc-900/60",
                       )}
                     >
-                      <div className="relative w-32 aspect-video rounded-xl overflow-hidden bg-black shrink-0">
-                        <AuthenticatedImage
+                      <div className="relative w-32 aspect-video rounded-xl overflow-hidden bg-zinc-600 shrink-0">
+                        <AuthenticatedMediaPreview
                           key={contentMediaRevision(item)}
+                          item={item}
+                          loadingCompact
                           src={
                             extractValidImageUrl(item) ||
                             "https://picsum.photos/seed/1/400/225"
                           }
                           className="w-full h-full object-cover"
+                          showPlayBadge={resolveContentKind(item) === "clip"}
                         />
-                        {selectedIds.has(item.id) && (
-                          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
-                              <Sparkles size={16} />
-                            </div>
-                          </div>
-                        )}
+                        {isSelectionMode || selectedIds.has(item.id) ? (
+                          <MediaTileSelectCheckbox
+                            checked={selectedIds.has(item.id)}
+                            visible
+                            className="absolute top-2 left-2 z-10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleSelection(item.id);
+                            }}
+                          />
+                        ) : null}
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-white truncate group-hover:text-primary transition-colors">
@@ -536,12 +581,12 @@ export default function ContentLibrary() {
                             {new Date(item.createdAt as string).toLocaleDateString()}
                           </span>
                           <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                            {item.contentType === "clip" ? (
+                            {resolveContentKind(item) === "clip" ? (
                               <Video size={12} />
                             ) : (
                               <ImageIcon size={12} />
                             )}
-                            {item.contentType}
+                            {contentKindLabel(resolveContentKind(item))}
                           </span>
                         </div>
                       </div>

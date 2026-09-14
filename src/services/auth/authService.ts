@@ -23,10 +23,14 @@ export function getPersistedUser(): any | null {
  */
 export function setPersistedUser(user: any, rememberMe: boolean = true): void {
   const storage = rememberMe ? safeLocalStorage : safeSessionStorage;
+  const other = rememberMe ? safeSessionStorage : safeLocalStorage;
   const loggedInValue = "true";
   
   storage.setItem(STORAGE_KEYS.PERSISTED_USER, JSON.stringify(user));
   storage.setItem(STORAGE_KEYS.LOGGED_IN, loggedInValue);
+  safeLocalStorage.setItem("nx_remember_me", rememberMe ? "true" : "false");
+  other.removeItem(STORAGE_KEYS.PERSISTED_USER);
+  other.removeItem(STORAGE_KEYS.LOGGED_IN);
   triggerTokenStateUpdate();
 }
 

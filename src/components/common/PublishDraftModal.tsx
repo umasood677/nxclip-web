@@ -24,8 +24,9 @@ import {
   Type,
   FileText
 } from "lucide-react";
-import { contentApi, extractValidImageUrl, ContentDto } from "../../services/apiClient";
+import { contentApi, extractValidImageUrl, ContentDto, type SocialPlatform } from "../../services/apiClient";
 import { toast } from "sonner";
+import { SocialPublishTargets } from "../social/SocialPublishTargets";
 
 export interface DraftValidationResult {
   hasTitle: boolean;
@@ -94,6 +95,7 @@ export const PublishDraftModal: React.FC<PublishDraftModalProps> = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [isPublishing, setIsPublishing] = useState(false);
+  const [socialPlatforms, setSocialPlatforms] = useState<SocialPlatform[]>([]);
 
   if (!item) return null;
 
@@ -131,6 +133,7 @@ export const PublishDraftModal: React.FC<PublishDraftModalProps> = ({
         title: validation.titleVal,
         caption: validation.captionVal,
         description: validation.captionVal,
+        socialPlatforms: socialPlatforms.length ? socialPlatforms : undefined,
       });
 
       toast.success("Draft submitted for moderation. You’ll be notified when it’s approved or rejected.");
@@ -278,6 +281,14 @@ export const PublishDraftModal: React.FC<PublishDraftModalProps> = ({
             </div>
           </div>
         )}
+
+        {validation.isReady ? (
+          <SocialPublishTargets
+            selected={socialPlatforms}
+            onChange={setSocialPlatforms}
+            disabled={isPublishing}
+          />
+        ) : null}
 
         <DialogFooter className="gap-2 sm:gap-2 pt-2">
           <Button 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
+import { identityApi } from "../services/apiClient";
 
 const GIS_SCRIPT_SRC = "https://accounts.google.com/gsi/client";
 
@@ -15,9 +16,20 @@ declare global {
             callback: (response: { credential: string }) => void;
             auto_select?: boolean;
             cancel_on_tap_outside?: boolean;
+            context?: string;
+            ux_mode?: "popup" | "redirect";
+            use_fedcm_for_prompt?: boolean;
           }) => void;
-          prompt: (momentListener?: (notification: { isNotDisplayed: () => boolean; isSkippedMoment: () => boolean }) => void) => void;
-          renderButton?: (parent: HTMLElement, options: Record<string, unknown>) => void;
+          prompt: (momentListener?: (notification: {
+            isNotDisplayed: () => boolean;
+            isSkippedMoment: () => boolean;
+            getNotDisplayedReason?: () => string;
+          }) => void) => void;
+          renderButton: (
+            parent: HTMLElement,
+            options: Record<string, unknown>,
+          ) => void;
+          cancel: () => void;
         };
       };
     };
@@ -35,7 +47,9 @@ function loadGisScript(): Promise<void> {
     const existing = document.querySelector<HTMLScriptElement>(`script[src="${GIS_SCRIPT_SRC}"]`);
     if (existing) {
       existing.addEventListener("load", () => resolve());
-      existing.addEventListener("error", () => reject(new Error("Failed to load Google Identity Services")));
+      existing.addEventListener("error", () =>
+        reject(new Error("Failed to load Google Identity Services")),
+      );
       if (window.google?.accounts?.id) resolve();
       return;
     }
@@ -54,6 +68,14 @@ function loadGisScript(): Promise<void> {
   return gisScriptPromise;
 }
 
+function resolveEnvClientId(): string | undefined {
+  const raw =
+    (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ||
+    (import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID as string | undefined);
+  const trimmed = raw?.trim();
+  return trimmed || undefined;
+}
+
 export interface GoogleSignInButtonProps {
   onCredential: (idToken: string) => void | Promise<void>;
   disabled?: boolean;
@@ -62,8 +84,8 @@ export interface GoogleSignInButtonProps {
 }
 
 /**
- * Loads Google Identity Services on demand, then requests an ID token (credential)
- * and forwards it to the caller for POST /auth/google.
+ * Google Identity Services button.
+ * Resolves client ID from VITE_GOOGLE_CLIENT_ID, then GET /auth/google/config.
  */
 export function GoogleSignInButton({
   onCredential,
@@ -72,15 +94,19 @@ export function GoogleSignInButton({
   label = "Continue with Google",
 }: GoogleSignInButtonProps) {
   const [busy, setBusy] = useState(false);
+  const [resolving, setResolving] = useState(true);
+  const [clientId, setClientId] = useState<string | undefined>(resolveEnvClientId());
   const [scriptError, setScriptError] = useState<string | null>(null);
   const pendingRef = useRef(false);
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const initializedFor = useRef<string | null>(null);
 
   const handleCredential = useCallback(
     async (credential: string) => {
       if (pendingRef.current) return;
       pendingRef.current = true;
       setBusy(true);
+      setScriptError(null);
       try {
         await onCredential(credential);
       } finally {
@@ -88,21 +114,96 @@ export function GoogleSignInButton({
         setBusy(false);
       }
     },
-    [onCredential]
+    [onCredential],
   );
 
   useEffect(() => {
-    // Warm the script in the background when client id is configured
-    if (!clientId) return;
-    loadGisScript().catch((err) => {
-      console.warn("[GoogleSignIn]", err);
-    });
-  }, [clientId]);
+    let cancelled = false;
 
-  const handleClick = async () => {
+    async function resolveClientId() {
+      const fromEnv = resolveEnvClientId();
+      if (fromEnv) {
+        if (!cancelled) {
+          setClientId(fromEnv);
+          setResolving(false);
+        }
+        return;
+      }
+
+      try {
+        const config = await identityApi.getGoogleSignInConfig();
+        if (cancelled) return;
+        if (config?.enabled && config.clientId) {
+          setClientId(config.clientId);
+        } else {
+          setClientId(undefined);
+        }
+      } catch (err) {
+        console.warn("[GoogleSignIn] Failed to load /auth/google/config", err);
+        if (!cancelled) setClientId(undefined);
+      } finally {
+        if (!cancelled) setResolving(false);
+      }
+    }
+
+    void resolveClientId();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!clientId || !hostRef.current) return;
+    let cancelled = false;
+
+    async function mountOfficialButton() {
+      try {
+        await loadGisScript();
+        if (cancelled || !hostRef.current || !window.google?.accounts?.id) return;
+
+        if (initializedFor.current !== clientId) {
+          window.google.accounts.id.initialize({
+            client_id: clientId!,
+            callback: (response) => {
+              if (response?.credential) {
+                void handleCredential(response.credential);
+              }
+            },
+            auto_select: false,
+            cancel_on_tap_outside: true,
+            context: "signin",
+            ux_mode: "popup",
+          });
+          initializedFor.current = clientId!;
+        }
+
+        hostRef.current.innerHTML = "";
+        window.google.accounts.id.renderButton(hostRef.current, {
+          type: "standard",
+          theme: "outline",
+          size: "large",
+          text: "continue_with",
+          shape: "rectangular",
+          logo_alignment: "left",
+          width: Math.min(hostRef.current.clientWidth || 360, 400),
+        });
+      } catch (err: any) {
+        if (!cancelled) {
+          setScriptError(err?.message || "Google Sign-In failed to load");
+        }
+      }
+    }
+
+    void mountOfficialButton();
+    return () => {
+      cancelled = true;
+    };
+  }, [clientId, handleCredential]);
+
+  const handleFallbackClick = async () => {
     setScriptError(null);
     if (!clientId) {
-      setScriptError("VITE_GOOGLE_CLIENT_ID is not configured.");
+      setScriptError("Google Sign-In is not available yet. Please use email sign-in.");
       return;
     }
 
@@ -124,14 +225,19 @@ export function GoogleSignInButton({
         },
         auto_select: false,
         cancel_on_tap_outside: true,
+        context: "signin",
       });
 
       window.google.accounts.id.prompt((notification) => {
         if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          // Fallback: One Tap dismissed — still leave busy until callback or timeout
           setTimeout(() => {
-            if (!pendingRef.current) setBusy(false);
-          }, 800);
+            if (!pendingRef.current) {
+              setBusy(false);
+              setScriptError(
+                "Choose Continue with Google from the Google button above, or allow pop-ups for this site.",
+              );
+            }
+          }, 600);
         }
       });
     } catch (err: any) {
@@ -140,36 +246,59 @@ export function GoogleSignInButton({
     }
   };
 
-  if (!clientId) {
+  if (resolving) {
     return (
       <Button
         type="button"
         variant="outline"
         disabled
-        className={cn("w-full gap-2 opacity-60", className)}
-        title="Set VITE_GOOGLE_CLIENT_ID to enable Google Sign-In"
+        className={cn("w-full gap-2", className)}
       >
-        <GoogleMark />
-        {label} (not configured)
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Preparing Google Sign-In…
       </Button>
     );
   }
 
+  if (!clientId) {
+    return (
+      <div className="space-y-2">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={disabled}
+          onClick={handleFallbackClick}
+          className={cn("w-full gap-2 border-border/60 bg-background", className)}
+        >
+          <GoogleMark />
+          {label}
+        </Button>
+        <p className="text-[11px] text-muted-foreground font-medium text-center">
+          Google Sign-In will activate once the workspace is linked. Use email for now.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-2">
-      <Button
-        type="button"
-        variant="outline"
-        disabled={disabled || busy}
-        onClick={handleClick}
-        className={cn("w-full gap-2 border-border/60 bg-background hover:bg-muted/40", className)}
-      >
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleMark />}
-        {busy ? "Connecting…" : label}
-      </Button>
-      {scriptError && (
+    <div className={cn("space-y-2", className)}>
+      <div
+        ref={hostRef}
+        className={cn(
+          "w-full flex justify-center min-h-[44px] [&_iframe]:!w-full",
+          (disabled || busy) && "pointer-events-none opacity-60",
+        )}
+        aria-label={label}
+      />
+      {busy ? (
+        <p className="text-[11px] text-muted-foreground font-medium text-center flex items-center justify-center gap-1.5">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Entering the AI studio…
+        </p>
+      ) : null}
+      {scriptError ? (
         <p className="text-[11px] text-destructive font-medium text-center">{scriptError}</p>
-      )}
+      ) : null}
     </div>
   );
 }

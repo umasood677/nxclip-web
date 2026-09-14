@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Sparkles,
@@ -13,6 +13,12 @@ import {
   Utensils,
   ChefHat,
   Sparkle,
+  Smartphone,
+  Cpu,
+  Dumbbell,
+  TrendingUp,
+  GraduationCap,
+  Clapperboard,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
@@ -25,6 +31,9 @@ import {
   clearWeekPlanRenewal,
   contentPlanFromOnboarding,
   isRenewingWeekPlan,
+  isRevisingOnboarding,
+  beginWeekPlanRenewal,
+  beginOnboardingRevision,
 } from "../../lib/weekPlan";
 import {
   coachApi,
@@ -135,8 +144,19 @@ function categoryIcon(slug: string) {
   const key = slug.toLowerCase();
   if (key.includes("game")) return Gamepad2;
   if (key.includes("travel")) return Compass;
-  if (key.includes("food") || key.includes("dining")) return Utensils;
+  if (key.includes("food") || key.includes("dining") || key.includes("gourmet") || key.includes("culinary")) return Utensils;
   if (key.includes("cook") || key.includes("recipe") || key.includes("bak")) return ChefHat;
+  if (key === "ai-content" || key.startsWith("ai-")) return BrainCircuit;
+  if (key.includes("futuristic") || key.includes("digital-lifestyle")) return BrainCircuit;
+  if (key.includes("digital-creator")) return Smartphone;
+  if (key.includes("tech") || key.includes("saas")) return Cpu;
+  if (key.includes("fitness") || key.includes("wellness")) return Dumbbell;
+  if (key.includes("beauty") || key.includes("skincare") || key.includes("fashion") || key.includes("luxury")) return Sparkle;
+  if (key.includes("finance") || key.includes("business")) return TrendingUp;
+  if (key.includes("education") || key.includes("how-to")) return GraduationCap;
+  if (key.includes("entertainment") || key.includes("culture")) return Clapperboard;
+  if (key.includes("interior") || key.includes("spatial")) return Sparkle;
+  if (key === "general") return Sparkle;
   return Sparkle;
 }
 
@@ -155,6 +175,7 @@ function formatApiError(err: unknown): string {
  */
 export default function Onboarding() {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const reduxUser = useAppSelector(selectAuthUser);
   const reduxProfile = useAppSelector(selectAuthProfile);
@@ -187,6 +208,13 @@ export default function Onboarding() {
           role: user.role || reduxProfile?.role || "user",
           onboardingCompleted: completed,
           onboardingPlan: user.onboardingPlan ?? reduxProfile?.onboardingPlan ?? null,
+          creatorCategory: user.creatorCategory ?? user.CreatorCategory ?? reduxProfile?.creatorCategory ?? null,
+          creatorCategoryLabel:
+            user.creatorCategoryLabel ??
+            user.CreatorCategoryLabel ??
+            reduxProfile?.creatorCategoryLabel ??
+            null,
+          creatorNiches: user.creatorNiches ?? user.CreatorNiches ?? reduxProfile?.creatorNiches ?? [],
           contentPlan:
             contentPlanFromOnboarding(user.onboardingPlan) ??
             contentPlanFromOnboarding(reduxProfile?.onboardingPlan) ??
@@ -213,6 +241,18 @@ export default function Onboarding() {
         }
 
         let question: CoachQuestionResponse | null = null;
+        const navState = (location.state || {}) as {
+          renewWeekPlan?: boolean;
+          fromReset?: boolean;
+          reviseOnboarding?: boolean;
+        };
+        if (navState.renewWeekPlan || navState.fromReset || navState.reviseOnboarding) {
+          if (navState.reviseOnboarding) {
+            beginOnboardingRevision();
+          } else {
+            beginWeekPlanRenewal();
+          }
+        }
         const renewing = isRenewingWeekPlan();
 
         if (renewing) {
@@ -292,7 +332,7 @@ export default function Onboarding() {
       unsubProgress();
       unsubComplete();
     };
-  }, [dispatch, navigate, reduxProfile, syncProfileFromMe]);
+  }, [dispatch, location.state, navigate, reduxProfile, syncProfileFromMe]);
 
   const progressPct = useMemo(() => {
     if (!coach) return 0;
@@ -360,12 +400,20 @@ export default function Onboarding() {
       role: "creator" as const,
       createdAt: new Date().toISOString(),
     };
+    const planRec = weekPlan as (CoachPlanResponse["plan"] & {
+      category?: string;
+      categoryLabel?: string;
+      niches?: string[];
+    }) | null;
     dispatch(
       setAuthProfile({
         ...base,
         onboardingCompleted: true,
         onboardingPlan: weekPlan,
         contentPlan: contentPlanFromOnboarding(weekPlan),
+        creatorCategory: planRec?.category ?? base.creatorCategory ?? null,
+        creatorCategoryLabel: planRec?.categoryLabel ?? planRec?.category ?? base.creatorCategoryLabel ?? null,
+        creatorNiches: planRec?.niches?.length ? planRec.niches : base.creatorNiches || [],
       }),
     );
     safeSessionStorage.setItem("finishing_onboarding", "true");
@@ -466,9 +514,25 @@ export default function Onboarding() {
           </div>
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Creator Coach</h1>
-            <p className="text-sm text-muted-foreground">Quick setup for your creator workspace</p>
+            <p className="text-sm text-muted-foreground">
+              {isRevisingOnboarding() || isRenewingWeekPlan()
+                ? "Update your niche and answers, then get a fresh week plan"
+                : "Quick setup for your creator workspace"}
+            </p>
           </div>
         </header>
+
+        {(isRevisingOnboarding() || isRenewingWeekPlan()) && !plan ? (
+          <Alert className="mb-6 border-teal-500/30 bg-teal-500/5">
+            <Sparkles className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+            <AlertTitle>Revising your onboarding</AlertTitle>
+            <AlertDescription className="text-sm leading-relaxed">
+              Pick your category and niches again, then re-answer audience, goal, posting rhythm,
+              and starting point. When you finish, we regenerate your full week plan. Published
+              content is not deleted.
+            </AlertDescription>
+          </Alert>
+        ) : null}
 
         <div className="h-1.5 rounded-full bg-muted mb-8 overflow-hidden">
           <motion.div

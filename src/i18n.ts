@@ -21,11 +21,13 @@ const resources = {
         "home_feed": "Home Feed",
         "create_hub": "Create Hub",
         "image_studio": "Image Studio",
-        "clip_editor": "Clip Editor",
+        "clip_editor": "Clip Studio",
         "content_library": "Content Library",
         "battles": "Battles",
         "admin_panel": "Admin Settings",
         "upgrade_pro": "Upgrade to Pro",
+        "upgrade_studio": "Upgrade to Studio",
+        "manage_studio": "Studio Plan",
         "tools": "Tools",
         "insights": "Insights",
         "home": "Home",
@@ -50,6 +52,12 @@ const resources = {
           "ar": "العربية"
         }
       },
+      "post": {
+        "detail": "Post details"
+      },
+      "user": {
+        "profile": "Creator profile"
+      },
       "top_bar": {
         "dashboard": "Dashboard",
         "search_placeholder": "Search actions...",
@@ -60,7 +68,7 @@ const resources = {
         "settings": "Settings",
         "theme": "Theme",
         "actions": {
-          "editor": "Open Clip Editor",
+          "editor": "Open Clip Studio",
           "studio": "Image Studio",
           "coach": "New Coach Session",
           "dashboard": "Dashboard",
@@ -87,7 +95,10 @@ const resources = {
         "header": {
           "title": "Performance Overview",
           "subtitle": "Your content is trending up across all platforms.",
-          "post_button": "Create New Post"
+          "post_button": "Create New Post",
+          "legacy_onboarding_note": "Older plan — revise niche and answers in Creator Coach to unlock full details.",
+          "revise_cta": "Revise niche & answers",
+          "niche_not_set": "Niche not set"
         },
         "performance": {
           "title": "Snapshot Performance",
@@ -156,14 +167,28 @@ const resources = {
         },
         "command": {
           "title": "AI Command Center",
-          "insight": "TikTok is your engine this week. Focus on CS2 Smoke Memes for maximum velocity.",
-          "next_best": "Next Best Actions",
-          "cta": "Execute Plan",
+          "insight": "Your discovery stack is ready: AI hooks in the first 3 seconds, polished clips from upload or I2V, and Live posts from one pipeline.",
+          "next_best": "Recommended moves",
+          "cta": "Open Create Hub",
           "actions": [
-            "Turn your latest Valorant clip into a Meme follow-up.",
-            "Post one CS2 Short tonight at 8PM for discovery.",
-            "Improve hook of your next YT Short (retention drop)."
+            "Clip Studio: animate a still (Ken Burns or AI motion), generate hooks, render, then publish.",
+            "Image Studio: create a niche meme or image — animate it into a vertical short with viral polish.",
+            "Go Live: publish to Feed and push to TikTok, Reels, Shorts, or YouTube with connected accounts."
           ]
+        },
+        "workflows": {
+          "title": "Workflow Intelligence",
+          "subtitle": "AI evaluates your recent images & clips and suggests the next best move.",
+          "empty": "Upload or generate content — intelligence will suggest I2V, hooks, and meme ideas here.",
+          "loading": "Evaluating your library…",
+          "refresh": "Refresh suggestions",
+          "evaluated": "Evaluated {{count}} assets",
+          "cached": "{{count}} cached",
+          "powered_by": "Intelligence · {{provider}}",
+          "meme_idea": "Idea",
+          "minimize": "Minimize",
+          "dock_ready": "{{count}} suggestions waiting",
+          "dock_online": "Live suggestions · tap a move to run it"
         },
         "progress": {
           "title": "Weekly Progress",
@@ -172,8 +197,15 @@ const resources = {
           "scheduled": "Scheduled",
           "review": "Review",
           "up_next": "Up Next",
-          "up_next_task": "Create Instagram Meme: CS2 Smoke Guide",
-          "open_feed": "Open Home Feed"
+          "up_next_task": "Animate a still in Clip Studio, burn a viral hook, then Go Live",
+          "open_feed": "Open Home Feed",
+          "no_plan_badge": "No plan",
+          "intro_fallback": "Your Creator Coach week plan",
+          "empty": "No coach week plan yet. Create one for daily Image Studio, Clip Studio, and Live themes.",
+          "create_plan": "Create week plan",
+          "view_full": "View full week plan",
+          "plan_new": "Plan a new week",
+          "days_badge": "{{count}} days"
         },
         "attention": {
           "title": "Attention Required",
@@ -184,11 +216,12 @@ const resources = {
             "low": "Low"
           },
           "items": {
-            "a1": { "issue": "Thumbnail CTR is dropping", "action": "Improve first 5 seconds", "cta": "Improve Hook", "impact": "Estimated -2.4K views" },
-            "a2": { "issue": "Engagement rate down on X", "action": "Overdue by 2 days", "cta": "Schedule Now", "impact": "Community dip" },
-            "a3": { "issue": "TikTok Clip Trending", "action": "Not cross-posted to Reels", "cta": "Cross-post" },
-            "a4": { "issue": "Weekly Plan Lagging", "action": "2 incomplete tasks remaining", "cta": "View Plan" }
-          }
+            "a1": { "issue": "Opening hook is weak", "action": "Generate hooks in Clip Studio (first 1–3s)", "cta": "Open Clip Studio", "impact": "Retention risk" },
+            "a2": { "issue": "Drafts waiting in pipeline", "action": "Resume Image or Clip Studio and publish", "cta": "Create Hub", "impact": "Shipping lag" },
+            "a3": { "issue": "Feed post not Live yet", "action": "Schedule Live to TikTok, Reels, Shorts, or YouTube", "cta": "Go Live", "impact": "Missed reach" },
+            "a4": { "issue": "Week plan incomplete", "action": "Finish remaining coach days or renew the plan", "cta": "View Plan", "impact": "Cadence gap" }
+          },
+          "clear": "You’re clear — keep creating and publishing."
         },
         "pulse": {
           "title": "Creator Pulse",
@@ -205,12 +238,15 @@ const resources = {
           "ready_live_hint": "On Feed — schedule social Live",
           "ready_live_empty": "Nothing waiting for Live",
           "drafts_waiting": "Drafts waiting",
-          "drafts_hint": "Resume in Creator Hub",
+          "drafts_hint": "Resume in Create Hub",
           "drafts_empty": "No drafts in the queue"
         },
         "tip": {
           "title": "Quick Strategy Tip",
-          "content": "YouTube Shorts with captions in the middle of the screen drive 12% higher retention in the gaming niche. Try adjusting your overlay in the Studio."
+          "content": "Animate a still with I2V, burn a viral hook in the first 1–3 seconds, render, then Go Live.",
+          "loading": "Generating a tip from your pipeline…",
+          "refresh": "Refresh tip",
+          "powered_by": "Realtime · {{provider}}"
         }
       },
       "create_post": {
@@ -379,7 +415,7 @@ const resources = {
         },
         "tutorial": {
           "studio": { "title": "AI Studio", "desc": "Generate high-quality gaming images and memes using our advanced AI models." },
-          "editor": { "title": "Clip Editor", "desc": "Transform your gameplay clips into viral vertical videos for TikTok and Reels." },
+          "editor": { "title": "Clip Studio", "desc": "Transform your gameplay clips into viral vertical videos for TikTok and Reels." },
           "feed": { "title": "Content Feed", "desc": "Get inspired by other gaming creators and see what's trending in your niche." }
         },
         "generating": {
@@ -405,7 +441,7 @@ const resources = {
         "cta_start": "Start Evolution",
         "cta_demo": "Watch Demo",
         "image_editor": "Image Editor",
-        "clip_editor": "Clip Editor",
+        "clip_editor": "Clip Studio",
         "analytics": "Analytics",
         "feed": "Feed",
         "imaging_detail": "AI-powered creative studio",
@@ -442,6 +478,11 @@ const resources = {
         "title": "Creator Analytics",
         "description": "Track gaming clip and meme performance across TikTok, YouTube, and Instagram.",
         "export": "Export",
+        "spotlight": {
+          "title": "Post spotlight",
+          "open_detail": "View post details",
+          "missing": "That post wasn’t found in your recent library."
+        },
         "tabs": {
           "overview": "Overview",
           "content": "Content",
@@ -762,6 +803,14 @@ const resources = {
             "active_premium": "Active (Premium)"
           },
           "next_billing": "Next Billing",
+          "next_renewal": "Next Renewal",
+          "access_until": "Access Until",
+          "renews_annually": "Renews annually",
+          "renews_monthly": "Renews monthly",
+          "interval": {
+            "annual": "Annual",
+            "monthly": "Monthly"
+          },
           "na": "N/A",
           "upgrade": "Upgrade to Pro",
           "cancel": "Cancel Subscription",
@@ -790,7 +839,9 @@ const resources = {
         "finish_setup": "Finish Setup",
         "takes_less_than": "Takes less than 2 mins",
         "tabs": {
-          "posts": "Posts",
+          "posts": "Published",
+          "published": "Published",
+          "live": "Live Posts",
           "scheduled": "Scheduled",
           "plan": "Strategy — Weekly Plan",
           "liked": "Liked",
@@ -805,12 +856,26 @@ const resources = {
         },
         "no_bio": "No bio yet. Add one to tell your story!",
         "no_niches": "No content niches added yet.",
+        "niche_not_tagged": "Niche not tagged on this plan — revise in Creator Coach.",
         "strategy": {
           "title": "7-Day Content Strategy",
           "growth_mode": "Growth Mode",
           "community_mode": "Community Mode",
           "no_plan": "No content plan found. Complete onboarding to generate one!",
-          "start_onboarding": "Start Onboarding"
+          "start_onboarding": "Start Onboarding",
+          "onboarding_title": "Onboarding details",
+          "onboarding_subtitle": "What you told Creator Coach — category, niches, and answers.",
+          "legacy_answers_note": "Your saved plan includes category and niches only. Revise through Creator Coach to update your niche and re-answer audience, goal, posting rhythm, and starting point — then get a fresh week plan.",
+          "legacy_answers_cta": "Revise niche & answers",
+          "revise_cta": "Revise niche & answers",
+          "fields": {
+            "category": "Category",
+            "niches": "Niches",
+            "audience": "Audience",
+            "goal": "Goal",
+            "frequency": "Posting rhythm",
+            "start": "Starting point"
+          }
         },
         "actions": {
           "follow": "Follow",
@@ -842,9 +907,12 @@ const resources = {
           "bio_desc": "A short description of yourself and your content",
           "bio_placeholder": "Tell us about your content and audience...",
           "social_links_label": "Social Channels",
-          "social_links_desc": "Connect platforms with OAuth to publish Live and pull stats (coming soon).",
+          "social_links_desc": "Connect YouTube, Instagram, Facebook, or TikTok to post Live and pull stats. Google Sign-In is not a YouTube connect.",
           "connect_btn": "Connect",
           "connected_btn": "Connected",
+          "disconnect_btn": "Disconnect",
+          "disconnect_title": "Disconnect this channel?",
+          "disconnect_confirm": "Disconnect {{platform}}? You will need to connect it again to post Live to this channel.",
           "oauth_coming_soon": "OAuth coming soon",
           "twitch_placeholder": "Twitch Username",
           "youtube_placeholder": "YouTube Channel",
@@ -852,7 +920,7 @@ const resources = {
           "twitter_placeholder": "Twitter Handle",
           "tiktok_placeholder": "TikTok Handle",
           "games_label": "Content Niches",
-          "games_desc": "Pick niches that match your Creator Coach categories — Gaming, Lifestyle, Travel, Food, Cooking, and more.",
+          "games_desc": "Pick niches that match your Creator Coach categories — Gaming, Lifestyle, Travel, Food, Cooking, Quiet Luxury, Gourmet Culinary, Fashion, Interior Design, and Futuristic Digital.",
           "no_niches": "No niches added yet...",
           "custom_niche_placeholder": "Add custom niches...",
           "popular_suggestions": "Popular Suggestions",
@@ -1381,6 +1449,9 @@ const resources = {
         "save_library": "Save to Library"
       },
       "clip_editor": {
+        "header": {
+          "subtitle": "Upload and edit short-form clips."
+        },
         "steps": {
           "upload": "Upload",
           "trim": "Trim",
@@ -1401,24 +1472,76 @@ const resources = {
         "trim": {
           "calculating": "Calculating Smart Trim...",
           "scanning": "AI Scanning...",
-          "action_moments": "Identifying peak action moments",
-          "analyzing_cues": "Analyzing audio & visual cues",
+          "action_moments": "Finding the strongest beats to keep",
+          "analyzing_cues": "Reading the clip for hook, peak, and close",
           "timeline_trimmer": "Timeline Trimmer",
           "ai_scan": "AI Scan",
-          "ai_scan_tooltip": "AI analyzes your clip to identify and marker high-energy moments like kills, celebrations, or intense action.",
+          "ai_scan_tooltip": "Finds the strongest moments in your clip (hook, peak, close) and marks them on the timeline so you can trim around them.",
+          "ai_scan_tooltip_niche": "Finds the strongest beats in this {{category}} clip and marks them on the timeline so you can trim around them.",
+          "scan_found": "Marked {{count}} highlight beats on the timeline",
+          "scan_found_hint": "Hook = start, peak = keep, close = end. Handles snap to these marks.",
+          "scan_fallback": "Placed generic beats on this clip so you can still trim.",
+          "scan_results": "Highlight beats",
+          "scan_help": "These marks are the story of the clip: open on the hook, keep the peak, cut after the close. Click a beat to jump there. Drag handles snap to them.",
+          "scan_empty": "AI Scan marks hook, peak, and close so you know what to keep — it does not cut the clip by itself.",
+          "trim_to_beats": "Trim to these beats",
+          "trim_to_beats_done": "Keep range set from opening beat to close",
+          "marker_roles": {
+            "hook": "Open here — first beat that stops the scroll",
+            "build": "Keep this rise — energy is climbing",
+            "peak": "Protect this payoff — the moment people rewind",
+            "close": "End here — last beat before it goes cold",
+            "clutch": "Protect this clutch",
+            "win": "End on the win",
+            "kill": "Protect this peak hit",
+            "victory": "End on the victory",
+            "prep": "Keep the setup",
+            "plating": "Protect the plate-up",
+            "taste": "End on the reaction",
+            "arrival": "Open on arrival",
+            "vista": "Protect the view",
+            "moment": "Keep this moment",
+            "effort": "Keep the work",
+            "finish": "End on the finish",
+            "point": "Keep the key point",
+            "punchline": "Protect the punchline",
+            "look": "Keep the look",
+            "detail": "Protect the detail"
+          },
           "ai_smart_trim": "AI Smart Trim",
           "ai_smart_trim_tooltip": "Automatically suggests the perfect start and end points based on peak engagement metrics and visual cues.",
           "precision_trim": "Precision Trim",
           "zoom": "Zoom",
           "apply_continue": "Apply Trim & Continue",
           "markers": {
-            "action_start": "Action Start",
-            "kill": "Kill",
+            "action_start": "Hook",
+            "kill": "Peak",
             "clutch": "Clutch",
-            "victory": "Victory"
+            "victory": "Close",
+            "hook": "Hook",
+            "build": "Build",
+            "peak": "Peak",
+            "close": "Close",
+            "win": "Win",
+            "prep": "Prep",
+            "plating": "Plating",
+            "taste": "Taste",
+            "arrival": "Arrival",
+            "vista": "Vista",
+            "moment": "Moment",
+            "effort": "Effort",
+            "finish": "Finish",
+            "point": "Point",
+            "punchline": "Punchline",
+            "look": "Look",
+            "detail": "Detail"
           },
           "ai_suggestion": "AI Suggestion",
-          "apply_ai_trim": "Apply AI Trim"
+          "apply_ai_trim": "Apply AI Trim",
+          "trim_help": "Drag the handles to choose which part of the clip to keep.",
+          "keep_from": "Keep from",
+          "keep_to": "Keep to",
+          "clip_length": "Length"
         },
         "polish": {
           "editor": "Editor",
@@ -1427,7 +1550,8 @@ const resources = {
           "insane_clutch": "INSANE CLUTCH!",
           "tabs": {
             "details": "Details",
-            "meme": "Meme",
+            "meme": "Captions",
+            "captions": "Captions",
             "audio": "Audio",
             "enhance": "Enhance"
           },
@@ -1435,7 +1559,7 @@ const resources = {
             "title": "Clip Details",
             "duration": "Duration",
             "change": "Change",
-            "context_label": "Creation Prompt / Context",
+            "context_label": "AI writing context",
             "context_placeholder": "e.g., Epic 1v5 clutch in Valorant...",
             "context_help": "This helps AI generate better titles and captions.",
             "clip_title": "Clip Title",
@@ -1446,19 +1570,29 @@ const resources = {
             "ai_generate": "Generate with AI",
             "caption_tooltip": "Drafts multiple social-ready captions with relevant hashtags and calls-to-action.",
             "caption_placeholder": "Add a caption for your post...",
-            "ai_suggestions_label": "AI Suggestions"
+            "ai_suggestions_label": "AI Suggestions",
+            "hashtags": "Hashtags",
+            "hashtags_placeholder": "Add #hashtag and press Enter",
+            "generate_hooks": "Generate hooks",
+            "viral_hooks": "Viral hooks",
+            "cut_silence": "Cut dead air (silence)"
           },
           "meme": {
-            "title": "Meme Maker",
+            "title": "Captions / Overlays",
             "beta": "Beta",
             "top_text": "Top Text",
             "top_placeholder": "ENTER TOP TEXT",
             "bottom_text": "Bottom Text",
             "bottom_placeholder": "ENTER BOTTOM TEXT",
+            "drag_hint": "Drag top and bottom text on the preview to place them. Download/Render burns the same positions.",
             "caption_style": "Caption Style",
+            "caption_font": "Caption font",
             "pro_tip": "Pro Tip",
             "tip_content": "Meme text works best with short, punchy captions. Use 'Impact' for that classic viral look!",
             "styles": {
+              "kinetic": "Kinetic (Hormozi)",
+              "clean": "Clean subtitle",
+              "impact_meme": "Impact meme",
               "impact": "Impact (Classic)",
               "modern": "Modern Sans",
               "classic": "Classic Serif",
@@ -1472,17 +1606,29 @@ const resources = {
             "original_clip": "Original Clip",
             "bg_music": "Background Music",
             "sound_library": "Sound Library",
-            "previews": "15s Previews"
+            "previews": "15s Previews",
+            "play_mix": "Play clip + music mix",
+            "mix_hint": "Tap Play on the preview to hear clip audio plus BGM only when a track is selected. Final Output scales both, including above 100%.",
+            "animate_no_source": "Animated clips often have no source audio — raise BGM or keep this low."
           },
           "enhance": {
             "title": "AI Enhancements",
             "beta": "Beta",
+            "preview_now": "Live preview",
+            "live_preview": "Live preview",
+            "preview_hint": "Watch the 9:16 preview. Play the clip, toggle noise reduction, drag color, then Compare original.",
+            "compare_original": "Compare original",
+            "comparing": "Showing original",
+            "color_pct": "Color {{pct}}%",
+            "noise_on": "Noise reduced",
             "audio_polish": "Audio Polish",
-        "noise_reduction": "Background Noise Reduction",
-        "voice_isolation": "AI Voice Isolation",
-        "noise_reduction_desc": "Automatically isolates voice and removes background hum, keyboard clicks, and fan noise.",
-            "noise_reduction_tooltip": "AI-powered frequency isolation that separates voice from distracting background sounds like system fans or keyboard chatter.",
+            "audio_polish_hint": "Cuts rumble and hiss and lifts the voice. Play, toggle this, then Compare original.",
+            "noise_reduction": "Background Noise Reduction",
+            "voice_isolation": "Voice isolation",
+            "noise_reduction_desc": "Automatically isolates voice and removes background hum, keyboard clicks, and fan noise.",
+            "noise_reduction_tooltip": "High-pass, hiss cut, and voice lift on the clip mix. Play the preview to hear it.",
             "visual_polish": "Visual Polish",
+            "visual_polish_hint": "Drag toward Vibrant — saturation and contrast update on the 9:16 preview immediately.",
             "auto_applied": "Auto Applied",
             "auto_correct": "Auto Correct",
             "auto_correct_tooltip": "Instantly balances exposure, contrast, and saturation to professional standards using AI analysis.",
@@ -1495,29 +1641,51 @@ const resources = {
             "transitions_tooltip": "Finds the best moments for cinematic transitions and suggests appropriate visual effects and sound SFX.",
             "no_transitions": "No transitions suggested yet. Let AI analyze your clip for the best flow.",
             "coach_title": "Creator Coach",
-            "coach_tip": "Adding a 'Zoom Blur' transition at the 0:15 mark will emphasize your clutch moment and increase viewer retention.",
-            "apply_btn": "Apply"
+            "coach_tip": "Adding a '{{type}}' transition at {{time}} hits the peak beat in this {{duration}} clip.",
+            "coach_tip_empty": "This clip is {{duration}}. Tap Analyze Clip for transition beats that fit inside it.",
+            "coach_tip_pick": "Adding a '{{type}}' transition at {{time}} hits the peak beat in this {{duration}} clip.",
+            "apply_btn": "Apply",
+            "applied_btn": "Replay",
+            "transition_preview": "Previewing {{type}} at {{time}}",
+            "transition_preview_note": "Preview is live on the 9:16 player. Burn-in in the export is coming next."
+          },
+          "publish_preview": {
+            "title": "Review post",
+            "subtitle": "This is what goes live on your feed and selected socials.",
+            "no_preview": "No preview",
+            "hook": "Hook",
+            "feed_only": "NxClip feed only — no social accounts selected.",
+            "confirm": "Publish now",
+            "publishing": "Publishing..."
           },
           "actions": {
             "publish": "Publish Clip",
             "download": "Download HD (.mp4)",
-            "publish_socials": "Publish to TikTok & Reels"
+            "publish_socials": "Publish to feed",
           }
         },
         "overlays": {
           "review_title": "Reviewing Selection",
-          "review_desc": "Taking a quick look at your {{duration}} clip before we polish it.",
+          "review_desc": "Playing your {{duration}} keep range once, then we transcribe and write captions for real.",
           "cancel": "Cancel",
-          "skip_polish": "Skip & Polish",
+          "skip_polish": "Continue to AI polish",
           "polishing_title": "Polishing Your Clip",
-          "polishing_desc": "Our AI is enhancing your content for maximum engagement.",
+          "polishing_desc": "Saving the trim, then running transcription, captions, and effects on this clip.",
           "steps": {
             "transcribing": "Transcribing audio (Whisper)",
-            "transcribing_sub": "Finding your words...",
+            "transcribing_sub": "Sending the clip to speech-to-text…",
+            "transcribing_queued": "Queued speech-to-text…",
+            "transcribing_wait": "Listening for words… {{attempt}}/{{attempts}}",
+            "transcribing_done": "Transcript ready",
+            "transcribing_empty": "No speech detected — continuing",
+            "transcribing_slow": "Still processing — you can transcribe again on Captions",
+            "transcribing_fail": "Transcription skipped",
             "generating_captions": "Generating captions",
-            "generating_captions_sub": "Adding captions...",
-            "suggesting_effects": "Suggesting effects",
-            "suggesting_effects_sub": "Detecting highlights..."
+            "generating_captions_sub": "Writing social caption and hashtags…",
+            "captions_done": "Caption and hashtags drafted",
+            "suggesting_effects": "Suggesting hooks and transitions",
+            "suggesting_effects_sub": "Finding hooks and transition beats…",
+            "effects_done": "Hooks and transition beats ready"
           },
           "overall_progress": "Overall Progress"
         }
@@ -1636,7 +1804,7 @@ const resources = {
             "description": "Generate high-quality gaming images and memes from text prompts."
           },
           "clip_editor": {
-            "title": "Clip Editor",
+            "title": "Clip Studio",
             "description": "Upload your gameplay, trim highlights, and add AI-powered polish."
           },
           "meme_gen": {
@@ -2030,11 +2198,13 @@ const resources = {
         "home_feed": "موجز الصفحة الرئيسية",
         "create_hub": "مركز الإنشاء",
         "image_studio": "استوديو الصور",
-        "clip_editor": "محرر المقاطع",
+        "clip_editor": "استوديو المقاطع",
         "content_library": "مكتبة المحتوى",
         "battles": "المعارك",
         "admin_panel": "إعدادات الإدارة",
         "upgrade_pro": "الترقية إلى برو",
+        "upgrade_studio": "الترقية إلى ستوديو",
+        "manage_studio": "خطة ستوديو",
         "tools": "الأدوات",
         "insights": "رؤى",
         "home": "الرئيسية",
@@ -2059,6 +2229,12 @@ const resources = {
           "ar": "العربية"
         }
       },
+      "post": {
+        "detail": "تفاصيل المنشور"
+      },
+      "user": {
+        "profile": "ملف المنشئ"
+      },
       "top_bar": {
         "dashboard": "لوحة التحكم",
         "search_placeholder": "البحث في الإجراءات...",
@@ -2069,7 +2245,7 @@ const resources = {
         "settings": "الإعدادات",
         "theme": "المظهر",
         "actions": {
-          "editor": "افتح محرر المقاطع",
+          "editor": "افتح استوديو المقاطع",
           "studio": "استوديو الصور",
           "coach": "جلسة مدرب جديدة",
           "dashboard": "لوحة التحكم",
@@ -2096,7 +2272,10 @@ const resources = {
         "header": {
           "title": "نظرة عامة على الأداء",
           "subtitle": "المحتوى الخاص بك في اتجاه تصاعدي عبر جميع المنصات.",
-          "post_button": "إنشاء منشور جديد"
+          "post_button": "إنشاء منشور جديد",
+          "legacy_onboarding_note": "خطة قديمة — راجع التخصص والإجابات في مدرب المنشئين لفتح التفاصيل الكاملة.",
+          "revise_cta": "راجع التخصص والإجابات",
+          "niche_not_set": "لم يتم تعيين التخصص"
         },
         "performance": {
           "title": "لقطة سريعة للأداء",
@@ -2165,14 +2344,28 @@ const resources = {
         },
         "command": {
           "title": "مركز قيادة الذكاء الاصطناعي",
-          "insight": "TikTok هو محركك هذا الأسبوع. ركز على ميمات CS2 Smoke لأقصى قدر من السرعة.",
-          "next_best": "الإجراءات التالية الأفضل",
-          "cta": "تنفيذ الخطة",
+          "insight": "منظومة الاكتشاف جاهزة: خطافات ذكية في أول 3 ثوانٍ، مقاطع مصقولة من الرفع أو I2V، ونشر Live من مسار واحد.",
+          "next_best": "خطوات موصى بها",
+          "cta": "افتح مركز الإنشاء",
           "actions": [
-            "حوّل أحدث مقطع Valorant إلى متابعة ميم.",
-            "انشر مقطع CS2 Short الليلة في الساعة 8 مساءً للاكتشاف.",
-            "حسن خطاف مقطع YT Short القادم (انخفاض الاحتفاظ)."
+            "استوديو المقاطع: حرّك صورة ثابتة (Ken Burns أو I2V)، أنشئ خطافات، اعرض، ثم انشر.",
+            "استوديو الصور: أنشئ ميمًا أو صورة لمجالك — حوّلها إلى مقطع عمودي مع تحسين فيروسي.",
+            "Go Live: انشر في الموجز وادفع إلى TikTok أو Reels أو Shorts أو YouTube عبر حساباتك المتصلة."
           ]
+        },
+        "workflows": {
+          "title": "ذكاء سير العمل",
+          "subtitle": "يقيّم الذكاء الاصطناعي صورك ومقاطعك ويقترح الخطوة التالية الأفضل.",
+          "empty": "ارفع أو أنشئ محتوى — سيقترح الذكاء I2V والخطافات وأفكار الميم هنا.",
+          "loading": "جارٍ تقييم مكتبتك…",
+          "refresh": "تحديث الاقتراحات",
+          "evaluated": "تم تقييم {{count}} عنصرًا",
+          "cached": "{{count}} من الذاكرة المؤقتة",
+          "powered_by": "الذكاء · {{provider}}",
+          "meme_idea": "فكرة",
+          "minimize": "تصغير",
+          "dock_ready": "{{count}} اقتراحات بانتظارك",
+          "dock_online": "اقتراحات مباشرة · اضغط لتنفيذ الخطوة"
         },
         "progress": {
           "title": "التقدم الأسبوعي",
@@ -2181,8 +2374,15 @@ const resources = {
           "scheduled": "مجدول",
           "review": "مراجعة",
           "up_next": "التالي",
-          "up_next_task": "إنشاء ميم Instagram: دليل دخان CS2",
-          "open_feed": "افتح الموجز الرئيسي"
+          "up_next_task": "حرّك صورة في استوديو المقاطع، أضف خطافًا فيروسيًا، ثم انشر Live",
+          "open_feed": "افتح الموجز الرئيسي",
+          "no_plan_badge": "لا توجد خطة",
+          "intro_fallback": "خطة أسبوع مدرب المنشئين",
+          "empty": "لا توجد خطة أسبوع بعد. أنشئ واحدة لمواضيع يومية لاستوديو الصور والمقاطع والنشر Live.",
+          "create_plan": "إنشاء خطة أسبوع",
+          "view_full": "عرض خطة الأسبوع كاملة",
+          "plan_new": "خطة أسبوع جديدة",
+          "days_badge": "{{count}} أيام"
         },
         "attention": {
           "title": "تحتاج للاهتمام",
@@ -2193,11 +2393,12 @@ const resources = {
             "low": "منخفض"
           },
           "items": {
-            "a1": { "issue": "نسبة النقر للظهور تتناقص", "action": "تحسين أول 5 ثوانٍ", "cta": "تحسين الخطاف", "impact": "خسارة تقديرية 2.4 ألف مشاهدة" },
-            "a2": { "issue": "معدل التفاعل منخفض على X", "action": "تأخر لمدة يومين", "cta": "الجدولة الآن", "impact": "انخفاض في المجتمع" },
-            "a3": { "issue": "مقطع TikTok الرائج", "action": "لم يتم نشره في Reels", "cta": "نشر مشترك" },
-            "a4": { "issue": "تأخر الخطة الأسبوعية", "action": "يتبقى مهمتان غير مكتملتين", "cta": "عرض الخطة" }
-          }
+            "a1": { "issue": "خطاف الافتتاح ضعيف", "action": "أنشئ خطافات في استوديو المقاطع (أول 1–3 ثوانٍ)", "cta": "افتح استوديو المقاطع", "impact": "خطر على الاحتفاظ" },
+            "a2": { "issue": "مسودات بانتظارك في المسار", "action": "تابع في استوديو الصور أو المقاطع ثم انشر", "cta": "مركز الإنشاء", "impact": "تأخر النشر" },
+            "a3": { "issue": "منشور الموجز لم يُنشر Live بعد", "action": "جدوِل Live إلى TikTok أو Reels أو Shorts أو YouTube", "cta": "Go Live", "impact": "وصول ضائع" },
+            "a4": { "issue": "خطة الأسبوع غير مكتملة", "action": "أكمل أيام المدرب المتبقية أو جدد الخطة", "cta": "عرض الخطة", "impact": "فجوة في الإيقاع" }
+          },
+          "clear": "كل شيء على ما يرام — واصل الإنشاء والنشر."
         },
         "pulse": {
           "title": "نبض المنشئ",
@@ -2214,12 +2415,15 @@ const resources = {
           "ready_live_hint": "على الخلاصة — جدوِل البث على الشبكات",
           "ready_live_empty": "لا شيء بانتظار البث",
           "drafts_waiting": "مسودات بانتظارك",
-          "drafts_hint": "تابع في مركز المنشئ",
+          "drafts_hint": "تابع في مركز الإنشاء",
           "drafts_empty": "لا توجد مسودات في القائمة"
         },
         "tip": {
           "title": "نصيحة استراتيجية سريعة",
-          "content": "تحقق مقاطع YouTube القصيرة التي تحتوي على تسميات توضيحية في منتصف الشاشة احتفاظاً أعلى بنسبة 12% في مجال الألعاب. جرب تعديل التراكب في الاستوديو."
+          "content": "حرّك صورة ثابتة بـ I2V، أضف خطافًا في أول 1–3 ثوانٍ، ثم صدّر المقطع وانشره Live.",
+          "loading": "جاري توليد نصيحة من مسار محتواك…",
+          "refresh": "تحديث النصيحة",
+          "powered_by": "فوري · {{provider}}"
         }
       },
       "hero": {
@@ -2230,7 +2434,7 @@ const resources = {
         "cta_start": "ابدأ التطور",
         "cta_demo": "شاهد العرض",
         "image_editor": "محرر الصور",
-        "clip_editor": "محرر المقاطع",
+        "clip_editor": "استوديو المقاطع",
         "analytics": "التحليلات",
         "feed": "الموجز",
         "imaging_detail": "استوديو إبداعي مدعوم بالذكاء الاصطناعي",
@@ -2267,6 +2471,11 @@ const resources = {
         "title": "تحليلات منشئ المحتوى",
         "description": "تتبع أداء مقاطع الألعاب والميمات عبر TikTok و YouTube و Instagram.",
         "export": "تصدير",
+        "spotlight": {
+          "title": "أداء المنشور",
+          "open_detail": "عرض تفاصيل المنشور",
+          "missing": "لم يتم العثور على هذا المنشور في مكتبتك الأخيرة."
+        },
         "tabs": {
           "overview": "نظرة عامة",
           "content": "المحتوى",
@@ -2587,6 +2796,14 @@ const resources = {
             "active_premium": "نشط (مميز)"
           },
           "next_billing": "الفاتورة القادمة",
+          "next_renewal": "التجديد القادم",
+          "access_until": "الوصول حتى",
+          "renews_annually": "يتجدد سنوياً",
+          "renews_monthly": "يتجدد شهرياً",
+          "interval": {
+            "annual": "سنوي",
+            "monthly": "شهري"
+          },
           "na": "غير متاح",
           "upgrade": "الترقية إلى برو",
           "cancel": "إلغاء الاشتراك",
@@ -2615,7 +2832,10 @@ const resources = {
         "finish_setup": "إنهاء الإعداد",
         "takes_less_than": "يستغرق أقل من دقيقتين",
         "tabs": {
-          "posts": "المنشورات",
+          "posts": "المنشورة",
+          "published": "المنشورة",
+          "live": "المنشورات المباشرة",
+          "scheduled": "المجدول",
           "plan": "الاستراتيجية",
           "liked": "المعجب بها",
           "saved": "المحفوظة"
@@ -2629,12 +2849,26 @@ const resources = {
         },
         "no_bio": "لا يوجد نبذة شخصية بعد. أضف واحدة لتروي قصتك!",
         "no_niches": "لم يتم إضافة مجالات ألعاب بعد.",
+        "niche_not_tagged": "لم يُوسَم التخصص على هذه الخطة — راجعه في مدرب المنشئين.",
         "strategy": {
           "title": "استراتيجية المحتوى لمدة 7 أيام",
           "growth_mode": "وضع النمو",
           "community_mode": "وضع المجتمع",
           "no_plan": "لم يتم العثور على خطة محتوى. أكمل التهيئة لتوليد واحدة!",
-          "start_onboarding": "ابدأ التهيئة"
+          "start_onboarding": "ابدأ التهيئة",
+          "onboarding_title": "تفاصيل التهيئة",
+          "onboarding_subtitle": "ما أخبرت به مدرب المنشئين — الفئة والتخصصات والإجابات.",
+          "legacy_answers_note": "خطتك المحفوظة تتضمن الفئة والتخصصات فقط. راجع عبر مدرب المنشئين لتحديث تخصصك وإعادة الإجابة عن الجمهور والهدف والإيقاع ونقطة البداية — ثم احصل على خطة أسبوع جديدة.",
+          "legacy_answers_cta": "راجع التخصص والإجابات",
+          "revise_cta": "راجع التخصص والإجابات",
+          "fields": {
+            "category": "الفئة",
+            "niches": "التخصصات",
+            "audience": "الجمهور",
+            "goal": "الهدف",
+            "frequency": "إيقاع النشر",
+            "start": "نقطة البداية"
+          }
         },
         "actions": {
           "follow": "متابعة",
@@ -2648,6 +2882,7 @@ const resources = {
           "display_name": "اسم العرض",
           "bio": "النبذة الشخصية",
           "games": "مجالات الألعاب",
+          "avatar": "صورة الملف الشخصي",
           "socials": "روابط التواصل الاجتماعي",
           "onboarding": "التهيئة"
         },
@@ -2665,9 +2900,12 @@ const resources = {
           "bio_desc": "وصف قصير لنفسك ولمحتواك",
           "bio_placeholder": "أخبرنا عن رحلتك في الألعاب...",
           "social_links_label": "قنوات التواصل الاجتماعي",
-          "social_links_desc": "اربط المنصات عبر OAuth للنشر المباشر وسحب الإحصائيات (قريبًا).",
+          "social_links_desc": "اربط YouTube أو Instagram أو Facebook أو TikTok للنشر المباشر وسحب الإحصائيات. تسجيل الدخول عبر Google ليس ربطًا لـ YouTube.",
           "connect_btn": "ربط",
           "connected_btn": "متصل",
+          "disconnect_btn": "قطع الاتصال",
+          "disconnect_title": "قطع اتصال هذه القناة؟",
+          "disconnect_confirm": "قطع اتصال {{platform}}؟ ستحتاج إلى ربطها مرة أخرى للنشر المباشر على هذه القناة.",
           "oauth_coming_soon": "OAuth قادم قريبًا",
           "twitch_placeholder": "اسم مستخدم Twitch",
           "youtube_placeholder": "قناة YouTube",
@@ -2675,7 +2913,7 @@ const resources = {
           "twitter_placeholder": "حساب Twitter",
           "tiktok_placeholder": "حساب TikTok",
           "games_label": "تخصصات المحتوى",
-          "games_desc": "اختر التخصصات التي تطابق فئات Creator Coach — الألعاب، نمط الحياة، السفر، الطعام، الطبخ والمزيد.",
+          "games_desc": "اختر التخصصات التي تطابق فئات Creator Coach — الألعاب، نمط الحياة، السفر، الطعام، الطبخ، الفخامة الهادئة، المطبخ الراقي، الأزياء، التصميم الداخلي، والمستقبل الرقمي.",
           "no_niches": "لم يتم إضافة تخصصات بعد...",
           "custom_niche_placeholder": "أضف تخصصات مخصصة...",
           "popular_suggestions": "اقتراحات شائعة",
@@ -3204,6 +3442,9 @@ const resources = {
         "save_library": "حفظ في المكتبة"
       },
       "clip_editor": {
+        "header": {
+          "subtitle": "قم بتحميل وتحرير المقاطع القصيرة."
+        },
         "steps": {
           "upload": "رفع",
           "trim": "قص",
@@ -3224,24 +3465,76 @@ const resources = {
         "trim": {
           "calculating": "جاري حساب القص الذكي...",
           "scanning": "جاري المسح بالذكاء الاصطناعي...",
-          "action_moments": "تحديد لحظات ذروة الإثارة",
-          "analyzing_cues": "تحليل الإشارات الصوتية والبصرية",
+          "action_moments": "جاري إيجاد أقوى اللحظات للاحتفاظ بها",
+          "analyzing_cues": "قراءة المقطع للافتتاح والذروة والخاتمة",
           "timeline_trimmer": "أداة قص الجدول الزمني",
           "ai_scan": "مسح الذكاء الاصطناعي",
-          "ai_scan_tooltip": "يحلل الذكاء الاصطناعي مقطعك لتحديد وتمييز اللحظات عالية الطاقة مثل القتلات أو الاحتفالات أو الإثارة الشديدة.",
+          "ai_scan_tooltip": "يجد أقوى اللحظات في مقطعك (افتتاح، ذروة، خاتمة) ويعلّمها على الخط الزمني لتقص حولها.",
+          "ai_scan_tooltip_niche": "يجد أقوى اللحظات في مقطع {{category}} ويعلّمها على الخط الزمني لتقص حولها.",
+          "scan_found": "تم تعليم {{count}} لحظات على الخط الزمني",
+          "scan_found_hint": "الافتتاح = البداية، الذروة = احتفظ بها، الخاتمة = النهاية. المقابض تلتصق بهذه العلامات.",
+          "scan_fallback": "وُضعت علامات عامة على هذا المقطع لتتمكن من القص.",
+          "scan_results": "لحظات بارزة",
+          "scan_help": "هذه العلامات هي قصة المقطع: ابدأ من الافتتاح، احتفظ بالذروة، واقطع بعد الخاتمة. اضغط لحظة للانتقال إليها.",
+          "scan_empty": "فحص الذكاء الاصطناعي يضع الافتتاح والذروة والخاتمة لتعرف ماذا تبقي — ولا يقص المقطع تلقائياً.",
+          "trim_to_beats": "قص إلى هذه اللحظات",
+          "trim_to_beats_done": "تم ضبط نطاق الاحتفاظ من الافتتاح إلى الخاتمة",
+          "marker_roles": {
+            "hook": "ابدأ هنا — أول لحظة توقف التمرير",
+            "build": "احتفظ بهذا الصعود",
+            "peak": "احمِ هذه الذروة",
+            "close": "أنهِ هنا",
+            "clutch": "احمِ هذه اللحظة الحاسمة",
+            "win": "أنهِ على الفوز",
+            "kill": "احمِ هذه الضربة",
+            "victory": "أنهِ على الانتصار",
+            "prep": "احتفظ بالتحضير",
+            "plating": "احمِ لحظة التقديم",
+            "taste": "أنهِ على رد الفعل",
+            "arrival": "ابدأ بالوصول",
+            "vista": "احمِ المنظر",
+            "moment": "احتفظ بهذه اللحظة",
+            "effort": "احتفظ بالعمل",
+            "finish": "أنهِ على الختام",
+            "point": "احتفظ بالنقطة الأساسية",
+            "punchline": "احمِ خاتمة الكلام",
+            "look": "احتفظ بالإطلالة",
+            "detail": "احمِ التفصيل"
+          },
           "ai_smart_trim": "قص ذكي بالذكاء الاصطناعي",
           "ai_smart_trim_tooltip": "يقترح تلقائياً نقاط البداية والنهاية المثالية بناءً على مقاييس التفاعل القصوى والإشارات البصرية.",
           "precision_trim": "قص دقيق",
           "zoom": "تكبير",
           "apply_continue": "تطبيق القص والمتابعة",
           "markers": {
-            "action_start": "بداية الحركة",
-            "kill": "قتلة",
-            "clutch": "كلتش",
-            "victory": "نصر"
+            "action_start": "افتتاح",
+            "kill": "ذروة",
+            "clutch": "لحظة حاسمة",
+            "victory": "خاتمة",
+            "hook": "افتتاح",
+            "build": "بناء",
+            "peak": "ذروة",
+            "close": "خاتمة",
+            "win": "فوز",
+            "prep": "تحضير",
+            "plating": "تقديم",
+            "taste": "تذوق",
+            "arrival": "وصول",
+            "vista": "منظر",
+            "moment": "لحظة",
+            "effort": "جهد",
+            "finish": "ختام",
+            "point": "نقطة",
+            "punchline": "خاتمة الكلام",
+            "look": "إطلالة",
+            "detail": "تفصيل"
           },
           "ai_suggestion": "اقتراح الذكاء الاصطناعي",
-          "apply_ai_trim": "تطبيق القص الذكي"
+          "apply_ai_trim": "تطبيق القص الذكي",
+          "trim_help": "اسحب المقابض لاختيار الجزء الذي تريد الاحتفاظ به من المقطع.",
+          "keep_from": "الاحتفاظ من",
+          "keep_to": "الاحتفاظ إلى",
+          "clip_length": "المدة"
         },
         "polish": {
           "editor": "المحرر",
@@ -3250,7 +3543,8 @@ const resources = {
           "insane_clutch": "لقطة جنونية!",
           "tabs": {
             "details": "التفاصيل",
-            "meme": "ميم",
+            "meme": "التعليقات",
+            "captions": "التعليقات",
             "audio": "الصوت",
             "enhance": "تحسين"
           },
@@ -3258,7 +3552,7 @@ const resources = {
             "title": "تفاصيل المقطع",
             "duration": "المدة",
             "change": "تغيير",
-            "context_label": "سياق / موجه الإنشاء",
+            "context_label": "سياق الكتابة بالذكاء الاصطناعي",
             "context_placeholder": "مثال: لقطة 1 ضد 5 ملحمية في Valorant...",
             "context_help": "هذا يساعد الذكاء الاصطناعي على إنشاء عناوين وتعليقات توضيحية أفضل.",
             "clip_title": "عنوان المقطع",
@@ -3269,19 +3563,29 @@ const resources = {
             "ai_generate": "إنشاء بالذكاء الاصطناعي",
             "caption_tooltip": "يصيغ تعليقات متعددة جاهزة لمنصات التواصل الاجتماعي مع الوسوم المناسبة ودعوات اتخاذ إجراء.",
             "caption_placeholder": "أضف تعليقاً لمنشورك...",
-            "ai_suggestions_label": "اقتراحات الذكاء الاصطناعي"
+            "ai_suggestions_label": "اقتراحات الذكاء الاصطناعي",
+            "hashtags": "الوسوم",
+            "hashtags_placeholder": "أضف #وسم واضغط Enter",
+            "generate_hooks": "إنشاء خطافات",
+            "viral_hooks": "خطافات فيروسية",
+            "cut_silence": "قص الصمت (الهواء الميت)"
           },
           "meme": {
-            "title": "صانع الميمات",
+            "title": "التعليقات / الطبقات",
             "beta": "تجريبي",
             "top_text": "النص العلوي",
             "top_placeholder": "أدخل النص العلوي",
             "bottom_text": "النص السفلي",
             "bottom_placeholder": "أدخل النص السفلي",
+            "drag_hint": "اسحب النص العلوي والسفلي على المعاينة لوضعهما. التحميل/التصدير يحرق نفس المواضع.",
             "caption_style": "نمط التعليق",
+            "caption_font": "خط التعليق",
             "pro_tip": "نصيحة احترافية",
             "tip_content": "نصوص الميمات تعمل بشكل أفضل مع التعليقات القصيرة والقوية. استخدم 'Impact' للحصول على هذا المظهر الشائع الكلاسيكي!",
             "styles": {
+              "kinetic": "حركي (هورموزي)",
+              "clean": "ترجمة نظيفة",
+              "impact_meme": "إمباكت ميم",
               "impact": "إمباكت (كلاسيكي)",
               "modern": "سانس حديث",
               "classic": "سيريف كلاسيكي",
@@ -3295,17 +3599,29 @@ const resources = {
             "original_clip": "المقطع الأصلي",
             "bg_music": "موسيقى خلفية",
             "sound_library": "مكتبة الأصوات",
-            "previews": "معاينة 15 ثانية"
+            "previews": "معاينة 15 ثانية",
+            "play_mix": "تشغيل المقطع ومزيج الموسيقى",
+            "mix_hint": "اضغط تشغيل على المعاينة لسماع صوت المقطع الأصلي والموسيقى المختارة معاً. المزيج الرئيسي يضبط الاثنين.",
+            "animate_no_source": "المقاطع المتحركة غالباً بلا صوت أصلي — ارفع الموسيقى أو أبقِ هذا منخفضاً."
           },
           "enhance": {
             "title": "تحسينات الذكاء الاصطناعي",
             "beta": "تجريبي",
+            "preview_now": "معاينة مباشرة",
+            "live_preview": "معاينة مباشرة",
+            "preview_hint": "شاهد معاينة 9:16. شغّل المقطع، فعّل تقليل الضوضاء، اسحب اللون، ثم قارن مع الأصل.",
+            "compare_original": "مقارنة مع الأصل",
+            "comparing": "عرض الأصل",
+            "color_pct": "لون {{pct}}٪",
+            "noise_on": "تم تقليل الضوضاء",
             "audio_polish": "تحسين الصوت",
+            "audio_polish_hint": "يقطع الهمهمة والصفير ويرفع الصوت. شغّل، بدّل هذا، ثم قارن مع الأصل.",
             "noise_reduction": "تقليل ضوضاء الخلفية",
-            "voice_isolation": "عزل الصوت بالذكاء الاصطناعي",
+            "voice_isolation": "عزل الصوت",
             "noise_reduction_desc": "يعزل الصوت تلقائياً ويزيل همهمة الخلفية ونقرات لوحة المفاتيح وضوضاء المروحة.",
-            "noise_reduction_tooltip": "عزل الترددات المدعوم بالذكاء الاصطناعي الذي يفصل الصوت عن أصوات الخلفية المشتتة مثل مراوح النظام أو ضجيج لوحة المفاتيح.",
+            "noise_reduction_tooltip": "تمرير عالي وقطع صفير ورفع للصوت على مزيج المقطع. شغّل المعاينة لتسمعه.",
             "visual_polish": "تحسين بصري",
+            "visual_polish_hint": "اسحب نحو حيوي — التشبع والتباين يتحدثان على معاينة 9:16 فوراً.",
             "auto_applied": "تم التطبيق تلقائياً",
             "auto_correct": "تصحيح تلقائي",
             "auto_correct_tooltip": "يوازن فوراً مستويات التعرض والتباين والتشبع وفقاً للمعايير الاحترافية باستخدام تحليل الذكاء الاصطناعي.",
@@ -3318,29 +3634,51 @@ const resources = {
             "transitions_tooltip": "يجد أفضل اللحظات للانتقالات السينمائية ويقترح المؤثرات البصرية والمؤثرات الصوتية المناسبة.",
             "no_transitions": "لا توجد اقتراحات انتقالات بعد. اسمح للذكاء الاصطناعي بتحليل مقطعك للحصول على أفضل تدفق.",
             "coach_title": "مدرب المنشئ",
-            "coach_tip": "إضافة انتقال 'Zoom Blur' عند علامة 0:15 سيؤكد على لقطتك الملحمية ويزيد من احتفاظ المشاهدين.",
-            "apply_btn": "تطبيق"
+            "coach_tip": "إضافة انتقال '{{type}}' عند {{time}} تؤكد اللحظة الأقوى في هذا المقطع الذي مدته {{duration}}.",
+            "coach_tip_empty": "مدة هذا المقطع {{duration}}. اضغط تحليل المقطع لاقتراحات انتقال داخل هذه المدة.",
+            "coach_tip_pick": "إضافة انتقال '{{type}}' عند {{time}} تؤكد اللحظة الأقوى في هذا المقطع الذي مدته {{duration}}.",
+            "apply_btn": "تطبيق",
+            "applied_btn": "إعادة",
+            "transition_preview": "معاينة {{type}} عند {{time}}",
+            "transition_preview_note": "المعاينة تظهر على مشغل 9:16. الحرق في التصدير قادم لاحقاً."
+          },
+          "publish_preview": {
+            "title": "مراجعة المنشور",
+            "subtitle": "هذا ما سيظهر على خلاصتك والشبكات المحددة.",
+            "no_preview": "لا توجد معاينة",
+            "hook": "خطاف",
+            "feed_only": "خلاصة NxClip فقط — لم يتم اختيار حسابات اجتماعية.",
+            "confirm": "انشر الآن",
+            "publishing": "جاري النشر..."
           },
           "actions": {
             "publish": "نشر المقطع",
             "download": "تحميل HD (.mp4)",
-            "publish_socials": "النشر على TikTok و Reels"
+            "publish_socials": "النشر على الخلاصة",
           }
         },
         "overlays": {
           "review_title": "مراجعة الاختيار",
-          "review_desc": "ألقِ نظرة سريعة على مقطعك الذي تبلغ مدته {{duration}} قبل أن نقوم بتحسينه.",
+          "review_desc": "تشغيل نطاق الاحتفاظ {{duration}} مرة واحدة، ثم نسخ الصوت وكتابة التعليقات فعلياً.",
           "cancel": "إلغاء",
-          "skip_polish": "تخطي وتحسين",
+          "skip_polish": "متابعة إلى تحسين الذكاء الاصطناعي",
           "polishing_title": "جاري تحسين مقطعك",
-          "polishing_desc": "يقوم الذكاء الاصطناعي لدينا بتحسين محتواك لتحقيق أقصى قدر من التفاعل.",
+          "polishing_desc": "حفظ القص ثم تشغيل النسخ والتعليقات والمؤثرات على هذا المقطع.",
           "steps": {
             "transcribing": "جاري نسخ الصوت (Whisper)",
-            "transcribing_sub": "البحث عن كلماتك...",
+            "transcribing_sub": "إرسال المقطع إلى تحويل الكلام إلى نص…",
+            "transcribing_queued": "تم وضع تحويل الكلام في قائمة الانتظار…",
+            "transcribing_wait": "الاستماع للكلمات… {{attempt}}/{{attempts}}",
+            "transcribing_done": "النص جاهز",
+            "transcribing_empty": "لم يُكتشف كلام — المتابعة",
+            "transcribing_slow": "لا يزال قيد المعالجة — يمكنك النسخ لاحقاً من التعليقات",
+            "transcribing_fail": "تم تخطي النسخ",
             "generating_captions": "جاري إنشاء التعليقات",
-            "generating_captions_sub": "إضافة التعليقات...",
-            "suggesting_effects": "اقتراح المؤثرات",
-            "suggesting_effects_sub": "اكتشاف أهم اللحظات..."
+            "generating_captions_sub": "كتابة تعليق المنشور والوسوم…",
+            "captions_done": "تم إعداد التعليق والوسوم",
+            "suggesting_effects": "اقتراح الخطافات والانتقالات",
+            "suggesting_effects_sub": "البحث عن الخطافات ونقاط الانتقال…",
+            "effects_done": "الخطافات ونقاط الانتقال جاهزة"
           },
           "overall_progress": "التقدم الإجمالي"
         }
@@ -3459,7 +3797,7 @@ const resources = {
             "description": "قم بإنشاء صور ألعاب عالية الجودة وميمات من مطالبات نصية."
           },
           "clip_editor": {
-            "title": "محرر المقاطع",
+            "title": "استوديو المقاطع",
             "description": "قم بتحميل لعبك، وقص لقطات البارزة، وأضف لمسات الذكاء الاصطناعي."
           },
           "meme_gen": {
@@ -3712,7 +4050,7 @@ const resources = {
         },
         "tutorial": {
           "studio": { "title": "استوديو الذكاء الاصطناعي", "desc": "قم بتوليد صور ألعاب عالية الجودة وميمات باستخدام نماذج الذكاء الاصطناعي المتقدمة لدينا." },
-          "editor": { "title": "محرر المقاطع", "desc": "حول مقاطع لعبك إلى فيديوهات عمودية فيروسية لـ TikTok و Reels." },
+          "editor": { "title": "استوديو المقاطع", "desc": "حول مقاطع لعبك إلى فيديوهات عمودية فيروسية لـ TikTok و Reels." },
           "feed": { "title": "موجز المحتوى", "desc": "احصل على الإلهام من منشئي الألعاب الآخرين وشاهد ما هو رائج في مجالك." }
         },
         "generating": {

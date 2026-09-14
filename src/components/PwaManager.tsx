@@ -190,7 +190,7 @@ export function PwaManager() {
 
   useEffect(() => {
     // 1. Service Worker Registration & Update Handling
-    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+    if ('serviceWorker' in navigator && import.meta.env.PROD) {
       const handleRegister = () => {
         try {
           // Register service worker

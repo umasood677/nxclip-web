@@ -3,6 +3,7 @@ import { getAccessToken } from "../services/auth/authService";
 import { resolveBaseGatewayUrl } from "../services/apiClient";
 import { cn } from "../lib/utils";
 import nxclipLogo from "../contents/images/nexa-logo.png";
+import { MediaTileLoadingPlaceholder } from "./MediaTileLoadingPlaceholder";
 
 export interface AuthenticatedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -17,11 +18,15 @@ export interface AuthenticatedImageProps extends React.ImgHTMLAttributes<HTMLIma
   loadTimeoutMs?: number;
   /** CSS aspect-ratio used while loading / failed (e.g. "9 / 16"). */
   placeholderAspectRatio?: string;
+  /** Smaller shimmer for list-row thumbnails */
+  loadingCompact?: boolean;
 }
 
 const DEFAULT_FALLBACK_IMAGE = "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80";
 const DEFAULT_BLUR_PLACEHOLDER = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect width='16' height='9' fill='%2318181b'/%3E%3Cpath d='M0 0h16v9H0z' fill='%2327272a' filter='blur(2px)'/%3E%3C/svg%3E";
 const DEFAULT_LOAD_TIMEOUT_MS = 12000;
+const TOKEN_WAIT_ATTEMPTS = 12;
+const TOKEN_WAIT_INTERVAL_MS = 250;
 
 export function AuthenticatedImage({
   src,
@@ -36,11 +41,13 @@ export function AuthenticatedImage({
   blurDataURL,
   loadTimeoutMs = DEFAULT_LOAD_TIMEOUT_MS,
   placeholderAspectRatio = "1 / 1",
+  loadingCompact = false,
   ...props
 }: AuthenticatedImageProps) {
   const [resolvedSrc, setResolvedSrc] = useState<string | undefined>(undefined);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [failed, setFailed] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const imgRef = useRef<HTMLImageElement>(null);
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
@@ -54,6 +61,7 @@ export function AuthenticatedImage({
   useEffect(() => {
     setIsLoaded(false);
     setFailed(false);
+    setRetryCount(0);
 
     if (!src) {
       if (disableRemoteFallback) {
@@ -92,15 +100,32 @@ export function AuthenticatedImage({
         relativePath = `/${relativePath}`;
       }
 
-      let proxyUrl = `/api/gateway-proxy${relativePath}`;
-      const token = getAccessToken();
-      if (token && !proxyUrl.includes("token=")) {
-        const separator = proxyUrl.includes("?") ? "&" : "?";
-        proxyUrl = `${proxyUrl}${separator}token=${encodeURIComponent(token)}`;
-      }
+      // Auth may still be hydrating on first paint. Firing the request without a
+      // token yields a 401 the <img> can never recover from, so wait briefly.
+      let cancelled = false;
+      let tokenWaits = 0;
 
-      setResolvedSrc(proxyUrl);
-      return;
+      const resolveWithToken = () => {
+        if (cancelled) return;
+        const token = getAccessToken();
+        if (!token && tokenWaits < TOKEN_WAIT_ATTEMPTS) {
+          tokenWaits += 1;
+          window.setTimeout(resolveWithToken, TOKEN_WAIT_INTERVAL_MS);
+          return;
+        }
+
+        let proxyUrl = `/api/gateway-proxy${relativePath}`;
+        if (token && !proxyUrl.includes("token=")) {
+          const separator = proxyUrl.includes("?") ? "&" : "?";
+          proxyUrl = `${proxyUrl}${separator}token=${encodeURIComponent(token)}`;
+        }
+        setResolvedSrc(proxyUrl);
+      };
+
+      resolveWithToken();
+      return () => {
+        cancelled = true;
+      };
     }
 
     setResolvedSrc(targetUrl);
@@ -111,6 +136,15 @@ export function AuthenticatedImage({
   useEffect(() => {
     if (!resolvedSrc || isLoaded || failed || loadTimeoutMs <= 0) return;
     const timer = window.setTimeout(() => {
+      // One automatic retry for gated media (large hybrid SVGs often need a second pass).
+      if (retryCount < 1 && disableRemoteFallback && resolvedSrc.includes("/api/gateway-proxy")) {
+        setRetryCount((n) => n + 1);
+        setIsLoaded(false);
+        setFailed(false);
+        const sep = resolvedSrc.includes("?") ? "&" : "?";
+        setResolvedSrc(`${resolvedSrc}${sep}_retry=${Date.now()}`);
+        return;
+      }
       setFailed(true);
       if (disableRemoteFallback) {
         setResolvedSrc(undefined);
@@ -118,7 +152,7 @@ export function AuthenticatedImage({
       notifyError();
     }, loadTimeoutMs);
     return () => window.clearTimeout(timer);
-  }, [resolvedSrc, isLoaded, failed, loadTimeoutMs, disableRemoteFallback]);
+  }, [resolvedSrc, isLoaded, failed, loadTimeoutMs, disableRemoteFallback, retryCount]);
 
   useEffect(() => {
     if (priority && resolvedSrc) {
@@ -152,6 +186,19 @@ export function AuthenticatedImage({
   }, [resolvedSrc]);
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    if (
+      disableRemoteFallback &&
+      retryCount < 1 &&
+      resolvedSrc &&
+      resolvedSrc.includes("/api/gateway-proxy")
+    ) {
+      setRetryCount((n) => n + 1);
+      setIsLoaded(false);
+      setFailed(false);
+      const sep = resolvedSrc.includes("?") ? "&" : "?";
+      setResolvedSrc(`${resolvedSrc}${sep}_retry=${Date.now()}`);
+      return;
+    }
     if (disableRemoteFallback) {
       setFailed(true);
       setResolvedSrc(undefined);
@@ -166,9 +213,15 @@ export function AuthenticatedImage({
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     const img = e.currentTarget;
+    // Raster broken-image handlers can fire load with 0×0; meme SVGs from /media
+    // sometimes report 0 briefly in some browsers — still accept the load event.
     if (!img.naturalWidth || !img.naturalHeight) {
-      handleImageError(e);
-      return;
+      const hint = img.currentSrc || resolvedSrc || "";
+      const likelySvgMedia = /\/media\b|\.svg(\?|$)/i.test(hint);
+      if (!likelySvgMedia) {
+        handleImageError(e);
+        return;
+      }
     }
     setIsLoaded(true);
     setFailed(false);
@@ -177,7 +230,8 @@ export function AuthenticatedImage({
     }
   };
 
-  const showBrandPlaceholder = disableRemoteFallback && (failed || !isLoaded);
+  const showFailedPlaceholder = disableRemoteFallback && failed;
+  const showLoadingPlaceholder = !isLoaded && !failed;
   const isAbsoluteFill = /\b(?:!?absolute|inset-0)\b/.test(wrapperClassName || "");
   const reserveTileSpace = (!isLoaded || (failed && disableRemoteFallback)) && !isAbsoluteFill;
 
@@ -185,11 +239,10 @@ export function AuthenticatedImage({
     <div
       className={cn(
         "relative overflow-hidden w-full",
-        !reserveTileSpace && "bg-zinc-900/60 h-full",
+        !reserveTileSpace && !showLoadingPlaceholder && "bg-zinc-900/60 h-full",
         wrapperClassName,
-        // Keep after wrapperClassName so library `bg-*` / `!h-auto` cannot collapse the tile
         reserveTileSpace && "!h-auto bg-[#6b7280]",
-        isAbsoluteFill && !isLoaded && disableRemoteFallback && "bg-[#6b7280]",
+        isAbsoluteFill && failed && disableRemoteFallback && "bg-[#6b7280]",
       )}
       style={
         reserveTileSpace
@@ -197,8 +250,10 @@ export function AuthenticatedImage({
           : undefined
       }
     >
-      {showBrandPlaceholder && (
-        <div className="absolute inset-0 z-[1] flex items-center justify-center pointer-events-none">
+      {showLoadingPlaceholder ? <MediaTileLoadingPlaceholder compact={loadingCompact} /> : null}
+
+      {showFailedPlaceholder ? (
+        <div className="absolute inset-0 z-[1] flex items-center justify-center pointer-events-none bg-[#6b7280]">
           <img
             src={nxclipLogo}
             alt=""
@@ -207,7 +262,7 @@ export function AuthenticatedImage({
             draggable={false}
           />
         </div>
-      )}
+      ) : null}
 
       {!isLoaded && !failed && !disableRemoteFallback && (
         <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden bg-zinc-900/80 pointer-events-none">

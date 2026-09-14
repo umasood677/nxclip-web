@@ -15,10 +15,29 @@ import { Button } from "../../components/ui/button";
 import { Textarea } from "../../components/ui/textarea";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../../components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../components/ui/tabs";
 import { Badge } from "../../components/ui/badge";
 import { generateImage, generateCaptions, generateTitle, AIError } from "../../services/aiService";
-import { contentApi, ContentDto, resolveBaseGatewayUrl, extractValidImageUrl, contentMediaRevision, withContentMediaRevision } from "../../services/apiClient";
+import {
+  contentApi,
+  ContentDto,
+  RecommendMemeResponseDto,
+  WeekPlanDto,
+  resolveBaseGatewayUrl,
+  extractValidImageUrl,
+  contentMediaRevision,
+  withContentMediaRevision,
+  type SocialPlatform,
+} from "../../services/apiClient";
+import { SocialPublishTargets } from "../../components/social/SocialPublishTargets";
 import { getAccessToken } from "../../services/auth/authService";
 import { socketService } from "../../services/socketService";
 import { SEO } from "../../components/SEO";
@@ -30,10 +49,46 @@ import { GeneratePanel } from "./components/GeneratePanel";
 import { CanvasPanel } from "./components/CanvasPanel";
 import { EditPanel } from "./components/EditPanel";
 import { RecentGenerationsGallery } from "./components/RecentGenerations";
+import {
+  buildWeekPlanDays,
+} from "./components/MemeWeekPlanCanvas";
+import {
+  MemeVoiceId,
+  buildClientVoiceHumorClause,
+  clipMemeVoiceForApi,
+  resolveMemeVoice,
+} from "./lib/memeVoice";
 import { triggerHaptic } from "../../lib/vibration";
 import { AuthenticatedImage } from "../../components/AuthenticatedImage";
 import { DevTerminal, ApiCallLog } from "./components/DevTerminal";
 import { extensionForMimeType, toDownloadableBlob } from "../../lib/imageDownload";
+import { StudioPlanBanner } from "../../components/StudioPlanBanner";
+import { useCreatorStudioContext } from "../../hooks/useCreatorStudioContext";
+import { markPlanDayComplete } from "../../lib/weekPlanWorkflow";
+import { clipImageFirstBannerCopy } from "../../lib/weekPlan";
+
+/** Strip leading # so UI can safely render `#{tag}` without producing `##tag`. */
+function normalizeHashtag(tag: string): string {
+  return String(tag || "")
+    .replace(/^#+/, "")
+    .trim();
+}
+
+function normalizeHashtagSets(sets?: string[][] | null): string[][] {
+  if (!Array.isArray(sets) || !sets.length) return [];
+  return sets
+    .map((set) =>
+      (Array.isArray(set) ? set : [set])
+        .map((tag) => normalizeHashtag(String(tag)))
+        .filter(Boolean),
+    )
+    .filter((set) => set.length > 0);
+}
+
+function normalizeHashtagList(tags?: string[] | null): string[] {
+  if (!Array.isArray(tags) || !tags.length) return [];
+  return tags.map((tag) => normalizeHashtag(String(tag))).filter(Boolean);
+}
 
 const SUGGESTION_POOL = [
   "Modern product launch visual",
@@ -54,7 +109,7 @@ const SUGGESTION_POOL = [
 ];
 
 /** Matches content-service plan-limits for FREE. */
-const FREE_DAILY_GENERATION_LIMIT = 15;
+const FREE_DAILY_GENERATION_LIMIT = 5;
 const FREE_MAX_REFERENCE_IMAGES = 2;
 const PRO_MAX_REFERENCE_IMAGES = 4;
 
@@ -210,6 +265,18 @@ export default function ImageStudio() {
     { id: "meme", label: t('image_studio.style_presets.meme') },
   ];
   const [mode, setMode] = useState<"image" | "meme">("image");
+  const studioTool = mode === "meme" ? "meme" : "image";
+  const {
+    profile,
+    dueToday,
+    categoryLabel,
+    niches,
+    nicheDialogOpen,
+    setNicheDialogOpen,
+    confirmNicheChange,
+    applyDuePrompt,
+    hasWeekPlan,
+  } = useCreatorStudioContext(studioTool);
   const [memeMode, setMemeModeState] = useState<"ai" | "template" | "hybrid">("ai");
   const setMemeMode = (next: "ai" | "template" | "hybrid") => {
     setMemeModeState(next);
@@ -219,6 +286,32 @@ export default function ImageStudio() {
   const [memeTemplates, setMemeTemplates] = useState<import("../../services/apiClient").MemeTemplateDto[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [slotTexts, setSlotTexts] = useState<Record<string, string>>({});
+  const [isSuggestingMemeCopy, setIsSuggestingMemeCopy] = useState(false);
+  const [memeJokeVariants, setMemeJokeVariants] = useState<Array<Record<string, string>>>([]);
+  const [memeJokeVariantIndex, setMemeJokeVariantIndex] = useState(0);
+  const [memeRecommendations, setMemeRecommendations] =
+    useState<RecommendMemeResponseDto | null>(null);
+  const [isRecommendingMemes, setIsRecommendingMemes] = useState(false);
+  const [weekPlanCanvasOpen, setWeekPlanCanvasOpen] = useState(false);
+  const [weekPlanSelectedIndex, setWeekPlanSelectedIndex] = useState(0);
+  const [activeWeekPlan, setActiveWeekPlan] = useState<WeekPlanDto | null>(null);
+  const [isActivatingWeekPlan, setIsActivatingWeekPlan] = useState(false);
+  const [isCancellingWeekPlan, setIsCancellingWeekPlan] = useState(false);
+  const [memeBrandName, setMemeBrandName] = useState("");
+  const [memeVoiceIds, setMemeVoiceIds] = useState<MemeVoiceId[]>(["elegant"]);
+  const [memeCustomVoice, setMemeCustomVoice] = useState("");
+  const [memeHumorIntensity, setMemeHumorIntensity] = useState(2);
+  /** Queued rewrite slots applied after selectedTemplateId effect rebuilds keys. */
+  const pendingRewriteSlotsRef = useRef<Record<string, string> | null>(null);
+  const recommendDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resolvedMemeVoice = resolveMemeVoice(memeVoiceIds, memeCustomVoice);
+
+  useEffect(() => {
+    if (!memeBrandName.trim() && categoryLabel) {
+      setMemeBrandName(categoryLabel.slice(0, 48));
+    }
+  }, [categoryLabel, niches]);
   const [prompt, setPrompt] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -387,7 +480,12 @@ export default function ImageStudio() {
           prompt: (item.prompt || item.refinePrompt || item.basePrompt || "").trim(),
           basePrompt: (item.basePrompt || item.prompt || "").trim() || undefined,
           refinePrompt: (item.refinePrompt || "").trim() || undefined,
-          type: item.contentType === "meme" || item.style === "meme" ? "meme" : "image",
+          type:
+            item.contentType === "meme" ||
+            item.style === "meme" ||
+            Boolean(item.memeSpec)
+              ? "meme"
+              : "image",
           style: item.style || styleFromDesc || undefined,
           status: item.status,
           aspectRatio: item.aspectRatio,
@@ -461,10 +559,16 @@ export default function ImageStudio() {
     if (!selectedTemplateId) return;
     const tpl = memeTemplates.find((t) => t.id === selectedTemplateId);
     if (!tpl) return;
+    const pending = pendingRewriteSlotsRef.current;
+    pendingRewriteSlotsRef.current = null;
     setSlotTexts((prev) => {
       const next: Record<string, string> = {};
       for (const slot of tpl.slots) {
-        next[slot.id] = prev[slot.id] || "";
+        const raw =
+          pending && Object.prototype.hasOwnProperty.call(pending, slot.id)
+            ? pending[slot.id]
+            : prev[slot.id] || "";
+        next[slot.id] = String(raw || "").slice(0, slot.maxLength);
       }
       return next;
     });
@@ -490,6 +594,292 @@ export default function ImageStudio() {
   const setSlotText = (slotId: string, value: string) => {
     setSlotTexts((prev) => ({ ...prev, [slotId]: value }));
   };
+
+  const applyMemeJokeSuggestion = (
+    suggestion: Record<string, string>,
+    slotId?: string,
+  ) => {
+    const tpl = memeTemplates.find((t) => t.id === selectedTemplateId);
+    if (!tpl) return;
+    const next: Record<string, string> = { ...slotTexts };
+    if (slotId) {
+      const value = suggestion[slotId];
+      if (typeof value === "string" && value.trim()) {
+        const slot = tpl.slots.find((s) => s.id === slotId);
+        next[slotId] = value.slice(0, slot?.maxLength ?? 120);
+      }
+    } else {
+      for (const slot of tpl.slots) {
+        const value = suggestion[slot.id];
+        if (typeof value === "string" && value.trim()) {
+          next[slot.id] = value.slice(0, slot.maxLength);
+        }
+      }
+    }
+    setSlotTexts(next);
+  };
+
+  const handleSuggestMemeCopy = async (opts?: { slotId?: string }) => {
+    if (!selectedTemplateId || isSuggestingMemeCopy) return;
+
+    // Cycle local variants from the last fetch before hitting the API again.
+    if (memeJokeVariants.length > 1) {
+      const nextIndex = (memeJokeVariantIndex + 1) % memeJokeVariants.length;
+      setMemeJokeVariantIndex(nextIndex);
+      applyMemeJokeSuggestion(memeJokeVariants[nextIndex], opts?.slotId);
+      toast.success(opts?.slotId ? "Tried another line for this slot" : "Tried another copy set");
+      return;
+    }
+
+    if (memeJokeVariants.length === 1 && opts?.slotId) {
+      applyMemeJokeSuggestion(memeJokeVariants[0], opts.slotId);
+      toast.success("Slot copy applied");
+      return;
+    }
+
+    setIsSuggestingMemeCopy(true);
+    try {
+      const res = await contentApi.suggestMemeCopy({
+        templateId: selectedTemplateId,
+        // API caps idea at 280 — long hybrid scene prompts must be clipped.
+        idea: prompt.trim().slice(0, 280) || undefined,
+        brandName: memeBrandName.trim() || undefined,
+        brandPersonality: clipMemeVoiceForApi(resolvedMemeVoice, 120) || undefined,
+        humorIntensity: memeHumorIntensity,
+      });
+      const suggestions = Array.isArray(res.suggestions) ? res.suggestions : [];
+      if (!suggestions.length) {
+        toast.error("No copy suggestions returned");
+        return;
+      }
+      setMemeJokeVariants(suggestions);
+      setMemeJokeVariantIndex(0);
+      applyMemeJokeSuggestion(suggestions[0], opts?.slotId);
+      toast.success(
+        opts?.slotId
+          ? "Slot copy generated"
+          : suggestions.length > 1
+            ? "Copy applied — click again for another"
+            : "Copy applied",
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to generate copy");
+    } finally {
+      setIsSuggestingMemeCopy(false);
+    }
+  };
+
+  const handleRecommendMemes = async (opts?: { silent?: boolean }) => {
+    if (isRecommendingMemes) return;
+    const idea =
+      prompt.trim() ||
+      (Object.values(slotTexts) as string[])
+        .map((value) => value.trim())
+        .filter(Boolean)
+        .join(" ");
+    if (!idea) {
+      if (!opts?.silent) toast.info("Add an idea or prompt first");
+      return;
+    }
+
+    setIsRecommendingMemes(true);
+    const personality =
+      clipMemeVoiceForApi(
+        resolvedMemeVoice || niches.slice(0, 3).join(", "),
+        // Cloud content-service still enforces 80 until redeployed with MaxLength(160).
+        80,
+      ) || undefined;
+    const payload = {
+      idea: idea.slice(0, 280),
+      imageDescription: prompt.trim().slice(0, 500) || undefined,
+      brandName: (memeBrandName.trim() || categoryLabel || "").slice(0, 80) || undefined,
+      brandPersonality: personality,
+      humorIntensity: memeHumorIntensity,
+      contentId: currentContentId || undefined,
+      sceneTags: [
+        ...(categoryLabel ? [categoryLabel.toLowerCase().replace(/\s+/g, "_")] : []),
+        ...niches.map((n) => n.toLowerCase().replace(/\s+/g, "_")),
+      ].slice(0, 8),
+      limit: 5,
+      fanOut: 12,
+    };
+    const { id: logId } = addApiLog("POST", "/content/meme/recommend", payload);
+    try {
+      const response = await contentApi.recommendMemes(payload);
+      setMemeRecommendations(response);
+      updateApiLogSuccess(logId, 200, response, "AI creative direction ready");
+      if (!opts?.silent) {
+        toast.success("Creative direction ready", {
+          description: `${response.rankings.length} of ${response.fanOutConsidered} layouts · ${response.visionSource || "text_only"}`,
+        });
+      }
+    } catch (err) {
+      updateApiLogFailed(
+        logId,
+        (err as { statusCode?: number })?.statusCode || 500,
+        err,
+        "Creative direction failed",
+      );
+      if (!opts?.silent) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to analyze meme layouts",
+        );
+      }
+    } finally {
+      setIsRecommendingMemes(false);
+    }
+  };
+
+  const handleChooseMemeRecommendation = (
+    templateId: string,
+    slots: Record<string, string>,
+  ) => {
+    const template = memeTemplates.find((item) => item.id === templateId);
+    if (!template) return;
+    const next: Record<string, string> = {};
+    for (const slot of template.slots) {
+      next[slot.id] = (slots[slot.id] || "").slice(0, slot.maxLength);
+    }
+    // Same template: the selection effect won't re-run, so apply slots now.
+    // Different template: queue rewrite so the selection effect merges after
+    // rebuilding slot keys (avoids a race that can wipe the rewrite).
+    if (templateId === selectedTemplateId) {
+      pendingRewriteSlotsRef.current = null;
+      setSlotTexts(next);
+    } else {
+      pendingRewriteSlotsRef.current = next;
+      setSelectedTemplateId(templateId);
+    }
+    setAspectRatio((current) =>
+      template.supportedAspectRatios.includes(
+        current as (typeof template.supportedAspectRatios)[number],
+      )
+        ? current
+        : template.defaultAspectRatio,
+    );
+    triggerHaptic("light");
+    toast.success(`${template.name} direction applied`);
+  };
+
+  const weekPlanDays = buildWeekPlanDays(
+    memeRecommendations,
+    activeWeekPlan,
+    memeTemplates,
+  );
+
+  useEffect(() => {
+    if (mode !== "meme" || memeMode === "ai") return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await contentApi.getActiveWeekPlan();
+        if (!cancelled) setActiveWeekPlan(res.plan || null);
+      } catch {
+        if (!cancelled) setActiveWeekPlan(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, memeMode]);
+
+  const handleOpenWeekPlan = () => {
+    if (!weekPlanDays.length) {
+      toast.info("Run Direct my post first to build a 7-day plan");
+      return;
+    }
+    setWeekPlanSelectedIndex(0);
+    setWeekPlanCanvasOpen(true);
+  };
+
+  const handleActivateWeekPlan = async () => {
+    if (!memeRecommendations?.calendarPlan?.length || isActivatingWeekPlan) return;
+    if (activeWeekPlan) {
+      toast.message("Cancel the active plan before activating a new one");
+      return;
+    }
+    setIsActivatingWeekPlan(true);
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const res = await contentApi.createWeekPlan({
+        timezone,
+        idea: prompt.trim().slice(0, 280) || undefined,
+        brandName: memeBrandName.trim() || undefined,
+        brandPersonality: clipMemeVoiceForApi(resolvedMemeVoice, 120) || undefined,
+        humorIntensity: memeHumorIntensity,
+        aspectRatio: (aspectRatio as "1:1" | "16:9" | "9:16" | "4:5") || "9:16",
+        slots: memeRecommendations.calendarPlan.map((slot) => {
+          const rewrite = memeRecommendations.rewrites.find(
+            (item) => item.templateId === slot.templateId,
+          );
+          return {
+            day: slot.day,
+            templateId: slot.templateId,
+            templateName: slot.templateName,
+            theme: slot.theme,
+            hook: slot.hook,
+            bestTimeLocal: slot.bestTimeLocal,
+            platformTip: slot.platformTip,
+            rewriteSlots: rewrite?.slots,
+          };
+        }),
+      });
+      setActiveWeekPlan(res.plan);
+      toast.success("7-day plan activated", {
+        description: "Drafts created — nxClip will auto-publish on the suggested days.",
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to activate plan");
+    } finally {
+      setIsActivatingWeekPlan(false);
+    }
+  };
+
+  const handleCancelWeekPlan = async () => {
+    if (!activeWeekPlan || isCancellingWeekPlan) return;
+    setIsCancellingWeekPlan(true);
+    try {
+      const res = await contentApi.cancelWeekPlan(activeWeekPlan.id);
+      setActiveWeekPlan(res.plan.status === "active" ? res.plan : null);
+      toast.success("Plan cancelled", {
+        description: "Remaining scheduled publishes were skipped.",
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to cancel plan");
+    } finally {
+      setIsCancellingWeekPlan(false);
+    }
+  };
+
+  const handleUseWeekPlanDay = () => {
+    const day = weekPlanDays[weekPlanSelectedIndex];
+    if (!day) return;
+    handleChooseMemeRecommendation(day.templateId, day.slots);
+    setWeekPlanCanvasOpen(false);
+  };
+
+  // Reset joke cycle when template or prompt idea changes.
+  useEffect(() => {
+    setMemeJokeVariants([]);
+    setMemeJokeVariantIndex(0);
+  }, [selectedTemplateId, prompt]);
+
+  // Auto-recommend when the idea settles (template/hybrid meme modes only).
+  useEffect(() => {
+    if (mode !== "meme" || memeMode === "ai") return;
+    const idea =
+      prompt.trim() ||
+      Object.values(slotTexts).some((value) => value.trim());
+    if (!idea || prompt.trim().length < 8) return;
+    if (recommendDebounceRef.current) clearTimeout(recommendDebounceRef.current);
+    recommendDebounceRef.current = setTimeout(() => {
+      void handleRecommendMemes({ silent: true });
+    }, 900);
+    return () => {
+      if (recommendDebounceRef.current) clearTimeout(recommendDebounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional debounce on prompt/brand/humor
+  }, [prompt, memeBrandName, memeVoiceIds, memeCustomVoice, memeHumorIntensity, mode, memeMode]);
 
   useEffect(() => {
     safeLocalStorage.setItem("nexaclip_image_history", safeStringify(history));
@@ -518,6 +908,9 @@ export default function ImageStudio() {
   const referenceUploadsRef = useRef(referenceUploads);
   referenceUploadsRef.current = referenceUploads;
   const hydratedNavKeyRef = useRef<string | null>(null);
+  const planDayRef = useRef<string | null>(null);
+  const forClipPlanRef = useRef(false);
+  const [isClipPlanFlow, setIsClipPlanFlow] = useState(false);
 
   /** Ordered ready content IDs matching UI Image 1…N (uploads then library picks). */
   const orderedReadyReferenceIds = [
@@ -567,8 +960,13 @@ export default function ImageStudio() {
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
   const [customTagInput, setCustomTagInput] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
+  const [socialPlatforms, setSocialPlatforms] = useState<SocialPlatform[]>([]);
   const [isPublished, setIsPublished] = useState(false);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [isAnimatingAsClip, setIsAnimatingAsClip] = useState(false);
+  const [animatePickerOpen, setAnimatePickerOpen] = useState(false);
+  const [animateMode, setAnimateMode] = useState<"ken_burns" | "i2v">("ken_burns");
+  const [motionPrompt, setMotionPrompt] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   /** True only after the preview image has finished loading (keeps captions behind the image). */
   const [previewReady, setPreviewReady] = useState(false);
@@ -669,6 +1067,8 @@ export default function ImageStudio() {
     setTopText("");
     setBottomText("");
     setSlotTexts({});
+    pendingRewriteSlotsRef.current = null;
+    setMemeRecommendations(null);
     setTitle("");
     setNegativePrompt("");
     clearReferences();
@@ -707,7 +1107,7 @@ export default function ImageStudio() {
     setTitle(item.title || item.caption || "");
     setDescription(item.description || "");
     setStyle(item.style || (isMemeItem ? "meme" : "cinematic"));
-    if (item.aspectRatio && ["1:1", "16:9", "9:16"].includes(item.aspectRatio)) {
+    if (item.aspectRatio && ["1:1", "16:9", "9:16", "4:5"].includes(item.aspectRatio)) {
       setAspectRatio(item.aspectRatio);
     }
     setMode(isMemeItem ? "meme" : "image");
@@ -745,8 +1145,13 @@ export default function ImageStudio() {
     setIsPublishing(false);
     setCaptionSuggestions(item.captions?.length ? item.captions : []);
     setCaption(item.selectedCaption || item.caption || item.captions?.[0] || "");
-    setGeneratedHashtags(item.hashtagSets?.length ? item.hashtagSets : []);
-    setSelectedHashtags(item.selectedHashtags || item.hashtagSets?.[0] || []);
+    setGeneratedHashtags(normalizeHashtagSets(item.hashtagSets));
+    {
+      const selected = normalizeHashtagList(item.selectedHashtags);
+      setSelectedHashtags(
+        selected.length ? selected : normalizeHashtagSets(item.hashtagSets)[0] || [],
+      );
+    }
     setError(null);
 
     if (isPublishedItem) {
@@ -795,7 +1200,7 @@ export default function ImageStudio() {
   useEffect(() => {
     const draftIdFromParam = searchParams.get("draftId") || searchParams.get("editId");
     const typeParam = searchParams.get("type");
-    const navKey = `${location.key}|${draftIdFromParam || ""}|${location.state?.draftId || ""}|${location.state?.studioSessionKey || ""}`;
+    const navKey = `${location.key}|${draftIdFromParam || ""}|${location.state?.draftId || ""}|${location.state?.studioSessionKey || ""}|${searchParams.get("planDay") || ""}|${searchParams.get("prompt") || ""}`;
     if (hydratedNavKeyRef.current === navKey) return;
     hydratedNavKeyRef.current = navKey;
 
@@ -833,7 +1238,7 @@ export default function ImageStudio() {
         setTitle(state.title || "");
         setDescription(state.description || "");
         if (state.style) setStyle(state.style);
-        if (state.aspectRatio && ["1:1", "16:9", "9:16"].includes(state.aspectRatio)) {
+        if (state.aspectRatio && ["1:1", "16:9", "9:16", "4:5"].includes(state.aspectRatio)) {
           setAspectRatio(state.aspectRatio);
         }
         if (state.mode) setMode(state.mode);
@@ -853,8 +1258,8 @@ export default function ImageStudio() {
         setIsPublishing(false);
         setCaption(state.caption || "");
         setCaptionSuggestions(state.captions?.length ? state.captions : []);
-        setGeneratedHashtags(state.hashtagSets?.length ? state.hashtagSets : []);
-        setSelectedHashtags(state.hashtagSets?.[0] || []);
+        setGeneratedHashtags(normalizeHashtagSets(state.hashtagSets));
+        setSelectedHashtags(normalizeHashtagSets(state.hashtagSets)[0] || []);
         setError(null);
 
         if (status === "published" && state.draftId) {
@@ -894,6 +1299,40 @@ export default function ImageStudio() {
           console.error("Failed to load draft item by ID:", err);
         }
       })();
+    }
+
+    const suggest = searchParams.get("suggest");
+    const promptParam = searchParams.get("prompt");
+    const planDayParam = searchParams.get("planDay");
+    const forClipParam = searchParams.get("forClip") === "1";
+    const ratioParam = searchParams.get("ratio");
+    if (promptParam && !location.state?.prompt) {
+      setPrompt(promptParam);
+    }
+    if (planDayParam) {
+      planDayRef.current = planDayParam;
+    }
+    if (forClipParam) {
+      forClipPlanRef.current = true;
+      setIsClipPlanFlow(true);
+      setAspectRatio((current) =>
+        ratioParam && ["1:1", "16:9", "9:16", "4:5"].includes(ratioParam) ? ratioParam : "9:16",
+      );
+      toast.message("Week plan · Clip day", {
+        description:
+          "Generate your base image first, then use Animate → Clip Studio to finish the short for your niche.",
+        duration: 6000,
+      });
+    } else if (ratioParam && ["1:1", "16:9", "9:16", "4:5"].includes(ratioParam)) {
+      setAspectRatio(ratioParam);
+    }
+    if (suggest === "animate_i2v" || suggest === "animate_ken_burns") {
+      setAnimateMode(suggest === "animate_i2v" ? "i2v" : "ken_burns");
+      // Open picker after draft hydration paints
+      window.setTimeout(() => setAnimatePickerOpen(true), 400);
+    } else if (suggest === "meme") {
+      setMode("meme");
+      setStyle("meme");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- hydrate once per navigation key
   }, [location.key, location.state, searchParams, t]);
@@ -1113,10 +1552,11 @@ export default function ImageStudio() {
     triggerHaptic('heavy');
     
     const isMeme = mode === "meme";
-    const ratio = (["1:1", "16:9", "9:16"].includes(aspectRatio) ? aspectRatio : "1:1") as
+    const ratio = (["1:1", "16:9", "9:16", "4:5"].includes(aspectRatio) ? aspectRatio : "1:1") as
       | "1:1"
       | "16:9"
-      | "9:16";
+      | "9:16"
+      | "4:5";
     const studioStyle = isMeme ? "meme" : style;
     const templateTexts = (Object.entries(slotTexts) as Array<[string, string]>)
       .filter(([, text]) => text.trim())
@@ -1136,6 +1576,11 @@ export default function ImageStudio() {
       !isPublished &&
       contentStatus !== "generation_failed" &&
       contentStatus !== "published" &&
+      // Multi-ref face/scene composition must not reuse the previous draft as
+      // multimodal base (that demotes the real subject face). Prefer /generate
+      // or regenerate-without-draft-base (server-side); FE still forces new when
+      // 2+ refs are attached so retries stay correct even on older backends.
+      orderedReadyReferenceIds.length < 2 &&
       // AI + hybrid memes refine in place; pure template memes are deterministic
       // from their text slots, so they always create a new asset.
       !(isMeme && memeMode === "template");
@@ -1147,6 +1592,17 @@ export default function ImageStudio() {
         : undefined,
     };
 
+    const voiceClause = buildClientVoiceHumorClause(
+      resolvedMemeVoice,
+      memeHumorIntensity,
+    );
+    // Bake voice into the model prompt so create/refine work even when the
+    // deployed content-service build does not yet whitelist voice DTO fields.
+    const memeImagePrompt =
+      isMeme && memeMode !== "template"
+        ? `${targetPrompt} ${voiceClause}`.trim()
+        : targetPrompt;
+
     const memePayload =
       memeMode === "template"
         ? {
@@ -1155,11 +1611,12 @@ export default function ImageStudio() {
             aspectRatio: ratio,
             texts: templateTexts,
             title: title.trim() || undefined,
+            prompt: prompt.trim() || undefined,
           }
         : memeMode === "hybrid"
           ? {
               mode: "hybrid" as const,
-              prompt: targetPrompt,
+              prompt: memeImagePrompt,
               templateId: selectedTemplateId || undefined,
               aspectRatio: ratio,
               texts: templateTexts,
@@ -1168,7 +1625,7 @@ export default function ImageStudio() {
             }
           : {
               mode: "ai" as const,
-              prompt: targetPrompt,
+              prompt: memeImagePrompt,
               aspectRatio: ratio,
               texts: aiCaptionTexts,
               title: title.trim() || undefined,
@@ -1197,10 +1654,14 @@ export default function ImageStudio() {
       
       let apiResponse: any;
       if (canRegenerate && currentContentId) {
+        const regeneratePrompt =
+          isMeme && memeMode !== "template"
+            ? memeImagePrompt
+            : targetPrompt;
         apiResponse = await contentApi.regenerateImage(currentContentId, {
           // Omit short/empty prompts so the server reuses the stored prompt
           // (needed for hybrid caption-only edits after the field is cleared).
-          prompt: targetPrompt.trim().length >= 3 ? targetPrompt : undefined,
+          prompt: regeneratePrompt.trim().length >= 3 ? regeneratePrompt : undefined,
           style: studioStyle,
           aspectRatio: ratio,
           title: title.trim() || undefined,
@@ -1209,6 +1670,13 @@ export default function ImageStudio() {
             isMeme && memeMode === "hybrid" && templateTexts.length
               ? templateTexts
               : undefined,
+          // Apply Director layout switches on draft refine (not only caption edits).
+          templateId:
+            isMeme && memeMode === "hybrid" && selectedTemplateId
+              ? selectedTemplateId
+              : undefined,
+          // Do not send brandName / brandPersonality / humorIntensity here —
+          // older content-service builds reject unknown regenerate fields (400).
           ...refs,
         });
       } else if (isMeme) {
@@ -1228,6 +1696,17 @@ export default function ImageStudio() {
 
       if (!contentId) {
         throw new Error("Failed to generate content: No content ID returned.");
+      }
+
+      if (planDayRef.current && profile?.uid && !forClipPlanRef.current) {
+        markPlanDayComplete(profile.uid, planDayRef.current, contentId);
+      }
+
+      if (forClipPlanRef.current) {
+        toast.success("Base image ready", {
+          description: "Next: tap Animate → Clip Studio to turn this still into your clip.",
+          duration: 7000,
+        });
       }
 
       const img =
@@ -1322,6 +1801,15 @@ export default function ImageStudio() {
                 watermarked: Boolean(apiResponse.watermarked),
                 captions: apiResponse.captions ?? h.captions,
                 hashtagSets: apiResponse.hashtagSets ?? h.hashtagSets,
+                memeSpec:
+                  isMeme && memeMode === "hybrid"
+                    ? {
+                        ...(h.memeSpec || {}),
+                        mode: "hybrid",
+                        templateId: selectedTemplateId || h.memeSpec?.templateId,
+                        texts: templateTexts.length ? templateTexts : h.memeSpec?.texts,
+                      }
+                    : h.memeSpec,
               }
             : h,
         );
@@ -1359,8 +1847,9 @@ export default function ImageStudio() {
         setCaption(apiResponse.captions[0] || "");
       }
       if (apiResponse.hashtagSets) {
-        setGeneratedHashtags(apiResponse.hashtagSets);
-        setSelectedHashtags(apiResponse.hashtagSets[0] || []);
+        const sets = normalizeHashtagSets(apiResponse.hashtagSets);
+        setGeneratedHashtags(sets);
+        setSelectedHashtags(sets[0] || []);
       }
 
       // Leave baking once generate finishes; applyPreviewImage already set previewReady for blob,
@@ -1484,8 +1973,9 @@ export default function ImageStudio() {
         setCaption(apiResponse.captions[0] || "");
       }
       if (apiResponse.hashtagSets) {
-        setGeneratedHashtags(apiResponse.hashtagSets);
-        setSelectedHashtags(apiResponse.hashtagSets[0] || []);
+        const sets = normalizeHashtagSets(apiResponse.hashtagSets);
+        setGeneratedHashtags(sets);
+        setSelectedHashtags(sets[0] || []);
       }
       await fetchHistoryFromContentApi();
       toast.success("Retry succeeded");
@@ -1566,6 +2056,7 @@ export default function ImageStudio() {
         caption,
         hashtags: selectedHashtags,
         description,
+        socialPlatforms: socialPlatforms.length ? socialPlatforms : undefined,
       });
 
       updateApiLogSuccess(publishLogId, 200, publishRes, "Content status set to [publishing]");
@@ -1633,13 +2124,33 @@ export default function ImageStudio() {
         }
         if (Date.now() - startedAt > maxWaitMs) {
           unsubMod();
+          try {
+            const latest = await contentApi.getOwnedContentById(publishedId, {
+              suppressErrorLog: true,
+            });
+            const status = String(latest?.status || "").toLowerCase();
+            if (status === "published") {
+              await finishPublished();
+              return;
+            }
+            if (status === "moderation_rejected") {
+              await finishRejected(latest?.failureReason);
+              return;
+            }
+            setContentStatus(status || "publishing");
+          } catch {
+            /* keep UI publishing label */
+          }
           toast.message("Still publishing", {
             description: "Moderation is taking longer than usual. Refresh history in a moment.",
           });
           return;
         }
         try {
-          const latest = await contentApi.getContentById(publishedId, { suppressErrorLog: true });
+          // /content/:id is published-only (404 while publishing). Use owner route.
+          const latest = await contentApi.getOwnedContentById(publishedId, {
+            suppressErrorLog: true,
+          });
           const status = String(latest?.status || "").toLowerCase();
           if (status === "published") {
             unsubMod();
@@ -1648,11 +2159,11 @@ export default function ImageStudio() {
           }
           if (status === "moderation_rejected") {
             unsubMod();
-            await finishRejected();
+            await finishRejected(latest?.failureReason);
             return;
           }
         } catch {
-          // Keep polling while publishing.
+          // Keep polling while publishing (transient network only).
         }
         window.setTimeout(() => {
           void poll();
@@ -1677,6 +2188,69 @@ export default function ImageStudio() {
     }
   };
 
+  const handleAnimateAsClip = async (mode: "ken_burns" | "i2v" = animateMode) => {
+    if (!currentContentId) {
+      toast.error("Generate or open a draft first.");
+      return;
+    }
+    if (mode === "i2v" && readUserPlan() === "FREE") {
+      toast.error("AI motion requires Pro or Studio", {
+        description: "Upgrade to unlock generative I2V, or use Quick (Ken Burns) on Free.",
+        action: {
+          label: "Upgrade",
+          onClick: () => navigate("/upgrade"),
+        },
+      });
+      return;
+    }
+    setAnimatePickerOpen(false);
+    setIsAnimatingAsClip(true);
+    try {
+      const res = await contentApi.animateAsClip(currentContentId, {
+        mode,
+        motionPrompt: mode === "i2v" ? motionPrompt.trim() || undefined : undefined,
+        durationSec: 6,
+      });
+      toast.message(mode === "i2v" ? "AI motion generating…" : "Animating still…", {
+        description:
+          mode === "i2v"
+            ? "This can take 1–3 minutes. Opening Clip Studio when ready."
+            : "Opening Clip Studio when the Ken Burns MP4 is ready.",
+      });
+      const newId = res.contentId;
+      const maxPolls = mode === "i2v" ? 90 : 40;
+      const pollMs = mode === "i2v" ? 4000 : 1500;
+      for (let i = 0; i < maxPolls; i++) {
+        await new Promise((r) => setTimeout(r, pollMs));
+        const item =
+          (await contentApi.getUserContentById(newId, { suppressErrorLog: true }).catch(() => null)) ??
+          (await contentApi.getContentById(newId, { suppressErrorLog: true }).catch(() => null));
+        if (item?.storageKey || item?.status === "draft") {
+          const planQs = planDayRef.current
+            ? `&planDay=${encodeURIComponent(planDayRef.current)}`
+            : "";
+          navigate(`/create/clip/${newId}/edit?step=polish${planQs}`);
+          toast.success("Ready in Clip Studio");
+          return;
+        }
+        if (item?.status === "generation_failed" || item?.renderStatus === "failed") {
+          throw new Error(item.failureReason || "Animate failed");
+        }
+      }
+      const planQs = planDayRef.current
+        ? `&planDay=${encodeURIComponent(planDayRef.current)}`
+        : "";
+      navigate(`/create/clip/${newId}/edit?step=polish${planQs}`);
+      toast.message("Clip draft created", {
+        description: "Preview may take a few more seconds to load.",
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Animate as clip failed");
+    } finally {
+      setIsAnimatingAsClip(false);
+    }
+  };
+
   const handleSuggestionClick = (suggestion: string) => {
     setPrompt(suggestion);
   };
@@ -1692,7 +2266,7 @@ export default function ImageStudio() {
     setPrompt(item.refinePrompt || item.basePrompt || item.prompt || "");
     setTitle(item.title || "");
     setStyle(item.style || (isMemeItem ? "meme" : "cinematic"));
-    if (item.aspectRatio && ["1:1", "16:9", "9:16"].includes(item.aspectRatio)) {
+    if (item.aspectRatio && ["1:1", "16:9", "9:16", "4:5"].includes(item.aspectRatio)) {
       setAspectRatio(item.aspectRatio);
     }
     if (isMemeItem || item.type) {
@@ -1742,8 +2316,9 @@ export default function ImageStudio() {
       setCaptionSuggestions([]);
     }
     if (item.hashtagSets?.length) {
-      setGeneratedHashtags(item.hashtagSets);
-      setSelectedHashtags(item.hashtagSets[0] || []);
+      const sets = normalizeHashtagSets(item.hashtagSets);
+      setGeneratedHashtags(sets);
+      setSelectedHashtags(sets[0] || []);
     } else {
       setGeneratedHashtags([]);
       setSelectedHashtags([]);
@@ -1815,6 +2390,49 @@ export default function ImageStudio() {
         title={t('image_studio.seo_title')}
         description={t('image_studio.seo_description')}
       />
+      <StudioPlanBanner
+        toolLabel={mode === "meme" ? "Meme Studio" : "Image Studio"}
+        categoryLabel={categoryLabel}
+        niches={niches}
+        hasWeekPlan={hasWeekPlan}
+        dueToday={dueToday}
+        onApplyDue={() => {
+          const brief = applyDuePrompt();
+          if (!brief) return;
+          setPrompt(brief);
+          if (dueToday && /meme/i.test(dueToday.contentType)) {
+            setMode("meme");
+            setMemeMode("template");
+          }
+          toast.success("Today’s coach brief applied");
+        }}
+        onRequestNicheChange={() => setNicheDialogOpen(true)}
+        nicheDialogOpen={nicheDialogOpen}
+        onNicheDialogOpenChange={setNicheDialogOpen}
+        onConfirmNicheChange={confirmNicheChange}
+      />
+      {isClipPlanFlow ? (
+        (() => {
+          const banner = clipImageFirstBannerCopy(categoryLabel, niches);
+          const marker = "Animate → Clip Studio";
+          const idx = banner.body.indexOf(marker);
+          return (
+            <div className="rounded-lg border border-teal-500/35 bg-teal-500/10 px-3 py-2.5 text-xs text-foreground leading-relaxed">
+              <span className="font-bold text-teal-700 dark:text-teal-300">{banner.title}</span>
+              {" — "}
+              {idx < 0 ? (
+                banner.body
+              ) : (
+                <>
+                  {banner.body.slice(0, idx)}
+                  <strong>{marker}</strong>
+                  {banner.body.slice(idx + marker.length)}
+                </>
+              )}
+            </div>
+          );
+        })()
+      ) : null}
       <div className="lg:hidden mb-4">
         <Tabs defaultValue="generate" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
@@ -1850,6 +2468,22 @@ export default function ImageStudio() {
               setSelectedTemplateId={setSelectedTemplateId}
               slotTexts={slotTexts}
               setSlotText={setSlotText}
+              isSuggestingMemeCopy={isSuggestingMemeCopy}
+              onSuggestMemeCopy={handleSuggestMemeCopy}
+              memeRecommendations={memeRecommendations}
+              isRecommendingMemes={isRecommendingMemes}
+              onRecommendMemes={() => void handleRecommendMemes()}
+              onChooseMemeRecommendation={handleChooseMemeRecommendation}
+              hasActiveWeekPlan={Boolean(activeWeekPlan)}
+              onOpenWeekPlan={handleOpenWeekPlan}
+              memeBrandName={memeBrandName}
+              setMemeBrandName={setMemeBrandName}
+              memeVoiceIds={memeVoiceIds}
+              setMemeVoiceIds={setMemeVoiceIds}
+              memeCustomVoice={memeCustomVoice}
+              setMemeCustomVoice={setMemeCustomVoice}
+              memeHumorIntensity={memeHumorIntensity}
+              setMemeHumorIntensity={setMemeHumorIntensity}
               lighting={lighting} setLighting={setLighting}
               negativePrompt={negativePrompt} setNegativePrompt={setNegativePrompt}
               caption={caption} setCaption={setCaption}
@@ -1896,6 +2530,8 @@ export default function ImageStudio() {
               contrast={contrast} setContrast={setContrast}
               saturation={saturation} setSaturation={setSaturation}
               onPublishClick={() => setIsPublishModalOpen(true)}
+              onAnimateAsClipClick={() => setAnimatePickerOpen(true)}
+              isAnimatingAsClip={isAnimatingAsClip}
               isPublishing={isPublishing}
               isPublished={isPublished}
               watermarked={watermarked}
@@ -1924,6 +2560,19 @@ export default function ImageStudio() {
               selectedHashtags={selectedHashtags}
               onSelectCaption={setCaption}
               onSelectHashtagSet={setSelectedHashtags}
+              weekPlanCanvasOpen={weekPlanCanvasOpen}
+              weekPlanDays={weekPlanDays}
+              weekPlanSelectedIndex={weekPlanSelectedIndex}
+              onWeekPlanSelectDay={setWeekPlanSelectedIndex}
+              activeWeekPlan={activeWeekPlan}
+              isActivatingWeekPlan={isActivatingWeekPlan}
+              isCancellingWeekPlan={isCancellingWeekPlan}
+              canActivateWeekPlan={Boolean(memeRecommendations?.calendarPlan?.length) && !activeWeekPlan}
+              onActivateWeekPlan={() => void handleActivateWeekPlan()}
+              onCancelWeekPlan={() => void handleCancelWeekPlan()}
+              onUseWeekPlanDay={handleUseWeekPlanDay}
+              onCloseWeekPlanCanvas={() => setWeekPlanCanvasOpen(false)}
+              memeTemplates={memeTemplates}
             />
           </TabsContent>
 
@@ -1939,6 +2588,8 @@ export default function ImageStudio() {
               isRemovingBg={isRemovingBg}
               handleRemoveBg={handleRemoveBg}
               onPublishClick={() => setIsPublishModalOpen(true)}
+              onAnimateAsClipClick={() => setAnimatePickerOpen(true)}
+              isAnimatingAsClip={isAnimatingAsClip}
               onViewHistoryClick={scrollToHistory}
               isPublishing={isPublishing}
               isPublished={isPublished}
@@ -1974,6 +2625,22 @@ export default function ImageStudio() {
           setSelectedTemplateId={setSelectedTemplateId}
           slotTexts={slotTexts}
           setSlotText={setSlotText}
+          isSuggestingMemeCopy={isSuggestingMemeCopy}
+          onSuggestMemeCopy={handleSuggestMemeCopy}
+          memeRecommendations={memeRecommendations}
+          isRecommendingMemes={isRecommendingMemes}
+          onRecommendMemes={() => void handleRecommendMemes()}
+          onChooseMemeRecommendation={handleChooseMemeRecommendation}
+          hasActiveWeekPlan={Boolean(activeWeekPlan)}
+          onOpenWeekPlan={handleOpenWeekPlan}
+          memeBrandName={memeBrandName}
+          setMemeBrandName={setMemeBrandName}
+          memeVoiceIds={memeVoiceIds}
+          setMemeVoiceIds={setMemeVoiceIds}
+          memeCustomVoice={memeCustomVoice}
+          setMemeCustomVoice={setMemeCustomVoice}
+          memeHumorIntensity={memeHumorIntensity}
+          setMemeHumorIntensity={setMemeHumorIntensity}
           lighting={lighting} setLighting={setLighting}
           negativePrompt={negativePrompt} setNegativePrompt={setNegativePrompt}
           caption={caption} setCaption={setCaption}
@@ -2019,6 +2686,8 @@ export default function ImageStudio() {
           contrast={contrast} setContrast={setContrast}
           saturation={saturation} setSaturation={setSaturation}
           onPublishClick={() => setIsPublishModalOpen(true)}
+          onAnimateAsClipClick={() => setAnimatePickerOpen(true)}
+          isAnimatingAsClip={isAnimatingAsClip}
           isPublishing={isPublishing}
           isPublished={isPublished}
           watermarked={watermarked}
@@ -2047,6 +2716,19 @@ export default function ImageStudio() {
           selectedHashtags={selectedHashtags}
           onSelectCaption={setCaption}
           onSelectHashtagSet={setSelectedHashtags}
+          weekPlanCanvasOpen={weekPlanCanvasOpen}
+          weekPlanDays={weekPlanDays}
+          weekPlanSelectedIndex={weekPlanSelectedIndex}
+          onWeekPlanSelectDay={setWeekPlanSelectedIndex}
+          activeWeekPlan={activeWeekPlan}
+          isActivatingWeekPlan={isActivatingWeekPlan}
+          isCancellingWeekPlan={isCancellingWeekPlan}
+          canActivateWeekPlan={Boolean(memeRecommendations?.calendarPlan?.length) && !activeWeekPlan}
+          onActivateWeekPlan={() => void handleActivateWeekPlan()}
+          onCancelWeekPlan={() => void handleCancelWeekPlan()}
+          onUseWeekPlanDay={handleUseWeekPlanDay}
+          onCloseWeekPlanCanvas={() => setWeekPlanCanvasOpen(false)}
+          memeTemplates={memeTemplates}
         />
 
         {/* RIGHT PANEL - Studio Tools */}
@@ -2060,6 +2742,8 @@ export default function ImageStudio() {
           isRemovingBg={isRemovingBg}
           handleRemoveBg={handleRemoveBg}
           onPublishClick={() => setIsPublishModalOpen(true)}
+          onAnimateAsClipClick={() => setAnimatePickerOpen(true)}
+          isAnimatingAsClip={isAnimatingAsClip}
           onViewHistoryClick={scrollToHistory}
           isPublishing={isPublishing}
           isPublished={isPublished}
@@ -2530,7 +3214,13 @@ export default function ImageStudio() {
                 </div>
               </div>
 
-              <div className="p-6 border-t border-border/50 bg-muted/20 flex justify-end gap-3">
+              <div className="p-6 border-t border-border/50 bg-muted/20 space-y-4">
+                <SocialPublishTargets
+                  selected={socialPlatforms}
+                  onChange={setSocialPlatforms}
+                  disabled={isPublishing}
+                />
+                <div className="flex justify-end gap-3">
                 <Button 
                   variant="ghost" 
                   onClick={() => setIsPublishModalOpen(false)}
@@ -2553,6 +3243,7 @@ export default function ImageStudio() {
                     "Publish Content"
                   )}
                 </Button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -2665,6 +3356,103 @@ export default function ImageStudio() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Animate picker: Quick Ken Burns vs generative AI motion */}
+      <Dialog open={animatePickerOpen} onOpenChange={setAnimatePickerOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Animate in Clip Studio</DialogTitle>
+            <DialogDescription>
+              Quick zoom is free. AI motion uses generative I2V (PRO/STUDIO) and can take 1–3 minutes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-1">
+            <button
+              type="button"
+              onClick={() => setAnimateMode("ken_burns")}
+              className={cn(
+                "w-full rounded-xl border px-3 py-2.5 text-left transition-colors",
+                animateMode === "ken_burns"
+                  ? "border-primary/50 bg-primary/10"
+                  : "border-border hover:bg-muted/30",
+              )}
+            >
+              <span className="block text-sm font-bold">Quick (Ken Burns)</span>
+              <span className="block text-[11px] text-muted-foreground mt-0.5">
+                Instant still → MP4 zoom. Free on all plans.
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (userPlan === "FREE") {
+                  toast.error("AI motion requires Pro or Studio", {
+                    action: { label: "Upgrade", onClick: () => navigate("/upgrade") },
+                  });
+                  return;
+                }
+                setAnimateMode("i2v");
+              }}
+              className={cn(
+                "w-full rounded-xl border px-3 py-2.5 text-left transition-colors",
+                animateMode === "i2v"
+                  ? "border-primary/50 bg-primary/10"
+                  : "border-border hover:bg-muted/30",
+                userPlan === "FREE" && "opacity-70",
+              )}
+            >
+              <span className="block text-sm font-bold">
+                AI motion{userPlan === "FREE" ? " (Pro/Studio)" : ""}
+              </span>
+              <span className="block text-[11px] text-muted-foreground mt-0.5">
+                {userPlan === "FREE"
+                  ? "Upgrade to unlock generative video from your still."
+                  : "Generative video from your still — reels, ads, commercials."}
+              </span>
+            </button>
+            {animateMode === "i2v" ? (
+              <div className="space-y-2">
+                <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Motion prompt (optional)
+                </Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    "Reel energy — punchy camera push-in",
+                    "Product ad — soft orbit around subject",
+                    "Brand sting — elegant slow drift",
+                  ].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      className="text-[10px] font-semibold rounded-full border border-border px-2 py-1 hover:bg-muted/40"
+                      onClick={() => setMotionPrompt(preset)}
+                    >
+                      {preset.split("—")[0].trim()}
+                    </button>
+                  ))}
+                </div>
+                <Textarea
+                  value={motionPrompt}
+                  onChange={(e) => setMotionPrompt(e.target.value)}
+                  placeholder="Describe camera motion and vibe…"
+                  className="min-h-[72px] text-xs"
+                />
+              </div>
+            ) : null}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setAnimatePickerOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={isAnimatingAsClip}
+              onClick={() => void handleAnimateAsClip(animateMode)}
+            >
+              {isAnimatingAsClip ? "Starting…" : "Start animate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* DEV TERMINAL FOR REAL-TIME API STREAMING */}
       <AnimatePresence>

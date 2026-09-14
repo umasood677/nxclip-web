@@ -175,7 +175,7 @@ export default function VoiceNavigation() {
                   </kbd>
                 </div>
                 <div className="flex items-center justify-between border-b border-border/30 pb-1">
-                  <span>{isAr ? "معدل المقاطع" : "Clip Editor"}</span>
+                  <span>{t("nav.clip_editor")}</span>
                   <kbd className="px-1.5 py-0.5 bg-muted text-[10px] text-foreground rounded border border-border">
                     {isAr ? "المحرر" : "go to editor"}
                   </kbd>

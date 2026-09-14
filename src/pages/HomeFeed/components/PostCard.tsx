@@ -5,8 +5,6 @@ import {
   MoreHorizontal,
   Sparkles,
   BarChart3,
-  Youtube,
-  Instagram,
   Trash2,
   ExternalLink,
   FileEdit,
@@ -20,7 +18,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { TiktokIcon } from "../../../components/TiktokIcon";
+import { SocialPlatformIcon, SocialPlatformTile } from "../../../components/social/SocialPlatformIcon";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import {
@@ -37,9 +35,10 @@ import {
   TooltipTrigger,
 } from "../../../components/ui/tooltip";
 import { cn } from "../../../lib/utils";
-import { AuthenticatedImage } from "../../../components/AuthenticatedImage";
+import { AuthenticatedMediaPreview } from "../../../components/AuthenticatedMediaPreview";
 import { CreatorAvatar } from "../../../components/CreatorAvatar";
 import { cssAspectRatio } from "../../../components/JustifiedGallery";
+import { socialApi, type SocialPlatform } from "../../../services/apiClient";
 import type { PlatformStatDto } from "../../../services/apiClient";
 
 const sanitizeImageUrl = (url?: string): string => {
@@ -119,7 +118,7 @@ interface PostCardProps {
   onLike?: (id: string | number) => void;
   onDelete?: (id: string | number) => void;
   onFollow?: (userId: string, currentlyFollowing: boolean) => void;
-  /** Local UI update when scheduling to a social platform (prep for real integration) */
+  /** Optimistic UI update after Live / schedule API succeeds */
   onSocialSchedule?: (postId: string | number, target: SocialTarget) => void;
   priority?: boolean;
   index?: number;
@@ -134,10 +133,8 @@ function formatStat(value?: number, display?: string): string {
 }
 
 function PlatformIcon({ platform, size = 11 }: { platform: string; size?: number }) {
-  const p = platform.toLowerCase();
-  if (p === "youtube") return <Youtube size={size} className="text-red-500" />;
-  if (p === "instagram") return <Instagram size={size} className="text-pink-500" />;
-  if (p === "tiktok") return <TiktokIcon size={size} />;
+  const icon = <SocialPlatformIcon platform={platform} size={size} />;
+  if (icon) return icon;
   return <Link2 size={size} />;
 }
 
@@ -225,6 +222,7 @@ export const PostCard = memo(
     const [hovered, setHovered] = useState(false);
     const [localTargets, setLocalTargets] = useState<SocialTarget[]>(post.socialTargets || []);
     const [following, setFollowing] = useState(!!post.isFollowing);
+    const [socialBusy, setSocialBusy] = useState(false);
 
     useEffect(() => {
       setLocalTargets(post.socialTargets || []);
@@ -270,40 +268,96 @@ export const PostCard = memo(
       return name;
     })();
 
-    const scheduleToSocial = (platform: "youtube" | "instagram" | "tiktok") => {
-      const scheduledAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-      const target: SocialTarget = { platform, status: "scheduled", scheduledAt };
+    const canSocialLive =
+      !!post.isOwn &&
+      (post.status === "published" ||
+        displayStatus.key === "published" ||
+        displayStatus.key === "scheduled" ||
+        displayStatus.key === "publishing" ||
+        displayStatus.key === "live");
+
+    const applyTarget = (target: SocialTarget) => {
       setLocalTargets((prev) => {
-        const without = prev.filter((t) => t.platform !== platform);
+        const without = prev.filter((t) => t.platform !== target.platform);
         return [...without, target];
       });
       onSocialSchedule?.(detailId, target);
-      toast.success(`Scheduled to ${platform}`, {
-        description:
-          "Social publishing will go live when YouTube / Instagram / TikTok are connected. The post view is ready for Live status.",
-      });
     };
 
-    const markLiveLocal = (platform: "youtube" | "instagram" | "tiktok") => {
-      const target: SocialTarget = {
-        platform,
-        status: "live",
-        scheduledAt: new Date().toISOString(),
-      };
-      setLocalTargets((prev) => {
-        const without = prev.filter((t) => t.platform !== platform);
-        return [...without, target];
-      });
-      onSocialSchedule?.(detailId, target);
-      toast.success(`Marked Live on ${platform}`, {
-        description: "Preview only — wire real publish APIs when social accounts are connected.",
-      });
+    const scheduleToSocial = async (platform: SocialPlatform) => {
+      if (!post.isOwn) {
+        toast.info("Only your posts can be scheduled to social.");
+        return;
+      }
+      if (!canSocialLive) {
+        toast.info("Publish to the nxClip feed first, then schedule Live auto-post.");
+        navigate(`/feed/post/${detailId}`);
+        return;
+      }
+      const contentId = String(detailId);
+      const scheduledAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      setSocialBusy(true);
+      try {
+        await socialApi.schedule(contentId, {
+          platforms: [platform],
+          scheduledAt,
+          timezone,
+        });
+        applyTarget({ platform, status: "scheduled", scheduledAt });
+        toast.success(`Scheduled Live auto-post to ${platform}`, {
+          description: "Posts automatically in about an hour. Adjust time on Post details.",
+        });
+      } catch (err: any) {
+        toast.error(err?.message || `Could not schedule ${platform}`, {
+          action: {
+            label: "Open Live",
+            onClick: () => navigate(`/feed/post/${detailId}#live-on-social`),
+          },
+        });
+      } finally {
+        setSocialBusy(false);
+      }
+    };
+
+    const publishLiveNow = async (platform: SocialPlatform) => {
+      if (!post.isOwn) {
+        toast.info("Only your posts can go Live on social.");
+        return;
+      }
+      if (!canSocialLive) {
+        toast.info("Publish to the nxClip feed first, then post Live.");
+        navigate(`/feed/post/${detailId}`);
+        return;
+      }
+      const contentId = String(detailId);
+      setSocialBusy(true);
+      try {
+        await socialApi.publishNow(contentId, { platforms: [platform] });
+        applyTarget({
+          platform,
+          status: "publishing",
+          scheduledAt: new Date().toISOString(),
+        });
+        toast.success(`Queued Live post to ${platform}`, {
+          description: "Status updates as the platform finishes. Open Post details for full controls.",
+        });
+      } catch (err: any) {
+        toast.error(err?.message || `Could not post Live to ${platform}`, {
+          action: {
+            label: "Open Live",
+            onClick: () => navigate(`/feed/post/${detailId}#live-on-social`),
+          },
+        });
+      } finally {
+        setSocialBusy(false);
+      }
     };
 
     const typeLabel =
       post.contentType === "clip"
         ? "Clip"
-        : post.contentType === "meme"
+        : post.contentType === "meme" || (post as { style?: string }).style === "meme"
           ? "Meme"
           : post.contentType === "insight"
             ? "Insight"
@@ -322,7 +376,8 @@ export const PostCard = memo(
         onMouseLeave={() => setHovered(false)}
       >
         <div className="relative h-full w-full overflow-hidden">
-          <AuthenticatedImage
+          <AuthenticatedMediaPreview
+            kind={post.contentType === "clip" ? "video" : "image"}
             src={post.image || imgSrc}
             fallbackSrc="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80"
             alt={post.content || "Post image"}
@@ -336,10 +391,14 @@ export const PostCard = memo(
               hovered && "scale-110",
             )}
             onClick={() => navigate(`/feed/post/${detailId}`)}
-            onLoad={(e) =>
-              onMediaLoad?.(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)
-            }
+            onLoad={(e) => {
+              const el = e.currentTarget;
+              if (el instanceof HTMLImageElement) {
+                onMediaLoad?.(el.naturalWidth, el.naturalHeight);
+              }
+            }}
             onError={() => setImgSrc("")}
+            showPlayBadge={false}
           />
 
           {/* Create Hub–style dark overlay on hover */}
@@ -409,83 +468,112 @@ export const PostCard = memo(
                 className="w-60 border-border bg-popover text-sm font-medium shadow-lg data-open:zoom-in-100 data-closed:zoom-out-100"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="px-2.5 py-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground">
-                  Publish / Schedule
-                </div>
-                <DropdownMenuItem
-                  className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
-                  onClick={() => scheduleToSocial("youtube")}
-                >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-[#FF0000] shrink-0 [transform:translateZ(0)]">
-                    <Youtube size={14} strokeWidth={2.25} className="text-white" aria-hidden />
-                  </span>
-                  YouTube
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
-                  onClick={() => scheduleToSocial("instagram")}
-                >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-gradient-to-br from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] shrink-0 [transform:translateZ(0)]">
-                    <Instagram size={14} strokeWidth={2.25} className="text-white" aria-hidden />
-                  </span>
-                  Instagram
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
-                  onClick={() => scheduleToSocial("tiktok")}
-                >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-black shrink-0 border border-white/25 [transform:translateZ(0)]">
-                    <TiktokIcon size={14} className="text-white" />
-                  </span>
-                  TikTok
-                </DropdownMenuItem>
-                {(post.status === "published" ||
-                  displayStatus.key === "published" ||
-                  displayStatus.key === "scheduled") && (
+                {post.isOwn ? (
                   <>
-                    <DropdownMenuSeparator />
                     <div className="px-2.5 py-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground">
-                      Mark Live
+                      Schedule auto-post (+1h)
                     </div>
                     <DropdownMenuItem
                       className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
-                      onClick={() => markLiveLocal("youtube")}
+                      disabled={socialBusy}
+                      onClick={() => void scheduleToSocial("youtube")}
                     >
-                      <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-[#FF0000] shrink-0 [transform:translateZ(0)]">
-                        <Youtube size={14} strokeWidth={2.25} className="text-white" aria-hidden />
-                      </span>
-                      Live on YouTube
+                      <SocialPlatformTile platform="youtube" size={24} iconSize={14} />
+                      YouTube
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
-                      onClick={() => markLiveLocal("instagram")}
+                      disabled={socialBusy}
+                      onClick={() => void scheduleToSocial("instagram")}
                     >
-                      <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-gradient-to-br from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] shrink-0 [transform:translateZ(0)]">
-                        <Instagram size={14} strokeWidth={2.25} className="text-white" aria-hidden />
-                      </span>
-                      Live on Instagram
+                      <SocialPlatformTile platform="instagram" size={24} iconSize={14} />
+                      Instagram
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
-                      onClick={() => markLiveLocal("tiktok")}
+                      disabled={socialBusy}
+                      onClick={() => void scheduleToSocial("facebook")}
                     >
-                      <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-black shrink-0 border border-white/25 [transform:translateZ(0)]">
-                        <TiktokIcon size={14} className="text-white" />
+                      <SocialPlatformTile platform="facebook" size={24} iconSize={14} />
+                      Facebook
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
+                      disabled={socialBusy}
+                      onClick={() => void scheduleToSocial("tiktok")}
+                    >
+                      <SocialPlatformTile platform="tiktok" size={24} iconSize={14} />
+                      TikTok
+                    </DropdownMenuItem>
+                    {canSocialLive && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <div className="px-2.5 py-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground">
+                          Post Live now
+                        </div>
+                        <DropdownMenuItem
+                          className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
+                          disabled={socialBusy}
+                          onClick={() => void publishLiveNow("youtube")}
+                        >
+                          <SocialPlatformTile platform="youtube" size={24} iconSize={14} />
+                          Live on YouTube
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
+                          disabled={socialBusy}
+                          onClick={() => void publishLiveNow("instagram")}
+                        >
+                          <SocialPlatformTile platform="instagram" size={24} iconSize={14} />
+                          Live on Instagram
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
+                          disabled={socialBusy}
+                          onClick={() => void publishLiveNow("facebook")}
+                        >
+                          <SocialPlatformTile platform="facebook" size={24} iconSize={14} />
+                          Live on Facebook
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
+                          disabled={socialBusy}
+                          onClick={() => void publishLiveNow("tiktok")}
+                        >
+                          <SocialPlatformTile platform="tiktok" size={24} iconSize={14} />
+                          Live on TikTok
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal text-foreground/80"
+                      onClick={() => navigate(`/feed/post/${detailId}#live-on-social`)}
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-muted border border-border shrink-0">
+                        <Radio size={14} strokeWidth={2.25} aria-hidden />
                       </span>
-                      Live on TikTok
+                      Open Live controls
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal text-foreground/80"
+                      onClick={() => navigate("/profile")}
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-muted border border-border shrink-0">
+                        <UserRound size={14} strokeWidth={2.25} aria-hidden />
+                      </span>
+                      Connect accounts in Profile
                     </DropdownMenuItem>
                   </>
+                ) : (
+                  <DropdownMenuItem
+                    className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
+                    onClick={() => navigate(`/feed/post/${detailId}`)}
+                  >
+                    <ExternalLink size={14} />
+                    View post
+                  </DropdownMenuItem>
                 )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal text-foreground/80"
-                  onClick={() => navigate("/profile")}
-                >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-muted border border-border shrink-0">
-                    <UserRound size={14} strokeWidth={2.25} aria-hidden />
-                  </span>
-                  Connect accounts in Profile
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -519,7 +607,7 @@ export const PostCard = memo(
               className="h-8 text-[10px] font-bold rounded-lg px-2.5 bg-black/55 border-white/20 text-white hover:bg-black/70 backdrop-blur-md"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/feed/post/${detailId}`);
+                navigate(`/analytics?contentId=${encodeURIComponent(detailId)}`);
               }}
             >
               <BarChart3 size={12} className="me-1" />

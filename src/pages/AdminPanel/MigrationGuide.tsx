@@ -477,7 +477,7 @@ The dynamic API endpoint is offline, and the static asset could not be loaded. P
   const modulesSummary = [
     { name: "Auth & Security", id: "module-a-user-authentication-security", status: "Ready", type: "Identity-Service (5001)" },
     { name: "Profiles Management", id: "module-b-profiles-user-management", status: "Ready", type: "Identity-Service (5001)" },
-    { name: "Clip Editor & S3", id: "module-c-clip-editor-video-content-management", status: "Ready", type: "Content-Service (5002)" },
+    { name: "Clip Studio & S3", id: "module-c-clip-editor-video-content-management", status: "Ready", type: "Content-Service (5002)" },
     { name: "Image Studio Workflows", id: "module-d-image-editor-meme-canvas", status: "Ready", type: "Content-Service (5002)" },
     { name: "Social Feed & Cursor Page", id: "module-e-social-feed-engagement-creator-relations", status: "Ready", type: "Feed-Service (5003)" },
     { name: "Analytics Logs", id: "module-f-aggregated-metrics-analytics-dashboard", status: "Ready", type: "Analytics-Service (5005)" },

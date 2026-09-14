@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import CreatePostDialog from "./components/CreatePostDialog";
 import { DashboardSkeleton } from "./skeletons/DashboardSkeleton";
-import { 
+import {
   Sparkles, 
   BrainCircuit, 
   TrendingUp,
@@ -17,6 +17,8 @@ import {
   FileEdit,
   Radio,
   ListChecks,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { 
   AreaChart, 
@@ -44,34 +46,48 @@ import {
 import { KPICard, KPICardProps } from "./components/KPICard";
 import { ContentTypeCard } from "./components/ContentTypeCard";
 import { SectionHeader } from "./components/SectionHeader";
+import { WorkflowIntelligenceDock } from "./components/WorkflowIntelligenceDock";
 import { PwaInstallPrompt } from "../../components/PwaInstallPrompt";
 
 import { EmptyState } from "../../components/common/EmptyState";
-import {
-  JustifiedGallery,
-  JustifiedLayoutOptions,
-  cssAspectRatio,
-  parseAspectRatio,
-} from "../../components/JustifiedGallery";
+import { cssAspectRatio, parseAspectRatio } from "../../components/JustifiedGallery";
+import { SocialPlatformIcon } from "../../components/social/SocialPlatformIcon";
 import { resolveItemAspectRatio } from "../ContentLibrary/lib/aspectRatio";
-
-const DASHBOARD_LAYOUT: JustifiedLayoutOptions = {
-  maxColumns: 5,
-  minTileEdge: 160,
-  minRowHeight: 210,
-  maxRowHeight: 300,
-};
+import { buildContentSocialInsight, type SocialDistributionRow } from "../../lib/contentSocialInsight";
 import {
   analyticsApi,
+  coachApi,
   contentApi,
   extractValidImageUrl,
+  feedApi,
+  socialApi,
   type ContentDto,
   type DashboardMetricsDto,
+  type FeedItemDto,
+  type SocialPlatform,
 } from "../../services/apiClient";
 import { AuthenticatedImage } from "../../components/AuthenticatedImage";
 import { useAppSelector } from "../../store/hooks";
 import { selectAuthProfile } from "../../store/slices/authSlice";
-import { beginWeekPlanRenewal, weekPlanFromProfile } from "../../lib/weekPlan";
+import { CreatorNicheTags } from "../../components/CreatorNicheTags";
+import { onboardingSnapshotFromProfile } from "../../lib/onboardingSnapshot";
+import { connectedMapFromAccounts } from "../../lib/socialConnect";
+import {
+  beginOnboardingRevision,
+  beginWeekPlanRenewal,
+  buildPlanDayPrompt,
+  buildStudioHrefForPlanDay,
+  planDayCtaLabel,
+  weekPlanFromProfile,
+} from "../../lib/weekPlan";
+import {
+  buildPlanWorkflowSuggestions,
+  buildWeekGoalsPayload,
+  evaluatePlanDays,
+  mergeWorkflowSuggestions,
+  type PlanWorkflowSuggestion,
+} from "../../lib/weekPlanWorkflow";
+import { contentKindLabel, resolveContentKind } from "../../lib/contentKind";
 import { resolveLibraryTitle } from "../ContentLibrary/lib/title";
 
 function formatCompact(n: number): string {
@@ -80,14 +96,9 @@ function formatCompact(n: number): string {
   return String(n);
 }
 
-function isLiveContent(item: ContentDto): boolean {
-  const stats = (item as { platformStats?: { externalUrl?: string }[] }).platformStats;
-  return Array.isArray(stats) && stats.some((s) => !!s.externalUrl);
-}
-
 function isPublishedOnFeed(item: ContentDto): boolean {
   const s = (item.status || "").toLowerCase();
-  return s === "published" || s === "approved" || isLiveContent(item);
+  return s === "published" || s === "approved";
 }
 
 function isWithinLastDays(iso: string | undefined | null, days: number): boolean {
@@ -109,6 +120,27 @@ function formatPublishedStamp(iso?: string | null, locale?: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+const WORKFLOW_DOCK_OPEN_KEY = "nxclip.workflowDockOpen";
+
+function readWorkflowDockOpen(): boolean {
+  try {
+    const raw = sessionStorage.getItem(WORKFLOW_DOCK_OPEN_KEY);
+    if (raw === "0") return false;
+    if (raw === "1") return true;
+  } catch {
+    /* ignore */
+  }
+  return true;
+}
+
+function writeWorkflowDockOpen(open: boolean) {
+  try {
+    sessionStorage.setItem(WORKFLOW_DOCK_OPEN_KEY, open ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
 }
 
 function resolveThumb(item: ContentDto): string {
@@ -145,24 +177,116 @@ export default function Dashboard() {
   const [hasContent, setHasContent] = useState<boolean | null>(null);
   const [mine, setMine] = useState<ContentDto[]>([]);
   const [metrics, setMetrics] = useState<DashboardMetricsDto | null>(null);
+  const [strategyTip, setStrategyTip] = useState<string | null>(null);
+  const [strategyTipProvider, setStrategyTipProvider] = useState<string | null>(null);
+  const [strategyTipLoading, setStrategyTipLoading] = useState(false);
+  const [workflowSuggestions, setWorkflowSuggestions] = useState<PlanWorkflowSuggestion[]>([]);
+  const [connectedSocials, setConnectedSocials] = useState<
+    Partial<Record<SocialPlatform, boolean>>
+  >({});
+  const [feedByContentId, setFeedByContentId] = useState<Map<string, FeedItemDto>>(() => new Map());
+  const [distributionsByContentId, setDistributionsByContentId] = useState<
+    Map<string, SocialDistributionRow[]>
+  >(() => new Map());
+  const [workflowProvider, setWorkflowProvider] = useState<string | null>(null);
+  const [workflowEvaluated, setWorkflowEvaluated] = useState(0);
+  const [workflowCacheHits, setWorkflowCacheHits] = useState(0);
+  const [workflowLoading, setWorkflowLoading] = useState(false);
+  const [workflowDockOpen, setWorkflowDockOpen] = useState(readWorkflowDockOpen);
   const navigate = useNavigate();
   const authProfile = useAppSelector(selectAuthProfile);
-  const weekPlan = weekPlanFromProfile(authProfile);
+  const weekPlan = useMemo(() => weekPlanFromProfile(authProfile), [authProfile]);
+  const setWorkflowDockOpenPersist = useCallback((open: boolean) => {
+    setWorkflowDockOpen(open);
+    writeWorkflowDockOpen(open);
+  }, []);
+  const onboarding = onboardingSnapshotFromProfile(authProfile);
+  const isLegacyOnboarding = Boolean(
+    onboarding?.isLegacy || (weekPlan && (!onboarding?.categoryLabel && !(onboarding?.niches?.length))),
+  );
+
+  const planDayStatuses = useMemo(() => {
+    if (!weekPlan || !authProfile?.uid) return [];
+    return evaluatePlanDays(weekPlan, mine, authProfile.uid);
+  }, [weekPlan, mine, authProfile?.uid]);
+
+  const planWorkflowSuggestions = useMemo(() => {
+    if (!weekPlan || !authProfile?.uid) return [];
+    const raw = String(authProfile.plan || "free").toUpperCase();
+    const userPlan: "FREE" | "PRO" | "STUDIO" =
+      raw === "PRO" || raw === "STUDIO" ? raw : "FREE";
+    return buildPlanWorkflowSuggestions(weekPlan, mine, authProfile.uid, {
+      categoryLabel: onboarding?.categoryLabel,
+      niches: onboarding?.niches,
+      userPlan,
+    });
+  }, [weekPlan, mine, authProfile?.uid, authProfile?.plan, onboarding?.categoryLabel, onboarding?.niches]);
+
+  const displayWorkflowSuggestions = useMemo(
+    () => mergeWorkflowSuggestions(planWorkflowSuggestions, workflowSuggestions, 12),
+    [planWorkflowSuggestions, workflowSuggestions],
+  );
+
+  const hasConnectedSocial = useMemo(() => {
+    if (Object.values(connectedSocials).some(Boolean)) return true;
+    const profileSocials = authProfile?.connectedSocials || {};
+    return Object.values(profileSocials).some(Boolean);
+  }, [connectedSocials, authProfile?.connectedSocials]);
+
+  const connectedPlatforms = useMemo(
+    () =>
+      (Object.entries(connectedSocials) as [SocialPlatform, boolean][])
+        .filter(([, on]) => !!on)
+        .map(([platform]) => platform),
+    [connectedSocials],
+  );
+
+  const resolveSocialInsight = useCallback(
+    (contentId: string) =>
+      buildContentSocialInsight({
+        platformStats: feedByContentId.get(contentId)?.platformStats,
+        distributions: distributionsByContentId.get(contentId),
+        socialRollup: feedByContentId.get(contentId)?.socialRollup,
+        connectedPlatforms,
+      }),
+    [feedByContentId, distributionsByContentId, connectedPlatforms],
+  );
+
+  const isLiveContent = useCallback(
+    (item: ContentDto) => resolveSocialInsight(item.id).displayStatus === "live",
+    [resolveSocialInsight],
+  );
+
+  const handleReviseOnboarding = useCallback(() => {
+    beginOnboardingRevision();
+    navigate("/onboarding", {
+      state: { renewWeekPlan: true, reviseOnboarding: true },
+    });
+  }, [navigate]);
 
   useEffect(() => {
     async function loadDashboard() {
       try {
-        const [items, summary] = await Promise.all([
+        const [items, summary, accounts, feedRes] = await Promise.all([
           contentApi.getUserContentList(80),
           analyticsApi.fetchSummaryMetrics().catch(() => null),
+          socialApi.listAccounts().catch(() => []),
+          feedApi.fetchPersonalFeed(undefined, 80).catch(() => ({ items: [] as FeedItemDto[] })),
         ]);
         const cleaned = (items || []).filter((i) => {
           const s = (i.status || "").toLowerCase();
           return s !== "deleted" && s !== "archived";
         });
+        const feedMap = new Map<string, FeedItemDto>();
+        for (const feedItem of feedRes?.items ?? []) {
+          if (feedItem.contentId) feedMap.set(feedItem.contentId, feedItem);
+        }
+        setFeedByContentId(feedMap);
+        setDistributionsByContentId(new Map());
         setMine(cleaned);
         setHasContent(cleaned.length > 0);
         setMetrics(summary);
+        setConnectedSocials(connectedMapFromAccounts(accounts || []));
       } catch (err) {
         console.error("Failed to load dashboard:", err);
         setHasContent(false);
@@ -173,6 +297,36 @@ export default function Dashboard() {
     void loadDashboard();
   }, []);
 
+  useEffect(() => {
+    if (!mine.length) return;
+    const topIds = [...mine]
+      .filter((i) => isPublishedOnFeed(i))
+      .sort((a, b) => (b.views || b.likes || 0) - (a.views || a.likes || 0))
+      .slice(0, 4)
+      .map((i) => i.id);
+    if (!topIds.length) return;
+
+    let cancelled = false;
+    void (async () => {
+      const entries = await Promise.all(
+        topIds.map(async (contentId) => {
+          try {
+            const res = await socialApi.getDistributions(contentId);
+            return [contentId, (res?.items ?? []) as SocialDistributionRow[]] as const;
+          } catch {
+            return [contentId, [] as SocialDistributionRow[]] as const;
+          }
+        }),
+      );
+      if (cancelled) return;
+      setDistributionsByContentId(new Map(entries));
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mine]);
+
   const pipeline = useMemo(() => {
     const draft = mine.filter((i) => {
       const s = (i.status || "").toLowerCase();
@@ -182,10 +336,127 @@ export default function Dashboard() {
       const s = (i.status || "").toLowerCase();
       return s === "published" || s === "approved";
     }).length;
-    const live = mine.filter(isLiveContent).length;
-    const scheduled = mine.filter((i) => (i.status || "").toLowerCase() === "publishing").length;
+    const live = mine.filter((i) => isLiveContent(i)).length;
+    const scheduled = mine.filter((i) => resolveSocialInsight(i.id).displayStatus === "scheduled").length;
     return { draft, published, live, scheduled };
-  }, [mine]);
+  }, [mine, isLiveContent, resolveSocialInsight]);
+
+  const loadStrategyTip = useCallback(async () => {
+    setStrategyTipLoading(true);
+    try {
+      const connected = Object.entries(connectedSocials)
+        .filter(([, on]) => !!on)
+        .map(([platform]) => platform);
+      const niches =
+        authProfile?.creatorNiches?.length
+          ? authProfile.creatorNiches
+          : authProfile?.gameNiches?.length
+            ? authProfile.gameNiches
+            : authProfile?.games || [];
+
+      const res = await coachApi.getStrategyTip({
+        drafts: pipeline.draft,
+        published: pipeline.published,
+        live: pipeline.live,
+        scheduled: pipeline.scheduled,
+        niches,
+        creatorCategory:
+          authProfile?.creatorCategoryLabel || authProfile?.creatorCategory || undefined,
+        hasWeekPlan: !!weekPlan,
+        connectedSocials: connected,
+        language: i18n.language,
+      });
+      setStrategyTip(res.tip);
+      setStrategyTipProvider(res.provider);
+    } catch (err) {
+      console.warn("Strategy tip unavailable:", err);
+      setStrategyTip(t("dashboard.tip.content"));
+      setStrategyTipProvider(null);
+    } finally {
+      setStrategyTipLoading(false);
+    }
+  }, [
+    connectedSocials,
+    authProfile?.creatorCategory,
+    authProfile?.creatorCategoryLabel,
+    authProfile?.creatorNiches,
+    authProfile?.gameNiches,
+    authProfile?.games,
+    i18n.language,
+    pipeline.draft,
+    pipeline.live,
+    pipeline.published,
+    pipeline.scheduled,
+    t,
+    weekPlan,
+  ]);
+
+  const loadStrategyTipRef = useRef(loadStrategyTip);
+  loadStrategyTipRef.current = loadStrategyTip;
+
+  useEffect(() => {
+    if (loading) return;
+    void loadStrategyTipRef.current();
+  }, [loading, authProfile?.uid, i18n.language]);
+
+  const loadWorkflowIntelligence = useCallback(async () => {
+    setWorkflowLoading(true);
+    try {
+      const niches =
+        authProfile?.creatorNiches?.length
+          ? authProfile.creatorNiches
+          : authProfile?.gameNiches?.length
+            ? authProfile.gameNiches
+            : authProfile?.games || [];
+      const weekGoals =
+        weekPlan && authProfile?.uid
+          ? buildWeekGoalsPayload(weekPlan, mine, authProfile.uid)
+          : undefined;
+      const res = await contentApi.getWorkflowIntelligence({
+        niches,
+        creatorCategory:
+          authProfile?.creatorCategoryLabel || authProfile?.creatorCategory || undefined,
+        language: i18n.language,
+        limit: 12,
+        weekGoals,
+      });
+      setWorkflowSuggestions(
+        (res.suggestions || []).map((s) => ({
+          ...s,
+          source: "asset" as const,
+        })),
+      );
+      setWorkflowProvider(res.provider || null);
+      setWorkflowEvaluated(res.evaluatedCount ?? 0);
+      setWorkflowCacheHits(res.cacheHits ?? 0);
+    } catch (err) {
+      console.warn("Workflow intelligence unavailable:", err);
+      setWorkflowSuggestions([]);
+      setWorkflowProvider(null);
+      setWorkflowEvaluated(0);
+      setWorkflowCacheHits(0);
+    } finally {
+      setWorkflowLoading(false);
+    }
+  }, [
+    authProfile?.creatorCategory,
+    authProfile?.creatorCategoryLabel,
+    authProfile?.creatorNiches,
+    authProfile?.gameNiches,
+    authProfile?.games,
+    authProfile?.uid,
+    i18n.language,
+    mine,
+    weekPlan,
+  ]);
+
+  const loadWorkflowIntelligenceRef = useRef(loadWorkflowIntelligence);
+  loadWorkflowIntelligenceRef.current = loadWorkflowIntelligence;
+
+  useEffect(() => {
+    if (loading) return;
+    void loadWorkflowIntelligenceRef.current();
+  }, [loading, authProfile?.uid, i18n.language]);
 
   const attentionItems = useMemo(() => {
     const items: { id: string; issue: string; action: string; impact: string; cta: string; path: string }[] = [];
@@ -194,28 +465,35 @@ export default function Dashboard() {
       return s.includes("fail") || s.includes("reject");
     });
     failed.slice(0, 2).forEach((i) => {
+      const isClip = resolveContentKind(i) === "clip";
+      const noMedia = !i.storageKey;
       items.push({
         id: i.id,
         issue: resolveLibraryTitle(i, "Generation issue"),
-        action: "Retry or edit in Studio",
+        action: isClip && noMedia ? "Retry animation" : "Retry or edit in Studio",
         impact: "High",
         cta: "Fix",
-        path: "/create/image",
+        path: isClip
+          ? `/create/clip/${i.id}/edit?step=polish&retryAnimate=${noMedia ? "1" : "0"}`
+          : "/create/image",
       });
     });
     const drafts = mine.filter((i) => (i.status || "").toLowerCase() === "draft");
     drafts.slice(0, 2).forEach((i) => {
+      const isClip = resolveContentKind(i) === "clip";
       items.push({
         id: `draft-${i.id}`,
         issue: resolveLibraryTitle(i, "Unfinished draft"),
-        action: "Resume and publish",
-        impact: "Med",
-        cta: "Resume",
-        path: "/create",
+        action: isClip ? "Polish in Clip Studio" : "Resume and publish",
+        impact: "Medium",
+        cta: isClip ? "Polish" : "Resume",
+        path: isClip ? `/create/clip/${i.id}/edit?step=polish` : "/create",
       });
     });
     const socials = authProfile?.connectedSocials || {};
-    const connected = Object.values(socials).some(Boolean);
+    const connected =
+      hasConnectedSocial ||
+      Object.values(socials).some(Boolean);
     if (!connected) {
       items.push({
         id: "connect-social",
@@ -223,40 +501,38 @@ export default function Dashboard() {
         action: "Connect to go Live on platforms",
         impact: "High",
         cta: "Connect",
-        path: "/profile",
+        path: "/profile?focus=social#profile-social-channels",
       });
     }
     return items.slice(0, 4);
-  }, [mine, authProfile?.connectedSocials]);
+  }, [mine, hasConnectedSocial, authProfile?.connectedSocials]);
 
   const topContent = useMemo(() => {
     return [...mine]
-      .filter((i) => {
-        const s = (i.status || "").toLowerCase();
-        return s === "published" || s === "approved" || isLiveContent(i);
-      })
+      .filter((i) => isPublishedOnFeed(i))
       .sort((a, b) => (b.views || b.likes || 0) - (a.views || a.likes || 0))
       .slice(0, 4)
       .map((i) => {
-        const live = isLiveContent(i);
+        const insight = resolveSocialInsight(i.id);
         const aspect = resolveItemAspectRatio(i);
         const stampSource = i.publishedAt || i.createdAt;
         return {
           id: i.id,
           title: resolveLibraryTitle(i),
           thumbnail: resolveThumb(i),
-          status: live ? "Live" : "Published",
-          contentType: (i.contentType || "image").toLowerCase(),
+          status: insight.displayLabel,
+          displayStatus: insight.displayStatus,
+          livePlatforms: insight.livePlatforms,
+          contentType: contentKindLabel(resolveContentKind(i)),
           aspectRatio: parseAspectRatio(aspect),
           aspectCss: cssAspectRatio(aspect),
           publishedStamp: formatPublishedStamp(stampSource, i18n.language),
-          nextStep: live
-            ? "Already Live on social — create the next piece in this format."
-            : "On your Feed only — open it and schedule Live on YouTube, Instagram, or TikTok.",
-          nextCta: live ? "Open post" : "Go Live",
+          statusLine: insight.statusLine,
+          actionLine: insight.actionLine,
+          actionCta: insight.actionCta,
         };
       });
-  }, [mine, i18n.language]);
+  }, [mine, i18n.language, resolveSocialInsight]);
 
   const DASHBOARD_KPIS: KPICardProps[] = useMemo(() => {
     const views = metrics?.views ?? mine.reduce((a, i) => a + (i.views || 0), 0);
@@ -306,11 +582,8 @@ export default function Dashboard() {
   const CONTENT_PERFORMANCE = useMemo(() => {
     const types = ["clip", "meme", "image"] as const;
     return types.map((type) => {
-      const subset = mine.filter((i) => (i.contentType || "image").toLowerCase() === type);
-      const publishedItems = subset.filter((i) => {
-        const s = (i.status || "").toLowerCase();
-        return s === "published" || s === "approved" || isLiveContent(i);
-      });
+      const subset = mine.filter((i) => resolveContentKind(i) === type);
+      const publishedItems = subset.filter((i) => isPublishedOnFeed(i));
       const likes = subset.reduce((a, i) => a + (i.likes || 0), 0);
       const top = [...publishedItems, ...subset].sort(
         (a, b) => (b.views || b.likes || 0) - (a.views || a.likes || 0),
@@ -332,7 +605,7 @@ export default function Dashboard() {
         topPostId: top?.id,
       };
     });
-  }, [mine, t]);
+  }, [mine, t, isLiveContent]);
 
   const TOP_CONTENT = topContent;
   const ATTENTION_ITEMS = attentionItems;
@@ -344,16 +617,17 @@ export default function Dashboard() {
     }).length;
 
     const planDays = weekPlan?.days?.length ?? 0;
+    const planDaysDone = planDayStatuses.filter((d) => d.status === "done").length;
     const planProgressValue =
       planDays > 0
-        ? `${Math.min(publishedThisWeek, planDays)} / ${planDays}`
+        ? `${planDaysDone} / ${planDays}`
         : t("dashboard.pulse.no_plan");
     const planHint =
       planDays > 0
-        ? publishedThisWeek >= planDays
+        ? planDaysDone >= planDays
           ? t("dashboard.pulse.plan_done")
           : t("dashboard.pulse.plan_remaining", {
-              count: Math.max(planDays - publishedThisWeek, 0),
+              count: Math.max(planDays - planDaysDone, 0),
             })
         : t("dashboard.pulse.plan_create_hint");
 
@@ -388,7 +662,7 @@ export default function Dashboard() {
           ? undefined
           : () => {
               beginWeekPlanRenewal();
-              navigate("/onboarding");
+              navigate("/onboarding", { state: { renewWeekPlan: true } });
             },
       },
       {
@@ -414,7 +688,7 @@ export default function Dashboard() {
         path: "/create",
       },
     ];
-  }, [t, mine, weekPlan, navigate]);
+  }, [t, mine, weekPlan, planDayStatuses, navigate, isLiveContent]);
 
   const chartData = useMemo(() => {
     const days = [
@@ -451,6 +725,7 @@ export default function Dashboard() {
   }
 
   if (hasContent === false) {
+    const emptyWorkflow = mergeWorkflowSuggestions(planWorkflowSuggestions, workflowSuggestions, 12);
     return (
       <div className="py-20">
         <EmptyState
@@ -458,8 +733,31 @@ export default function Dashboard() {
           title={t('dashboard.empty_state.title', { defaultValue: 'Welcome to nxclip.ai' })}
           description={t('dashboard.empty_state.desc', { defaultValue: 'Your dashboard is ready. Start creating content to see your performance metrics and AI insights.' })}
           actionLabel={t('dashboard.empty_state.cta', { defaultValue: 'Create First Creation' })}
-          onAction={() => navigate('/create/image')}
+          onAction={() => {
+            const next = planDayStatuses.find((s) => s.status === "pending");
+            if (next) {
+              navigate(
+                buildStudioHrefForPlanDay(
+                  next.day,
+                  onboarding?.categoryLabel,
+                  onboarding?.niches,
+                ),
+              );
+              return;
+            }
+            navigate('/create/image');
+          }}
           className="max-w-2xl mx-auto"
+        />
+        <WorkflowIntelligenceDock
+          open={workflowDockOpen}
+          onOpenChange={setWorkflowDockOpenPersist}
+          suggestions={emptyWorkflow}
+          loading={workflowLoading}
+          provider={workflowProvider}
+          evaluatedCount={workflowEvaluated}
+          cacheHits={workflowCacheHits}
+          onRefresh={() => void loadWorkflowIntelligence()}
         />
       </div>
     );
@@ -478,6 +776,32 @@ export default function Dashboard() {
             <p className="text-sm font-medium text-muted-foreground">
               {t('dashboard.header.subtitle')}
             </p>
+            {onboarding || weekPlan ? (
+              <div className="pt-1.5 space-y-2">
+                <CreatorNicheTags
+                  categoryLabel={onboarding?.categoryLabel}
+                  niches={onboarding?.niches || []}
+                  size="md"
+                  emptyLabel={t("dashboard.header.niche_not_set")}
+                />
+                {isLegacyOnboarding || !onboarding?.categoryLabel ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-xs text-muted-foreground max-w-md leading-relaxed">
+                      {t("dashboard.header.legacy_onboarding_note")}
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-[11px] font-bold shrink-0"
+                      onClick={handleReviseOnboarding}
+                    >
+                      {t("dashboard.header.revise_cta")}
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -501,6 +825,7 @@ export default function Dashboard() {
                   <SelectItem value="tiktok">TikTok</SelectItem>
                   <SelectItem value="youtube">YouTube</SelectItem>
                   <SelectItem value="instagram">Instagram</SelectItem>
+                  <SelectItem value="facebook">Facebook</SelectItem>
                 </SelectContent>
              </Select>
 
@@ -594,7 +919,7 @@ export default function Dashboard() {
               <div>
                 <SectionHeader
                   title="Published this week"
-                  subtitle="Your strongest Feed pieces — status, type, title, and time on each tile."
+                  subtitle="Thumbnail plus title, status, and next step — text stays below the media so nothing overlaps your content."
                 />
                 <div className="pt-2">
                   {TOP_CONTENT.length === 0 ? (
@@ -607,40 +932,27 @@ export default function Dashboard() {
                       </Button>
                     </Card>
                   ) : (
-                    <JustifiedGallery<(typeof TOP_CONTENT)[number]>
-                      items={TOP_CONTENT}
-                      getRatio={(content) => content.aspectRatio}
-                      getKey={(content) => content.id}
-                      getRatioKey={(content) => content.id}
-                      options={DASHBOARD_LAYOUT}
-                      stretchTiles={false}
-                      gap={8}
-                      renderItem={({ item: content, resolvedRatio, reportRatio, height }) => (
-                      <Card className="ui-top-content-card group flex flex-col overflow-hidden !p-2 h-full">
+                    <div className="ui-dashboard-top-content-grid pt-0.5">
+                      {TOP_CONTENT.map((content) => (
+                      <Card
+                        key={content.id}
+                        className="ui-top-content-card group flex flex-col overflow-hidden !p-2.5 min-w-0 bg-card h-full"
+                      >
                         <div
-                          className="relative w-full rounded-md overflow-hidden bg-muted mb-2 shrink-0"
-                          style={{ height }}
+                          className="relative w-full rounded-lg overflow-hidden bg-muted shrink-0 isolate aspect-[4/5]"
+                          style={content.aspectCss ? { aspectRatio: content.aspectCss } : undefined}
                         >
                           {content.thumbnail ? (
                             <AuthenticatedImage
                               key={content.thumbnail}
                               src={content.thumbnail}
-                              alt={content.title}
+                              alt=""
                               disableRemoteFallback
                               priority
                               placeholderAspectRatio={content.aspectCss}
                               loadTimeoutMs={15000}
-                              className={cn(
-                                "!absolute inset-0 !h-full !w-full !max-w-none",
-                                resolvedRatio ? "!object-cover" : "!object-contain",
-                              )}
+                              className="!absolute inset-0 !h-full !w-full !max-w-none !object-cover"
                               wrapperClassName="!absolute inset-0 !h-full !w-full min-h-full"
-                              onLoad={(e) =>
-                                reportRatio(
-                                  e.currentTarget.naturalWidth,
-                                  e.currentTarget.naturalHeight,
-                                )
-                              }
                             />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/40">
@@ -648,65 +960,88 @@ export default function Dashboard() {
                             </div>
                           )}
 
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
+                          <div className="absolute inset-0 z-10 bg-black/0 group-hover:bg-black/45 transition-colors pointer-events-none" />
 
-                          <div className={cn("absolute top-1 z-10 flex flex-wrap gap-0.5", isAr ? "right-1" : "left-1")}>
+                          <div className="absolute inset-0 z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="h-8 text-[11px] font-semibold rounded-md shadow-xl px-3"
+                              onClick={() => navigate(`/feed/post/${content.id}`)}
+                            >
+                              {isAr ? <ChevronLeft size={12} className="me-0.5" /> : <ArrowUpRight size={12} className="ms-0.5" />} {t("dashboard.top_content.view_details")}
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2 pt-2.5 min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-1 min-w-0">
                             <Badge
                               className={cn(
-                                "h-4 px-1 text-[9px] font-semibold border leading-none inline-flex items-center gap-0.5",
-                                content.status === "Live"
+                                "h-5 px-1.5 text-[10px] font-semibold border leading-none inline-flex items-center gap-1 shrink-0",
+                                content.displayStatus === "live"
                                   ? "bg-rose-500 text-white border-rose-400/40"
-                                  : "bg-emerald-600 text-white border-emerald-400/40",
+                                  : content.displayStatus === "scheduled"
+                                    ? "bg-amber-500 text-white border-amber-400/40"
+                                    : content.displayStatus === "publishing"
+                                      ? "bg-sky-600 text-white border-sky-400/40"
+                                      : content.displayStatus === "failed"
+                                        ? "bg-orange-600 text-white border-orange-400/40"
+                                        : "bg-emerald-600 text-white border-emerald-400/40",
                               )}
                             >
-                              {content.status === "Live" ? <Radio size={8} className="animate-pulse" /> : null}
+                              {content.displayStatus === "live" ? (
+                                <Radio size={9} className="animate-pulse" />
+                              ) : null}
                               {content.status}
                             </Badge>
-                            <Badge className="h-4 px-1 text-[9px] font-semibold border-none capitalize bg-primary/90 text-primary-foreground leading-none">
+                            {content.livePlatforms.map((platform) => (
+                              <SocialPlatformIcon
+                                key={platform}
+                                platform={platform}
+                                className="h-4 w-4 shrink-0 opacity-90"
+                              />
+                            ))}
+                            <Badge className="h-5 px-1.5 text-[10px] font-semibold border-none bg-primary/15 text-primary leading-none shrink-0">
                               {content.contentType}
                             </Badge>
                           </div>
 
-                          <div className="absolute inset-x-0 bottom-0 z-10 p-1.5 space-y-0.5">
-                            <h4 className="text-[11px] font-semibold text-white leading-snug line-clamp-2 drop-shadow-sm">
-                              {content.title}
-                            </h4>
-                            {content.publishedStamp ? (
-                              <p className="text-[9px] font-medium text-white/80 flex items-center gap-0.5">
-                                <Clock size={9} className="shrink-0 opacity-80" />
-                                <span className="truncate">{content.publishedStamp}</span>
+                          <h4 className="text-sm font-semibold text-foreground leading-snug line-clamp-2 break-words">
+                            {content.title}
+                          </h4>
+
+                          {content.publishedStamp ? (
+                            <p className="text-[10px] font-medium text-muted-foreground flex items-center gap-1 min-w-0">
+                              <Clock size={10} className="shrink-0 opacity-80" />
+                              <span className="truncate">{content.publishedStamp}</span>
+                            </p>
+                          ) : null}
+
+                          <div className="p-2 rounded-md bg-primary/5 border border-primary/20 min-w-0">
+                            <p className="text-[10px] font-semibold text-primary mb-0.5">Social status</p>
+                            <p className="text-[11px] font-medium text-foreground leading-snug line-clamp-2 break-words">
+                              {content.statusLine}
+                            </p>
+                            {content.actionLine ? (
+                              <p className="text-[10px] font-medium text-muted-foreground leading-snug line-clamp-2 break-words mt-1">
+                                {content.actionLine}
                               </p>
                             ) : null}
                           </div>
 
-                          <div className="absolute inset-0 z-20 bg-neutral-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none group-hover:pointer-events-auto">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              className="h-7 text-[10px] font-semibold rounded-md shadow-xl px-2"
-                              onClick={() => navigate(`/feed/post/${content.id}`)}
-                            >
-                              {isAr ? <ChevronLeft size={11} className="me-0.5" /> : <ArrowUpRight size={11} className="ms-0.5" />} {t("dashboard.top_content.view_details")}
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="space-y-1 flex-1 flex flex-col">
-                          <div className="p-1.5 rounded bg-primary/5 border border-primary/20">
-                            <p className="text-[9px] font-semibold text-primary mb-0.5">Next step</p>
-                            <p className="text-[10px] font-medium text-muted-foreground leading-snug line-clamp-2">{content.nextStep}</p>
-                          </div>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full h-6 text-[10px] font-semibold text-primary hover:text-primary hover:bg-primary/5 mt-auto"
+                            className="w-full h-7 text-[11px] font-semibold text-primary hover:text-primary hover:bg-primary/5 mt-auto"
                             onClick={() => navigate(`/feed/post/${content.id}`)}
                           >
-                            {content.nextCta} <ArrowUpRight size={10} className="ms-0.5" />
+                            {content.actionCta} <ArrowUpRight size={11} className="ms-0.5" />
                           </Button>
                         </div>
                       </Card>
-                      )}
-                    />
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
@@ -750,11 +1085,11 @@ export default function Dashboard() {
                     <SectionHeader title={t('dashboard.progress.title')} />
                     {weekPlan ? (
                       <Badge className="bg-teal-500/15 text-teal-700 dark:text-teal-300 border-none text-xs font-semibold h-5">
-                        {weekPlan.days.length} days
+                        {t("dashboard.progress.days_badge", { count: weekPlan.days.length })}
                       </Badge>
                     ) : (
                       <Badge className="bg-muted text-foreground/80 border-none text-xs font-semibold h-5">
-                        No plan
+                        {t("dashboard.progress.no_plan_badge")}
                       </Badge>
                     )}
                  </div>
@@ -762,40 +1097,115 @@ export default function Dashboard() {
                     {weekPlan ? (
                       <>
                         <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
-                          {weekPlan.introMessage || "Your Creator Coach week plan"}
+                          {weekPlan.introMessage || t("dashboard.progress.intro_fallback")}
                         </p>
-                        <div className="space-y-2">
-                          {weekPlan.days.slice(0, 3).map((day) => (
-                            <div key={day.day} className="p-3 rounded-md bg-muted/40 border border-border">
-                              <div className="flex items-center justify-between gap-2 mb-1">
-                                <span className="text-xs font-semibold uppercase text-teal-700 dark:text-teal-300">{day.day}</span>
-                                <span className="text-xs font-medium text-muted-foreground">{day.contentType}</span>
+                        <div className="space-y-2 max-h-[280px] overflow-y-auto pe-1">
+                          {weekPlan.days.map((day) => {
+                            const status = planDayStatuses.find(
+                              (s) => s.day.day === day.day,
+                            );
+                            const done = status?.status === "done";
+                            const planSuggestion = planWorkflowSuggestions.find(
+                              (s) => s.planDay === day.day && s.action !== "renew_plan",
+                            );
+                            const href =
+                              planSuggestion?.href ||
+                              buildStudioHrefForPlanDay(
+                                day,
+                                onboarding?.categoryLabel,
+                                onboarding?.niches,
+                              );
+                            const cta =
+                              planSuggestion?.ctaLabel ||
+                              planDayCtaLabel(day, {
+                                userPlan: String(authProfile?.plan || "free").toUpperCase(),
+                              });
+                            const showCta = !done || !!planSuggestion;
+                            return (
+                              <div
+                                key={day.day}
+                                className={cn(
+                                  "p-3 rounded-md border",
+                                  done && !planSuggestion
+                                    ? "bg-muted/30 border-border/60 opacity-80"
+                                    : "bg-muted/40 border-border hover:border-teal-500/35 transition-colors",
+                                )}
+                              >
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <span className="text-xs font-semibold uppercase text-teal-700 dark:text-teal-300">
+                                    {day.day}
+                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    {done ? (
+                                      <Badge className="h-5 text-[10px] border-none bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                                        Done
+                                      </Badge>
+                                    ) : null}
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                      {day.contentType}
+                                    </span>
+                                  </div>
+                                </div>
+                                <p className="text-sm font-semibold text-foreground line-clamp-1">
+                                  {day.title || day.theme}
+                                </p>
+                                {showCta ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="mt-2 h-7 w-full text-[11px] font-semibold"
+                                    onClick={() => navigate(href)}
+                                  >
+                                    {cta}
+                                  </Button>
+                                ) : null}
                               </div>
-                              <p className="text-sm font-semibold text-foreground line-clamp-1">{day.title || day.theme}</p>
-                            </div>
-                          ))}
+                            );
+                          })}
+                        </div>
+                        <div className="p-3 rounded-md bg-teal-500/5 border border-teal-500/20">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-300 mb-1">
+                            {t("dashboard.progress.up_next")}
+                          </p>
+                          <p className="text-xs font-semibold text-foreground leading-snug">
+                            {(() => {
+                              const next = planDayStatuses.find((s) => s.status === "pending");
+                              if (!next) {
+                                return "All days generated — plan a new week for fresh themes.";
+                              }
+                              return `${next.day.day}: ${next.day.title || next.day.theme}`;
+                            })()}
+                          </p>
                         </div>
                         <Button onClick={() => navigate("/profile?tab=plan")} variant="outline" className="w-full h-9 text-xs font-semibold">
-                          View full week plan
+                          {t("dashboard.progress.view_full")}
                         </Button>
                         <Button
-                          onClick={() => { beginWeekPlanRenewal(); navigate("/onboarding"); }}
+                          onClick={() => { beginWeekPlanRenewal(); navigate("/onboarding", { state: { renewWeekPlan: true } }); }}
                           variant="ghost"
                           className="w-full h-9 text-xs font-semibold text-muted-foreground"
                         >
-                          Plan a new week
+                          {t("dashboard.progress.plan_new")}
                         </Button>
                       </>
                     ) : (
                       <>
                         <p className="text-sm text-muted-foreground leading-relaxed">
-                          No coach week plan yet. Create one to get daily content themes.
+                          {t("dashboard.progress.empty")}
                         </p>
+                        <div className="p-3 rounded-md bg-muted/40 border border-border">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                            {t("dashboard.progress.up_next")}
+                          </p>
+                          <p className="text-xs font-semibold text-foreground leading-snug">
+                            {t("dashboard.progress.up_next_task")}
+                          </p>
+                        </div>
                         <Button
-                          onClick={() => { beginWeekPlanRenewal(); navigate("/onboarding"); }}
+                          onClick={() => { beginWeekPlanRenewal(); navigate("/onboarding", { state: { renewWeekPlan: true } }); }}
                           className="w-full h-9 text-xs font-semibold"
                         >
-                          Create week plan
+                          {t("dashboard.progress.create_plan")}
                         </Button>
                       </>
                     )}
@@ -811,7 +1221,7 @@ export default function Dashboard() {
                 </div>
                 <div className="space-y-3 pt-1">
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Queue publish times for YouTube, Instagram, and TikTok. After a post is Published on the feed, schedule it to go <span className="text-rose-600 dark:text-rose-400 font-semibold">Live</span> on social.
+                    Queue publish times for YouTube, Instagram, Facebook, and TikTok. After a post is Published on the feed, schedule it to go <span className="text-rose-600 dark:text-rose-400 font-semibold">Live</span> on social.
                   </p>
                   <div className="p-4 rounded-md bg-muted/40 border border-dashed border-border text-center space-y-2">
                     <Clock size={18} className="mx-auto text-muted-foreground" />
@@ -850,7 +1260,7 @@ export default function Dashboard() {
                 ))}
                 {ATTENTION_ITEMS.length === 0 && (
                   <p className="text-sm text-muted-foreground font-medium py-2">
-                    You’re clear — keep creating and publishing.
+                    {t("dashboard.attention.clear")}
                   </p>
                 )}
                  </div>
@@ -890,16 +1300,52 @@ export default function Dashboard() {
               </div>
 
               <Card className="p-4 border border-amber-500/25 bg-amber-500/10 text-amber-900 dark:text-amber-100 rounded-xl">
-                 <div className="flex items-center gap-2 mb-1.5">
-                    <Sparkles size={16} />
-                    <p className="text-xs font-bold">{t('dashboard.tip.title')}</p>
+                 <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Sparkles size={16} className="shrink-0" />
+                      <p className="text-xs font-bold truncate">{t('dashboard.tip.title')}</p>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label={t("dashboard.tip.refresh")}
+                      disabled={strategyTipLoading}
+                      onClick={() => void loadStrategyTip()}
+                      className="h-7 w-7 rounded-md flex items-center justify-center text-amber-800/80 dark:text-amber-100/80 hover:bg-amber-500/15 disabled:opacity-50 shrink-0"
+                    >
+                      {strategyTipLoading ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <RefreshCw size={14} />
+                      )}
+                    </button>
                  </div>
-                 <p className="text-xs leading-relaxed font-medium">
-                    {t('dashboard.tip.content')}
+                 <p className="text-xs leading-relaxed font-medium min-h-[2.5rem]">
+                    {strategyTipLoading && !strategyTip
+                      ? t("dashboard.tip.loading")
+                      : strategyTip || t("dashboard.tip.content")}
                  </p>
+                 {strategyTipProvider && !strategyTipLoading ? (
+                   <p className="text-[10px] font-medium opacity-60 mt-2 truncate">
+                     {t("dashboard.tip.powered_by", {
+                       provider: strategyTipProvider.replace(/^(anthropic|gemini|openai|mock)-/, ""),
+                       defaultValue: `AI · ${strategyTipProvider}`,
+                     })}
+                   </p>
+                 ) : null}
               </Card>
            </div>
         </div>
+
+        <WorkflowIntelligenceDock
+          open={workflowDockOpen}
+          onOpenChange={setWorkflowDockOpenPersist}
+          suggestions={displayWorkflowSuggestions}
+          loading={workflowLoading}
+          provider={workflowProvider}
+          evaluatedCount={workflowEvaluated}
+          cacheHits={workflowCacheHits}
+          onRefresh={() => void loadWorkflowIntelligence()}
+        />
       </div>
   );
 }

@@ -8,13 +8,9 @@ import {
   Loader2,
   Check,
   AlertCircle,
-  Youtube,
-  Instagram,
-  Twitch,
-  Twitter,
 } from "lucide-react";
-import { useState, useEffect, type ComponentType } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,13 +18,17 @@ import * as z from "zod";
 import { auth, handleFirestoreError, OperationType } from "../../firebase";
 import { UserProfile } from "../../types";
 import { toast } from "sonner";
-import { identityApi, contentApi } from "../../services/apiClient";
+import { identityApi, contentApi, socialApi, type SocialAccountDto, type SocialPlatform } from "../../services/apiClient";
 import { loadProfileExtras, saveProfileExtras, dataUrlToFile } from "../../lib/profileExtras";
+import { creatorFieldsFromIdentityMe } from "../../lib/onboardingSnapshot";
 import {
   CREATOR_CATEGORY_NICHES,
   SOCIAL_CONNECT_PLATFORMS,
   type SocialPlatformId,
 } from "../../lib/creatorNiches";
+import { accountsMapFromList, connectedMapFromAccounts, notifyOpenerSocialOAuth, socialAccountKindLabel, socialAccountPrimaryName, startSocialOAuth } from "../../lib/socialConnect";
+import { ConnectedSocialAccountAvatar } from "../../components/social/ConnectedSocialAccountAvatar";
+import { SocialDisconnectDialog } from "../../components/social/SocialDisconnectDialog";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { selectAuthProfile, setAuthProfile, selectAuthUser, setAuthUser } from "../../store/slices/authSlice";
 
@@ -40,7 +40,6 @@ import { Badge } from "../../components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
 import { PhotoUploadDialog } from "../../components/PhotoUploadDialog";
 import { ProfilePhoto } from "../../components/ProfilePhoto";
-import { TiktokIcon } from "../../components/TiktokIcon";
 import { cn } from "../../lib/utils";
 
 const profileSchema = z.object({
@@ -54,18 +53,11 @@ const profileSchema = z.object({
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
-const SOCIAL_ICONS: Record<SocialPlatformId, ComponentType<{ size?: number; className?: string }>> = {
-  youtube: Youtube,
-  instagram: Instagram,
-  tiktok: TiktokIcon,
-  twitch: Twitch,
-  twitter: Twitter,
-};
-
 export default function EditProfile() {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === "rtl";
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [niches, setNiches] = useState<string[]>([]);
@@ -73,6 +65,11 @@ export default function EditProfile() {
   const [connectedSocials, setConnectedSocials] = useState<
     Partial<Record<SocialPlatformId, boolean>>
   >({});
+  const [socialAccounts, setSocialAccounts] = useState<
+    Partial<Record<SocialPlatform, SocialAccountDto>>
+  >({});
+  const [disconnectTarget, setDisconnectTarget] = useState<SocialPlatformId | null>(null);
+  const [socialBusy, setSocialBusy] = useState(false);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -111,27 +108,34 @@ export default function EditProfile() {
         if (!data) {
           const res = await identityApi.getUserMe();
           const me = res?.user ?? res;
+          const creator = creatorFieldsFromIdentityMe(me as Record<string, unknown>);
           data = {
             uid: me.id || me.uid,
             displayName: me.displayName || me.username || "Creator",
             email: me.email,
             photoURL: me.avatarUrl || null,
+            coverUrl: me.coverUrl || null,
             plan: (me.plan || "free").toLowerCase() as any,
             role: (me.roles?.[0] || "creator") as any,
             onboardingCompleted: me.onboardingCompleted ?? false,
-            onboardingPlan: me.onboardingPlan ?? null,
+            onboardingPlan: creator.onboardingPlan ?? me.onboardingPlan ?? null,
+            creatorCategory: creator.creatorCategory,
+            creatorCategoryLabel: creator.creatorCategoryLabel,
+            creatorNiches: creator.creatorNiches,
             createdAt: me.createdAt || new Date().toISOString(),
             bio: me.bio || "",
-            gameNiches: me.niches || [],
+            gameNiches: creator.creatorNiches.length ? creator.creatorNiches : me.niches || [],
             socials: me.socials || {},
           };
           dispatch(setAuthProfile(data));
         }
 
         const extras = loadProfileExtras(data.uid);
-        const loadedNiches = data.gameNiches?.length
-          ? data.gameNiches
-          : data.games || extras.niches || [];
+        const loadedNiches = data.creatorNiches?.length
+          ? data.creatorNiches
+          : data.gameNiches?.length
+            ? data.gameNiches
+            : data.games || extras.niches || [];
 
         reset({
           displayName: data.displayName || "",
@@ -139,9 +143,16 @@ export default function EditProfile() {
         });
 
         setNiches(loadedNiches);
-        setConnectedSocials(
-          data.connectedSocials || extras.connectedSocials || {}
-        );
+        try {
+          const accounts = await socialApi.listAccounts();
+          setConnectedSocials(connectedMapFromAccounts(accounts));
+          setSocialAccounts(accountsMapFromList(accounts));
+        } catch {
+          setConnectedSocials(
+            data.connectedSocials || extras.connectedSocials || {}
+          );
+          setSocialAccounts({});
+        }
         setCoverUrl(data.coverUrl ?? extras.coverUrl ?? null);
         setPhotoURL(data.photoURL || "");
       } catch (err) {
@@ -176,9 +187,78 @@ export default function EditProfile() {
     setNicheInput("");
   };
 
-  const handleSocialConnect = (id: SocialPlatformId) => {
-    toast.info(t("profile.edit.oauth_coming_soon"));
-    setConnectedSocials((prev) => ({ ...prev, [id]: true }));
+  useEffect(() => {
+    const status = searchParams.get("social");
+    const platform = searchParams.get("platform");
+    if (!status) return;
+    if (
+      notifyOpenerSocialOAuth({
+        status,
+        platform,
+        reason: searchParams.get("reason"),
+      })
+    ) {
+      return;
+    }
+    if (status === "connected") {
+      toast.success(`${platform || "Channel"} connected`);
+      void socialApi.listAccounts().then((accounts) => {
+        setConnectedSocials(connectedMapFromAccounts(accounts));
+        setSocialAccounts(accountsMapFromList(accounts));
+      });
+    } else if (status === "error") {
+      toast.error(searchParams.get("reason") || "Could not connect that channel");
+    }
+    searchParams.delete("social");
+    searchParams.delete("platform");
+    searchParams.delete("reason");
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  const handleSocialConnect = async (id: SocialPlatformId) => {
+    if (id === "twitch" || id === "twitter") {
+      toast.info("YouTube, Instagram, Facebook, and TikTok are available to connect.");
+      return;
+    }
+    if (connectedSocials[id]) {
+      setDisconnectTarget(id);
+      return;
+    }
+    try {
+      const result = await startSocialOAuth(id as SocialPlatform, "/profile");
+      if (result.status === "redirecting") return;
+      if (result.status === "connected") {
+        toast.success(`${result.platform || id} connected`);
+        const accounts = await socialApi.listAccounts();
+        setConnectedSocials(connectedMapFromAccounts(accounts));
+        setSocialAccounts(accountsMapFromList(accounts));
+      } else if (result.status === "error") {
+        toast.error(result.reason || "Could not connect that channel");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Could not start connect");
+    }
+  };
+
+  const confirmSocialDisconnect = async () => {
+    const id = disconnectTarget;
+    if (!id) return;
+    try {
+      setSocialBusy(true);
+      await socialApi.disconnectAccount(id as SocialPlatform);
+      setConnectedSocials((prev) => ({ ...prev, [id]: false }));
+      setSocialAccounts((prev) => {
+        const next = { ...prev };
+        delete next[id as SocialPlatform];
+        return next;
+      });
+      setDisconnectTarget(null);
+      toast.success(`${id} disconnected`);
+    } catch (err: any) {
+      toast.error(err?.message || "Could not disconnect");
+    } finally {
+      setSocialBusy(false);
+    }
   };
 
   const handleSave = async (data: ProfileFormData) => {
@@ -202,6 +282,7 @@ export default function EditProfile() {
         displayName: data.displayName,
         bio: data.bio,
         ...(avatarUrl ? { avatarUrl } : {}),
+        ...(coverUrl ? { coverUrl } : {}),
       });
 
       const uid = reduxProfile?.uid || auth.currentUser.uid;
@@ -307,6 +388,18 @@ export default function EditProfile() {
             {t("profile.edit.photo_label")}
           </p>
         </div>
+
+        <SocialDisconnectDialog
+          open={!!disconnectTarget}
+          platformLabel={
+            SOCIAL_CONNECT_PLATFORMS.find((p) => p.id === disconnectTarget)?.label ||
+            disconnectTarget ||
+            ""
+          }
+          busy={socialBusy}
+          onCancel={() => !socialBusy && setDisconnectTarget(null)}
+          onConfirm={() => void confirmSocialDisconnect()}
+        />
 
         <PhotoUploadDialog
           isOpen={isPhotoDialogOpen}
@@ -570,8 +663,8 @@ export default function EditProfile() {
 
             <div className="grid grid-cols-1 gap-3">
               {SOCIAL_CONNECT_PLATFORMS.map((platform) => {
-                const Icon = SOCIAL_ICONS[platform.id];
                 const isConnected = !!connectedSocials[platform.id];
+                const account = socialAccounts[platform.id as SocialPlatform];
                 return (
                   <div
                     key={platform.id}
@@ -580,21 +673,31 @@ export default function EditProfile() {
                       isRtl && "flex-row-reverse"
                     )}
                   >
-                    <div
-                      className={cn(
-                        "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-background",
-                        isConnected && "border-primary/40 text-primary"
-                      )}
-                    >
-                      <Icon size={20} />
-                    </div>
+                    <ConnectedSocialAccountAvatar
+                      platform={platform.id as SocialPlatform}
+                      account={account}
+                      size={40}
+                      muted={!isConnected}
+                      className={cn(isConnected && "ring-2 ring-primary/40 rounded-full")}
+                    />
                     <div className={cn("flex-1 min-w-0", isRtl && "text-right")}>
                       <p className="text-sm font-bold text-foreground">
                         {platform.label}
                       </p>
-                      <p className="text-[11px] text-muted-foreground font-medium mt-0.5 truncate">
-                        {platform.description}
-                      </p>
+                      {isConnected && account ? (
+                        <>
+                          <p className="text-[12px] font-semibold text-foreground mt-0.5 truncate">
+                            {socialAccountPrimaryName(account)}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground font-medium mt-0.5 leading-snug">
+                            {socialAccountKindLabel(account)}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground font-medium mt-0.5 truncate">
+                          {platform.description}
+                        </p>
+                      )}
                     </div>
                     <Button
                       type="button"
@@ -604,11 +707,11 @@ export default function EditProfile() {
                         "shrink-0 h-9 px-4 font-bold text-xs",
                         isConnected && "bg-primary/10 text-primary border-primary/20"
                       )}
-                      disabled={loading || success || isConnected}
-                      onClick={() => handleSocialConnect(platform.id)}
+                      disabled={loading || success || socialBusy}
+                      onClick={() => void handleSocialConnect(platform.id)}
                     >
                       {isConnected
-                        ? t("profile.edit.connected_btn")
+                        ? t("profile.edit.disconnect_btn")
                         : t("profile.edit.connect_btn")}
                     </Button>
                   </div>

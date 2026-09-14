@@ -20,7 +20,7 @@ import {
 } from "../../../../components/ui/tooltip";
 import { cn } from "../../../../lib/utils";
 import { GenerationHistoryItem } from "../../types";
-import { formatCreatedDate, formatCreatedTime, getDisplayStatusBadge } from "./statusStyles";
+import { formatCreatedDate, formatCreatedTime, getDisplayStatusBadge, getTypeBadge } from "./statusStyles";
 import { StatusPill } from "./StatusPill";
 import { resolveLibraryTitle } from "../../../ContentLibrary/lib/title";
 
@@ -90,6 +90,7 @@ function GenerationCardComponent({
   );
 
   const statusBadge = getDisplayStatusBadge(item);
+  const typeBadge = getTypeBadge(item);
   const createdDate = formatCreatedDate(item.timestamp);
   const createdTime = formatCreatedTime(item.timestamp);
 
@@ -169,6 +170,7 @@ function GenerationCardComponent({
             alt={displayTitle}
             disableRemoteFallback
             loading="lazy"
+            loadTimeoutMs={30000}
             className={cn(
               "absolute inset-0 h-full w-full transition-[filter] duration-200 cursor-pointer",
               // Unknown ratio: letterbox rather than crop the caption off a meme.
@@ -191,7 +193,10 @@ function GenerationCardComponent({
             )}
           >
             <div className="pointer-events-auto space-y-1.5">
-              {statusBadge ? <StatusPill badge={statusBadge} /> : null}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <StatusPill badge={typeBadge} />
+                {statusBadge ? <StatusPill badge={statusBadge} /> : null}
+              </div>
               <button
                 type="button"
                 id={titleId}
@@ -218,7 +223,9 @@ function GenerationCardComponent({
                     <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-white/75 font-medium">
                       <span>{createdDate}</span>
                       <span>{createdTime}</span>
-                      {item.style ? <span className="capitalize">{item.style}</span> : null}
+                      {item.style && item.style.toLowerCase() !== "meme" ? (
+                        <span className="capitalize">{item.style}</span>
+                      ) : null}
                       {item.aspectRatio ? <span>{item.aspectRatio}</span> : null}
                       {item.basePrompt || item.prompt ? (
                         <span>{(item.basePrompt || item.prompt || "").length} chars</span>
@@ -352,6 +359,7 @@ function GenerationCardComponent({
                     src={item.url}
                     alt=""
                     disableRemoteFallback
+                    loadTimeoutMs={30000}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -442,6 +450,9 @@ function GenerationCardComponent({
               ) : null}
 
               <div className="grid grid-cols-2 gap-2">
+                <DetailRow label="Type">
+                  <span className="text-white/90">{typeBadge.label}</span>
+                </DetailRow>
                 {statusBadge ? (
                   <DetailRow label="Status">
                     <span className="text-white/90">{statusBadge.label}</span>
@@ -454,7 +465,7 @@ function GenerationCardComponent({
                     </span>
                   </DetailRow>
                 ) : null}
-                {item.style ? (
+                {item.style && item.style.toLowerCase() !== "meme" ? (
                   <DetailRow label="Style">
                     <span className="text-white/90 capitalize">{item.style}</span>
                   </DetailRow>

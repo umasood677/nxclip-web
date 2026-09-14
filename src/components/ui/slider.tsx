@@ -35,7 +35,7 @@ function Slider({
       <SliderPrimitive.Control className="relative flex items-center justify-center select-none touch-none data-horizontal:h-4 data-horizontal:w-full data-vertical:h-full data-vertical:w-4 data-disabled:opacity-50">
         <SliderPrimitive.Track
           data-slot="slider-track"
-          className="relative grow overflow-hidden rounded-full bg-white/10 select-none data-horizontal:h-1.5 data-horizontal:w-full data-vertical:h-full data-vertical:w-1.5"
+          className="relative grow overflow-hidden rounded-full bg-muted-foreground/25 select-none data-horizontal:h-1.5 data-horizontal:w-full data-vertical:h-full data-vertical:w-1.5"
         >
           <SliderPrimitive.Indicator
             data-slot="slider-range"
