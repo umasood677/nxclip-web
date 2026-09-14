@@ -88,7 +88,7 @@ jobs:
         run: |
           set -euo pipefail
           SERVICE="${CLOUD_RUN_SERVICE:-nxclip-web}"
-          ENV_VARS="NODE_ENV=production,PORT=3000"
+          ENV_VARS="NODE_ENV=production"
           if [ -n "${GEMINI_API_KEY:-}" ]; then
             ENV_VARS="${ENV_VARS},GEMINI_API_KEY=${GEMINI_API_KEY}"
           fi
