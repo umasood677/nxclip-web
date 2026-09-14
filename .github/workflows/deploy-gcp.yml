@@ -1,5 +1,5 @@
 # Deploy Vite + Express SPA to Cloud Run (same GCP project as backend).
-name: Frontend GCP Continuous Deployment
+name: nxclip-web GCP Continuous Deployment (CD)
 
 on:
   push:

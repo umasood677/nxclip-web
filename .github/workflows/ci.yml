@@ -1,4 +1,4 @@
-name: CI
+name: nxclip-web Continuous Integration (CI)
 
 on:
   pull_request:
