@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { ReactLenis } from "lenis/react";
 import { SEO } from "../../components/SEO";
 import Navbar from "../../components/Navbar";
@@ -33,17 +33,6 @@ export default function HomeV2() {
           title="nxClip — Viral content redefined by AI"
           description="The AI operating system built for next-gen creators. Transform your best moments into epic growth with elite-grade intelligence."
         />
-
-        <div className="sticky top-0 z-[60] border-b border-amber-500/30 bg-amber-500/10 backdrop-blur-md">
-          <div className="ui-container-landing flex flex-wrap items-center justify-between gap-2 py-1.5 text-[11px] font-bold">
-            <span className="text-amber-800 dark:text-amber-200">
-              Preview · Home v2 — current marketing home stays at /
-            </span>
-            <Link to="/" className="text-amber-900/80 dark:text-amber-100/80 hover:underline">
-              View live Home →
-            </Link>
-          </div>
-        </div>
 
         <Navbar />
         <main>

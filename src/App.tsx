@@ -531,8 +531,9 @@ export default function App() {
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   {/* Public Routes */}
-                  <Route path="/" element={<Home />} />
-                  <Route path="/home-2" element={<HomeV2 />} />
+                  <Route path="/" element={<HomeV2 />} />
+                  <Route path="/home-old" element={<Home />} />
+                  <Route path="/home-2" element={<Navigate to="/" replace />} />
                   <Route path="/features" element={<Features />} />
                   <Route path="/pricing" element={<Pricing />} />
                   <Route path="/p/:id" element={<PublicPostView />} />
