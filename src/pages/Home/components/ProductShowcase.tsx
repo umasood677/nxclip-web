@@ -60,7 +60,7 @@ export default function ProductShowcase() {
               {/* Sidebar UI - Premium Refinement */}
               <div className="ui-showcase-sidebar">
                 <div className="mb-14">
-                  <Logo iconSize="w-10 h-10" textSize="text-lg" gap="gap-1.5" />
+                  <Logo iconSize="w-10 h-10" textSize="text-lg" />
                 </div>
                 
                 <nav className="space-y-4 flex-grow">

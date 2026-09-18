@@ -224,8 +224,7 @@ export default function SideNav({ isCollapsed, setIsCollapsed }: SideNavProps) {
               <Logo 
                 showText={!isCollapsed} 
                 iconSize="w-9 h-9" 
-                textSize="text-base" 
-                gap="gap-1.5"
+                textSize="text-base"
                 className="hover:scale-100 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ring-offset-card rounded-md" // Disable Link scaling here as Tooltip handles focus
               />
               {!isCollapsed && (

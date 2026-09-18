@@ -28,7 +28,7 @@ export const Logo: React.FC<LogoProps> = ({
   className,
   iconSize = "w-10 h-10",
   textSize = "text-lg",
-  gap = "gap-1.5",
+  gap = "gap-0",
   showText = true,
 }) => {
   return (
@@ -46,20 +46,20 @@ export const Logo: React.FC<LogoProps> = ({
         >
           <img
             src={logo}
-            alt="NxClip"
+            alt="nxClip"
             className="w-full h-full object-contain"
             referrerPolicy="no-referrer"
           />
         </div>
         {showText && (
-          <span className="flex items-baseline gap-px min-w-0">
+          <span className="flex items-baseline gap-px min-w-0 -ms-0.5">
             <span
               className={cn(
                 "font-display font-bold tracking-tight text-foreground leading-none",
                 textSize,
               )}
             >
-              NxClip
+              nxClip
             </span>
             <BrandTld className="text-[10px] md:text-[11px] pb-px" />
           </span>
