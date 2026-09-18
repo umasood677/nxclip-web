@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { BadgeCheck } from "lucide-react";
-import { searchGamingPhotos } from "../../../services/pexelsService";
+import { getSpotlightMedia } from "../../../lib/marketingMedia";
 
 interface Creator {
   id: string;
@@ -52,25 +52,23 @@ export default function CreatorSpotlight() {
 
   useEffect(() => {
     async function loadPexelsImages() {
-      // Searching for gaming portraits or people gaming
-      const photos = await searchGamingPhotos("gamer portrait gaming", 8);
-      
-      if (photos.length > 0) {
-        const updatedCreators = initialCreators.map((creator, index) => {
+      const photos = await getSpotlightMedia();
+      if (!photos.length) return;
+      setCreators(
+        initialCreators.map((creator, index) => {
           const photo = photos[index % photos.length];
           return {
             ...creator,
-            avatar: photo.src.large2x || photo.src.large,
-            photographer: photo.photographer,
-            photographer_url: photo.photographer_url
+            avatar: photo.src,
+            photographer: photo.creditName,
+            photographer_url: photo.creditUrl,
           };
-        });
-        setCreators(updatedCreators);
-      }
+        }),
+      );
     }
 
     loadPexelsImages();
-  }, [i18n.language]); // Sync if language changes, though rendering uses direct t() now
+  }, [i18n.language]);
 
   return (
     <section className="ui-landing-section bg-muted/20">

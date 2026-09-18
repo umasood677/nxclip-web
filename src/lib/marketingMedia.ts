@@ -1,14 +1,23 @@
 /**
- * Marketing media abstraction for Home v2.
- * Today: Pexels photos + videos. Later: Admin CMS fills the same shape.
+ * Marketing media for Home.
+ * Pinned Pexels photo/video IDs (see marketingCatalog) — not live search.
  */
 import {
+  MARKETING_CATALOG,
+  SPOTLIGHT_CATALOG,
+  pexelsPhotoSrc,
+  type CatalogPin,
+  type MarketingSlot,
+} from "./marketingCatalog";
+import {
+  fetchPexelsPhotoById,
+  fetchPexelsVideoById,
   pickVideoFile,
-  searchGamingPhotos,
-  searchMarketingVideos,
   type PexelsPhoto,
   type PexelsVideo,
 } from "../services/pexelsService";
+
+export type { MarketingSlot };
 
 export type MarketingMediaSource = "pexels" | "cms" | "fallback";
 
@@ -23,24 +32,6 @@ export type MarketingMedia = {
   aspectHint?: "landscape" | "portrait" | "square";
 };
 
-export type MarketingSlot =
-  | "hero"
-  | "imageStudio"
-  | "meme"
-  | "viralClips"
-  | "clipEditor"
-  | "coach"
-  | "pipelineCreate"
-  | "pipelineModerate"
-  | "pipelinePublish"
-  | "ctaWash"
-  | "osCreate"
-  | "osOrganize"
-  | "osDistribute"
-  | "osOperate"
-  | "osMeasure"
-  | "osGuide";
-
 export type OsLayerKey =
   | "create"
   | "organize"
@@ -49,52 +40,22 @@ export type OsLayerKey =
   | "measure"
   | "guide";
 
-type SlotQuery = {
-  photoQuery?: string;
-  videoQuery?: string;
-  prefer: "image" | "video";
-};
+const cache = new Map<string, MarketingMedia>();
 
-const SLOT_QUERIES: Record<MarketingSlot, SlotQuery> = {
-  hero: { photoQuery: "esports arena cinematic lights crowd", videoQuery: "gaming cinematic highlight", prefer: "image" },
-  imageStudio: { photoQuery: "digital art cinematic fantasy warrior", prefer: "image" },
-  meme: { photoQuery: "expressive gamer reaction neon face", prefer: "image" },
-  viralClips: { videoQuery: "vertical smartphone gaming action", prefer: "video" },
-  clipEditor: { videoQuery: "gameplay highlight slow motion", prefer: "video" },
-  coach: { photoQuery: "streamer planning content calendar desk", prefer: "image" },
-  pipelineCreate: { photoQuery: "ai generative art neon workspace dual monitor", prefer: "image" },
-  pipelineModerate: { photoQuery: "designer reviewing content on large monitor checklist", prefer: "image" },
-  pipelinePublish: {
-    photoQuery: "creator posting smartphone social media night",
-    videoQuery: "hand holding phone social scrolling",
-    prefer: "image",
-  },
-  ctaWash: { photoQuery: "dark gaming atmosphere neon", prefer: "image" },
-  // Creator OS layers — concrete visual metaphors for each surface
-  osCreate: { photoQuery: "creator designing gaming thumbnail dual monitor neon", prefer: "image" },
-  osOrganize: { photoQuery: "digital asset library folders content archive desk", prefer: "image" },
-  osDistribute: { photoQuery: "smartphone social media feed gaming creator night", prefer: "image" },
-  osOperate: { photoQuery: "creator dashboard analytics monitors command center", prefer: "image" },
-  osMeasure: { photoQuery: "growth analytics charts laptop metrics dashboard", prefer: "image" },
-  osGuide: { photoQuery: "mentor coach planning strategy whiteboard creator", prefer: "image" },
-};
-
-const cache = new Map<string, MarketingMedia[]>();
-
-function photoToMedia(photo: PexelsPhoto): MarketingMedia {
+function photoToMedia(photo: PexelsPhoto, pin?: CatalogPin): MarketingMedia {
   return {
     type: "image",
     src: photo.src.large || photo.src.landscape || photo.src.medium,
     poster: photo.src.medium,
-    creditName: photo.photographer || "Pexels",
-    creditUrl: photo.photographer_url || photo.url || "https://www.pexels.com",
-    source: photo.photographer === "nxclip.ai" ? "fallback" : "pexels",
-    alt: photo.alt || "nxClip marketing visual",
+    creditName: pin?.creditName || photo.photographer || "Pexels",
+    creditUrl: pin?.creditUrl || photo.photographer_url || photo.url || "https://www.pexels.com",
+    source: "pexels",
+    alt: pin?.alt || photo.alt || "nxClip marketing visual",
     aspectHint: photo.height > photo.width ? "portrait" : "landscape",
   };
 }
 
-function videoToMedia(video: PexelsVideo): MarketingMedia | null {
+function videoToMedia(video: PexelsVideo, pin?: CatalogPin): MarketingMedia | null {
   const src = pickVideoFile(video);
   if (!src) return null;
   const poster =
@@ -103,70 +64,57 @@ function videoToMedia(video: PexelsVideo): MarketingMedia | null {
     type: "video",
     src,
     poster,
-    creditName: video.user?.name || "Pexels",
-    creditUrl: video.user?.url || video.url || "https://www.pexels.com",
-    source: video.user?.name === "nxclip.ai" ? "fallback" : "pexels",
-    alt: "nxClip marketing clip",
+    creditName: pin?.creditName || video.user?.name || "Pexels",
+    creditUrl: pin?.creditUrl || video.user?.url || video.url || "https://www.pexels.com",
+    source: "pexels",
+    alt: pin?.alt || "nxClip marketing clip",
     aspectHint: video.height > video.width ? "portrait" : "landscape",
   };
 }
 
-async function fetchForSlot(slot: MarketingSlot, count = 3): Promise<MarketingMedia[]> {
-  const q = SLOT_QUERIES[slot];
-  const key = `${slot}:${count}`;
-  const hit = cache.get(key);
-  if (hit?.length) return hit;
+function pinToStaticImage(pin: CatalogPin): MarketingMedia | null {
+  const id = pin.photoId;
+  if (!id) return null;
+  return {
+    type: "image",
+    src: pexelsPhotoSrc(id, 1600),
+    poster: pexelsPhotoSrc(id, 800),
+    creditName: pin.creditName,
+    creditUrl: pin.creditUrl,
+    source: "pexels",
+    alt: pin.alt,
+    aspectHint: "landscape",
+  };
+}
 
-  const out: MarketingMedia[] = [];
-
-  if (q.prefer === "video" || q.videoQuery) {
-    const videos = await searchMarketingVideos(q.videoQuery || "gaming", count);
-    for (const v of videos) {
-      const m = videoToMedia(v);
-      if (m) out.push(m);
-    }
+async function resolvePin(pin: CatalogPin): Promise<MarketingMedia | null> {
+  if (pin.type === "video" && pin.videoId) {
+    const video = await fetchPexelsVideoById(pin.videoId);
+    const media = video ? videoToMedia(video, pin) : null;
+    if (media) return media;
   }
 
-  if (out.length < count && (q.prefer === "image" || q.photoQuery)) {
-    const photos = await searchGamingPhotos(q.photoQuery || "gaming", count);
-    out.push(...photos.map(photoToMedia));
+  if (pin.photoId) {
+    const photo = await fetchPexelsPhotoById(pin.photoId);
+    if (photo) return photoToMedia(photo, pin);
   }
 
-  const sliced = out.slice(0, Math.max(count, 1));
-  cache.set(key, sliced);
-  return sliced;
+  return pinToStaticImage(pin);
 }
 
 export async function getSlotMedia(slot: MarketingSlot): Promise<MarketingMedia | null> {
-  const list = await fetchForSlot(slot, 2);
-  return list[0] || null;
+  const hit = cache.get(slot);
+  if (hit) return hit;
+
+  const pin = MARKETING_CATALOG[slot];
+  const media = await resolvePin(pin);
+  if (media) cache.set(slot, media);
+  return media;
 }
 
 export async function getHeroReelMedia(): Promise<MarketingMedia[]> {
-  const key = "hero-reel";
-  const hit = cache.get(key);
-  if (hit?.length) return hit;
-
-  const [photos, videos] = await Promise.all([
-    searchGamingPhotos("gaming creator cinematic", 4),
-    searchMarketingVideos("esports highlight short", 3),
-  ]);
-
-  const reel: MarketingMedia[] = [];
-  const photoMedia = photos.map(photoToMedia);
-  const videoMedia = videos.map(videoToMedia).filter(Boolean) as MarketingMedia[];
-
-  // Interleave: photo, photo, video, photo, video
-  if (photoMedia[0]) reel.push(photoMedia[0]);
-  if (photoMedia[1]) reel.push(photoMedia[1]);
-  if (videoMedia[0]) reel.push(videoMedia[0]);
-  if (photoMedia[2]) reel.push(photoMedia[2]);
-  if (videoMedia[1]) reel.push(videoMedia[1]);
-
-  if (!reel.length && photoMedia.length) reel.push(...photoMedia.slice(0, 3));
-
-  cache.set(key, reel);
-  return reel;
+  const hero = await getSlotMedia("hero");
+  return hero ? [hero] : [];
 }
 
 export async function getCapabilityMedia(): Promise<Record<
@@ -206,6 +154,12 @@ export async function getOsLayerMedia(): Promise<Record<OsLayerKey, MarketingMed
     getSlotMedia("osGuide"),
   ]);
   return { create, organize, distribute, operate, measure, guide };
+}
+
+export async function getSpotlightMedia(): Promise<MarketingMedia[]> {
+  return Promise.all(SPOTLIGHT_CATALOG.map((pin) => resolvePin(pin))).then((list) =>
+    list.filter((m): m is MarketingMedia => Boolean(m)),
+  );
 }
 
 export function creditLabel(media: MarketingMedia | null | undefined): string {

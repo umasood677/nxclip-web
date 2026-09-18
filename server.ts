@@ -302,6 +302,47 @@ async function startServer() {
     }
   });
 
+  // Pinned Home assets — fetch by id so ranking drift cannot swap marketing media
+  app.get("/api/pexels/photo/:id", async (req, res) => {
+    const apiKey = process.env.PEXELS_API_KEY;
+    const id = String(req.params.id || "").replace(/[^\d]/g, "");
+    if (!id) return res.status(400).json({ error: "Invalid photo id" });
+    if (!apiKey) return res.status(204).end();
+
+    try {
+      const response = await fetch(`https://api.pexels.com/v1/photos/${id}`, {
+        headers: { Authorization: apiKey },
+      });
+      if (!response.ok) {
+        return res.status(response.status).json(await response.json().catch(() => ({})));
+      }
+      return res.json(await response.json());
+    } catch (error) {
+      console.error("Pexels photo-by-id error:", error);
+      return res.status(500).json({ error: "Failed to fetch Pexels photo" });
+    }
+  });
+
+  app.get("/api/pexels/video/:id", async (req, res) => {
+    const apiKey = process.env.PEXELS_API_KEY;
+    const id = String(req.params.id || "").replace(/[^\d]/g, "");
+    if (!id) return res.status(400).json({ error: "Invalid video id" });
+    if (!apiKey) return res.status(204).end();
+
+    try {
+      const response = await fetch(`https://api.pexels.com/videos/videos/${id}`, {
+        headers: { Authorization: apiKey },
+      });
+      if (!response.ok) {
+        return res.status(response.status).json(await response.json().catch(() => ({})));
+      }
+      return res.json(await response.json());
+    } catch (error) {
+      console.error("Pexels video-by-id error:", error);
+      return res.status(500).json({ error: "Failed to fetch Pexels video" });
+    }
+  });
+
   // API Proxy for Pexels photos
   app.get("/api/pexels/search", async (req, res) => {
     const { query = "gaming", per_page = 15, page = 1 } = req.query;

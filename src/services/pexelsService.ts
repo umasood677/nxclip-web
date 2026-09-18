@@ -61,6 +61,28 @@ export interface PexelsVideoSearchResponse {
   next_page?: string;
 }
 
+export async function fetchPexelsPhotoById(id: number): Promise<PexelsPhoto | null> {
+  try {
+    const response = await fetch(`/api/pexels/photo/${id}`);
+    if (!response.ok || response.status === 204) return null;
+    const data = (await response.json()) as PexelsPhoto;
+    return data?.id && data?.src ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchPexelsVideoById(id: number): Promise<PexelsVideo | null> {
+  try {
+    const response = await fetch(`/api/pexels/video/${id}`);
+    if (!response.ok || response.status === 204) return null;
+    const data = (await response.json()) as PexelsVideo;
+    return data?.id && data?.video_files ? data : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function searchGamingPhotos(
   query: string = "gaming",
   perPage: number = 15,

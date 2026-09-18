@@ -85,12 +85,16 @@ jobs:
       - name: Deploy to Cloud Run
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
         run: |
           set -euo pipefail
           SERVICE="${CLOUD_RUN_SERVICE:-nxclip-web}"
           ENV_VARS="NODE_ENV=production"
           if [ -n "${GEMINI_API_KEY:-}" ]; then
             ENV_VARS="${ENV_VARS},GEMINI_API_KEY=${GEMINI_API_KEY}"
+          fi
+          if [ -n "${PEXELS_API_KEY:-}" ]; then
+            ENV_VARS="${ENV_VARS},PEXELS_API_KEY=${PEXELS_API_KEY}"
           fi
 
           gcloud run deploy "${SERVICE}" \
