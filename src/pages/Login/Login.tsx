@@ -18,7 +18,7 @@ import { setPersistedUser } from "../../services/auth/authService";
 import { socketService } from "../../services/socketService";
 import { GoogleSignInButton } from "../../components/GoogleSignInButton";
 
-import logo from "@/contents/images/nexa-logo.png";
+import { Logo } from "../../components/Logo";
 
 const loginSchema = z.object({
   email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
@@ -227,12 +227,7 @@ export default function Login() {
 
         <div className="relative z-10">
           <div className="flex flex-col items-center mb-10">
-            <Link 
-              to="/" 
-              className="w-14 h-14 bg-background rounded-xl flex items-center justify-center mb-6 shadow-lg hover:scale-105 transition-transform border border-border/50 overflow-hidden p-2"
-            >
-              <img src={logo} alt="nxclip.ai Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-            </Link>
+            <Logo iconSize="w-14 h-14" textSize="text-xs" className="mb-6" />
             <h1 className="text-3xl font-display font-bold text-foreground mb-2 tracking-tight">Welcome back</h1>
             <p className="text-muted-foreground font-medium text-sm">Continue your creator journey</p>
           </div>

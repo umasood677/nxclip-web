@@ -14,11 +14,11 @@ export function SEO({
   description, 
   keywords, 
   image = "https://picsum.photos/seed/nxclip/1200/630", // Placeholder until og-image.png is provided
-  url = "https://nxclip.ai",
+  url = "https://nxclip.app",
   type = "website" 
 }: SEOProps) {
-  const siteTitle = "nxclip.ai | AI Operating System for Gaming Creators";
-  const fullTitle = title ? `${title} | nxclip.ai` : siteTitle;
+  const siteTitle = "nxclip.app | AI Operating System for Gaming Creators";
+  const fullTitle = title ? `${title} | nxclip.app` : siteTitle;
   const siteDescription = description || "Generate professional gaming images, edit viral clips, and scale your audience with creator intelligence.";
   const siteKeywords = keywords || "gaming creator, ai image generator, video editing, streamer tools, gaming content, creator economy";
 

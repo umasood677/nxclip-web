@@ -62,7 +62,7 @@ export function PwaInstallPrompt({ variant = "card", className, onDismiss }: Pwa
               </div>
               <div>
                 <p className="text-xs font-bold text-white flex items-center gap-1.5 leading-none">
-                  Install nxclip.ai OS
+                  Install nxclip.app OS
                   <Sparkles className="h-3 w-3 text-amber-400" />
                 </p>
                 <p className="text-[10px] text-zinc-400 mt-1">Get full screen canvas workspace</p>
@@ -103,7 +103,7 @@ export function PwaInstallPrompt({ variant = "card", className, onDismiss }: Pwa
                     <span className="text-[10px] font-bold tracking-widest text-purple-400 uppercase bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/15">Desktop app ready</span>
                     <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
                   </div>
-                  <h4 className="text-sm font-bold text-white mt-1.5">Gentle Creator Reminder: Install nxclip.ai onto your desktop</h4>
+                  <h4 className="text-sm font-bold text-white mt-1.5">Gentle Creator Reminder: Install nxclip.app onto your desktop</h4>
                   <p className="text-xs text-zinc-400 mt-1 max-w-xl">
                     Run our platform as a standalone application. Benefit from responsive full-bleed canvases, zero browser tab distractions, and optimized creator speeds.
                   </p>
@@ -151,11 +151,11 @@ export function PwaInstallPrompt({ variant = "card", className, onDismiss }: Pwa
 
             <div className="mt-4">
               <h4 className="text-base font-bold font-display tracking-tight text-white flex items-center gap-1.5">
-                Install nxclip.ai OS
+                Install nxclip.app OS
                 <Sparkles className="h-4 w-4 text-amber-400" />
               </h4>
               <p className="text-xs text-zinc-400 leading-relaxed mt-2">
-                Enable deep creator tools like direct timeline scrubbing, distraction-free frame views, and faster offline cache syncs with the nxclip.ai runtime.
+                Enable deep creator tools like direct timeline scrubbing, distraction-free frame views, and faster offline cache syncs with the nxclip.app runtime.
               </p>
             </div>
 

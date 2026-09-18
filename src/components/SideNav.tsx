@@ -224,8 +224,8 @@ export default function SideNav({ isCollapsed, setIsCollapsed }: SideNavProps) {
               <Logo 
                 showText={!isCollapsed} 
                 iconSize="w-9 h-9" 
-                textSize="text-lg" 
-                gap="gap-2"
+                textSize="text-[11px]" 
+                gap="gap-1"
                 className="hover:scale-100 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ring-offset-card rounded-md" // Disable Link scaling here as Tooltip handles focus
               />
               {!isCollapsed && (
@@ -236,7 +236,7 @@ export default function SideNav({ isCollapsed, setIsCollapsed }: SideNavProps) {
             </div>
           </TooltipTrigger>
           <TooltipContent side={i18n.language === 'ar' ? "left" : "right"} className="font-bold text-[10px] tracking-widest">
-            {t('nav.home_tooltip') || "nxclip.ai Home"}
+            {t('nav.home_tooltip') || "nxclip.app Home"}
           </TooltipContent>
         </Tooltip>
       </div>

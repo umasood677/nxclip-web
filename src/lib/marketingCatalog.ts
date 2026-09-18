@@ -21,14 +21,46 @@ export type MarketingSlot =
   | "osMeasure"
   | "osGuide";
 
-export type NicheKey = "gaming" | "fashion" | "food" | "influencer";
+export type NicheKey =
+  | "gaming"
+  | "fashion"
+  | "food"
+  | "influencer"
+  | "travel"
+  | "fitness"
+  | "beauty"
+  | "music"
+  | "tech"
+  | "cinematic"
+  | "viral";
 
 export const NICHE_LABEL: Record<NicheKey, string> = {
   gaming: "Gaming",
   fashion: "Fashion",
   food: "Food",
   influencer: "AI Influencer",
+  travel: "Travel",
+  fitness: "Fitness",
+  beauty: "Beauty",
+  music: "Music",
+  tech: "Tech",
+  cinematic: "Cinematic",
+  viral: "Viral",
 };
+
+export const NICHE_ORDER: NicheKey[] = [
+  "gaming",
+  "fashion",
+  "food",
+  "influencer",
+  "travel",
+  "fitness",
+  "beauty",
+  "music",
+  "tech",
+  "cinematic",
+  "viral",
+];
 
 export type CatalogPin = {
   type: "image" | "video";
@@ -107,6 +139,63 @@ export const HERO_REEL: CatalogPin[] = [
     creditName: "Ron Lach",
     creditUrl: "https://www.pexels.com/video/young-woman-recording-on-smartphone-while-modeling-8371243/",
   }),
+  pin({
+    type: "image",
+    photoId: 2325446,
+    niche: "travel",
+    alt: "Aerial travel still — cinematic wanderlust campaign",
+    creditName: "Pixabay",
+    creditUrl: "https://www.pexels.com/photo/aerial-photography-of-city-2325446/",
+  }),
+  pin({
+    type: "image",
+    photoId: 416778,
+    niche: "fitness",
+    alt: "Fitness campaign still — peak-performance content",
+    creditName: "Pixabay",
+    creditUrl: "https://www.pexels.com/photo/action-adult-athlete-fitness-416778/",
+  }),
+  pin({
+    type: "image",
+    photoId: 3373736,
+    niche: "beauty",
+    alt: "Beauty close-up — AI glam still",
+    creditName: "Marcelo Chagas",
+    creditUrl: "https://www.pexels.com/photo/woman-wearing-orange-lipstick-3373736/",
+  }),
+  pin({
+    type: "image",
+    photoId: 1763075,
+    niche: "music",
+    alt: "Concert lights — music viral reel energy",
+    creditName: "Sebastiaan Stam",
+    creditUrl: "https://www.pexels.com/photo/group-of-people-inside-dark-room-1763075/",
+  }),
+  pin({
+    type: "image",
+    photoId: 3861969,
+    niche: "tech",
+    alt: "AI / tech still — futurist product look",
+    creditName: "Google DeepMind",
+    creditUrl: "https://www.pexels.com/photo/an-artist-s-illustration-of-artificial-intelligence-3861969/",
+  }),
+  pin({
+    type: "image",
+    photoId: 1117132,
+    niche: "cinematic",
+    alt: "Cinematic reel still — filmic grade",
+    creditName: "David Bartus",
+    creditUrl: "https://www.pexels.com/photo/man-standing-near-the-lights-1117132/",
+  }),
+  pin({
+    type: "video",
+    videoId: 12433083,
+    photoId: 1036623,
+    niche: "viral",
+    alt: "Viral short with ring light — trend-native clip",
+    creditName: "Hanna Pad",
+    creditUrl: "https://www.pexels.com/video/a-young-woman-filming-a-video-with-her-phone-and-a-ring-light-12433083/",
+  }),
 ];
 
 /** Image Studio — rotating generated-looking stills across niches. */
@@ -143,6 +232,38 @@ export const IMAGE_STUDIO_REEL: CatalogPin[] = [
     creditName: "Mentatdgt",
     creditUrl: "https://www.pexels.com/photo/close-up-photography-of-woman-1382734/",
   }),
+  pin({
+    type: "image",
+    photoId: 1271619,
+    niche: "travel",
+    alt: "Mountain travel still — wanderlust campaign",
+    creditName: "Sanaan Mazhar",
+    creditUrl: "https://www.pexels.com/photo/mountain-covered-with-green-trees-1271619/",
+  }),
+  pin({
+    type: "image",
+    photoId: 2294361,
+    niche: "fitness",
+    alt: "Training still — fitness creator content",
+    creditName: "Li Sun",
+    creditUrl: "https://www.pexels.com/photo/man-doing-exercise-2294361/",
+  }),
+  pin({
+    type: "image",
+    photoId: 3373719,
+    niche: "beauty",
+    alt: "Glam portrait — beauty campaign still",
+    creditName: "Marcelo Chagas",
+    creditUrl: "https://www.pexels.com/photo/woman-wearing-red-lipstick-3373719/",
+  }),
+  pin({
+    type: "image",
+    photoId: 1190297,
+    niche: "cinematic",
+    alt: "Crowd lights — cinematic concert grade",
+    creditName: "Sebastiaan Stam",
+    creditUrl: "https://www.pexels.com/photo/group-of-people-having-a-concert-1190297/",
+  }),
 ];
 
 export const MEME_REEL: CatalogPin[] = [
@@ -153,6 +274,22 @@ export const MEME_REEL: CatalogPin[] = [
     alt: "Gamer reaction — meme caption chrome",
     creditName: "Robert Nagy",
     creditUrl: "https://www.pexels.com/photo/puzzled-gamer-in-illuminated-room-3930070/",
+  }),
+  pin({
+    type: "image",
+    photoId: 3812745,
+    niche: "viral",
+    alt: "Laugh reaction — viral meme still",
+    creditName: "Andrea Piacquadio",
+    creditUrl: "https://www.pexels.com/photo/woman-wearing-black-crew-neck-shirt-3812745/",
+  }),
+  pin({
+    type: "image",
+    photoId: 762080,
+    niche: "viral",
+    alt: "Expressive face — punchline-ready still",
+    creditName: "Andrea Piacquadio",
+    creditUrl: "https://www.pexels.com/photo/woman-wearing-coat-762080/",
   }),
 ];
 
@@ -184,6 +321,24 @@ export const VIRAL_CLIPS_REEL: CatalogPin[] = [
     creditName: "Artem Podrez",
     creditUrl: "https://www.pexels.com/video/close-up-shot-of-game-controllers-7774953/",
   }),
+  pin({
+    type: "video",
+    videoId: 12433083,
+    photoId: 1036623,
+    niche: "viral",
+    alt: "Trend-native phone reel",
+    creditName: "Hanna Pad",
+    creditUrl: "https://www.pexels.com/video/a-young-woman-filming-a-video-with-her-phone-and-a-ring-light-12433083/",
+  }),
+  pin({
+    type: "video",
+    videoId: 8626672,
+    photoId: 1640777,
+    niche: "food",
+    alt: "Chef steam reel — culinary viral",
+    creditName: "Kampus Production",
+    creditUrl: "https://www.pexels.com/video/chef-cooking-in-the-kitchen-8626672/",
+  }),
 ];
 
 export const CLIP_EDITOR_REEL: CatalogPin[] = [
@@ -205,6 +360,14 @@ export const CLIP_EDITOR_REEL: CatalogPin[] = [
     creditName: "Mikhail Nilov",
     creditUrl: "https://www.pexels.com/video/man-playing-video-game-while-using-joystick-7986844/",
   }),
+  pin({
+    type: "image",
+    photoId: 1117132,
+    niche: "cinematic",
+    alt: "Filmic still — color-grade energy",
+    creditName: "David Bartus",
+    creditUrl: "https://www.pexels.com/photo/man-standing-near-the-lights-1117132/",
+  }),
 ];
 
 export const COACH_REEL: CatalogPin[] = [
@@ -215,6 +378,14 @@ export const COACH_REEL: CatalogPin[] = [
     alt: "Creator talent — Coach week plan",
     creditName: "Daniel Xavier",
     creditUrl: "https://www.pexels.com/photo/close-up-photography-of-woman-smiling-1130626/",
+  }),
+  pin({
+    type: "image",
+    photoId: 3764119,
+    niche: "fitness",
+    alt: "Athlete creator — Coach growth plan",
+    creditName: "Andrea Piacquadio",
+    creditUrl: "https://www.pexels.com/photo/woman-in-black-tank-top-and-black-leggings-3764119/",
   }),
 ];
 
@@ -229,6 +400,22 @@ export const PIPELINE_MODERATE_REEL: CatalogPin[] = [
     creditName: "Godisable Jacob",
     creditUrl: "https://www.pexels.com/photo/woman-wearing-black-shirt-1375736/",
   }),
+  pin({
+    type: "image",
+    photoId: 3373736,
+    niche: "beauty",
+    alt: "Beauty still in review",
+    creditName: "Marcelo Chagas",
+    creditUrl: "https://www.pexels.com/photo/woman-wearing-orange-lipstick-3373736/",
+  }),
+  pin({
+    type: "image",
+    photoId: 1761279,
+    niche: "cinematic",
+    alt: "Cinematic still in review",
+    creditName: "Tobias Bjørkli",
+    creditUrl: "https://www.pexels.com/photo/mountain-covered-with-snow-1761279/",
+  }),
 ];
 
 export const PIPELINE_PUBLISH_REEL: CatalogPin[] = [
@@ -239,6 +426,23 @@ export const PIPELINE_PUBLISH_REEL: CatalogPin[] = [
     alt: "Influencer ready to post — Feed + Live",
     creditName: "Daniel Xavier",
     creditUrl: "https://www.pexels.com/photo/woman-wearing-black-shirt-1036623/",
+  }),
+  pin({
+    type: "video",
+    videoId: 12433083,
+    photoId: 1036623,
+    niche: "viral",
+    alt: "Go-live reel — social publish",
+    creditName: "Hanna Pad",
+    creditUrl: "https://www.pexels.com/video/a-young-woman-filming-a-video-with-her-phone-and-a-ring-light-12433083/",
+  }),
+  pin({
+    type: "image",
+    photoId: 2087018,
+    niche: "travel",
+    alt: "Travel creator post-ready",
+    creditName: "Oleksandr Pidvalnyi",
+    creditUrl: "https://www.pexels.com/photo/woman-wearing-backpack-2087018/",
   }),
 ];
 

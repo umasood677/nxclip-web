@@ -55,7 +55,7 @@ import { selectAuthUser } from "../../store/slices/authSlice";
 
 export function generateMetadata(id: string | undefined) {
   return {
-    title: `Post details · nxclip.ai`,
+    title: `Post details · nxclip.app`,
     description: `Detailed view, AI generation prompt, and metadata for creation ${id || ""}.`.trim(),
   };
 }

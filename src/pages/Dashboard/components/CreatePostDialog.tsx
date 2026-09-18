@@ -930,7 +930,7 @@ export default function CreatePostDialog({ onPost }: CreatePostDialogProps) {
                     <div className={cn("flex items-center gap-2 pt-1", isAr && "flex-row-reverse")}>
                        <Music size={10} className="text-white/80 animate-spin" style={{ animationDuration: '4s' }} />
                        <span className="text-[9px] text-white/80 font-medium whitespace-nowrap overflow-hidden">
-                          Original Sound - nxclip.ai - Pulse of Gamers
+                          Original Sound - nxclip.app - Pulse of Gamers
                        </span>
                     </div>
                   </div>

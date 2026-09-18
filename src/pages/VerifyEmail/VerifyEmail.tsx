@@ -22,6 +22,7 @@ import { selectAuthProvider } from "../../store/slices/uiSlice";
 import { selectAuthUser, selectAuthProfile, setAuthUser, logoutUser } from "../../store/slices/authSlice";
 import { getPersistedUser, setPersistedUser, updateAccessToken, triggerTokenStateUpdate } from "../../services/auth/authService";
 import logo from "../../contents/images/nexa-logo.png";
+import { BrandTld } from "../../components/Logo";
 import { Button } from "../../components/ui/button";
 
 // Helper to decode JWT token expiration
@@ -482,18 +483,21 @@ export default function VerifyEmail() {
           )}
         </AnimatePresence>
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="relative mb-4">
-            <motion.div 
-              animate={{ 
-                scale: [1, 1.08, 1],
-                opacity: [0.2, 0.4, 0.2]
-              }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -inset-3 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl blur-lg"
-            />
-            <div className="relative w-16 h-16 bg-zinc-900 border border-white/10 rounded-2xl p-2.5 flex items-center justify-center">
-              <img src={logo} alt="nxclip.ai" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+          <div className="relative mb-4 flex items-end justify-center gap-1">
+            <div className="relative">
+              <motion.div 
+                animate={{ 
+                  scale: [1, 1.08, 1],
+                  opacity: [0.2, 0.4, 0.2]
+                }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -inset-3 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl blur-lg"
+              />
+              <div className="relative w-16 h-16 bg-zinc-900 border border-white/10 rounded-2xl p-2.5 flex items-center justify-center">
+                <img src={logo} alt="nxClip" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+              </div>
             </div>
+            <BrandTld className="text-[11px] pb-1.5" />
           </div>
 
           <h2 className="text-xl font-bold tracking-tight text-white font-display">

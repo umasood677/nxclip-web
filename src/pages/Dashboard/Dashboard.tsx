@@ -730,7 +730,7 @@ export default function Dashboard() {
       <div className="py-20">
         <EmptyState
           variant="generic"
-          title={t('dashboard.empty_state.title', { defaultValue: 'Welcome to nxclip.ai' })}
+          title={t('dashboard.empty_state.title', { defaultValue: 'Welcome to nxclip.app' })}
           description={t('dashboard.empty_state.desc', { defaultValue: 'Your dashboard is ready. Start creating content to see your performance metrics and AI insights.' })}
           actionLabel={t('dashboard.empty_state.cta', { defaultValue: 'Create First Creation' })}
           onAction={() => {

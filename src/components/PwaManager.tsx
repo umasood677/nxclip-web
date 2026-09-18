@@ -131,7 +131,7 @@ export function PwaManager() {
       })();
 
       toast.promise(syncPromise, {
-        loading: 'Syncing offline drafts automatically with nxclip.ai cloud...',
+        loading: 'Syncing offline drafts automatically with nxclip.app cloud...',
         success: (msg) => msg,
         error: (err) => {
           triggerHaptic('error');
@@ -518,7 +518,7 @@ export function PwaManager() {
                 <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0" />
               </h4>
               <p className="text-xs text-zinc-400 leading-relaxed mt-2.5">
-                A new version of nxclip.ai OS is loaded. Complete this hotfix to synchronize instant assets, offline enhancements, and faster rendering speeds.
+                A new version of nxclip.app OS is loaded. Complete this hotfix to synchronize instant assets, offline enhancements, and faster rendering speeds.
               </p>
             </div>
 
@@ -556,14 +556,14 @@ export function PwaManager() {
               <Check className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-semibold text-sm">Welcome to nxclip.ai OS</p>
+              <p className="font-semibold text-sm">Welcome to nxclip.app OS</p>
               <p className="text-xs text-emerald-400/80 mt-0.5">Application successfully installed to your local dock.</p>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 4. Floating Prompt Banner styled strictly to nxclip.ai graphite standard */}
+      {/* 4. Floating Prompt Banner styled strictly to nxclip.app graphite standard */}
       <AnimatePresence>
         {showInstallBanner && (
           <motion.div
@@ -590,7 +590,7 @@ export function PwaManager() {
             {/* Information */}
             <div className="mt-4">
               <h4 className="text-base font-bold font-display tracking-tight text-white flex items-center gap-1.5 leading-none">
-                Install nxclip.ai Creator OS
+                Install nxclip.app Creator OS
                 <Sparkles className="h-4 w-4 text-amber-400 shrink-0" />
               </h4>
               <p className="text-xs text-zinc-400 leading-relaxed mt-2.5">

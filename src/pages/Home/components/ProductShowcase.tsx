@@ -3,7 +3,7 @@ import { BarChart3, Sparkles, Image as ImageIcon, Scissors, MessageSquare } from
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { auth } from "../../../firebase";
-import logo from "@/contents/images/nexa-logo.png";
+import { Logo } from "../../../components/Logo";
 import { cn } from "../../../lib/utils";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,11 +59,8 @@ export default function ProductShowcase() {
             <div className="bg-card/40 rounded-xl overflow-hidden border border-border flex flex-col md:flex-row h-[750px] backdrop-blur-xl">
               {/* Sidebar UI - Premium Refinement */}
               <div className="ui-showcase-sidebar">
-                <div className="flex items-center gap-3.5 mb-14">
-                  <div className="w-10 h-10 flex items-center justify-center overflow-hidden rounded-lg shadow-soft-xl">
-                    <img src={logo} alt="nxclip.ai Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-                  </div>
-                  <span className="font-bold text-foreground text-lg tracking-tight lowercase">nxclip.ai</span>
+                <div className="mb-14">
+                  <Logo iconSize="w-10 h-10" textSize="text-[11px]" gap="gap-1" />
                 </div>
                 
                 <nav className="space-y-4 flex-grow">

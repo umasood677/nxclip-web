@@ -18,11 +18,11 @@ export default function Footer() {
       <div className="ui-container-landing relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 mb-24">
           <div className="lg:col-span-4">
-            <Logo 
-              iconSize="w-10 h-10" 
-              textSize="text-2xl" 
+            <Logo
+              iconSize="w-10 h-10"
+              textSize="text-xs"
               className="mb-8"
-              gap="gap-3"
+              gap="gap-1"
             />
             <p className="text-lg text-muted-foreground max-w-sm mb-10 font-medium leading-relaxed">
               {t('footer.description')}
@@ -100,7 +100,7 @@ export default function Footer() {
 
         <div className="pt-12 border-t border-border flex flex-col md:flex-row items-center justify-between gap-6">
           <p className="text-xs text-muted-foreground font-bold tracking-widest opacity-40">
-            &copy; {new Date().getFullYear()} nxclip.ai. All rights reserved.
+            &copy; {new Date().getFullYear()} nxclip.app. All rights reserved.
           </p>
           <div className="flex gap-8">
             <a href="#" className="text-[10px] text-muted-foreground hover:text-primary transition-colors font-bold tracking-[0.1em]">{t('footer.privacy')}</a>

@@ -7,7 +7,7 @@ const resources = {
   en: {
     translation: {
       "app": {
-        "name": "nxclip.ai",
+        "name": "nxclip.app",
         "tagline": "AI Operating System for Gaming Creators"
       },
       "nav": {
@@ -41,7 +41,7 @@ const resources = {
         "collapse": "Collapse",
         "expand": "Expand",
         "soon": "Soon",
-        "home_tooltip": "nxclip.ai Home",
+        "home_tooltip": "nxclip.app Home",
         "growth_tip": {
           "title": "Growth Tip",
           "description": "Unlock unlimited creations & full analytics with Pro.",
@@ -250,7 +250,7 @@ const resources = {
         }
       },
       "create_post": {
-        "title": "nxclip.ai Creator Hub",
+        "title": "nxclip.app Creator Hub",
         "tabs": {
           "single": "Single Post",
           "plan": "Content Plan"
@@ -334,13 +334,13 @@ const resources = {
         },
         "coach": {
           "tag": "AI Coach",
-          "intro": "Welcome! I'm your nxclip.ai Coach.",
+          "intro": "Welcome! I'm your nxclip.app Coach.",
           "intro_subtitle": "I'll help you set up your creator studio and prepare your first week of content in about 90 seconds.",
           "step_label": "STEP {{step}}",
           "of": "of",
           "complete": "Complete",
           "final_step": "Final Step",
-          "how_it_works": "How nxclip.ai Works",
+          "how_it_works": "How nxclip.app Works",
           "how_it_works_subtitle": "Everything you need to dominate the gaming scene.",
           "tip_0": "Welcome! I'm here to help you build a content empire. Let's start by defining your niche.",
           "tip_1": "Focusing on 1-3 games helps the AI understand your specific style and audience interests.",
@@ -349,7 +349,7 @@ const resources = {
           "tip_4": "Your goal determines the strategy. Growth needs trends; community needs engagement.",
           "tip_5": "Consistency is key! Even posting once a week is better than a burst followed by silence.",
           "tip_6": "Whether you have clips or not, I'll make sure you have something amazing to post today.",
-          "tip_7": "Almost there! Let's take a quick look at how nxclip.ai works."
+          "tip_7": "Almost there! Let's take a quick look at how nxclip.app works."
         },
         "questions": {
           "games": {
@@ -1084,7 +1084,7 @@ const resources = {
         "upgrade_btn": "Upgrade to Pro",
         "input_placeholder": "Ask your coach something...",
         "send_aria": "Send message",
-        "chat_welcome": "Hi! I'm your nxclip.ai Creator Coach. I'm ready to help you grow. What's on your mind?",
+        "chat_welcome": "Hi! I'm your nxclip.app Creator Coach. I'm ready to help you grow. What's on your mind?",
         "error_connectivity": "Connectivity Issue",
         "error_generic": "I encountered an error trying to connect to the neural network.",
         "no_history": "No conversation history yet.",
@@ -1107,7 +1107,7 @@ const resources = {
         },
         "history": {
           "new_chat_title": "New Conversation",
-          "welcome_msg": "Hi! I'm your nxclip.ai Creator Coach. I'm ready to help you grow. What's on your mind?"
+          "welcome_msg": "Hi! I'm your nxclip.app Creator Coach. I'm ready to help you grow. What's on your mind?"
         },
         "errors": {
           "processing": "I'm sorry, I'm having trouble processing your request right now. Please try again in a moment.",
@@ -1728,7 +1728,7 @@ const resources = {
         },
         "insights": {
           "recent_posts": "Recent Posts",
-          "recent_subtitle": "Latest clips, memes, and images created through nxclip.ai.",
+          "recent_subtitle": "Latest clips, memes, and images created through nxclip.app.",
           "full_library": "View Full Library",
           "no_posts": "No posts yet",
           "no_posts_subtitle": "Complete your first weekly plan task to start tracking performance and insights.",
@@ -1902,7 +1902,7 @@ const resources = {
         }
       },
       "footer": {
-        "rights": "© 2026 nxclip.ai. The Creator OS.",
+        "rights": "© 2026 nxclip.app. The Creator OS.",
         "product": "Product",
         "platform": "Platform",
         "legal": "Legal",
@@ -2122,14 +2122,14 @@ const resources = {
         "label": "Global Creator Network",
         "title": "The choice of elite",
         "title_gradient": "gaming professionals.",
-        "description": "From competitive pros to variety streamers, nxclip.ai is the architectural backbone of the world's most engaging gaming channels.",
+        "description": "From competitive pros to variety streamers, nxclip.app is the architectural backbone of the world's most engaging gaming channels.",
         "verified": "Verified Elite",
         "counts": "+25k",
         "creators": {
           "aura": {
              "handle": "@ApexAura",
              "niche": "Battle Royale, FPS",
-             "quote": "nxclip.ai turned my 8-hour streams into viral gold. The AI knows exactly when the hype happens."
+             "quote": "nxclip.app turned my 8-hour streams into viral gold. The AI knows exactly when the hype happens."
           },
           "sage": {
              "handle": "@StrategySage",
@@ -2144,7 +2144,7 @@ const resources = {
           "knight": {
              "handle": "@CyberKnight",
              "niche": "RPG, Souls-like",
-             "quote": "nxclip.ai's Creator Coach is like having a pro producer in my ear. My community engagement is at an all-time high."
+             "quote": "nxclip.app's Creator Coach is like having a pro producer in my ear. My community engagement is at an all-time high."
           }
         }
       },
@@ -2152,12 +2152,12 @@ const resources = {
         "label": "Community Pulse",
         "title": "Validated by",
         "title_gradient": "the world's best.",
-        "description": "Real feedback from creators who have transformed their channels using nxclip.ai's intelligence.",
+        "description": "Real feedback from creators who have transformed their channels using nxclip.app's intelligence.",
         "data": {
            "viper": {
               "name": "Alex 'Viper' Chen",
               "tag": "Valorant Pro",
-              "quote": "nxclip.ai's AI trimmer is a game-changer. I used to spend hours finding highlights, now it's done in seconds. My TikTok views are up 400%."
+              "quote": "nxclip.app's AI trimmer is a game-changer. I used to spend hours finding highlights, now it's done in seconds. My TikTok views are up 400%."
            },
            "luna": {
               "name": "Sarah 'Luna' Smith",
@@ -2167,7 +2167,7 @@ const resources = {
            "tank": {
               "name": "Marcus 'Tank' Jones",
               "tag": "RPG Specialist",
-              "quote": "Generating custom memes for my community has never been easier. nxclip.ai understands gaming culture perfectly. Best tool I've ever used."
+              "quote": "Generating custom memes for my community has never been easier. nxclip.app understands gaming culture perfectly. Best tool I've ever used."
            }
         }
       },
@@ -2175,7 +2175,7 @@ const resources = {
         "label": "Final Frontier",
         "title": "Ready to dominate",
         "title_gradient": "the gaming feed.",
-        "description": "Join 25,000+ top creators scaling their channels with nxclip.ai. The future of gaming content is elite.",
+        "description": "Join 25,000+ top creators scaling their channels with nxclip.app. The future of gaming content is elite.",
         "button_start": "Start Your Evolution",
         "button_pricing": "Explore Pricing"
       }
@@ -2184,7 +2184,7 @@ const resources = {
   ar: {
     translation: {
       "app": {
-        "name": "nxclip.ai",
+        "name": "nxclip.app",
         "tagline": "نظام تشغيل الذكاء الاصطناعي لمنشئي الألعاب"
       },
       "nav": {
@@ -2218,7 +2218,7 @@ const resources = {
         "collapse": "طي",
         "expand": "توسيع",
         "soon": "قريباً",
-        "home_tooltip": "الرئيسية nxclip.ai",
+        "home_tooltip": "الرئيسية nxclip.app",
         "growth_tip": {
           "title": "نصيحة للنمو",
           "description": "افتح عمليات إنشاء غير محدودة وتحليلات كاملة مع برو.",
@@ -3077,7 +3077,7 @@ const resources = {
         "upgrade_btn": "الترقية إلى برو",
         "input_placeholder": "اسأل مدربك شيئاً...",
         "send_aria": "إرسال الرسالة",
-        "chat_welcome": "مرحباً! أنا مدرب المنشئين الخاص بك في nxclip.ai. أنا مستعد لمساعدتك على النمو. ما الذي يدور في ذهنك؟",
+        "chat_welcome": "مرحباً! أنا مدرب المنشئين الخاص بك في nxclip.app. أنا مستعد لمساعدتك على النمو. ما الذي يدور في ذهنك؟",
         "error_connectivity": "مشكلة في الاتصال",
         "error_generic": "واجهت خطأ أثناء محاولة الاتصال بالشبكة العصبية.",
         "no_history": "لا يوجد سجل محادثات بعد.",
@@ -3100,7 +3100,7 @@ const resources = {
         },
         "history": {
           "new_chat_title": "محادثة جديدة",
-          "welcome_msg": "مرحباً! أنا مدرب المنشئين الخاص بك في nxclip.ai. أنا مستعد لمساعدتك على النمو. ما الذي يدور في ذهنك؟"
+          "welcome_msg": "مرحباً! أنا مدرب المنشئين الخاص بك في nxclip.app. أنا مستعد لمساعدتك على النمو. ما الذي يدور في ذهنك؟"
         },
         "errors": {
           "processing": "عذراً، أواجه مشكلة في معالجة طلبك حالياً. يرجى المحاولة مرة أخرى لاحقاً.",
@@ -3721,7 +3721,7 @@ const resources = {
         },
         "insights": {
           "recent_posts": "المنشورات الأخيرة",
-          "recent_subtitle": "أحدث المقاطع والميمات والصور التي تم إنشاؤها عبر nxclip.ai.",
+          "recent_subtitle": "أحدث المقاطع والميمات والصور التي تم إنشاؤها عبر nxclip.app.",
           "full_library": "عرض المكتبة الكاملة",
           "no_posts": "لا توجد منشورات بعد",
           "no_posts_subtitle": "أكمل مهمة خطتك الأسبوعية الأولى للبدء في تتبع الأداء والرؤى.",
@@ -3885,7 +3885,7 @@ const resources = {
         }
       },
       "create_post": {
-        "title": "nxclip.ai مركز الإنشاء",
+        "title": "nxclip.app مركز الإنشاء",
         "tabs": {
           "single": "منشور واحد",
           "plan": "خطة المحتوى"
@@ -3969,13 +3969,13 @@ const resources = {
         },
         "coach": {
           "tag": "مدرب الذكاء الاصطناعي",
-          "intro": "مرحباً! أنا مدرب nxclip.ai الخاص بك.",
+          "intro": "مرحباً! أنا مدرب nxclip.app الخاص بك.",
           "intro_subtitle": "سأساعدك في إعداد استوديو المنشئ الخاص بك وتحضير الأسبوع الأول من المحتوى في حوالي 90 ثانية.",
           "step_label": "خطوة {{step}}",
           "of": "من",
           "complete": "مكتمل",
           "final_step": "الخطوة النهائية",
-          "how_it_works": "كيف يعمل nxclip.ai",
+          "how_it_works": "كيف يعمل nxclip.app",
           "how_it_works_subtitle": "كل ما تحتاجه للسيطرة على مشهد الألعاب.",
           "tip_0": "مرحباً! أنا هنا لمساعدتك في بناء إمبراطورية محتوى. لنبدأ بتحديد مجالك.",
           "tip_1": "التركيز على 1-3 ألعاب يساعد الذكاء الاصطناعي في فهم أسلوبك الخاص واهتمامات جمهورك.",
@@ -3984,7 +3984,7 @@ const resources = {
           "tip_4": "هدفك يحدد الاستراتيجية. النمو يحتاج إلى اتجاهات رائجة؛ المجتمع يحتاج إلى تفاعل.",
           "tip_5": "الاتساق هو المفتاح! حتى النشر مرة واحدة في الأسبوع أفضل من اندفاع يليه صمت.",
           "tip_6": "سواء كان لديك مقاطع أم لا، سأحرص على أن يكون لديك شيء مذهل لتنشره اليوم.",
-          "tip_7": "أوشكنا على الانتهاء! لنلقِ نظرة سريعة على كيفية عمل nxclip.ai."
+          "tip_7": "أوشكنا على الانتهاء! لنلقِ نظرة سريعة على كيفية عمل nxclip.app."
         },
         "questions": {
           "games": {
@@ -4069,7 +4069,7 @@ const resources = {
         }
       },
       "footer": {
-        "rights": "© 2026 nxclip.ai. نظام تشغيل المنشئ.",
+        "rights": "© 2026 nxclip.app. نظام تشغيل المنشئ.",
         "product": "المنتج",
         "platform": "المنصة",
         "legal": "قانوني",
@@ -4289,14 +4289,14 @@ const resources = {
         "label": "شبكة منشئي المحتوى العالمية",
         "title": "اختيار نخبة",
         "title_gradient": "محترفي الألعاب.",
-        "description": "من المحترفين التنافسيين إلى المباشرين المتنوعين، يعد nxclip.ai الأساس المعماري لقنوات الألعاب الأكثر جاذبية في العالم.",
+        "description": "من المحترفين التنافسيين إلى المباشرين المتنوعين، يعد nxclip.app الأساس المعماري لقنوات الألعاب الأكثر جاذبية في العالم.",
         "verified": "نخبة معتمدة",
         "counts": "+25 ألف",
         "creators": {
           "aura": {
              "handle": "@ApexAura",
              "niche": "باتل رويال، تصويب",
-             "quote": "حوّل nxclip.ai بثي المباشر الذي دام 8 ساعات إلى ذهب فيروسي. يعرف الذكاء الاصطناعي تمامًا متى يحدث الحماس."
+             "quote": "حوّل nxclip.app بثي المباشر الذي دام 8 ساعات إلى ذهب فيروسي. يعرف الذكاء الاصطناعي تمامًا متى يحدث الحماس."
           },
           "sage": {
              "handle": "@StrategySage",
@@ -4311,7 +4311,7 @@ const resources = {
           "knight": {
              "handle": "@CyberKnight",
              "niche": "تقمص أدوار، سول لايك",
-             "quote": "مدرب منشئي nxclip.ai يشبه امتلاك منتج محترف في أذني. تفاعل مجتمعي في أعلى مستوياته على الإطلاق."
+             "quote": "مدرب منشئي nxclip.app يشبه امتلاك منتج محترف في أذني. تفاعل مجتمعي في أعلى مستوياته على الإطلاق."
           }
         }
       },
@@ -4319,12 +4319,12 @@ const resources = {
         "label": "نبض المجتمع",
         "title": "معتمد من قبل",
         "title_gradient": "الأفضل في العالم.",
-        "description": "ردود فعل حقيقية من منشئي المحتوى الذين حولوا قنواتهم باستخدام ذكاء nxclip.ai.",
+        "description": "ردود فعل حقيقية من منشئي المحتوى الذين حولوا قنواتهم باستخدام ذكاء nxclip.app.",
         "data": {
            "viper": {
               "name": "أليكس 'فايبر' تشن",
               "tag": "محترف فالورانت",
-              "quote": "أداة تقليم الذكاء الاصطناعي من nxclip.ai غيرت قواعد اللعبة. كنت أقضي ساعات في البحث عن اللقطات البارزة، والآن يتم ذلك في ثوانٍ. زادت مشاهدات تيك توك بنسبة 400%."
+              "quote": "أداة تقليم الذكاء الاصطناعي من nxclip.app غيرت قواعد اللعبة. كنت أقضي ساعات في البحث عن اللقطات البارزة، والآن يتم ذلك في ثوانٍ. زادت مشاهدات تيك توك بنسبة 400%."
            },
            "luna": {
               "name": "سارة 'لونا' سميث",
@@ -4334,7 +4334,7 @@ const resources = {
            "tank": {
               "name": "ماركوس 'تانك' جونز",
               "tag": "متخصص في ألعاب تقمص الأدوار",
-              "quote": "لم يكن إنشاء صور ميمات مخصصة لمجتمعي أسهل من أي وقت مضى. يفهم nxclip.ai ثقافة الألعاب تمامًا. أفضل أداة استخدمتها على الإطلاق."
+              "quote": "لم يكن إنشاء صور ميمات مخصصة لمجتمعي أسهل من أي وقت مضى. يفهم nxclip.app ثقافة الألعاب تمامًا. أفضل أداة استخدمتها على الإطلاق."
            }
         }
       },
@@ -4342,7 +4342,7 @@ const resources = {
         "label": "الحد الأخير",
         "title": "مستعد للهيمنة على",
         "title_gradient": "تغذية الألعاب.",
-        "description": "انضم إلى أكثر من 25000 من كبار منشئي المحتوى الذين يوسعون قنواتهم باستخدام nxclip.ai. مستقبل محتوى الألعاب هو النخبة.",
+        "description": "انضم إلى أكثر من 25000 من كبار منشئي المحتوى الذين يوسعون قنواتهم باستخدام nxclip.app. مستقبل محتوى الألعاب هو النخبة.",
         "button_start": "ابدأ تطورك",
         "button_pricing": "استكشف الأسعار"
       }

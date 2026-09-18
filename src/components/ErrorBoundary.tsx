@@ -95,7 +95,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             </div>
             
             <p className="text-center mt-8 text-[11px] font-bold text-muted-foreground tracking-[0.2em] uppercase opacity-50">
-              nxclip.ai • Failure Recovery Module
+              nxclip.app • Failure Recovery Module
             </p>
           </div>
         </div>

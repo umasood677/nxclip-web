@@ -23,7 +23,7 @@ import { Input } from "../../components/ui/input";
 import { FormField } from "../../components/ui/form-field";
 import { identityApi } from "../../services/apiClient";
 import { safeLocalStorage } from "../../lib/safeStorage";
-import logo from "@/contents/images/nexa-logo.png";
+import { Logo } from "../../components/Logo";
 
 // Validation schemas for each step
 const emailSchema = z.object({
@@ -227,12 +227,7 @@ export default function ForgotPassword() {
 
         <div className="relative z-10">
           <div className="flex flex-col items-center mb-10">
-            <Link 
-              to="/" 
-              className="w-14 h-14 bg-background rounded-xl flex items-center justify-center mb-6 shadow-lg hover:scale-105 transition-transform border border-border/50 overflow-hidden p-2"
-            >
-              <img src={logo} alt="nxclip.ai Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-            </Link>
+            <Logo iconSize="w-14 h-14" textSize="text-xs" className="mb-6" />
             <h1 className="text-2xl font-display font-bold text-foreground mb-2 tracking-tight">
               {step === "email" && "Reset Password"}
               {step === "code" && "Verify Identity"}
@@ -525,7 +520,7 @@ export default function ForgotPassword() {
                 
                 <h2 className="text-xl font-display font-bold text-foreground">Password Changed!</h2>
                 <p className="text-muted-foreground text-xs leading-relaxed max-w-[300px] mx-auto">
-                  Your security credentials have been updated successfully. You may now log in to nxclip.ai with your new password.
+                  Your security credentials have been updated successfully. You may now log in to nxclip.app with your new password.
                 </p>
 
                 <Button 

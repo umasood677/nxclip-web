@@ -275,7 +275,7 @@ export default function Hero() {
               <iframe
                 className="w-full h-full border-none relative z-0"
                 src="https://www.youtube.com/embed/dD9U5NSB4eU?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1"
-                title="nxclip.ai Demo Video"
+                title="nxclip.app Demo Video"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />

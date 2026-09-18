@@ -426,7 +426,7 @@ export function DevTerminal({
                         [{formatTimestamp(log.timestamp)}]
                       </span>
                       <span className="text-primary font-bold shrink-0 select-none">
-                        sidra@nxclip.ai:~$
+                        sidra@nxclip.app:~$
                       </span>
                       <div className="flex items-center shrink-0 min-w-0">
                         {getMethodBadge(log.method)}

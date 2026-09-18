@@ -15,7 +15,7 @@ const STEPS = [
     key: "create" as const,
     n: "01",
     title: "Create",
-    desc: "Generate cinematic stills, memes, and clips — Gaming, Fashion, Food, AI influencers.",
+    desc: "Generate cinematic stills, memes, and clips across every niche.",
     cta: "Start creating",
     path: "/create",
     accent: "from-primary/80 to-transparent",
@@ -96,8 +96,9 @@ export default function PipelineV2() {
                 <div className="relative aspect-[4/5] sm:aspect-[5/6] md:aspect-[3/4] overflow-hidden bg-muted">
                   <MarketingMediaReel
                     items={media[step.key]}
-                    intervalMs={step.key === "create" ? 3200 : 5000}
-                    kenBurns
+                    intervalMs={step.key === "create" ? 2800 : step.key === "publish" ? 2100 : 4800}
+                    cut={step.key === "create" ? "dissolve" : step.key === "publish" ? "whip" : "push"}
+                    camera={step.key === "publish" ? "handheld" : step.key === "moderate" ? "drift" : "kenburns"}
                     showNiche={false}
                   />
                   <div className={cn("absolute inset-0 bg-gradient-to-t via-black/45 to-black/20", step.accent)} />
@@ -115,7 +116,7 @@ export default function PipelineV2() {
 
                     {step.key === "create" && (
                       <div className="rounded-xl border border-white/20 bg-black/55 backdrop-blur-md px-3 py-2 text-[11px] text-white/90 font-medium max-w-[90%]">
-                        “AI lookbook · Gaming · Fashion · Food · Influencer”
+                        “Lookbook · Viral reels · Cinematic grade”
                       </div>
                     )}
                     {step.key === "moderate" && (

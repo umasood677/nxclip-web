@@ -983,12 +983,67 @@ body.dark,
     will-change: transform;
   }
 
+  .home-drift {
+    animation: home-drift 9s ease-in-out alternate infinite;
+    will-change: transform;
+  }
+
+  .home-handheld {
+    animation: home-handheld 0.45s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+
+  .home-crashzoom {
+    animation: home-crashzoom 0.42s cubic-bezier(0.2, 0.85, 0.2, 1) both;
+    will-change: transform;
+  }
+
+  .home-niche-marquee {
+    animation: home-niche-marquee 28s linear infinite;
+  }
+
   @keyframes home-kenburns {
     from {
       transform: scale(1.04) translate3d(0, 0, 0);
     }
     to {
       transform: scale(1.14) translate3d(-2%, -1.5%, 0);
+    }
+  }
+
+  @keyframes home-drift {
+    from {
+      transform: scale(1.08) translate3d(-3%, 1%, 0);
+    }
+    to {
+      transform: scale(1.08) translate3d(3%, -2%, 0);
+    }
+  }
+
+  @keyframes home-handheld {
+    from {
+      transform: translate3d(-0.8%, 0.5%, 0) rotate(-0.4deg) scale(1.08);
+    }
+    to {
+      transform: translate3d(0.9%, -0.6%, 0) rotate(0.45deg) scale(1.1);
+    }
+  }
+
+  @keyframes home-crashzoom {
+    from {
+      transform: scale(1.32);
+    }
+    to {
+      transform: scale(1.05);
+    }
+  }
+
+  @keyframes home-niche-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
     }
   }
 

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>nxclip.ai | AI Creator Intelligence Platform</title>
+    <title>nxclip.app | AI Creator Intelligence Platform</title>
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#09090b" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -71,9 +71,24 @@
         max-width: 20rem;
         padding: 0 1.5rem;
       }
+      .nx-page-loader__lockup {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 0.25rem;
+        margin-bottom: 1.5rem;
+      }
       .nx-page-loader__logo-frame {
         position: relative;
-        margin-bottom: 1.5rem;
+      }
+      .nx-page-loader__tld {
+        font-size: 0.75rem;
+        font-weight: 500;
+        letter-spacing: -0.025em;
+        line-height: 1;
+        color: rgba(161, 161, 170, 0.75);
+        padding-bottom: 0.5rem;
+        text-transform: lowercase;
       }
       .nx-page-loader__logo-box {
         position: relative;
@@ -108,13 +123,6 @@
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
-      }
-      .nx-page-loader__title {
-        margin: 0;
-        font-size: 1.25rem;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        color: #fff;
       }
       .nx-page-loader__badge {
         display: inline-flex;
@@ -179,18 +187,20 @@
       <div class="nx-page-loader" aria-busy="true" aria-live="polite">
         <div class="nx-page-loader__glow"></div>
         <div class="nx-page-loader__inner">
-          <div class="nx-page-loader__logo-frame">
-            <div class="nx-page-loader__logo-box">
-              <img src="/nexa-logo.png" alt="nxclip.ai" width="64" height="64" />
+          <div class="nx-page-loader__lockup">
+            <div class="nx-page-loader__logo-frame">
+              <div class="nx-page-loader__logo-box">
+                <img src="/nexa-logo.png" alt="nxClip" width="64" height="64" />
+              </div>
+              <div class="nx-page-loader__sparkle" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3z" />
+                </svg>
+              </div>
             </div>
-            <div class="nx-page-loader__sparkle" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3z" />
-              </svg>
-            </div>
+            <span class="nx-page-loader__tld">.app</span>
           </div>
           <div class="nx-page-loader__title-row">
-            <h1 class="nx-page-loader__title">nxclip.ai</h1>
             <span class="nx-page-loader__badge">Creator OS</span>
           </div>
           <p class="nx-page-loader__log" id="nx-boot-log">initializing creator os engine...</p>
@@ -198,7 +208,7 @@
             <div class="nx-page-loader__bar-fill"></div>
           </div>
         </div>
-        <div class="nx-page-loader__footer">nxclip.ai • platform active</div>
+        <div class="nx-page-loader__footer">nxclip.app • platform active</div>
       </div>
     </div>
     <script>

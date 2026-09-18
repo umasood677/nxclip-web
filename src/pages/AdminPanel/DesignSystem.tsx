@@ -86,7 +86,7 @@ export default function DesignSystem() {
               <div className="flex items-center gap-2">
                 <Palette className="text-purple-400 size-6 shrink-0" />
                 <h1 className="text-xl font-bold tracking-tight text-white m-0">
-                  nxclip.ai Design System
+                  nxclip.app Design System
                 </h1>
                 <Badge variant="brand-gradient" className="text-[9px] tracking-widest uppercase font-bold px-2 py-0.5 rounded">
                   System Tokens v1.2

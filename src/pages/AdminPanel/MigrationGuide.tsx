@@ -219,7 +219,7 @@ The dynamic API endpoint is offline, and the static asset could not be loaded. P
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
-        doc.text("nxclip.ai  |  PRODUCTION MIGRATION BLUEPRINT", margin, 15);
+        doc.text("nxclip.app  |  PRODUCTION MIGRATION BLUEPRINT", margin, 15);
         
         // Top thin hairline
         doc.setDrawColor(230, 230, 230);

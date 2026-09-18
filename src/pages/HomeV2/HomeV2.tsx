@@ -30,7 +30,7 @@ export default function HomeV2() {
     <ReactLenis root>
         <div className="min-h-screen ui-bg-landing home-v2">
         <SEO
-          title="nxClip — Viral content redefined by AI"
+          title="nxclip.app — Viral content redefined by AI"
           description="The AI operating system built for next-gen creators. Transform your best moments into epic growth with elite-grade intelligence."
         />
 

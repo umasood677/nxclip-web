@@ -117,8 +117,8 @@ export default function PublicPostView() {
   return (
     <div className="min-h-screen ui-bg-landing flex flex-col">
       <SEO 
-        title={`${title || "Creator Post"} | nxclip.ai`} 
-        description={description || "Check out this creator's latest performance on nxclip.ai."}
+        title={`${title || "Creator Post"} | nxclip.app`} 
+        description={description || "Check out this creator's latest performance on nxclip.app."}
         type="article"
       />
       <Navbar />
@@ -212,7 +212,7 @@ export default function PublicPostView() {
                 <Sparkles className="text-primary" size={24} />
                 <h3 className="text-2xl font-display font-bold">Create your own clips</h3>
               </div>
-              <p className="text-muted-foreground font-medium">Join creators using nxclip.ai to scale their brand.</p>
+              <p className="text-muted-foreground font-medium">Join creators using nxclip.app to scale their brand.</p>
             </div>
             <Link to="/signup">
               <Button size="hero" className="font-bold relative z-10 px-8">

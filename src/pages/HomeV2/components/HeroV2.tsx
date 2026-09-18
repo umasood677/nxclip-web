@@ -7,7 +7,8 @@ import { Button } from "../../../components/ui/button";
 import { getHeroReelMedia, type MarketingMedia } from "../../../lib/marketingMedia";
 import { useAppSelector } from "../../../store/hooks";
 import { selectAuthUser } from "../../../store/slices/authSlice";
-import { MarketingMediaReel } from "./MarketingMediaReel";
+import { BrandTld } from "../../../components/Logo";
+import { MarketingMediaReel, NicheTicker } from "./MarketingMediaReel";
 
 export default function HeroV2() {
   const { t } = useTranslation();
@@ -31,7 +32,7 @@ export default function HeroV2() {
   };
 
   return (
-    <section className="relative overflow-hidden pt-16 md:pt-20 pb-8 md:pb-10">
+    <section className="relative overflow-hidden pt-28 sm:pt-32 md:pt-36 pb-8 md:pb-10">
       {/* Soft liveliness — Flow / vid.ai style atmosphere, not competing media */}
       <div className="absolute inset-0 pointer-events-none -z-10 overflow-hidden">
         <motion.div
@@ -52,9 +53,12 @@ export default function HeroV2() {
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-[11px] font-bold tracking-[0.28em] uppercase text-teal-600 dark:text-teal-400 mb-6"
+            className="text-[11px] font-bold tracking-[0.28em] text-teal-600 dark:text-teal-400 mb-6"
           >
-            nxClip
+            <span className="inline-flex items-end justify-center">
+              <span className="uppercase">nxClip</span>
+              <BrandTld className="text-[10px] pb-px tracking-normal font-medium normal-case" />
+            </span>
           </motion.p>
 
           <motion.h1
@@ -96,6 +100,7 @@ export default function HeroV2() {
               See how it works
             </Button>
           </motion.div>
+          <NicheTicker />
         </div>
 
         {/* One dominant hero stage — isolated from capability tiles below */}
@@ -107,7 +112,15 @@ export default function HeroV2() {
         >
           <div className="absolute -inset-3 md:-inset-5 rounded-[1.75rem] bg-gradient-to-br from-primary/25 via-transparent to-teal-500/20 blur-2xl opacity-70" />
           <div className="relative aspect-[16/9] md:aspect-[21/9] rounded-2xl md:rounded-3xl overflow-hidden border border-white/15 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.55)] ring-1 ring-black/30">
-            <MarketingMediaReel items={reel} intervalMs={3800} nicheTabs kenBurns showNiche={false} className="z-10" />
+            <MarketingMediaReel
+              items={reel}
+              intervalMs={2400}
+              cut="mix"
+              camera="kenburns"
+              nicheTabs
+              showNiche={false}
+              className="z-10"
+            />
             <motion.div
               className="absolute inset-0 z-[12] border border-white/10 rounded-2xl md:rounded-3xl pointer-events-none"
               animate={{ opacity: [0.4, 0.75, 0.4] }}

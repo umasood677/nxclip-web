@@ -23,6 +23,9 @@ type CapDef = {
   cta: string;
   variant?: "meme" | "editor" | "coach" | "clip";
   portrait?: boolean;
+  intervalMs: number;
+  cut: "dissolve" | "cut" | "whip" | "zoom" | "flash" | "push" | "mix";
+  camera: "none" | "kenburns" | "handheld" | "crashzoom" | "drift";
   /** 12-col span — paired tiles in a row share one fixed height for alignment. */
   span: string;
   height: string;
@@ -37,10 +40,13 @@ const CAPS: CapDef[] = [
   {
     key: "imageStudio",
     title: "Image Studio",
-    line: "Cinematic AI stills for Gaming, Fashion, Food, and influencers.",
+    line: "Cinematic AI stills across Gaming, Fashion, Food, Travel, Beauty, and more.",
     chip: "AI Image",
     path: "/create/image",
     cta: "Try Image Studio",
+    intervalMs: 4100,
+    cut: "dissolve",
+    camera: "kenburns",
     span: "md:col-span-7 lg:col-span-8",
     height: "h-[240px] sm:h-[260px] md:h-[300px] lg:h-[320px]",
   },
@@ -52,29 +58,38 @@ const CAPS: CapDef[] = [
     path: "/create/image?type=meme",
     cta: "Make a meme",
     variant: "meme",
+    intervalMs: 1500,
+    cut: "cut",
+    camera: "none",
     span: "md:col-span-5 lg:col-span-4",
     height: "h-[240px] sm:h-[260px] md:h-[300px] lg:h-[320px]",
   },
   {
     key: "viralClips",
     title: "Viral Clips",
-    line: "Short-form motion for every niche — feed-native and ready to post.",
+    line: "Trend-speed shorts — whip pans, quick cuts, feed-native motion.",
     chip: "Short-form",
     path: "/create/clip",
     cta: "Explore clips",
     variant: "clip",
     portrait: true,
+    intervalMs: 1900,
+    cut: "whip",
+    camera: "handheld",
     span: "md:col-span-5 lg:col-span-4",
     height: "h-[240px] sm:h-[260px] md:h-[300px] lg:h-[320px]",
   },
   {
     key: "clipEditor",
     title: "Clip Studio",
-    line: "Trim, cut, and shape highlights in one flow.",
+    line: "Trim, smash-cut, and crash-zoom highlights like an editor bay.",
     chip: "Edit",
     path: "/create/clip",
     cta: "Open Clip Studio",
     variant: "editor",
+    intervalMs: 1700,
+    cut: "flash",
+    camera: "crashzoom",
     span: "md:col-span-7 lg:col-span-8",
     height: "h-[240px] sm:h-[260px] md:h-[300px] lg:h-[320px]",
   },
@@ -86,6 +101,9 @@ const CAPS: CapDef[] = [
     path: "/coach",
     cta: "Meet your Coach",
     variant: "coach",
+    intervalMs: 5600,
+    cut: "dissolve",
+    camera: "drift",
     span: "md:col-span-12",
     height: "h-[200px] sm:h-[220px] md:h-[240px] lg:h-[260px]",
   },
@@ -181,8 +199,9 @@ function CapCard({
         <MarketingMediaReel
           items={items}
           portrait={def.portrait}
-          intervalMs={3600 + index * 400}
-          kenBurns
+          intervalMs={def.intervalMs}
+          cut={def.cut}
+          camera={def.camera}
           showNiche={def.key === "imageStudio" || def.key === "viralClips"}
         />
       </div>

@@ -13,9 +13,10 @@ import DashboardLayout from "./components/layouts/DashboardLayout";
 import { PwaManager } from "./components/PwaManager";
 import { safeLocalStorage, safeSessionStorage } from "./lib/safeStorage";
 import { PwaProvider } from "./contexts/PwaContext";
+import { BrandTld } from "./components/Logo";
+import logo from "./contents/images/nexa-logo.png";
 import { motion } from "motion/react";
 import { Sparkles, Cpu } from "lucide-react";
-import logo from "./contents/images/nexa-logo.png";
 import { useAppDispatch, useAppSelector } from "./store/hooks";
 import { setAuthUser, setAuthProfile, setAuthLoading, SerializedUser, selectAuthUser, selectAuthProfile, selectAuthLoading, logoutUser } from "./store/slices/authSlice";
 import { selectAuthProvider } from "./store/slices/uiSlice";
@@ -98,64 +99,60 @@ const PageLoader = () => {
       
       {/* Container area */}
       <div className="flex flex-col items-center z-10 max-w-xs text-center px-6">
-        {/* Glowing Logo Frame */}
-        <div className="relative mb-6">
-          {/* Pulsating back aura */}
-          <motion.div 
-            animate={{ 
-              scale: [1, 1.12, 1],
-              opacity: [0.3, 0.6, 0.3]
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="absolute -inset-4 bg-gradient-to-r from-primary to-brand-secondary rounded-2xl blur-xl opacity-50"
-          />
-          
-          {/* Logo container matching PwaManager badge */}
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.6 }}
-            className="relative w-24 h-24 bg-zinc-900 border border-white/10 rounded-2xl p-4 flex items-center justify-center shadow-2xl"
-          >
-            <img 
-              src={logo} 
-              alt="nxclip.ai Logo" 
-              className="w-full h-full object-contain"
-              referrerPolicy="no-referrer"
+        {/* Wordmark lockup: logo image + quiet .app */}
+        <div className="relative mb-6 flex items-end justify-center gap-1">
+          <div className="relative">
+            <motion.div 
+              animate={{ 
+                scale: [1, 1.12, 1],
+                opacity: [0.3, 0.6, 0.3]
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="absolute -inset-4 bg-gradient-to-r from-primary to-brand-secondary rounded-2xl blur-xl opacity-50"
             />
-          </motion.div>
-          
-          {/* Gold Sparkle accent */}
-          <motion.div
-            animate={{ 
-              scale: [0.8, 1.2, 0.8],
-              rotate: [0, 90, 180, 270, 360]
-            }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-            className="absolute -top-1.5 -right-1.5 bg-zinc-950 border border-amber-500/30 p-1 rounded-lg shadow-lg"
-          >
-            <Sparkles className="h-4 w-4 text-amber-400" />
-          </motion.div>
+            
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              className="relative w-24 h-24 bg-zinc-900 border border-white/10 rounded-2xl p-4 flex items-center justify-center shadow-2xl"
+            >
+              <img 
+                src={logo} 
+                alt="nxClip"
+                className="w-full h-full object-contain"
+                referrerPolicy="no-referrer"
+              />
+            </motion.div>
+            
+            <motion.div
+              animate={{ 
+                scale: [0.8, 1.2, 0.8],
+                rotate: [0, 90, 180, 270, 360]
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+              className="absolute -top-1.5 -right-1.5 bg-zinc-950 border border-amber-500/30 p-1 rounded-lg shadow-lg"
+            >
+              <Sparkles className="h-4 w-4 text-amber-400" />
+            </motion.div>
+          </div>
+          <BrandTld className="text-xs pb-2" />
         </div>
 
-        {/* Branding Title */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
         >
           <div className="flex items-center gap-2 justify-center">
-            <h1 className="text-xl font-bold font-display tracking-tight text-white mb-0.5">
-              nxclip.ai
-            </h1>
             <div className="inline-flex items-center gap-1 bg-purple-500/10 border border-purple-500/20 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest text-purple-400 uppercase">
               Creator OS
             </div>
@@ -226,7 +223,7 @@ const PageLoader = () => {
       {/* Outer corner ambient detail */}
       <div className="absolute bottom-6 text-[9px] font-mono text-zinc-500 flex items-center gap-1.5">
         <Cpu className="h-3 w-3 text-primary/70" />
-        <span>nxclip.ai • platform active</span>
+        <span>nxclip.app • platform active</span>
       </div>
     </div>
   );

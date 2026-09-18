@@ -230,7 +230,7 @@ function ContentCardComponent({
           >
             <img
               src={nxclipLogo}
-              alt="nxclip.ai"
+              alt="nxClip"
               className="w-[72px] h-[72px] max-w-[40%] max-h-[40%] object-contain grayscale brightness-125 contrast-75 opacity-55 select-none pointer-events-none"
               referrerPolicy="no-referrer"
               draggable={false}

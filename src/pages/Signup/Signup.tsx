@@ -14,7 +14,7 @@ import { identityApi } from "../../services/apiClient";
 import { setPersistedUser } from "../../services/auth/authService";
 import { GoogleSignInButton } from "../../components/GoogleSignInButton";
 
-import logo from "@/contents/images/nexa-logo.png";
+import { Logo } from "../../components/Logo";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -345,12 +345,7 @@ export default function Signup() {
 
         <div className="relative z-10">
           <div className="flex flex-col items-center mb-8">
-            <Link 
-              to="/" 
-              className="w-12 h-12 bg-background rounded-xl flex items-center justify-center mb-4 shadow-lg border border-border/50 overflow-hidden p-2"
-            >
-              <img src={logo} alt="nxclip.ai Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-            </Link>
+            <Logo iconSize="w-12 h-12" textSize="text-xs" className="mb-4" />
             <h1 className="text-2xl font-display font-bold text-foreground mb-1 tracking-tight">Create account</h1>
             <p className="text-muted-foreground font-medium text-xs">Join 10,000+ gaming creators</p>
           </div>
@@ -463,7 +458,7 @@ export default function Signup() {
             <FormField
               label="Username"
               id="username"
-              description="Your unique identity on nxclip.ai"
+              description="Your unique identity on nxclip.app"
               error={usernameStatus === "taken" ? "This username is already taken" : undefined}
               disabled={loading || success}
               required
