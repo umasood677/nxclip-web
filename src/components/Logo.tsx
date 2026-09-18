@@ -27,16 +27,16 @@ export const BrandTld: React.FC<{ className?: string }> = ({ className }) => (
 export const Logo: React.FC<LogoProps> = ({
   className,
   iconSize = "w-10 h-10",
-  textSize = "text-[11px]",
-  gap = "gap-1",
+  textSize = "text-lg",
+  gap = "gap-1.5",
   showText = true,
 }) => {
   return (
     <Link to="/" className={cn("flex items-center cursor-pointer group", className)}>
       <motion.div
-        whileHover={{ scale: 1.04 }}
+        whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.98 }}
-        className={cn("flex items-end", gap)}
+        className={cn("flex items-center", gap)}
       >
         <div
           className={cn(
@@ -46,13 +46,23 @@ export const Logo: React.FC<LogoProps> = ({
         >
           <img
             src={logo}
-            alt="nxClip"
+            alt="NxClip"
             className="w-full h-full object-contain"
             referrerPolicy="no-referrer"
           />
         </div>
         {showText && (
-          <BrandTld className={cn("pb-[3px] -ms-0.5", textSize)} />
+          <span className="flex items-baseline gap-px min-w-0">
+            <span
+              className={cn(
+                "font-display font-bold tracking-tight text-foreground leading-none",
+                textSize,
+              )}
+            >
+              NxClip
+            </span>
+            <BrandTld className="text-[10px] md:text-[11px] pb-px" />
+          </span>
         )}
       </motion.div>
     </Link>

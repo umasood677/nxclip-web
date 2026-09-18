@@ -5,10 +5,11 @@ import { NICHE_LABEL, NICHE_ORDER, type NicheKey } from "../../../lib/marketingC
 import { type MarketingMedia } from "../../../lib/marketingMedia";
 import { MarketingMediaFrame } from "./MarketingMediaFrame";
 
-export type ReelCut = "dissolve" | "cut" | "whip" | "zoom" | "flash" | "push" | "mix";
-export type ReelCamera = "none" | "kenburns" | "handheld" | "crashzoom" | "drift";
+export type ReelCut = "dissolve" | "cut" | "whip" | "zoom" | "flash" | "push" | "mix" | "cinematic";
+export type ReelCamera = "none" | "kenburns" | "handheld" | "crashzoom" | "drift" | "cinematic" | "auto";
 
-const MIX_CYCLE: Exclude<ReelCut, "mix">[] = ["dissolve", "cut", "whip", "zoom", "flash", "push"];
+const MIX_CYCLE: Exclude<ReelCut, "mix" | "cinematic">[] = ["dissolve", "cut", "whip", "zoom", "flash", "push"];
+const CINEMA_CYCLE: Array<"dissolve" | "push"> = ["dissolve", "push"];
 
 type Props = {
   items: MarketingMedia[];
@@ -38,8 +39,12 @@ export function MarketingMediaReel({
   const [flash, setFlash] = useState(0);
   const skipFlash = useRef(true);
 
-  const activeCut: Exclude<ReelCut, "mix"> =
-    cut === "mix" ? MIX_CYCLE[index % MIX_CYCLE.length] : cut;
+  const activeCut: Exclude<ReelCut, "mix" | "cinematic"> =
+    cut === "mix"
+      ? MIX_CYCLE[index % MIX_CYCLE.length]
+      : cut === "cinematic"
+        ? CINEMA_CYCLE[index % CINEMA_CYCLE.length]
+        : cut;
 
   useEffect(() => {
     if (items.length < 2 || paused) return;
@@ -73,7 +78,10 @@ export function MarketingMediaReel({
     return <MarketingMediaFrame media={null} className={className} />;
   }
 
-  const cameraClass = cameraClassName(camera, items[index]?.type === "image");
+  const cameraClass = cameraClassName(
+    resolveCamera(camera, items[index]?.niche),
+    items[index]?.type === "image",
+  );
 
   if (items.length === 1) {
     return (
@@ -101,6 +109,10 @@ export function MarketingMediaReel({
       {items.map((item, i) => {
         const active = i === index;
         const motionProps = cutMotion(activeCut, active);
+        const itemCamera = cameraClassName(
+          resolveCamera(camera, item.niche),
+          item.type === "image",
+        );
         return (
           <motion.div
             key={`${item.src}-${item.niche ?? i}`}
@@ -114,7 +126,7 @@ export function MarketingMediaReel({
               media={item}
               portrait={portrait}
               active={active}
-              imgClassName={cn(active && cameraClass)}
+              imgClassName={cn(active && itemCamera)}
             />
           </motion.div>
         );
@@ -216,13 +228,30 @@ function NicheChip({ niche, className }: { niche: NicheKey; className?: string }
   );
 }
 
-function cameraClassName(camera: ReelCamera, isImage: boolean): string | undefined {
+function resolveCamera(camera: ReelCamera, niche?: NicheKey): Exclude<ReelCamera, "auto"> {
+  if (camera !== "auto") return camera;
+  switch (niche) {
+    case "fashion":
+    case "beauty":
+      return "cinematic";
+    case "gaming":
+      return "drift";
+    case "viral":
+      return "cinematic";
+    default:
+      return "kenburns";
+  }
+}
+
+function cameraClassName(camera: Exclude<ReelCamera, "auto">, isImage: boolean): string | undefined {
   if (!isImage && camera !== "handheld") {
     if (camera === "none") return undefined;
   }
   switch (camera) {
     case "kenburns":
       return isImage ? "home-kenburns" : undefined;
+    case "cinematic":
+      return isImage ? "home-cinematic" : undefined;
     case "handheld":
       return "home-handheld";
     case "crashzoom":

@@ -979,12 +979,18 @@ body.dark,
   }
 
   .home-kenburns {
-    animation: home-kenburns 8s ease-in-out alternate infinite;
+    animation: home-kenburns 14s ease-in-out alternate infinite;
     will-change: transform;
   }
 
+  .home-cinematic {
+    animation: home-cinematic 18s ease-in-out alternate infinite;
+    will-change: transform;
+    filter: saturate(1.08) contrast(1.06);
+  }
+
   .home-drift {
-    animation: home-drift 9s ease-in-out alternate infinite;
+    animation: home-drift 16s ease-in-out alternate infinite;
     will-change: transform;
   }
 
@@ -1004,19 +1010,28 @@ body.dark,
 
   @keyframes home-kenburns {
     from {
-      transform: scale(1.04) translate3d(0, 0, 0);
+      transform: scale(1.06) translate3d(0, 0, 0);
     }
     to {
-      transform: scale(1.14) translate3d(-2%, -1.5%, 0);
+      transform: scale(1.16) translate3d(-1.6%, -1.1%, 0);
+    }
+  }
+
+  @keyframes home-cinematic {
+    from {
+      transform: scale(1.08) translate3d(0, 0, 0);
+    }
+    to {
+      transform: scale(1.2) translate3d(-1.2%, -0.8%, 0);
     }
   }
 
   @keyframes home-drift {
     from {
-      transform: scale(1.08) translate3d(-3%, 1%, 0);
+      transform: scale(1.1) translate3d(-2.2%, 0.8%, 0);
     }
     to {
-      transform: scale(1.08) translate3d(3%, -2%, 0);
+      transform: scale(1.1) translate3d(2.2%, -1.4%, 0);
     }
   }
 

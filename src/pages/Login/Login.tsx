@@ -227,7 +227,7 @@ export default function Login() {
 
         <div className="relative z-10">
           <div className="flex flex-col items-center mb-10">
-            <Logo iconSize="w-14 h-14" textSize="text-xs" className="mb-6" />
+            <Logo iconSize="w-14 h-14" textSize="text-xl" className="mb-6" />
             <h1 className="text-3xl font-display font-bold text-foreground mb-2 tracking-tight">Welcome back</h1>
             <p className="text-muted-foreground font-medium text-sm">Continue your creator journey</p>
           </div>

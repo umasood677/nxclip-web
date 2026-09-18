@@ -7,7 +7,6 @@ import { Button } from "../../../components/ui/button";
 import { getHeroReelMedia, type MarketingMedia } from "../../../lib/marketingMedia";
 import { useAppSelector } from "../../../store/hooks";
 import { selectAuthUser } from "../../../store/slices/authSlice";
-import { BrandTld } from "../../../components/Logo";
 import { MarketingMediaReel, NicheTicker } from "./MarketingMediaReel";
 
 export default function HeroV2() {
@@ -53,12 +52,9 @@ export default function HeroV2() {
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-[11px] font-bold tracking-[0.28em] text-teal-600 dark:text-teal-400 mb-6"
+            className="text-[11px] font-bold tracking-[0.28em] uppercase text-teal-600 dark:text-teal-400 mb-6"
           >
-            <span className="inline-flex items-end justify-center">
-              <span className="uppercase">nxClip</span>
-              <BrandTld className="text-[10px] pb-px tracking-normal font-medium normal-case" />
-            </span>
+            NXCLIP
           </motion.p>
 
           <motion.h1
@@ -114,13 +110,15 @@ export default function HeroV2() {
           <div className="relative aspect-[16/9] md:aspect-[21/9] rounded-2xl md:rounded-3xl overflow-hidden border border-white/15 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.55)] ring-1 ring-black/30">
             <MarketingMediaReel
               items={reel}
-              intervalMs={2400}
-              cut="mix"
-              camera="kenburns"
+              intervalMs={5200}
+              cut="cinematic"
+              camera="auto"
               nicheTabs
               showNiche={false}
               className="z-10"
             />
+            <div className="absolute inset-0 z-[6] pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_42%,rgba(0,0,0,0.42)_100%)]" />
+            <div className="absolute inset-0 z-[6] pointer-events-none opacity-40 bg-gradient-to-tr from-teal-950/35 via-transparent to-fuchsia-950/25" />
             <motion.div
               className="absolute inset-0 z-[12] border border-white/10 rounded-2xl md:rounded-3xl pointer-events-none"
               animate={{ opacity: [0.4, 0.75, 0.4] }}

@@ -345,7 +345,7 @@ export default function Signup() {
 
         <div className="relative z-10">
           <div className="flex flex-col items-center mb-8">
-            <Logo iconSize="w-12 h-12" textSize="text-xs" className="mb-4" />
+            <Logo iconSize="w-12 h-12" textSize="text-xl" className="mb-4" />
             <h1 className="text-2xl font-display font-bold text-foreground mb-1 tracking-tight">Create account</h1>
             <p className="text-muted-foreground font-medium text-xs">Join 10,000+ gaming creators</p>
           </div>

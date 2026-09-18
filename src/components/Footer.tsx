@@ -20,9 +20,9 @@ export default function Footer() {
           <div className="lg:col-span-4">
             <Logo
               iconSize="w-10 h-10"
-              textSize="text-xs"
+              textSize="text-xl"
               className="mb-8"
-              gap="gap-1"
+              gap="gap-2"
             />
             <p className="text-lg text-muted-foreground max-w-sm mb-10 font-medium leading-relaxed">
               {t('footer.description')}
