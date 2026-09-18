@@ -109,8 +109,7 @@ export default function HeroV2() {
           <div className="relative aspect-[16/9] md:aspect-[21/9] rounded-2xl md:rounded-3xl overflow-hidden border border-white/15 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.55)] ring-1 ring-black/30">
             <MarketingMediaFrame
               media={hero}
-              showCredit
-              creditClassName="text-[8px] md:text-[9px]"
+              showCredit={false}
               imgClassName="scale-[1.02]"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent pointer-events-none" />

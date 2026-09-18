@@ -129,15 +129,6 @@ export default function CreatorSpotlight() {
                   </div>
                   <h3 className="text-xl font-display font-bold text-white tracking-tight">{t(`spotlight.creators.${creator.id}.handle`)}</h3>
                 </div>
-
-                {/* Attribution - Subtle */}
-                {creator.photographer && (
-                  <div className="absolute top-4 end-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <a href={creator.photographer_url} target="_blank" rel="noopener" className="glass px-2 py-1 rounded text-[8px] text-white/60">
-                      {t('common.via')} Pexels
-                    </a>
-                  </div>
-                )}
               </div>
 
               <div className="px-3 pb-4 flex flex-col flex-grow">

@@ -20,7 +20,7 @@ export function MarketingMediaFrame({
   media,
   className,
   imgClassName,
-  showCredit = true,
+  showCredit = false,
   creditClassName,
   portrait = false,
 }: Props) {

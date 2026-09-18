@@ -96,8 +96,8 @@ export default function PipelineV2() {
                 <div className="relative aspect-[4/5] sm:aspect-[5/6] md:aspect-[3/4] overflow-hidden bg-muted">
                   <MarketingMediaFrame
                     media={media[step.key]}
+                    showCredit={false}
                     imgClassName="transition-transform duration-700 will-change-transform scale-[1.02] group-hover:scale-[1.08]"
-                    creditClassName="text-[8px]"
                   />
                   <div className={cn("absolute inset-0 bg-gradient-to-t via-black/45 to-black/20", step.accent)} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
