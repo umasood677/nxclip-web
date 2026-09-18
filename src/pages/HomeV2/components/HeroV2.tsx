@@ -4,21 +4,21 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowRight, Play } from "lucide-react";
 import { Button } from "../../../components/ui/button";
-import { getSlotMedia, type MarketingMedia } from "../../../lib/marketingMedia";
+import { getHeroReelMedia, type MarketingMedia } from "../../../lib/marketingMedia";
 import { useAppSelector } from "../../../store/hooks";
 import { selectAuthUser } from "../../../store/slices/authSlice";
-import { MarketingMediaFrame } from "./MarketingMediaFrame";
+import { MarketingMediaReel } from "./MarketingMediaReel";
 
 export default function HeroV2() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAppSelector(selectAuthUser);
-  const [hero, setHero] = useState<MarketingMedia | null>(null);
+  const [reel, setReel] = useState<MarketingMedia[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-    void getSlotMedia("hero").then((m) => {
-      if (!cancelled) setHero(m);
+    void getHeroReelMedia().then((items) => {
+      if (!cancelled) setReel(items);
     });
     return () => {
       cancelled = true;
@@ -107,14 +107,9 @@ export default function HeroV2() {
         >
           <div className="absolute -inset-3 md:-inset-5 rounded-[1.75rem] bg-gradient-to-br from-primary/25 via-transparent to-teal-500/20 blur-2xl opacity-70" />
           <div className="relative aspect-[16/9] md:aspect-[21/9] rounded-2xl md:rounded-3xl overflow-hidden border border-white/15 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.55)] ring-1 ring-black/30">
-            <MarketingMediaFrame
-              media={hero}
-              showCredit={false}
-              imgClassName="scale-[1.02]"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent pointer-events-none" />
+            <MarketingMediaReel items={reel} intervalMs={3800} nicheTabs kenBurns showNiche={false} className="z-10" />
             <motion.div
-              className="absolute inset-0 border border-white/10 rounded-2xl md:rounded-3xl pointer-events-none"
+              className="absolute inset-0 z-[12] border border-white/10 rounded-2xl md:rounded-3xl pointer-events-none"
               animate={{ opacity: [0.4, 0.75, 0.4] }}
               transition={{ duration: 4.5, repeat: Infinity }}
             />

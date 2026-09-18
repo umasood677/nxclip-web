@@ -4,10 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowRight, CheckCircle2, Share2, Sparkles } from "lucide-react";
 import { Button } from "../../../components/ui/button";
-import { getPipelineMedia, type MarketingMedia } from "../../../lib/marketingMedia";
+import { getPipelineReels, type MarketingMedia } from "../../../lib/marketingMedia";
 import { useAppSelector } from "../../../store/hooks";
 import { selectAuthUser } from "../../../store/slices/authSlice";
-import { MarketingMediaFrame } from "./MarketingMediaFrame";
+import { MarketingMediaReel } from "./MarketingMediaReel";
 import { cn } from "../../../lib/utils";
 
 const STEPS = [
@@ -15,7 +15,7 @@ const STEPS = [
     key: "create" as const,
     n: "01",
     title: "Create",
-    desc: "Generate images, memes, and clips with AI — in one Creator Hub.",
+    desc: "Generate cinematic stills, memes, and clips — Gaming, Fashion, Food, AI influencers.",
     cta: "Start creating",
     path: "/create",
     accent: "from-primary/80 to-transparent",
@@ -35,7 +35,7 @@ const STEPS = [
     key: "publish" as const,
     n: "03",
     title: "Publish",
-    desc: "Post to your Feed, then go Live on YouTube, Instagram, or TikTok.",
+    desc: "Post influencer-ready assets to your Feed, then go Live on YouTube, Instagram, or TikTok.",
     cta: "Go to Feed",
     path: "/feed",
     accent: "from-teal-500/80 to-transparent",
@@ -48,14 +48,14 @@ export default function PipelineV2() {
   const navigate = useNavigate();
   const user = useAppSelector(selectAuthUser);
   const [media, setMedia] = useState<{
-    create: MarketingMedia | null;
-    moderate: MarketingMedia | null;
-    publish: MarketingMedia | null;
-  }>({ create: null, moderate: null, publish: null });
+    create: MarketingMedia[];
+    moderate: MarketingMedia[];
+    publish: MarketingMedia[];
+  }>({ create: [], moderate: [], publish: [] });
 
   useEffect(() => {
     let cancelled = false;
-    void getPipelineMedia().then((m) => {
+    void getPipelineReels().then((m) => {
       if (!cancelled) setMedia(m);
     });
     return () => {
@@ -94,56 +94,56 @@ export default function PipelineV2() {
                 className="relative z-10 group rounded-2xl overflow-hidden border border-border/70 bg-card shadow-[0_24px_60px_-30px_rgba(0,0,0,0.5)] transition-shadow duration-300 hover:shadow-[0_28px_70px_-28px_rgba(0,0,0,0.55)]"
               >
                 <div className="relative aspect-[4/5] sm:aspect-[5/6] md:aspect-[3/4] overflow-hidden bg-muted">
-                  <MarketingMediaFrame
-                    media={media[step.key]}
-                    showCredit={false}
-                    imgClassName="transition-transform duration-700 will-change-transform scale-[1.02] group-hover:scale-[1.08]"
+                  <MarketingMediaReel
+                    items={media[step.key]}
+                    intervalMs={step.key === "create" ? 3200 : 5000}
+                    kenBurns
+                    showNiche={false}
                   />
                   <div className={cn("absolute inset-0 bg-gradient-to-t via-black/45 to-black/20", step.accent)} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
 
-                  <div className="absolute top-3 start-3 z-20 flex items-center gap-2">
-                    <span className="font-display text-2xl font-black text-white tracking-tight drop-shadow-md">
-                      {step.n}
-                    </span>
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/15 border border-white/25 text-white backdrop-blur-md">
-                      <Icon size={14} />
-                    </span>
-                  </div>
+                  <div className="absolute top-3 start-3 end-3 z-20 flex flex-col items-start gap-2.5 pointer-events-none">
+                    <div className="flex items-center gap-2">
+                      <span className="font-display text-2xl font-black text-white tracking-tight drop-shadow-md">
+                        {step.n}
+                      </span>
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/15 border border-white/25 text-white backdrop-blur-md">
+                        <Icon size={14} />
+                      </span>
+                    </div>
 
-                  {/* Story overlay chips per beat */}
-                  {step.key === "create" && (
-                    <div className="absolute top-1/3 start-3 end-3 z-20 pointer-events-none">
+                    {step.key === "create" && (
                       <div className="rounded-xl border border-white/20 bg-black/55 backdrop-blur-md px-3 py-2 text-[11px] text-white/90 font-medium max-w-[90%]">
-                        “Cyberpunk clutch · neon rim light · 9:16”
+                        “AI lookbook · Gaming · Fashion · Food · Influencer”
                       </div>
-                    </div>
-                  )}
-                  {step.key === "moderate" && (
-                    <div className="absolute top-1/3 start-3 z-20 flex flex-col gap-1.5 pointer-events-none">
-                      {["Brand safe", "Quality pass", "Ready"].map((label) => (
-                        <span
-                          key={label}
-                          className="inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-500/25 border border-emerald-400/40 px-2.5 py-1 text-[10px] font-bold text-emerald-100"
-                        >
-                          <CheckCircle2 size={11} />
-                          {label}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {step.key === "publish" && (
-                    <div className="absolute top-1/3 start-3 z-20 flex gap-2 pointer-events-none">
-                      {["Feed", "YT", "IG", "TT"].map((p) => (
-                        <span
-                          key={p}
-                          className="rounded-lg bg-white/15 border border-white/25 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm"
-                        >
-                          {p}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                    )}
+                    {step.key === "moderate" && (
+                      <div className="flex flex-col gap-1.5">
+                        {["Brand safe", "Quality pass", "Ready"].map((label) => (
+                          <span
+                            key={label}
+                            className="inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-500/25 border border-emerald-400/40 px-2.5 py-1 text-[10px] font-bold text-emerald-100"
+                          >
+                            <CheckCircle2 size={11} />
+                            {label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {step.key === "publish" && (
+                      <div className="flex flex-wrap gap-2">
+                        {["Feed", "YT", "IG", "TT"].map((p) => (
+                          <span
+                            key={p}
+                            className="rounded-lg bg-white/15 border border-white/25 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm"
+                          >
+                            {p}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   <div className="absolute inset-x-0 bottom-0 z-20 p-5 space-y-2">
                     <h3 className="font-display text-2xl font-bold text-white">{step.title}</h3>

@@ -5,12 +5,12 @@ import { useTranslation } from "react-i18next";
 import { ArrowRight, Scissors } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import {
-  getCapabilityMedia,
+  getCapabilityReels,
   type MarketingMedia,
 } from "../../../lib/marketingMedia";
 import { useAppSelector } from "../../../store/hooks";
 import { selectAuthUser } from "../../../store/slices/authSlice";
-import { MarketingMediaFrame } from "./MarketingMediaFrame";
+import { MarketingMediaReel } from "./MarketingMediaReel";
 
 type CapKey = "imageStudio" | "meme" | "viralClips" | "clipEditor" | "coach";
 
@@ -37,7 +37,7 @@ const CAPS: CapDef[] = [
   {
     key: "imageStudio",
     title: "Image Studio",
-    line: "Cinematic AI stills tailored for gaming brands.",
+    line: "Cinematic AI stills for Gaming, Fashion, Food, and influencers.",
     chip: "AI Image",
     path: "/create/image",
     cta: "Try Image Studio",
@@ -58,7 +58,7 @@ const CAPS: CapDef[] = [
   {
     key: "viralClips",
     title: "Viral Clips",
-    line: "Short-form motion that feels feed-native.",
+    line: "Short-form motion for every niche — feed-native and ready to post.",
     chip: "Short-form",
     path: "/create/clip",
     cta: "Explore clips",
@@ -148,12 +148,12 @@ function CapChrome({ variant }: { variant?: CapDef["variant"] }) {
 
 function CapCard({
   def,
-  media,
+  items,
   loggedIn,
   index,
 }: {
   def: CapDef;
-  media: MarketingMedia | null;
+  items: MarketingMedia[];
   loggedIn: boolean;
   index: number;
 }) {
@@ -178,11 +178,12 @@ function CapCard({
       )}
     >
       <div className="absolute inset-0 overflow-hidden bg-muted">
-        <MarketingMediaFrame
-          media={media}
+        <MarketingMediaReel
+          items={items}
           portrait={def.portrait}
-          showCredit={false}
-          imgClassName="transition-transform duration-700 ease-out will-change-transform scale-[1.02] group-hover:scale-[1.06]"
+          intervalMs={3600 + index * 400}
+          kenBurns
+          showNiche={def.key === "imageStudio" || def.key === "viralClips"}
         />
       </div>
       <div className="absolute inset-0 z-[6] bg-gradient-to-t from-black/95 via-black/45 to-black/15 pointer-events-none" />
@@ -210,17 +211,17 @@ function CapCard({
 export default function CapabilitiesV2() {
   const { t } = useTranslation();
   const user = useAppSelector(selectAuthUser);
-  const [media, setMedia] = useState<Record<CapKey, MarketingMedia | null>>({
-    imageStudio: null,
-    meme: null,
-    viralClips: null,
-    clipEditor: null,
-    coach: null,
+  const [media, setMedia] = useState<Record<CapKey, MarketingMedia[]>>({
+    imageStudio: [],
+    meme: [],
+    viralClips: [],
+    clipEditor: [],
+    coach: [],
   });
 
   useEffect(() => {
     let cancelled = false;
-    void getCapabilityMedia().then((m) => {
+    void getCapabilityReels().then((m) => {
       if (!cancelled) setMedia(m);
     });
     return () => {
@@ -250,7 +251,7 @@ export default function CapabilitiesV2() {
             <CapCard
               key={cap.key}
               def={cap}
-              media={media[cap.key]}
+              items={media[cap.key]}
               loggedIn={!!user}
               index={i}
             />

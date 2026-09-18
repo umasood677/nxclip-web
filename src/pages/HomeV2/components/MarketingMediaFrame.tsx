@@ -13,9 +13,11 @@ type Props = {
   creditClassName?: string;
   /** Prefer portrait crop for short-form slots */
   portrait?: boolean;
+  /** When false, pause looping video (hidden reel slides). */
+  active?: boolean;
 };
 
-/** Image or muted looping video with Pexels credit. Pauses video when off-screen. */
+/** Image or muted looping video. Pauses when off-screen or inactive in a reel. */
 export function MarketingMediaFrame({
   media,
   className,
@@ -23,6 +25,7 @@ export function MarketingMediaFrame({
   showCredit = false,
   creditClassName,
   portrait = false,
+  active = true,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [inView, setInView] = useState(true);
@@ -42,12 +45,12 @@ export function MarketingMediaFrame({
   useEffect(() => {
     const el = videoRef.current;
     if (!el || media?.type !== "video") return;
-    if (inView) {
+    if (inView && active) {
       void el.play().catch(() => undefined);
     } else {
       el.pause();
     }
-  }, [inView, media?.type]);
+  }, [inView, active, media?.type]);
 
   if (!media) {
     return (
