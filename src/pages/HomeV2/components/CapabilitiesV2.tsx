@@ -249,7 +249,7 @@ export default function CapabilitiesV2() {
   }, []);
 
   return (
-    <section id="capabilities" className="relative pt-6 md:pt-10 pb-8 md:pb-12 overflow-hidden">
+    <section id="features" className="relative scroll-mt-24 pt-6 md:pt-10 pb-8 md:pb-12 overflow-hidden">
       <div className="absolute inset-0 pointer-events-none -z-10 overflow-hidden">
         <div className="absolute top-1/3 end-0 w-[40%] h-[40%] bg-teal-500/5 rounded-full blur-[120px]" />
       </div>

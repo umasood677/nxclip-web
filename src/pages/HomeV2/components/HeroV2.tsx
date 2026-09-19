@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { ArrowRight, Play } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { getHeroReelMedia, type MarketingMedia } from "../../../lib/marketingMedia";
 import { useAppSelector } from "../../../store/hooks";
 import { selectAuthUser } from "../../../store/slices/authSlice";
-import { MarketingMediaReel, NicheTicker } from "./MarketingMediaReel";
+import { MarketingMediaReel } from "./MarketingMediaReel";
+
+const PULSE = ["Create", "Publish", "Measure"] as const;
 
 export default function HeroV2() {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAppSelector(selectAuthUser);
   const [reel, setReel] = useState<MarketingMedia[]>([]);
@@ -27,105 +27,133 @@ export default function HeroV2() {
 
   const primary = () => navigate(user ? "/create" : "/signup");
   const secondary = () => {
-    document.getElementById("pipeline")?.scrollIntoView({ behavior: "smooth" });
+    document.getElementById("platform")?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
-    <section className="relative overflow-hidden pt-28 sm:pt-32 md:pt-36 pb-8 md:pb-10">
-      {/* Soft liveliness — Flow / vid.ai style atmosphere, not competing media */}
+    <section
+      id="hero"
+      className="relative overflow-hidden pt-24 md:pt-28 pb-6 md:pb-8 min-h-[100svh] flex flex-col justify-end"
+    >
       <div className="absolute inset-0 pointer-events-none -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,color-mix(in_srgb,var(--background)_55%,transparent)_72%)]" />
         <motion.div
-          className="absolute -top-24 start-1/2 -translate-x-1/2 w-[90vw] h-[50vh] rounded-full bg-primary/15 blur-[100px]"
-          animate={{ opacity: [0.35, 0.55, 0.35], scale: [1, 1.05, 1] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-16 -start-10 w-[70vw] h-[40vh] rounded-full bg-teal-500/12 dark:bg-teal-400/10 blur-[90px]"
+          animate={{ opacity: [0.35, 0.6, 0.35], x: [0, 18, 0] }}
+          transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute bottom-0 end-[-10%] w-[45vw] h-[40vh] rounded-full bg-teal-500/10 blur-[90px]"
-          animate={{ opacity: [0.2, 0.4, 0.2], x: [0, -20, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[20%] -end-16 w-[55vw] h-[38vh] rounded-full bg-primary/10 blur-[100px]"
+          animate={{ opacity: [0.25, 0.45, 0.25] }}
+          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
         />
-        <div className="absolute inset-0 dots-pattern opacity-[0.035]" />
       </div>
 
       <div className="ui-container-hero relative z-10 w-full">
-        <div className="flex flex-col items-center text-center max-w-5xl mx-auto">
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-[11px] font-bold tracking-[0.28em] uppercase text-teal-600 dark:text-teal-400 mb-6"
-          >
-            NXCLIP
-          </motion.p>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 lg:gap-12 lg:items-end">
+          <div className="lg:col-span-6 xl:col-span-5 text-start">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-3 mb-5 md:mb-7"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inset-0 rounded-full bg-teal-500 animate-ping opacity-40" />
+                <span className="relative h-2 w-2 rounded-full bg-teal-600 dark:bg-teal-400" />
+              </span>
+              <span className="text-[11px] sm:text-xs font-semibold tracking-[0.18em] uppercase text-foreground/60">
+                Live
+              </span>
+              <div className="flex items-center gap-2.5 text-[11px] sm:text-xs font-semibold text-foreground/45">
+                {PULSE.map((item, i) => (
+                  <span key={item} className="inline-flex items-center gap-2.5">
+                    {i > 0 && <span className="text-teal-600/50 dark:text-teal-400/40">/</span>}
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="ui-hero-title !mb-6 md:!mb-8"
-          >
-            {t("hero.title_line1")} <br />
-            <span className="brand-text-gradient">{t("hero.title_line2")}</span>
-          </motion.h1>
+            <motion.h1
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.04 }}
+              className="font-display font-black tracking-[-0.065em] text-foreground leading-[0.86]"
+            >
+              <span className="block text-[18vw] sm:text-[72px] md:text-[84px] lg:text-[92px]">
+                Viral
+              </span>
+              <span className="mt-1 block text-[8.4vw] sm:text-[34px] md:text-[40px] lg:text-[44px] font-semibold tracking-[-0.04em] text-foreground/72">
+                content, redefined
+              </span>
+              <span className="mt-3 inline-flex items-baseline gap-2">
+                <span className="text-[11vw] sm:text-[48px] md:text-[56px] italic font-black text-teal-700 dark:text-teal-300">
+                  by AI
+                </span>
+                <span
+                  aria-hidden
+                  className="mb-1.5 h-2 w-2 rounded-full bg-teal-600 dark:bg-teal-300"
+                />
+              </span>
+            </motion.h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.12 }}
-            className="ui-hero-subtitle !mb-8 md:!mb-10"
-          >
-            {t("hero.subtitle")}
-          </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mt-5 md:mt-6 max-w-[34rem] text-[15px] sm:text-[17px] leading-relaxed font-medium text-foreground/70"
+            >
+              Create, publish, and grow from one OS — feed, schedule, and analytics included.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.16 }}
+              className="mt-6 md:mt-8 flex flex-col sm:flex-row gap-2.5 sm:gap-3"
+            >
+              <Button
+                variant="brand-premium"
+                size="lg"
+                className="h-12 w-full sm:w-auto px-7 font-bold text-[15px]"
+                onClick={primary}
+              >
+                {user ? "Open Creator Hub" : "Start creating"}
+                <ArrowRight size={16} className="ms-1.5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-12 w-full sm:w-auto px-6 font-semibold text-[15px] border-foreground/15 bg-background/70"
+                onClick={secondary}
+              >
+                <Play size={13} className="me-1.5 fill-current" />
+                See the platform
+              </Button>
+            </motion.div>
+          </div>
 
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.18 }}
-            className="flex flex-wrap items-center justify-center gap-3"
+            transition={{ delay: 0.2, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            className="lg:col-span-6 xl:col-span-7 relative"
           >
-            <Button variant="brand-premium" size="lg" className="h-12 px-8 font-bold" onClick={primary}>
-              {user ? "Open Creator Hub" : "Get started free"}
-              <ArrowRight size={16} className="ms-1.5" />
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="h-12 px-6 font-bold border-border/80 bg-background/50 backdrop-blur-sm"
-              onClick={secondary}
-            >
-              <Play size={14} className="me-1.5 fill-current" />
-              See how it works
-            </Button>
+            <div className="absolute -inset-3 rounded-[1.6rem] bg-gradient-to-br from-teal-500/20 via-transparent to-primary/20 blur-2xl opacity-70" />
+            <div className="relative aspect-[16/11] sm:aspect-[16/10] lg:aspect-[16/11] rounded-2xl overflow-hidden border border-foreground/10 shadow-[0_30px_80px_-24px_rgba(0,0,0,0.45)]">
+              <MarketingMediaReel
+                items={reel}
+                intervalMs={5200}
+                cut="cinematic"
+                camera="auto"
+                nicheTabs
+                showNiche={false}
+                className="z-10"
+              />
+              <div className="absolute inset-0 z-[6] pointer-events-none bg-gradient-to-t from-black/50 via-transparent to-black/10" />
+            </div>
           </motion.div>
-          <NicheTicker />
         </div>
-
-        {/* One dominant hero stage — isolated from capability tiles below */}
-        <motion.div
-          initial={{ opacity: 0, y: 28, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ delay: 0.28, duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-          className="relative mt-8 md:mt-10 mx-auto max-w-5xl"
-        >
-          <div className="absolute -inset-3 md:-inset-5 rounded-[1.75rem] bg-gradient-to-br from-primary/25 via-transparent to-teal-500/20 blur-2xl opacity-70" />
-          <div className="relative aspect-[16/9] md:aspect-[21/9] rounded-2xl md:rounded-3xl overflow-hidden border border-white/15 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.55)] ring-1 ring-black/30">
-            <MarketingMediaReel
-              items={reel}
-              intervalMs={5200}
-              cut="cinematic"
-              camera="auto"
-              nicheTabs
-              showNiche={false}
-              className="z-10"
-            />
-            <div className="absolute inset-0 z-[6] pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_42%,rgba(0,0,0,0.42)_100%)]" />
-            <div className="absolute inset-0 z-[6] pointer-events-none opacity-40 bg-gradient-to-tr from-teal-950/35 via-transparent to-fuchsia-950/25" />
-            <motion.div
-              className="absolute inset-0 z-[12] border border-white/10 rounded-2xl md:rounded-3xl pointer-events-none"
-              animate={{ opacity: [0.4, 0.75, 0.4] }}
-              transition={{ duration: 4.5, repeat: Infinity }}
-            />
-          </div>
-        </motion.div>
       </div>
     </section>
   );

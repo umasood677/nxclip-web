@@ -11,6 +11,7 @@ import FinalCTA from "../Home/components/FinalCTA";
 import TrustMetrics from "../Home/components/TrustMetrics";
 import HeroV2 from "./components/HeroV2";
 import CapabilitiesV2 from "./components/CapabilitiesV2";
+import OperateV2 from "./components/OperateV2";
 import PipelineV2 from "./components/PipelineV2";
 import UmbrellaStrip from "./components/UmbrellaStrip";
 
@@ -31,13 +32,14 @@ export default function HomeV2() {
         <div className="min-h-screen ui-bg-landing home-v2">
         <SEO
           title="nxclip.app — Viral content redefined by AI"
-          description="The AI operating system built for next-gen creators. Transform your best moments into epic growth with elite-grade intelligence."
+          description="Create, publish to social, schedule, run your feed, and grow with analytics, week plans, and AI workflow suggestions."
         />
 
         <Navbar />
         <main>
           <HeroV2 />
           <CapabilitiesV2 />
+          <OperateV2 />
           <PipelineV2 />
           <UmbrellaStrip />
           <TrustMetrics />

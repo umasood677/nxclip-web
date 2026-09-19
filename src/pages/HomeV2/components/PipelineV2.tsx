@@ -66,7 +66,7 @@ export default function PipelineV2() {
   const go = (path: string) => navigate(user ? path : "/signup");
 
   return (
-    <section id="pipeline" className="relative scroll-mt-20 pt-6 md:pt-8 pb-10 md:pb-14 overflow-hidden">
+    <section id="how-it-works" className="relative scroll-mt-24 pt-6 md:pt-8 pb-10 md:pb-14 overflow-hidden">
       <div className="ui-container-landing">
         <div className="text-center max-w-4xl mx-auto mb-8 md:mb-10">
           <p className="ui-landing-label !mb-4">{t("how_it_works.label")}</p>

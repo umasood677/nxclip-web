@@ -63,6 +63,7 @@ export default function Footer() {
               isAr ? "tracking-normal" : "tracking-[0.2em]"
             )}>{t('footer.platform')}</h4>
             <ul className="space-y-4 text-sm text-muted-foreground">
+              <li><Link to="/#platform" className="hover:text-primary transition-colors font-medium">{t('nav.platform')}</Link></li>
               <li><Link to="/login" className="hover:text-primary transition-colors font-medium">{t('nav.dashboard')}</Link></li>
               <li><Link to="/#how-it-works" className="hover:text-primary transition-colors font-medium">{t('footer.how_it_works')}</Link></li>
               <li><Link to="/community" className="hover:text-primary transition-colors font-medium">{t('footer.community')}</Link></li>

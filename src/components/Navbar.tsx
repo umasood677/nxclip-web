@@ -77,7 +77,7 @@ export default function Navbar() {
       { threshold: 0.3, rootMargin: "-80px 0px -50% 0px" },
     );
 
-    const sections = ["hero", "features", "pricing", "how-it-works"];
+    const sections = ["hero", "features", "platform", "pricing", "how-it-works"];
     sections.forEach((id) => {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
@@ -97,6 +97,7 @@ export default function Navbar() {
   const navLinks = [
     { name: t("nav.home"), href: "/#hero" },
     { name: t("nav.features"), href: "/#features" },
+    { name: t("nav.platform"), href: "/#platform" },
     { name: t("nav.pricing"), href: "/#pricing" },
     { name: t("nav.how_it_works"), href: "/#how-it-works" },
   ];
@@ -105,7 +106,7 @@ export default function Navbar() {
     <nav
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-500 px-6",
-        isScrolled ? "py-4" : "py-8",
+        isScrolled ? "py-3" : "py-4 md:py-6",
       )}
     >
       <div
