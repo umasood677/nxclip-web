@@ -11,6 +11,15 @@ import { MarketingMediaReel } from "./MarketingMediaReel";
 
 type TitleCard = { title: string; line: string; media: MarketingMedia | null };
 
+const GAME_WASH: Record<string, string> = {
+  "Rocket League": "from-orange-600/55 via-sky-500/25 to-transparent",
+  Roblox: "from-red-600/50 via-rose-400/20 to-transparent",
+  "Street Fighter": "from-red-700/55 via-amber-500/20 to-transparent",
+  Fortnite: "from-violet-600/50 via-sky-400/25 to-transparent",
+  "League of Legends": "from-amber-600/50 via-indigo-800/30 to-transparent",
+  Valorant: "from-rose-600/55 via-red-950/30 to-transparent",
+};
+
 export default function GamingFeatureV2() {
   const navigate = useNavigate();
   const user = useAppSelector(selectAuthUser);
@@ -102,7 +111,10 @@ export default function GamingFeatureV2() {
                 className="group relative isolate overflow-hidden rounded-2xl border border-border/60 bg-card text-start aspect-[4/5] sm:aspect-auto sm:h-[168px] lg:h-[188px]"
               >
                 <MarketingMediaFrame media={card.media} showCredit={false} imgClassName="home-kenburns" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
+                <div
+                  className={`absolute inset-0 bg-gradient-to-t ${GAME_WASH[card.title] || "from-black/70"} pointer-events-none`}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/10" />
                 <div className="absolute inset-x-0 bottom-0 p-3">
                   <h3 className="font-display text-[15px] font-bold text-white tracking-tight">
                     {card.title}

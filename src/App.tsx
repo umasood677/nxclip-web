@@ -16,214 +16,49 @@ import { PwaProvider } from "./contexts/PwaContext";
 import { BrandTld } from "./components/Logo";
 import logo from "./contents/images/nexa-logo.png";
 import { motion } from "motion/react";
-import { Sparkles, Cpu } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "./store/hooks";
 import { setAuthUser, setAuthProfile, setAuthLoading, SerializedUser, selectAuthUser, selectAuthProfile, selectAuthLoading, logoutUser } from "./store/slices/authSlice";
 import { selectAuthProvider } from "./store/slices/uiSlice";
 import { identityApi } from "./services/apiClient";
 import { getPersistedUser, setPersistedUser, useAuthToken } from "./services/auth/authService";
-import { STORAGE_KEYS } from "./constants";
 import { contentPlanFromOnboarding, isRenewingWeekPlan } from "./lib/weekPlan";
 import { creatorFieldsFromIdentityMe } from "./lib/onboardingSnapshot";
 
-// --- Loading Component ---
 const PageLoader = () => {
-  const [subsystemLog, setSubsystemLog] = useState("initializing creator os engine...");
-  const [loadSource, setLoadSource] = useState<"cache" | "network" | "offline">("network");
-  const [themeStatus, setThemeStatus] = useState("checking...");
-
-  useEffect(() => {
-    try {
-      const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-      const osIsDark = darkQuery.matches;
-      const localTheme = safeLocalStorage.getItem(STORAGE_KEYS.THEME) || "dark";
-      const isSynced = (osIsDark && localTheme === "dark") || (!osIsDark && localTheme === "light");
-      setThemeStatus(isSynced ? `synced (${localTheme} os)` : `custom (${localTheme})`);
-    } catch (_) {
-      setThemeStatus("offline default");
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      const navEntries = performance.getEntriesByType('navigation');
-      if (navEntries.length > 0) {
-        const nav = navEntries[0] as PerformanceNavigationTiming;
-        if (nav.workerStart > 0 || nav.transferSize === 0) {
-          setLoadSource("cache");
-        } else if (!navigator.onLine) {
-          setLoadSource("offline");
-        } else {
-          setLoadSource("network");
-        }
-      } else {
-        if (!navigator.onLine) {
-          setLoadSource("offline");
-        } else if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-          setLoadSource("cache");
-        }
-      }
-    } catch (_) {
-      if (!navigator.onLine) setLoadSource("offline");
-    }
-  }, []);
-
-  useEffect(() => {
-    const sourceLabel = loadSource === "cache" 
-      ? "local cache (pwa)" 
-      : loadSource === "offline" 
-        ? "offline cached instance" 
-        : "remote cdn network";
-
-    const logs = [
-      "initializing creator os engine...",
-      "powering viral processor core...",
-      `diagnostic: loaded via [${sourceLabel}]`,
-      "syncing theme...",
-      "mounting media canvas workspace...",
-      "syncing creator analytics node...",
-      "connecting ai coach assistant..."
-    ];
-    let index = 0;
-    const interval = setInterval(() => {
-      index = (index + 1) % logs.length;
-      setSubsystemLog(logs[index]);
-    }, 1200);
-    return () => clearInterval(interval);
-  }, [loadSource]);
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950 text-white relative overflow-hidden select-none">
-      {/* Background radial gradient representing premium energy */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.06)_0%,transparent_65%)] pointer-events-none" />
-      
-      {/* Container area */}
-      <div className="flex flex-col items-center z-10 max-w-xs text-center px-6">
-        {/* Wordmark lockup: logo image + quiet .app */}
-        <div className="relative mb-6 flex items-end justify-center gap-1">
-          <div className="relative">
-            <motion.div 
-              animate={{ 
-                scale: [1, 1.12, 1],
-                opacity: [0.3, 0.6, 0.3]
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="absolute -inset-4 bg-gradient-to-r from-primary to-brand-secondary rounded-2xl blur-xl opacity-50"
-            />
-            
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.6 }}
-              className="relative w-24 h-24 bg-zinc-900 border border-white/10 rounded-2xl p-4 flex items-center justify-center shadow-2xl"
-            >
-              <img 
-                src={logo} 
-                alt="nxClip"
-                className="w-full h-full object-contain"
-                referrerPolicy="no-referrer"
-              />
-            </motion.div>
-            
-            <motion.div
-              animate={{ 
-                scale: [0.8, 1.2, 0.8],
-                rotate: [0, 90, 180, 270, 360]
-              }}
-              transition={{
-                duration: 4,
-                repeat: Infinity,
-                ease: "linear"
-              }}
-              className="absolute -top-1.5 -right-1.5 bg-zinc-950 border border-amber-500/30 p-1 rounded-lg shadow-lg"
-            >
-              <Sparkles className="h-4 w-4 text-amber-400" />
-            </motion.div>
-          </div>
-          <BrandTld className="text-xs pb-2" />
-        </div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground relative overflow-hidden select-none">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,color-mix(in_srgb,var(--primary)_12%,transparent)_0%,transparent_62%)] pointer-events-none" />
 
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-        >
-          <div className="flex items-center gap-2 justify-center">
-            <div className="inline-flex items-center gap-1 bg-purple-500/10 border border-purple-500/20 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest text-purple-400 uppercase">
-              Creator OS
-            </div>
-          </div>
-          
-          {/* Cycling Technical Logs */}
-          <p className="text-[10px] font-mono tracking-wider text-zinc-400 h-4 mt-2 lowercase">
-            {subsystemLog}
-          </p>
-
-          {/* Diagnostic Log Info Badges */}
-          <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2 font-mono text-[9px] uppercase tracking-wider select-none">
-            {/* Diagnostic Log Source Badge */}
-            <div className="flex items-center gap-1.5 text-zinc-500 bg-white/5 border border-white/5 py-1 px-2.5 rounded-lg">
-              <span className="text-zinc-600">source:</span>
-              {loadSource === "cache" ? (
-                <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                  <span className="h-1 w-1 bg-emerald-400 rounded-full animate-pulse" />
-                  local cache (pwa)
-                </span>
-              ) : loadSource === "offline" ? (
-                <span className="text-amber-400 font-semibold flex items-center gap-1">
-                  <span className="h-1 w-1 bg-amber-400 rounded-full animate-pulse" />
-                  offline cache
-                </span>
-              ) : (
-                <span className="text-purple-400 font-semibold flex items-center gap-1">
-                  <span className="h-1 w-1 bg-purple-400 rounded-full animate-pulse" />
-                  cdn network
-                </span>
-              )}
-            </div>
-
-            {/* Diagnostic OS Theme Sync Badge */}
-            <div className="flex items-center gap-1.5 text-zinc-500 bg-white/5 border border-white/5 py-1 px-2.5 rounded-lg">
-              <span className="text-zinc-600">theme check:</span>
-              {themeStatus === "checking..." ? (
-                <span className="text-zinc-400 font-semibold flex items-center gap-1">
-                  <span className="h-1 w-1 bg-zinc-400 rounded-full animate-ping" />
-                  syncing...
-                </span>
-              ) : (
-                <span className="text-cyan-400 font-semibold flex items-center gap-1">
-                  <span className="h-1 w-1 bg-cyan-400 rounded-full" />
-                  {themeStatus}
-                </span>
-              )}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Dynamic Dual Progress bar */}
-        <div className="w-48 h-1 bg-white/5 rounded-full mt-6 overflow-hidden relative border border-white/5">
-          <motion.div 
-            animate={{ 
-              left: ["-100%", "100%"]
-            }}
-            transition={{
-              duration: 1.8,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-primary to-brand-secondary rounded-full shadow-[0_0_10px_rgba(var(--primary),0.5)]"
+      <div className="relative z-10 flex flex-col items-center px-6">
+        <div className="relative mb-5">
+          <motion.div
+            className="absolute -inset-5 rounded-full bg-teal-500/15 blur-2xl"
+            animate={{ opacity: [0.35, 0.7, 0.35], scale: [0.96, 1.04, 0.96] }}
+            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.img
+            src={logo}
+            alt="nxClip"
+            className="relative h-14 w-14 object-contain"
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.35 }}
+            referrerPolicy="no-referrer"
           />
         </div>
-      </div>
-      
-      {/* Outer corner ambient detail */}
-      <div className="absolute bottom-6 text-[9px] font-mono text-zinc-500 flex items-center gap-1.5">
-        <Cpu className="h-3 w-3 text-primary/70" />
-        <span>nxclip.app • platform active</span>
+
+        <div className="flex items-end gap-0.5 mb-5">
+          <span className="font-display text-lg font-bold tracking-tight">nxClip</span>
+          <BrandTld className="text-[11px] pb-0.5" />
+        </div>
+
+        <div className="h-[2px] w-28 overflow-hidden rounded-full bg-foreground/10">
+          <motion.div
+            className="h-full w-1/2 rounded-full bg-gradient-to-r from-teal-500 to-primary"
+            animate={{ x: ["-120%", "220%"] }}
+            transition={{ duration: 1.15, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </div>
       </div>
     </div>
   );
