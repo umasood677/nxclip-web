@@ -2,12 +2,14 @@ import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
 
 const games = [
-  "Valorant",
+  "Rocket League",
+  "Roblox",
+  "Street Fighter",
   "Fortnite",
-  "CS2",
-  "Apex Legends",
-  "FIFA",
+  "League of Legends",
+  "Valorant",
   "Minecraft",
+  "GTA V",
 ];
 
 export default function TrustMetrics() {

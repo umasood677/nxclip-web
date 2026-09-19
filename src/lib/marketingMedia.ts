@@ -5,6 +5,8 @@
 import {
   CLIP_EDITOR_REEL,
   COACH_REEL,
+  GAMING_STAGE_REEL,
+  GAMING_TITLE_CARDS,
   HERO_REEL,
   IMAGE_STUDIO_REEL,
   MARKETING_CATALOG,
@@ -233,6 +235,24 @@ export async function getOperateReels(): Promise<Record<OperateReelKey, Marketin
     resolveReel(OPERATE_SUGGEST_REEL, "op-suggest"),
   ]);
   return { publish, feed, schedule, analytics, planning, workflow, suggest };
+}
+
+export async function getGamingFeatureMedia(): Promise<{
+  stage: MarketingMedia[];
+  titles: { title: string; line: string; media: MarketingMedia | null }[];
+}> {
+  const [stage, titleMedia] = await Promise.all([
+    resolveReel(GAMING_STAGE_REEL, "gaming-stage"),
+    Promise.all(GAMING_TITLE_CARDS.map((card) => resolvePin(card.pin))),
+  ]);
+  return {
+    stage,
+    titles: GAMING_TITLE_CARDS.map((card, i) => ({
+      title: card.title,
+      line: card.line,
+      media: titleMedia[i] || null,
+    })),
+  };
 }
 
 export async function getSpotlightMedia(): Promise<MarketingMedia[]> {

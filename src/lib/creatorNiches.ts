@@ -7,7 +7,7 @@ export const CREATOR_CATEGORY_NICHES: Array<{
   {
     category: "Gaming",
     label: "Gaming",
-    suggestions: ["Valorant", "Fortnite", "CS2", "Apex Legends", "Minecraft", "FIFA", "League of Legends", "GTA V"],
+    suggestions: ["Rocket League", "Roblox", "Street Fighter", "Fortnite", "League of Legends", "Valorant", "Minecraft", "GTA V"],
   },
   {
     category: "General",

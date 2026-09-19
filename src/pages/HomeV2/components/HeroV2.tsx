@@ -6,7 +6,7 @@ import { Button } from "../../../components/ui/button";
 import { getHeroReelMedia, type MarketingMedia } from "../../../lib/marketingMedia";
 import { useAppSelector } from "../../../store/hooks";
 import { selectAuthUser } from "../../../store/slices/authSlice";
-import { MarketingMediaReel } from "./MarketingMediaReel";
+import { HeroMarquees, MarketingMediaReel } from "./MarketingMediaReel";
 
 const PULSE = ["Create", "Publish", "Measure"] as const;
 
@@ -50,8 +50,8 @@ export default function HeroV2() {
       </div>
 
       <div className="ui-container-hero relative z-10 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 lg:gap-12 lg:items-start">
-          <div className="lg:col-span-6 xl:col-span-5 text-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 lg:gap-12 lg:items-stretch">
+          <div className="lg:col-span-6 xl:col-span-5 text-start flex flex-col min-h-0">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -130,6 +130,15 @@ export default function HeroV2() {
                 <Play size={13} className="me-1.5 fill-current" />
                 See the platform
               </Button>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.22 }}
+              className="mt-8 lg:mt-auto pt-6 lg:pt-10"
+            >
+              <HeroMarquees />
             </motion.div>
           </div>
 

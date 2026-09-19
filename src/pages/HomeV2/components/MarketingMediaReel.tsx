@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { cn } from "../../../lib/utils";
-import { NICHE_LABEL, NICHE_ORDER, type NicheKey } from "../../../lib/marketingCatalog";
+import { GAME_TITLES, NICHE_LABEL, NICHE_ORDER, type NicheKey } from "../../../lib/marketingCatalog";
 import { type MarketingMedia } from "../../../lib/marketingMedia";
 import { MarketingMediaFrame } from "./MarketingMediaFrame";
 
@@ -196,20 +196,60 @@ export function MarketingMediaReel({
   );
 }
 
-export function NicheTicker() {
-  const loop = [...NICHE_ORDER, ...NICHE_ORDER].map((n) => NICHE_LABEL[n]);
+export function HeroMarquees() {
   return (
-    <div className="relative mt-6 mb-1 overflow-hidden">
-      <div className="flex w-max gap-8 home-niche-marquee">
-        {loop.map((label, i) => (
-          <span
-            key={`${label}-${i}`}
-            className="text-[11px] font-bold tracking-[0.22em] uppercase text-muted-foreground/80 whitespace-nowrap"
-          >
-            {label}
-            <span className="ms-8 text-primary/70">●</span>
-          </span>
-        ))}
+    <div className="space-y-3 min-w-0">
+      <MarqueeRow
+        label="Games"
+        items={[...GAME_TITLES]}
+        className="home-niche-marquee"
+      />
+      <MarqueeRow
+        label="Niches"
+        items={NICHE_ORDER.map((n) => NICHE_LABEL[n])}
+        className="home-niche-marquee-reverse"
+      />
+    </div>
+  );
+}
+
+export function NicheTicker() {
+  return <HeroMarquees />;
+}
+
+function MarqueeRow({
+  label,
+  items,
+  className,
+}: {
+  label: string;
+  items: string[];
+  className: string;
+}) {
+  const loop = [...items, ...items];
+  return (
+    <div className="min-w-0">
+      <p className="text-[9px] font-bold tracking-[0.22em] uppercase text-muted-foreground/70 mb-1.5">
+        {label}
+      </p>
+      <div
+        className="relative overflow-hidden"
+        style={{
+          maskImage: "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
+          WebkitMaskImage: "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
+        }}
+      >
+        <div className={cn("flex w-max gap-6", className)}>
+          {loop.map((item, i) => (
+            <span
+              key={`${item}-${i}`}
+              className="text-[12px] sm:text-[13px] font-display font-bold tracking-wide text-foreground/70 whitespace-nowrap"
+            >
+              {item}
+              <span className="ms-6 text-teal-600/70 dark:text-teal-400/70">●</span>
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import Testimonials from "../Home/components/Testimonials";
 import FinalCTA from "../Home/components/FinalCTA";
 import TrustMetrics from "../Home/components/TrustMetrics";
 import HeroV2 from "./components/HeroV2";
+import GamingFeatureV2 from "./components/GamingFeatureV2";
 import CapabilitiesV2 from "./components/CapabilitiesV2";
 import OperateV2 from "./components/OperateV2";
 import PipelineV2 from "./components/PipelineV2";
@@ -38,6 +39,7 @@ export default function HomeV2() {
         <Navbar />
         <main>
           <HeroV2 />
+          <GamingFeatureV2 />
           <CapabilitiesV2 />
           <OperateV2 />
           <PipelineV2 />

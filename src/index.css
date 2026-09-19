@@ -1014,6 +1014,10 @@ body.dark,
     animation: home-niche-marquee 28s linear infinite;
   }
 
+  .home-niche-marquee-reverse {
+    animation: home-niche-marquee 32s linear infinite reverse;
+  }
+
   @keyframes home-kenburns {
     from {
       transform: scale(1.06) translate3d(0, 0, 0);

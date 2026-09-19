@@ -49,6 +49,18 @@ export const NICHE_LABEL: Record<NicheKey, string> = {
   viral: "Viral",
 };
 
+/** Current-gen titles for hero marquee + Gaming section. */
+export const GAME_TITLES = [
+  "Rocket League",
+  "Roblox",
+  "Street Fighter",
+  "Fortnite",
+  "League of Legends",
+  "Valorant",
+  "Minecraft",
+  "GTA V",
+] as const;
+
 export const NICHE_ORDER: NicheKey[] = [
   "gaming",
   "fashion",
@@ -132,12 +144,12 @@ export const HERO_REEL: CatalogPin[] = [
   }),
   pin({
     type: "video",
-    videoId: 9833942,
+    videoId: 8128426,
     photoId: 7849519,
     niche: "gaming",
-    alt: "Cinematic esports motion — trailer-grade gaming reel",
-    creditName: "Anastasia Shuraeva",
-    creditUrl: "https://www.pexels.com/video/9833942/",
+    alt: "Live esports arena — Fortnite / LoL era campaign reel",
+    creditName: "Alena Darmel",
+    creditUrl: "https://www.pexels.com/video/8128426/",
   }),
   pin({
     type: "video",
@@ -661,6 +673,109 @@ export const OPERATE_SUGGEST_REEL: CatalogPin[] = [
     creditName: "Gunel Zeynalova",
     creditUrl: "https://www.pexels.com/photo/a-woman-in-spaghetti-strap-dress-standing-near-the-illuminated-hanging-decorations-7240876/",
   }),
+];
+
+export type GamingTitleCard = {
+  title: string;
+  line: string;
+  pin: CatalogPin;
+};
+
+/** Dedicated Gaming band — exclusive IDs, current-title energy (not desktop B-roll). */
+export const GAMING_STAGE_REEL: CatalogPin[] = [
+  pin({
+    type: "video",
+    videoId: 7914780,
+    photoId: 6125330,
+    niche: "gaming",
+    alt: "Tournament floor motion — today's competitive slate",
+    creditName: "RDNE Stock project",
+    creditUrl: "https://www.pexels.com/video/7914780/",
+  }),
+  pin({
+    type: "video",
+    videoId: 7774734,
+    photoId: 5475761,
+    niche: "gaming",
+    alt: "Neon competitive motion — battle-royale energy",
+    creditName: "Artem Podrez",
+    creditUrl: "https://www.pexels.com/video/7774734/",
+  }),
+];
+
+export const GAMING_TITLE_CARDS: GamingTitleCard[] = [
+  {
+    title: "Rocket League",
+    line: "Boost cams, overtime, and thumbnail explosions.",
+    pin: pin({
+      type: "image",
+      photoId: 358070,
+      niche: "gaming",
+      alt: "High-octane car still — Rocket League energy",
+      creditName: "Pixabay",
+      creditUrl: "https://www.pexels.com/photo/358070/",
+    }),
+  },
+  {
+    title: "Roblox",
+    line: "Ugc worlds, avatar drops, and short-form loops.",
+    pin: pin({
+      type: "image",
+      photoId: 3802510,
+      niche: "gaming",
+      alt: "Saturated neon play-space — Roblox-era color",
+      creditName: "Pexels",
+      creditUrl: "https://www.pexels.com/photo/3802510/",
+    }),
+  },
+  {
+    title: "Street Fighter",
+    line: "Combos, reaction memes, and round-win stills.",
+    pin: pin({
+      type: "image",
+      photoId: 7773722,
+      niche: "gaming",
+      alt: "Neon fight-night energy — Street Fighter era",
+      creditName: "Pexels",
+      creditUrl: "https://www.pexels.com/photo/7773722/",
+    }),
+  },
+  {
+    title: "Fortnite",
+    line: "Drop trailers, clutch cuts, and seasonal key art.",
+    pin: pin({
+      type: "image",
+      photoId: 5475761,
+      niche: "gaming",
+      alt: "Neon competitive still — Fortnite-era campaign",
+      creditName: "Pexels",
+      creditUrl: "https://www.pexels.com/photo/5475761/",
+    }),
+  },
+  {
+    title: "League of Legends",
+    line: "Baron calls, highlight packs, and Worlds-grade thumbs.",
+    pin: pin({
+      type: "image",
+      photoId: 6125330,
+      niche: "gaming",
+      alt: "Esports stage still — League of Legends energy",
+      creditName: "Pexels",
+      creditUrl: "https://www.pexels.com/photo/6125330/",
+    }),
+  },
+  {
+    title: "Valorant",
+    line: "Ace clips, agent stills, and ranked-night recaps.",
+    pin: pin({
+      type: "image",
+      photoId: 3945683,
+      niche: "gaming",
+      alt: "Tactical neon session — Valorant energy",
+      creditName: "Pexels",
+      creditUrl: "https://www.pexels.com/photo/3945683/",
+    }),
+  },
 ];
 
 /** Single-slot fallbacks (OS tiles, CTA). Prefer output stills over desks. */
