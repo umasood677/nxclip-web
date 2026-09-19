@@ -27,6 +27,8 @@ import {
   type CatalogPin,
   type MarketingSlot,
   type NicheKey,
+  type PinCamera,
+  type PinCut,
 } from "./marketingCatalog";
 import {
   fetchPexelsPhotoById,
@@ -49,6 +51,8 @@ export type MarketingMedia = {
   source: MarketingMediaSource;
   alt?: string;
   niche?: NicheKey;
+  cut?: PinCut;
+  camera?: PinCamera;
   aspectHint?: "landscape" | "portrait" | "square";
 };
 
@@ -73,6 +77,8 @@ function photoToMedia(photo: PexelsPhoto, pin?: CatalogPin): MarketingMedia {
     source: "pexels",
     alt: pin?.alt || photo.alt || "nxClip marketing visual",
     niche: pin?.niche,
+    cut: pin?.cut,
+    camera: pin?.camera,
     aspectHint: photo.height > photo.width ? "portrait" : "landscape",
   };
 }
@@ -91,6 +97,8 @@ function videoToMedia(video: PexelsVideo, pin?: CatalogPin): MarketingMedia | nu
     source: "pexels",
     alt: pin?.alt || "nxClip marketing clip",
     niche: pin?.niche,
+    cut: pin?.cut,
+    camera: pin?.camera,
     aspectHint: video.height > video.width ? "portrait" : "landscape",
   };
 }
@@ -107,6 +115,8 @@ function pinToStaticImage(pin: CatalogPin): MarketingMedia | null {
     source: "pexels",
     alt: pin.alt,
     niche: pin.niche,
+    cut: pin.cut,
+    camera: pin.camera,
     aspectHint: "landscape",
   };
 }

@@ -10,6 +10,14 @@ export type ReelCamera = "none" | "kenburns" | "handheld" | "crashzoom" | "drift
 
 const MIX_CYCLE: Exclude<ReelCut, "mix" | "cinematic">[] = ["dissolve", "cut", "whip", "zoom", "flash", "push"];
 const CINEMA_CYCLE: Array<"dissolve" | "push"> = ["dissolve", "push"];
+const CAMERA_CYCLE: Array<Exclude<ReelCamera, "auto" | "none">> = [
+  "trailer",
+  "handheld",
+  "crashzoom",
+  "drift",
+  "cinematic",
+  "kenburns",
+];
 
 type Props = {
   items: MarketingMedia[];
@@ -37,22 +45,35 @@ export function MarketingMediaReel({
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [flash, setFlash] = useState(0);
+  const [nicheFilter, setNicheFilter] = useState<NicheKey | null>(null);
   const skipFlash = useRef(true);
 
+  const visible = useMemo(() => {
+    if (!nicheTabs || !nicheFilter) return items;
+    const filtered = items.filter((m) => m.niche === nicheFilter);
+    return filtered.length ? filtered : items;
+  }, [items, nicheTabs, nicheFilter]);
+
+  const current = visible[index] || visible[0];
   const activeCut: Exclude<ReelCut, "mix" | "cinematic"> =
-    cut === "mix"
+    current?.cut ||
+    (cut === "mix"
       ? MIX_CYCLE[index % MIX_CYCLE.length]
       : cut === "cinematic"
         ? CINEMA_CYCLE[index % CINEMA_CYCLE.length]
-        : cut;
+        : cut);
 
   useEffect(() => {
-    if (items.length < 2 || paused) return;
+    setIndex(0);
+  }, [nicheFilter, items.length]);
+
+  useEffect(() => {
+    if (visible.length < 2 || paused) return;
     const t = window.setInterval(() => {
-      setIndex((n) => (n + 1) % items.length);
+      setIndex((n) => (n + 1) % visible.length);
     }, intervalMs);
     return () => window.clearInterval(t);
-  }, [items.length, intervalMs, paused]);
+  }, [visible.length, intervalMs, paused]);
 
   useEffect(() => {
     onIndexChange?.(index);
@@ -74,31 +95,34 @@ export function MarketingMediaReel({
     return NICHE_ORDER.filter((n) => present.has(n));
   }, [items]);
 
+  useEffect(() => {
+    if (!nicheTabs || nicheFilter || !items[0]?.niche) return;
+    setNicheFilter(items[0].niche);
+  }, [nicheTabs, nicheFilter, items]);
+
   if (!items.length) {
     return <MarketingMediaFrame media={null} className={className} />;
   }
 
   const cameraClass = cameraClassName(
-    resolveCamera(camera, items[index]?.niche),
-    items[index]?.type === "image",
+    resolveItemCamera(current, index, camera),
+    current?.type === "image",
   );
 
-  if (items.length === 1) {
+  if (visible.length === 1 && !nicheTabs) {
     return (
       <div className={cn("absolute inset-0", className)}>
         <MarketingMediaFrame
-          media={items[0]}
+          media={visible[0]}
           portrait={portrait}
           imgClassName={cameraClass}
         />
-        {showNiche && items[0].niche && (
-          <NicheChip niche={items[0].niche} className="absolute top-3 start-3 z-20" />
+        {showNiche && visible[0].niche && (
+          <NicheChip niche={visible[0].niche} className="absolute top-3 start-3 z-20" />
         )}
       </div>
     );
   }
-
-  const current = items[index];
 
   return (
     <div
@@ -106,11 +130,12 @@ export function MarketingMediaReel({
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {items.map((item, i) => {
+      {visible.map((item, i) => {
         const active = i === index;
-        const motionProps = cutMotion(activeCut, active);
+        const itemCut = item.cut || activeCut;
+        const motionProps = cutMotion(itemCut, active);
         const itemCamera = cameraClassName(
-          resolveCamera(camera, item.niche),
+          resolveItemCamera(item, i, camera),
           item.type === "image",
         );
         return (
@@ -146,15 +171,15 @@ export function MarketingMediaReel({
         <div className="absolute bottom-3 start-3 end-3 z-20 flex flex-col gap-2 pointer-events-auto">
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
             {nichesInReel.map((niche) => {
-              const target = items.findIndex((m) => m.niche === niche);
-              const on = current?.niche === niche;
+              const on = (nicheFilter || current?.niche) === niche;
               return (
                 <button
                   key={niche}
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (target >= 0) setIndex(target);
+                    setNicheFilter(niche);
+                    setIndex(0);
                   }}
                   className={cn(
                     "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide backdrop-blur-md border transition-colors",
@@ -173,7 +198,7 @@ export function MarketingMediaReel({
               {cutLabel(activeCut)} · {current?.type === "video" ? "Reel" : "Still"}
             </span>
             <div className="flex gap-1">
-              {items.map((_, i) => (
+              {visible.map((_, i) => (
                 <button
                   key={i}
                   type="button"
@@ -268,23 +293,14 @@ function NicheChip({ niche, className }: { niche: NicheKey; className?: string }
   );
 }
 
-function resolveCamera(camera: ReelCamera, niche?: NicheKey): Exclude<ReelCamera, "auto"> {
-  if (camera !== "auto") return camera;
-  switch (niche) {
-    case "fashion":
-    case "beauty":
-      return "cinematic";
-    case "gaming":
-      return "trailer";
-    case "tech":
-      return "drift";
-    case "viral":
-      return "crashzoom";
-    case "influencer":
-      return "cinematic";
-    default:
-      return "kenburns";
-  }
+function resolveItemCamera(
+  item: MarketingMedia | undefined,
+  index: number,
+  fallback: ReelCamera,
+): Exclude<ReelCamera, "auto"> {
+  if (item?.camera) return item.camera;
+  if (fallback !== "auto") return fallback === "none" ? "kenburns" : fallback;
+  return CAMERA_CYCLE[index % CAMERA_CYCLE.length];
 }
 
 function cameraClassName(camera: Exclude<ReelCamera, "auto">, _isImage: boolean): string | undefined {
