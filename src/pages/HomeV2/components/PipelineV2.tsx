@@ -96,9 +96,9 @@ export default function PipelineV2() {
                 <div className="relative aspect-[4/5] sm:aspect-[5/6] md:aspect-[3/4] overflow-hidden bg-muted">
                   <MarketingMediaReel
                     items={media[step.key]}
-                    intervalMs={step.key === "create" ? 2800 : step.key === "publish" ? 2100 : 4800}
-                    cut={step.key === "create" ? "dissolve" : step.key === "publish" ? "whip" : "push"}
-                    camera={step.key === "publish" ? "handheld" : step.key === "moderate" ? "drift" : "kenburns"}
+                    intervalMs={step.key === "create" ? 2600 : step.key === "publish" ? 1900 : 3600}
+                    cut={step.key === "create" ? "mix" : step.key === "publish" ? "whip" : "push"}
+                    camera={step.key === "publish" ? "trailer" : step.key === "moderate" ? "drift" : "cinematic"}
                     showNiche={false}
                   />
                   <div className={cn("absolute inset-0 bg-gradient-to-t via-black/45 to-black/20", step.accent)} />

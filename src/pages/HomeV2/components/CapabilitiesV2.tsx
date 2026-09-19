@@ -25,7 +25,7 @@ type CapDef = {
   portrait?: boolean;
   intervalMs: number;
   cut: "dissolve" | "cut" | "whip" | "zoom" | "flash" | "push" | "mix";
-  camera: "none" | "kenburns" | "handheld" | "crashzoom" | "drift";
+  camera: "none" | "kenburns" | "handheld" | "crashzoom" | "drift" | "cinematic" | "trailer";
   /** 12-col span — paired tiles in a row share one fixed height for alignment. */
   span: string;
   height: string;
@@ -44,9 +44,9 @@ const CAPS: CapDef[] = [
     chip: "AI Image",
     path: "/create/image",
     cta: "Try Image Studio",
-    intervalMs: 4100,
-    cut: "dissolve",
-    camera: "kenburns",
+    intervalMs: 3600,
+    cut: "mix",
+    camera: "cinematic",
     span: "md:col-span-7 lg:col-span-8",
     height: "h-[240px] sm:h-[260px] md:h-[300px] lg:h-[320px]",
   },

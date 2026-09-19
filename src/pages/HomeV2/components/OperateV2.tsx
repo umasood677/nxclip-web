@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -14,90 +15,142 @@ import { useAppSelector } from "../../../store/hooks";
 import { selectAuthUser } from "../../../store/slices/authSlice";
 import { cn } from "../../../lib/utils";
 import {
+  getOperateReels,
+  type MarketingMedia,
+  type OperateReelKey,
+} from "../../../lib/marketingMedia";
+import {
   SocialPlatformIcon,
   SOCIAL_BRAND_TILE,
   type SocialBrandPlatform,
 } from "../../../components/social/SocialPlatformIcon";
+import { MarketingMediaFrame } from "./MarketingMediaFrame";
+import { MarketingMediaReel } from "./MarketingMediaReel";
 
 const PLATFORMS: SocialBrandPlatform[] = ["youtube", "instagram", "tiktok", "facebook"];
 
+const EMPTY_REELS: Record<OperateReelKey, MarketingMedia[]> = {
+  publish: [],
+  feed: [],
+  schedule: [],
+  analytics: [],
+  planning: [],
+  workflow: [],
+  suggest: [],
+};
+
 const FEATURES = [
   {
-    key: "publish",
+    key: "publish" as const,
     title: "Social publishing",
     line: "Go Live to YouTube, Instagram, TikTok, and Facebook from one desk.",
     path: "/feed",
     chip: "Live",
     icon: Share2,
     span: "md:col-span-7",
-    preview: "publish" as const,
+    height: "h-[200px] md:h-[228px]",
+    cut: "whip" as const,
+    camera: "trailer" as const,
+    intervalMs: 3400,
   },
   {
-    key: "feed",
+    key: "feed" as const,
     title: "Creator feed",
     line: "Your posts, follows, and engagement — the home your audience lives in.",
     path: "/feed",
     chip: "Feed",
     icon: Radio,
     span: "md:col-span-5",
-    preview: "feed" as const,
+    height: "h-[200px] md:h-[228px]",
+    cut: "dissolve" as const,
+    camera: "kenburns" as const,
+    intervalMs: 4200,
   },
   {
-    key: "schedule",
+    key: "schedule" as const,
     title: "Scheduling",
     line: "Queue clips and stills for the windows that actually convert.",
     path: "/dashboard",
     chip: "Calendar",
     icon: CalendarClock,
     span: "md:col-span-4",
-    preview: "schedule" as const,
+    height: "h-[188px]",
+    cut: "push" as const,
+    camera: "drift" as const,
+    intervalMs: 4800,
   },
   {
-    key: "analytics",
+    key: "analytics" as const,
     title: "Social analytics",
     line: "Views, watch time, and platform split after you publish.",
     path: "/analytics",
     chip: "Measure",
     icon: LineChart,
     span: "md:col-span-4",
-    preview: "analytics" as const,
+    height: "h-[188px]",
+    cut: "dissolve" as const,
+    camera: "cinematic" as const,
+    intervalMs: 5200,
   },
   {
-    key: "planning",
+    key: "planning" as const,
     title: "Week planning",
     line: "A command week: drafts, scheduled, Live — what ships next.",
     path: "/dashboard",
     chip: "Plan",
     icon: Compass,
     span: "md:col-span-4",
-    preview: "planning" as const,
+    height: "h-[188px]",
+    cut: "cut" as const,
+    camera: "kenburns" as const,
+    intervalMs: 2800,
   },
   {
-    key: "workflow",
+    key: "workflow" as const,
     title: "AI workflow",
     line: "The next best move, ranked — not another generic tip list.",
     path: "/dashboard",
     chip: "Coach",
     icon: Workflow,
     span: "md:col-span-6",
-    preview: "workflow" as const,
+    height: "h-[210px] md:h-[224px]",
+    cut: "push" as const,
+    camera: "cinematic" as const,
+    intervalMs: 4000,
   },
   {
-    key: "suggest",
+    key: "suggest" as const,
     title: "Content suggestions",
     line: "Niche-aware ideas for clips, stills, and captions ready to generate.",
     path: "/coach",
     chip: "Ideas",
     icon: Sparkles,
     span: "md:col-span-6",
-    preview: "suggest" as const,
+    height: "h-[210px] md:h-[224px]",
+    cut: "mix" as const,
+    camera: "auto" as const,
+    intervalMs: 2200,
   },
 ];
 
-function Preview({ kind }: { kind: (typeof FEATURES)[number]["preview"] }) {
+function Thumb({ media, className }: { media?: MarketingMedia; className?: string }) {
+  return (
+    <span className={cn("relative overflow-hidden rounded-md bg-white/10 shrink-0", className)}>
+      <MarketingMediaFrame media={media || null} showCredit={false} />
+    </span>
+  );
+}
+
+function Overlay({
+  kind,
+  items,
+}: {
+  kind: OperateReelKey;
+  items: MarketingMedia[];
+}) {
   if (kind === "publish") {
     return (
-      <div className="space-y-3">
+      <div className="flex h-full flex-col justify-between">
         <div className="flex items-center gap-2">
           {PLATFORMS.map((p) => (
             <span
@@ -110,16 +163,16 @@ function Preview({ kind }: { kind: (typeof FEATURES)[number]["preview"] }) {
               <SocialPlatformIcon platform={p} size={14} variant="mono" />
             </span>
           ))}
-          <span className="ms-auto rounded-full bg-teal-500/15 px-2.5 py-1 text-[10px] font-bold text-teal-300">
+          <span className="ms-auto rounded-full bg-teal-500/25 px-2.5 py-1 text-[10px] font-bold text-teal-100 border border-teal-300/30">
             Ready to Live
           </span>
         </div>
-        <div className="rounded-xl border border-white/10 bg-black/35 p-3 space-y-2">
-          <div className="flex items-center justify-between text-[11px] font-medium text-white/80">
+        <div className="rounded-xl border border-white/15 bg-black/45 backdrop-blur-md p-3 space-y-2">
+          <div className="flex items-center justify-between text-[11px] font-medium text-white/90">
             <span>Clutch highlight · 0:18</span>
             <span className="text-teal-300">Queue → YT + TT</span>
           </div>
-          <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+          <div className="h-1.5 rounded-full bg-white/15 overflow-hidden">
             <div className="h-full w-[68%] rounded-full bg-gradient-to-r from-primary to-teal-400" />
           </div>
         </div>
@@ -128,17 +181,22 @@ function Preview({ kind }: { kind: (typeof FEATURES)[number]["preview"] }) {
   }
 
   if (kind === "feed") {
+    const rows = [
+      { title: "Gold-hour look", meta: "Live · 2.4k views" },
+      { title: "Beauty close-up", meta: "On feed" },
+      { title: "Gourmet plate", meta: "On feed" },
+    ];
     return (
-      <div className="space-y-2">
-        {["Night city still", "Beauty close-up", "Food plate"].map((title, i) => (
+      <div className="flex h-full flex-col justify-end gap-1.5">
+        {rows.map((row, i) => (
           <div
-            key={title}
-            className="flex items-center gap-2.5 rounded-lg border border-white/10 bg-black/30 px-2.5 py-2"
+            key={row.title}
+            className="flex items-center gap-2.5 rounded-lg border border-white/15 bg-black/50 backdrop-blur-md px-2 py-1.5"
           >
-            <span className="h-8 w-8 rounded-md bg-gradient-to-br from-white/20 to-white/5" />
+            <Thumb media={items[i]} className="h-9 w-9" />
             <div className="min-w-0">
-              <p className="text-[11px] font-bold text-white truncate">{title}</p>
-              <p className="text-[10px] text-white/55">{i === 0 ? "Live · 2.4k views" : "On feed"}</p>
+              <p className="text-[11px] font-bold text-white truncate">{row.title}</p>
+              <p className="text-[10px] text-white/60">{row.meta}</p>
             </div>
           </div>
         ))}
@@ -149,56 +207,68 @@ function Preview({ kind }: { kind: (typeof FEATURES)[number]["preview"] }) {
   if (kind === "schedule") {
     const days = ["M", "T", "W", "T", "F", "S", "S"];
     return (
-      <div className="grid grid-cols-7 gap-1.5">
-        {days.map((d, i) => (
-          <div key={`${d}-${i}`} className="text-center">
-            <p className="text-[9px] font-bold text-white/45 mb-1">{d}</p>
-            <div
-              className={cn(
-                "h-10 rounded-lg border text-[9px] font-bold flex items-center justify-center",
-                i === 3
-                  ? "border-teal-400/40 bg-teal-500/20 text-teal-200"
-                  : i === 1 || i === 5
-                    ? "border-white/10 bg-white/5 text-white/70"
-                    : "border-white/5 bg-black/20 text-white/30",
-              )}
-            >
-              {i === 3 ? "3" : i === 1 || i === 5 ? "1" : "·"}
+      <div className="flex h-full flex-col justify-end">
+        <div className="grid grid-cols-7 gap-1.5 rounded-xl border border-white/15 bg-black/45 backdrop-blur-md p-2.5">
+          {days.map((d, i) => (
+            <div key={`${d}-${i}`} className="text-center">
+              <p className="text-[9px] font-bold text-white/50 mb-1">{d}</p>
+              <div
+                className={cn(
+                  "h-9 rounded-lg border text-[9px] font-bold flex items-center justify-center",
+                  i === 3
+                    ? "border-teal-400/50 bg-teal-500/30 text-teal-100"
+                    : i === 1 || i === 5
+                      ? "border-white/15 bg-white/10 text-white/80"
+                      : "border-white/10 bg-black/30 text-white/35",
+                )}
+              >
+                {i === 3 ? "3" : i === 1 || i === 5 ? "1" : "·"}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   }
 
   if (kind === "analytics") {
     return (
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          ["124k", "Views"],
-          ["8.2%", "ER"],
-          ["4", "Live"],
-        ].map(([n, l]) => (
-          <div key={l} className="rounded-lg border border-white/10 bg-black/30 px-2 py-2.5">
-            <p className="font-display text-lg font-bold text-white leading-none">{n}</p>
-            <p className="text-[9px] font-bold uppercase tracking-wider text-white/45 mt-1">{l}</p>
-          </div>
-        ))}
+      <div className="flex h-full items-end">
+        <div className="grid w-full grid-cols-3 gap-2">
+          {[
+            ["124k", "Views"],
+            ["8.2%", "ER"],
+            ["4", "Live"],
+          ].map(([n, l]) => (
+            <div
+              key={l}
+              className="rounded-lg border border-white/15 bg-black/50 backdrop-blur-md px-2 py-2.5"
+            >
+              <p className="font-display text-lg font-bold text-white leading-none">{n}</p>
+              <p className="text-[9px] font-bold uppercase tracking-wider text-white/55 mt-1">{l}</p>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   if (kind === "planning") {
+    const rows = [
+      ["Mon", "Draft beauty still"],
+      ["Thu", "Live clip window"],
+      ["Sat", "Gourmet + caption"],
+    ];
     return (
-      <div className="space-y-1.5">
-        {[
-          ["Mon", "Draft beauty still"],
-          ["Thu", "Live clip window"],
-          ["Sat", "Meme + caption"],
-        ].map(([day, task]) => (
-          <div key={day} className="flex items-center gap-2 text-[11px]">
+      <div className="flex h-full flex-col justify-end gap-1.5">
+        {rows.map(([day, task], i) => (
+          <div
+            key={day}
+            className="flex items-center gap-2 rounded-lg border border-white/15 bg-black/50 backdrop-blur-md px-2 py-1.5 text-[11px]"
+          >
+            <Thumb media={items[i]} className="h-8 w-8" />
             <span className="w-8 font-bold text-teal-300">{day}</span>
-            <span className="text-white/75">{task}</span>
+            <span className="text-white/85 truncate">{task}</span>
           </div>
         ))}
       </div>
@@ -207,30 +277,48 @@ function Preview({ kind }: { kind: (typeof FEATURES)[number]["preview"] }) {
 
   if (kind === "workflow") {
     return (
-      <div className="space-y-2">
+      <div className="flex h-full flex-col justify-end gap-2">
         {[
           { n: "01", t: "Publish the Thursday clip first", s: "Peak window · 7–9pm" },
           { n: "02", t: "Connect Instagram for Live stats", s: "Unlock platform split" },
-        ].map((row) => (
-          <div key={row.n} className="rounded-xl border border-white/10 bg-black/30 px-3 py-2.5">
-            <p className="text-[10px] font-bold text-teal-300">{row.n}</p>
-            <p className="text-[12px] font-bold text-white mt-0.5">{row.t}</p>
-            <p className="text-[10px] text-white/50">{row.s}</p>
+        ].map((row, i) => (
+          <div
+            key={row.n}
+            className="flex items-center gap-2.5 rounded-xl border border-white/15 bg-black/50 backdrop-blur-md px-2.5 py-2"
+          >
+            <Thumb media={items[i]} className="h-11 w-11 rounded-lg" />
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-teal-300">{row.n}</p>
+              <p className="text-[12px] font-bold text-white mt-0.5 truncate">{row.t}</p>
+              <p className="text-[10px] text-white/55">{row.s}</p>
+            </div>
           </div>
         ))}
       </div>
     );
   }
 
+  const ideas = [
+    { label: "9:16 clip", niche: "Gaming" },
+    { label: "Beauty still", niche: "Glam" },
+    { label: "Travel reel", niche: "Aerial" },
+    { label: "AI look", niche: "Influencer" },
+  ];
+
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {["9:16 clip", "Beauty still", "Food reel", "Caption pack"].map((tag) => (
-        <span
-          key={tag}
-          className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] font-bold text-white/80"
+    <div className="grid h-full grid-cols-2 grid-rows-2 gap-1.5">
+      {ideas.map((idea, i) => (
+        <div
+          key={idea.label}
+          className="relative overflow-hidden rounded-xl border border-white/15 bg-black/30"
         >
-          {tag}
-        </span>
+          <MarketingMediaFrame media={items[i] || null} showCredit={false} imgClassName="home-kenburns" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 p-2">
+            <p className="text-[11px] font-bold text-white leading-none">{idea.label}</p>
+            <p className="text-[9px] font-semibold text-white/65 mt-0.5">{idea.niche}</p>
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -240,6 +328,17 @@ export default function OperateV2() {
   const navigate = useNavigate();
   const user = useAppSelector(selectAuthUser);
   const go = (path: string) => navigate(user ? path : "/signup");
+  const [reels, setReels] = useState(EMPTY_REELS);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getOperateReels().then((m) => {
+      if (!cancelled) setReels(m);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <section id="platform" className="relative scroll-mt-24 pt-8 md:pt-12 pb-10 md:pb-14 overflow-hidden">
@@ -263,6 +362,8 @@ export default function OperateV2() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-5">
           {FEATURES.map((f, i) => {
             const Icon = f.icon;
+            const items = reels[f.key];
+            const isSuggest = f.key === "suggest";
             return (
               <motion.button
                 key={f.key}
@@ -279,8 +380,22 @@ export default function OperateV2() {
                   f.span,
                 )}
               >
-                <div className="relative p-4 md:p-5 bg-gradient-to-br from-zinc-950 to-zinc-900 min-h-[148px]">
-                  <Preview kind={f.preview} />
+                <div className={cn("relative overflow-hidden bg-zinc-950", f.height)}>
+                  {!isSuggest && (
+                    <>
+                      <MarketingMediaReel
+                        items={items}
+                        intervalMs={f.intervalMs}
+                        cut={f.cut}
+                        camera={f.camera}
+                        showNiche={false}
+                      />
+                      <div className="absolute inset-0 z-[6] bg-gradient-to-t from-black/80 via-black/35 to-black/15 pointer-events-none" />
+                    </>
+                  )}
+                  <div className={cn("absolute inset-0 z-10 p-3 md:p-3.5", isSuggest && "p-2 md:p-2.5")}>
+                    <Overlay kind={f.key} items={items} />
+                  </div>
                 </div>
                 <div className="p-4 md:p-5 pt-3.5">
                   <div className="flex items-center gap-2 mb-1.5">

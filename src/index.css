@@ -1004,6 +1004,12 @@ body.dark,
     will-change: transform;
   }
 
+  .home-trailer {
+    animation: home-trailer 9s ease-in-out alternate infinite;
+    will-change: transform;
+    filter: saturate(1.1) contrast(1.08);
+  }
+
   .home-niche-marquee {
     animation: home-niche-marquee 28s linear infinite;
   }
@@ -1050,6 +1056,15 @@ body.dark,
     }
     to {
       transform: scale(1.05);
+    }
+  }
+
+  @keyframes home-trailer {
+    from {
+      transform: scale(1.12) translate3d(0, 2.4%, 0);
+    }
+    to {
+      transform: scale(1.22) translate3d(-1.4%, -1.8%, 0);
     }
   }
 

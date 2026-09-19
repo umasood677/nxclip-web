@@ -33,7 +33,7 @@ export default function HeroV2() {
   return (
     <section
       id="hero"
-      className="relative overflow-hidden pt-24 md:pt-28 pb-6 md:pb-8 min-h-[100svh] flex flex-col justify-end"
+      className="relative overflow-hidden pt-24 md:pt-28 pb-8 md:pb-12 min-h-[100svh] flex flex-col justify-center"
     >
       <div className="absolute inset-0 pointer-events-none -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,color-mix(in_srgb,var(--background)_55%,transparent)_72%)]" />
@@ -50,7 +50,7 @@ export default function HeroV2() {
       </div>
 
       <div className="ui-container-hero relative z-10 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 lg:gap-12 lg:items-end">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 lg:gap-12 lg:items-start">
           <div className="lg:col-span-6 xl:col-span-5 text-start">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
@@ -143,8 +143,8 @@ export default function HeroV2() {
             <div className="relative aspect-[16/11] sm:aspect-[16/10] lg:aspect-[16/11] rounded-2xl overflow-hidden border border-foreground/10 shadow-[0_30px_80px_-24px_rgba(0,0,0,0.45)]">
               <MarketingMediaReel
                 items={reel}
-                intervalMs={5200}
-                cut="cinematic"
+                intervalMs={3800}
+                cut="mix"
                 camera="auto"
                 nicheTabs
                 showNiche={false}

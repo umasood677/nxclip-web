@@ -9,6 +9,13 @@ import {
   IMAGE_STUDIO_REEL,
   MARKETING_CATALOG,
   MEME_REEL,
+  OPERATE_ANALYTICS_REEL,
+  OPERATE_FEED_REEL,
+  OPERATE_PLANNING_REEL,
+  OPERATE_PUBLISH_REEL,
+  OPERATE_SCHEDULE_REEL,
+  OPERATE_SUGGEST_REEL,
+  OPERATE_WORKFLOW_REEL,
   PIPELINE_CREATE_REEL,
   PIPELINE_MODERATE_REEL,
   PIPELINE_PUBLISH_REEL,
@@ -204,6 +211,28 @@ export async function getOsLayerMedia(): Promise<Record<OsLayerKey, MarketingMed
     getSlotMedia("osGuide"),
   ]);
   return { create, organize, distribute, operate, measure, guide };
+}
+
+export type OperateReelKey =
+  | "publish"
+  | "feed"
+  | "schedule"
+  | "analytics"
+  | "planning"
+  | "workflow"
+  | "suggest";
+
+export async function getOperateReels(): Promise<Record<OperateReelKey, MarketingMedia[]>> {
+  const [publish, feed, schedule, analytics, planning, workflow, suggest] = await Promise.all([
+    resolveReel(OPERATE_PUBLISH_REEL, "op-publish"),
+    resolveReel(OPERATE_FEED_REEL, "op-feed"),
+    resolveReel(OPERATE_SCHEDULE_REEL, "op-schedule"),
+    resolveReel(OPERATE_ANALYTICS_REEL, "op-analytics"),
+    resolveReel(OPERATE_PLANNING_REEL, "op-planning"),
+    resolveReel(OPERATE_WORKFLOW_REEL, "op-workflow"),
+    resolveReel(OPERATE_SUGGEST_REEL, "op-suggest"),
+  ]);
+  return { publish, feed, schedule, analytics, planning, workflow, suggest };
 }
 
 export async function getSpotlightMedia(): Promise<MarketingMedia[]> {

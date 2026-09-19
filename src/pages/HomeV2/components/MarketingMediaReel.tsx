@@ -6,7 +6,7 @@ import { type MarketingMedia } from "../../../lib/marketingMedia";
 import { MarketingMediaFrame } from "./MarketingMediaFrame";
 
 export type ReelCut = "dissolve" | "cut" | "whip" | "zoom" | "flash" | "push" | "mix" | "cinematic";
-export type ReelCamera = "none" | "kenburns" | "handheld" | "crashzoom" | "drift" | "cinematic" | "auto";
+export type ReelCamera = "none" | "kenburns" | "handheld" | "crashzoom" | "drift" | "cinematic" | "trailer" | "auto";
 
 const MIX_CYCLE: Exclude<ReelCut, "mix" | "cinematic">[] = ["dissolve", "cut", "whip", "zoom", "flash", "push"];
 const CINEMA_CYCLE: Array<"dissolve" | "push"> = ["dissolve", "push"];
@@ -235,29 +235,32 @@ function resolveCamera(camera: ReelCamera, niche?: NicheKey): Exclude<ReelCamera
     case "beauty":
       return "cinematic";
     case "gaming":
+      return "trailer";
+    case "tech":
       return "drift";
     case "viral":
+      return "crashzoom";
+    case "influencer":
       return "cinematic";
     default:
       return "kenburns";
   }
 }
 
-function cameraClassName(camera: Exclude<ReelCamera, "auto">, isImage: boolean): string | undefined {
-  if (!isImage && camera !== "handheld") {
-    if (camera === "none") return undefined;
-  }
+function cameraClassName(camera: Exclude<ReelCamera, "auto">, _isImage: boolean): string | undefined {
   switch (camera) {
     case "kenburns":
-      return isImage ? "home-kenburns" : undefined;
+      return "home-kenburns";
     case "cinematic":
-      return isImage ? "home-cinematic" : undefined;
+      return "home-cinematic";
     case "handheld":
       return "home-handheld";
     case "crashzoom":
       return "home-crashzoom";
     case "drift":
-      return isImage ? "home-drift" : undefined;
+      return "home-drift";
+    case "trailer":
+      return "home-trailer";
     default:
       return undefined;
   }
