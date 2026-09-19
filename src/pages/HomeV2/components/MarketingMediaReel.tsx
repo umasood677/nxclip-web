@@ -169,7 +169,7 @@ export function MarketingMediaReel({
 
       {nicheTabs && (
         <div className="absolute bottom-3 start-3 end-3 z-20 flex flex-col gap-2 pointer-events-auto">
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+          <div className="flex flex-wrap gap-1.5 pb-0.5">
             {nichesInReel.map((niche) => {
               const on = (nicheFilter || current?.niche) === niche;
               return (
