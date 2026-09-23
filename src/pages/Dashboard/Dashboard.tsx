@@ -833,7 +833,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <PwaInstallPrompt variant="banner" className="mb-6 mt-2" />
+        <PwaInstallPrompt variant="banner" allowManual className="mb-6 mt-2" />
 
         {/* --- KPI Row --- */}
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">

@@ -33,9 +33,10 @@ import { db, auth } from '../firebase';
 import { contentApi } from '../services/apiClient';
 import { toast } from 'sonner';
 import { triggerHaptic } from '../lib/vibration';
+import { PWA_DRAFT_TYPES, PWA_INSTALL } from '../lib/pwaCopy';
 
 export function PwaManager() {
-  const { isInstallable, isInstalled, showPrompt } = usePWA();
+  const { isInstallable, isInstalled, isIos, showPrompt } = usePWA();
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [hasDismissed, setHasDismissed] = useState(false);
   const [installSuccess, setInstallSuccess] = useState(false);
@@ -62,7 +63,7 @@ export function PwaManager() {
   const [draftTitle, setDraftTitle] = useState('');
   const [draftType, setDraftType] = useState('image');
   const [draftPrompt, setDraftPrompt] = useState('');
-  const [draftStyle, setDraftStyle] = useState('Cyberpunk');
+  const [draftStyle, setDraftStyle] = useState('Cinematic');
 
   // Load drafts from IndexedDB
   const loadDrafts = useCallback(async () => {
@@ -190,7 +191,7 @@ export function PwaManager() {
 
   useEffect(() => {
     // 1. Service Worker Registration & Update Handling
-    if ('serviceWorker' in navigator && import.meta.env.PROD) {
+    if ('serviceWorker' in navigator && (import.meta.env.PROD || import.meta.env.VITE_ENABLE_PWA === '1')) {
       const handleRegister = () => {
         try {
           // Register service worker
@@ -430,7 +431,7 @@ export function PwaManager() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             onClick={() => setShowDraftQueue(true)}
-            className="fixed bottom-28 right-6 z-40 flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white p-2.5 px-4 rounded-full shadow-[0_0_20px_rgba(168,85,247,0.3)] border border-purple-400/30 font-medium text-xs transition-all hover:scale-105"
+            className="fixed bottom-28 right-6 z-40 flex items-center gap-2 bg-[linear-gradient(135deg,var(--color-brand-primary)_0%,var(--color-brand-tertiary)_100%)] hover:brightness-110 text-primary-foreground p-2.5 px-4 rounded-full shadow-[0_0_20px_color-mix(in_srgb,var(--color-brand-primary)_30%,transparent)] border border-white/10 font-medium text-xs transition-all hover:scale-105"
           >
             <CloudLightning className="h-4 w-4 text-amber-300 animate-pulse" />
             <span>Sync Ready ({drafts.filter(d => d.status !== 'synced').length})</span>
@@ -494,13 +495,13 @@ export function PwaManager() {
             initial={{ opacity: 0, y: 100, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-[100] bg-zinc-950/95 border border-purple-500/30 p-5 rounded-2xl shadow-[0_0_30px_rgba(168,85,247,0.15)] text-white backdrop-blur-xl w-[380px] max-w-[calc(100vw-32px)]"
+            className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] right-6 z-[100] bg-zinc-950/95 border border-primary/30 p-5 rounded-2xl shadow-[0_0_30px_color-mix(in_srgb,var(--color-brand-primary)_18%,transparent)] text-white backdrop-blur-xl w-[380px] max-w-[calc(100vw-32px)]"
           >
             {/* Header */}
             <div className="flex justify-between items-start gap-4">
-              <div className="flex items-center gap-2 bg-purple-500/15 p-1.5 px-2.5 rounded-lg border border-purple-500/25">
-                <Cpu className="h-3.5 w-3.5 text-purple-400" />
-                <span className="text-[9px] font-bold tracking-widest text-purple-300 uppercase">System Hotfix</span>
+              <div className="flex items-center gap-2 bg-primary/15 p-1.5 px-2.5 rounded-lg border border-primary/25">
+                <Cpu className="h-3.5 w-3.5 text-primary" />
+                <span className="text-[9px] font-bold tracking-widest text-primary uppercase">Creator OS update</span>
               </div>
               <button 
                 onClick={() => setUpdateExists(false)}
@@ -518,7 +519,7 @@ export function PwaManager() {
                 <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0" />
               </h4>
               <p className="text-xs text-zinc-400 leading-relaxed mt-2.5">
-                A new version of nxclip.app OS is loaded. Complete this hotfix to synchronize instant assets, offline enhancements, and faster rendering speeds.
+                A new version of nxclip.app Creator OS is ready. Reload to pick up canvas, library, Live, and analytics updates.
               </p>
             </div>
 
@@ -533,7 +534,8 @@ export function PwaManager() {
               </Button>
               <Button 
                 onClick={handleApplyUpdate}
-                className="flex-1 text-xs bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white h-9 font-semibold shadow-lg hover:shadow-purple-500/20 transition-all rounded-xl border-none flex items-center justify-center gap-1.5"
+                variant="brand-premium"
+                className="flex-1 text-xs h-9 font-semibold rounded-xl flex items-center justify-center gap-1.5"
               >
                 <RefreshCw className="h-3.5 w-3.5 animate-spin-slow" />
                 Update OS
@@ -556,8 +558,8 @@ export function PwaManager() {
               <Check className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-semibold text-sm">Welcome to nxclip.app OS</p>
-              <p className="text-xs text-emerald-400/80 mt-0.5">Application successfully installed to your local dock.</p>
+              <p className="font-semibold text-sm">{PWA_INSTALL.welcomeTitle}</p>
+              <p className="text-xs text-emerald-400/80 mt-0.5">{PWA_INSTALL.welcomeBody}</p>
             </div>
           </motion.div>
         )}
@@ -570,13 +572,13 @@ export function PwaManager() {
             initial={{ opacity: 0, y: 100, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
-            className="fixed bottom-6 left-6 right-6 md:left-auto md:right-6 md:w-[380px] z-[100] bg-zinc-950/95 border border-white/10 p-5 rounded-2xl shadow-3xl text-white backdrop-blur-xl"
+            className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] left-6 right-6 md:left-auto md:right-6 md:w-[380px] z-[100] bg-zinc-950/95 border border-white/10 p-5 rounded-2xl shadow-3xl text-white backdrop-blur-xl"
           >
             {/* Header */}
             <div className="flex justify-between items-start gap-4">
-              <div className="flex items-center gap-2.5 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 p-2 px-3 rounded-lg border border-purple-500/20">
-                <Smartphone className="h-4 w-4 text-purple-400" />
-                <span className="text-[10px] font-bold tracking-widest text-purple-300 uppercase">Interactive App</span>
+              <div className="flex items-center gap-2.5 bg-teal-500/10 p-2 px-3 rounded-lg border border-teal-500/20">
+                <Smartphone className="h-4 w-4 text-teal-400" />
+                <span className="text-[10px] font-bold tracking-widest text-teal-300 uppercase">{PWA_INSTALL.badge}</span>
               </div>
               <button 
                 onClick={handleDismiss}
@@ -590,12 +592,15 @@ export function PwaManager() {
             {/* Information */}
             <div className="mt-4">
               <h4 className="text-base font-bold font-display tracking-tight text-white flex items-center gap-1.5 leading-none">
-                Install nxclip.app Creator OS
+                {PWA_INSTALL.title}
                 <Sparkles className="h-4 w-4 text-amber-400 shrink-0" />
               </h4>
               <p className="text-xs text-zinc-400 leading-relaxed mt-2.5">
-                Launch instantly from your home screen or dock. Run offline, enable faster loading, and get full screen canvas editing workspace with no browser bars.
+                {PWA_INSTALL.body}
               </p>
+              {isIos && !isInstallable && (
+                <p className="text-[11px] text-teal-300/80 mt-2">Safari → Share → Add to Home Screen</p>
+              )}
             </div>
 
             {/* Actions */}
@@ -605,14 +610,15 @@ export function PwaManager() {
                 variant="outline"
                 className="flex-1 text-xs border-white/10 hover:bg-white/5 h-10 font-medium text-zinc-300 transition-all rounded-xl"
               >
-                Maybe Later
+                {PWA_INSTALL.later}
               </Button>
               <Button 
                 onClick={handleInstallClick}
-                className="flex-1 text-xs bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white h-10 font-semibold shadow-lg hover:shadow-purple-500/20 transition-all rounded-xl border-none flex items-center justify-center gap-1.5"
+                variant="brand-premium"
+                className="flex-1 text-xs h-10 font-semibold rounded-xl flex items-center justify-center gap-1.5"
               >
                 <Download className="h-3.5 w-3.5" />
-                Install Platform
+                {PWA_INSTALL.ctaLong}
               </Button>
             </div>
           </motion.div>
@@ -643,12 +649,12 @@ export function PwaManager() {
               {/* Header */}
               <div className="flex justify-between items-center pb-4 border-b border-white/10">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 bg-purple-500/10 rounded-xl border border-purple-500/20 text-purple-400">
+                  <div className="p-2 bg-teal-500/10 rounded-xl border border-teal-500/20 text-teal-400">
                     <CloudLightning className="h-4 w-4 animate-pulse" />
                   </div>
                   <div>
                     <h3 className="font-bold text-sm tracking-tight font-display text-white">Offline Sync Hub</h3>
-                    <p className="text-[10px] text-zinc-400 mt-0.5">Dual-mode background background sync queue</p>
+                    <p className="text-[10px] text-zinc-400 mt-0.5">Queue stills, memes, clips, and coach briefs</p>
                   </div>
                 </div>
                 <button
@@ -685,7 +691,7 @@ export function PwaManager() {
                   variant="outline"
                   className="flex-1 text-[11px] h-8 border-white/5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-semibold rounded-lg flex items-center justify-center gap-1"
                 >
-                  <Plus className="h-3.5 w-3.5 text-purple-400" />
+                  <Plus className="h-3.5 w-3.5 text-teal-400" />
                   {showCreateDraft ? 'Cancel Form' : 'Add Draft Offline'}
                 </Button>
                 
@@ -701,7 +707,8 @@ export function PwaManager() {
                 <Button
                   onClick={syncAllPendingDrafts}
                   disabled={isOffline || isSyncing || drafts.filter(d => d.status === 'pending' || d.status === 'failed').length === 0}
-                  className="text-[11px] h-8 bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-900/40 text-white font-semibold rounded-lg flex items-center gap-1 border-none disabled:text-zinc-500 shadow-md transition-all"
+                  variant="brand-premium"
+                  className="text-[11px] h-8 font-semibold rounded-lg flex items-center gap-1 disabled:opacity-40"
                 >
                   {isSyncing ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -720,47 +727,46 @@ export function PwaManager() {
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                     onSubmit={handleCreateDraftSubmit}
-                    className="mt-4 p-4 rounded-xl border border-purple-500/20 bg-purple-950/10 space-y-3 overflow-hidden"
+                    className="mt-4 p-4 rounded-xl border border-teal-500/20 bg-teal-950/10 space-y-3 overflow-hidden"
                   >
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-purple-400">Creation Mode</label>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-teal-400">Creation Mode</label>
                       <select
                         value={draftType}
                         onChange={(e) => setDraftType(e.target.value)}
-                        className="w-full h-8 mt-1 rounded-lg bg-zinc-900 border border-white/10 px-2.5 text-xs text-white focus:outline-none focus:border-purple-500/50"
+                        className="w-full h-8 mt-1 rounded-lg bg-zinc-900 border border-white/10 px-2.5 text-xs text-white focus:outline-none focus:border-teal-500/50"
                       >
-                        <option value="image">Image Studio Draft</option>
-                        <option value="clip">Viral Clip Trim Config</option>
-                        <option value="coach_chat">Creator Coach Prompt</option>
-                        <option value="comment">Commentary Script</option>
+                        {PWA_DRAFT_TYPES.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-purple-400">Draft Title</label>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-teal-400">Draft Title</label>
                       <input
                         type="text"
-                        placeholder="e.g. Minecraft Speedrun Thumbnail Ideas"
+                        placeholder="e.g. Tuesday Reels still — plating close"
                         value={draftTitle}
                         onChange={(e) => setDraftTitle(e.target.value)}
-                        className="w-full h-8 mt-1 rounded-lg bg-zinc-900 border border-white/10 px-2.5 text-xs text-white focus:outline-none focus:border-purple-500/50 placeholder-zinc-600"
+                        className="w-full h-8 mt-1 rounded-lg bg-zinc-900 border border-white/10 px-2.5 text-xs text-white focus:outline-none focus:border-teal-500/50 placeholder-zinc-600"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-purple-400">Idea Prompt / Captions</label>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-teal-400">Idea Prompt / Captions</label>
                       <textarea
-                        placeholder="Details of your creation or AI prompt description..."
+                        placeholder="Brief, hook, or prompt for Image Studio, Clip Studio, or Coach..."
                         rows={2}
                         value={draftPrompt}
                         onChange={(e) => setDraftPrompt(e.target.value)}
-                        className="w-full mt-1 rounded-lg bg-zinc-900 border border-white/10 p-2.5 text-xs text-white focus:outline-none focus:border-purple-500/50 placeholder-zinc-600 resize-none"
+                        className="w-full mt-1 rounded-lg bg-zinc-900 border border-white/10 p-2.5 text-xs text-white focus:outline-none focus:border-teal-500/50 placeholder-zinc-600 resize-none"
                       />
                     </div>
 
                     <div className="flex gap-2">
                       <div className="flex-1">
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-purple-400">Theme Style</label>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-teal-400">Theme Style</label>
                         <input
                           type="text"
                           value={draftStyle}
@@ -771,7 +777,8 @@ export function PwaManager() {
                       <div className="flex items-end">
                         <Button
                           type="submit"
-                          className="h-8 w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 text-xs font-bold rounded-lg border-none hover:to-indigo-500 text-white flex items-center justify-center gap-1.5"
+                          variant="brand-premium"
+                          className="h-8 w-full text-xs font-bold rounded-lg flex items-center justify-center gap-1.5"
                         >
                           Queue Draft
                         </Button>
@@ -787,7 +794,7 @@ export function PwaManager() {
                   <div className="h-44 flex flex-col items-center justify-center text-center p-6 border border-dashed border-white/5 rounded-2xl bg-zinc-900/30">
                     <ListTodo className="h-8 w-8 text-zinc-600 mb-2.5" />
                     <p className="text-xs font-semibold text-zinc-400">Sync Queue Empty</p>
-                    <p className="text-[10px] text-zinc-600 max-w-xs mt-1">Ready to capture and store any gaming creativity while running offline.</p>
+                    <p className="text-[10px] text-zinc-600 max-w-xs mt-1">Queue a still, meme, clip, or coach brief while you are offline.</p>
                   </div>
                 ) : (
                   drafts.map((draft) => {
@@ -815,7 +822,7 @@ export function PwaManager() {
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="p-1 rounded-md bg-white/5 border border-white/10 text-purple-400 shrink-0">
+                              <span className="p-1 rounded-md bg-white/5 border border-white/10 text-teal-400 shrink-0">
                                 <FileText className="h-3.5 w-3.5" />
                               </span>
                               <h4 className="text-xs font-bold text-white truncate">{draft.title}</h4>

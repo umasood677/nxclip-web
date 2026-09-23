@@ -18,7 +18,7 @@ export default function AppShell({ children, title, subtitle, titleIcon, dense }
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   return (
-    <div className="min-h-screen ui-bg-dashboard flex transition-colors duration-300">
+    <div className="min-h-dvh ui-bg-dashboard flex transition-colors duration-300">
       {/* Skip to main content link for screen readers & keyboard users */}
       <a 
         href="#main-content" 
@@ -31,7 +31,7 @@ export default function AppShell({ children, title, subtitle, titleIcon, dense }
       <div 
         className={cn(
           "flex-grow flex flex-col transition-all duration-300 min-w-0",
-          "pb-20 lg:pb-0", // Space for mobile nav
+          "pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pb-0", // Space for mobile nav + home indicator
           isCollapsed ? "lg:ms-16" : "lg:ms-60"
         )}
       >

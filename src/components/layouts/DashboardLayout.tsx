@@ -72,12 +72,12 @@ export default function DashboardLayout() {
     }
     if (isFeed) {
       return t("home.header.subtitle", {
-        defaultValue: "Your daily command center for gaming clips, memes, and growth.",
+        defaultValue: "Your daily command center for stills, clips, Live posts, and growth.",
       });
     }
     if (isAnalytics) {
       return t("analytics.description", {
-        defaultValue: "Track gaming clip and meme performance across TikTok, YouTube, and Instagram.",
+        defaultValue: "Track still, clip, and Live performance across YouTube, Instagram, TikTok, and Facebook.",
       });
     }
     if (isImageStudio) {

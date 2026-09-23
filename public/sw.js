@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE_NAME = `nxclip-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `nxclip-dynamic-${CACHE_VERSION}`;
 
@@ -7,7 +7,11 @@ const CORE_ASSETS = [
   '/',
   '/index.html',
   '/favicon.svg',
-  '/manifest.json'
+  '/manifest.json',
+  '/nexa-logo.png',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/apple-touch-icon.png',
 ];
 
 // Install Event: Cache critical shell assets

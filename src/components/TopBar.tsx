@@ -150,7 +150,7 @@ export default function TopBar({ title, subtitle, titleIcon }: TopBarProps) {
           </Link>
         </div>
       )}
-      <header className="h-14 bg-background/80 backdrop-blur-md border-b border-border sticky top-0 z-40 px-4 md:px-6 flex items-center justify-between transition-colors duration-300">
+      <header className="min-h-14 pt-safe bg-background/80 backdrop-blur-md border-b border-border sticky top-0 z-40 px-4 md:px-6 flex items-center justify-between transition-colors duration-300">
       <div className="flex items-center gap-3 min-w-0">
         {titleIcon ? (
           <div className="hidden sm:flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary shrink-0">
@@ -198,7 +198,7 @@ export default function TopBar({ title, subtitle, titleIcon }: TopBarProps) {
                 <span>{t('top_bar.actions.editor')}</span>
                 <CommandShortcut>⌘E</CommandShortcut>
               </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => navigate("/image-studio"))}>
+              <CommandItem onSelect={() => runCommand(() => navigate("/create/image"))}>
                 <ImageIcon className={cn("h-4 w-4 text-amber-500", isAr ? "ml-2" : "mr-2")} />
                 <span>{t('top_bar.actions.studio')}</span>
                 <CommandShortcut>⌘I</CommandShortcut>

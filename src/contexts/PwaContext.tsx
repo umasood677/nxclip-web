@@ -9,9 +9,27 @@ export interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+function detectStandalone() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
+    ("standalone" in window.navigator &&
+      (window.navigator as Navigator & { standalone: boolean }).standalone === true)
+  );
+}
+
+function detectIos() {
+  const ua = navigator.userAgent || "";
+  return (
+    /iphone|ipad|ipod/i.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
 interface PwaContextType {
   isInstallable: boolean;
   isInstalled: boolean;
+  isIos: boolean;
   deferredPrompt: BeforeInstallPromptEvent | null;
   showPrompt: () => Promise<'accepted' | 'dismissed' | null>;
 }
@@ -21,12 +39,17 @@ const PwaContext = createContext<PwaContextType | undefined>(undefined);
 export function PwaProvider({ children }: { children: React.ReactNode }) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isIos, setIsIos] = useState(false);
 
   useEffect(() => {
-    // Check if running as standalone
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                        ('standalone' in window.navigator && (window.navigator as Navigator & { standalone: boolean }).standalone === true);
-    setIsInstalled(isStandalone);
+    setIsInstalled(detectStandalone());
+    setIsIos(detectIos());
+
+    const standaloneQuery = window.matchMedia("(display-mode: standalone)");
+    const fullscreenQuery = window.matchMedia("(display-mode: fullscreen)");
+    const onDisplayMode = () => setIsInstalled(detectStandalone());
+    standaloneQuery.addEventListener("change", onDisplayMode);
+    fullscreenQuery.addEventListener("change", onDisplayMode);
 
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
@@ -42,6 +65,8 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
+      standaloneQuery.removeEventListener("change", onDisplayMode);
+      fullscreenQuery.removeEventListener("change", onDisplayMode);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
@@ -58,7 +83,8 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
   return (
     <PwaContext.Provider value={{ 
       isInstallable: deferredPrompt !== null, 
-      isInstalled, 
+      isInstalled,
+      isIos,
       deferredPrompt, 
       showPrompt 
     }}>

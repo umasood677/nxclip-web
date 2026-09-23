@@ -17,10 +17,10 @@ export function SEO({
   url = "https://nxclip.app",
   type = "website" 
 }: SEOProps) {
-  const siteTitle = "nxclip.app | AI Operating System for Gaming Creators";
+  const siteTitle = "nxclip.app | Creator OS";
   const fullTitle = title ? `${title} | nxclip.app` : siteTitle;
-  const siteDescription = description || "Generate professional gaming images, edit viral clips, and scale your audience with creator intelligence.";
-  const siteKeywords = keywords || "gaming creator, ai image generator, video editing, streamer tools, gaming content, creator economy";
+  const siteDescription = description || "Plan, create images and clips, go Live on YouTube, Instagram, TikTok, and Facebook, then measure the next move — in one Creator OS.";
+  const siteKeywords = keywords || "creator os, ai image generator, clip editor, social publishing, analytics, creator coach, content library";
 
   return (
     <Helmet>

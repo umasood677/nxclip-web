@@ -1,55 +1,72 @@
 {
-  "short_name": "nxclip.app",
-  "name": "nxclip.app | AI Creator Intelligence Platform",
-  "description": "Premium AI Operating System for Gaming Creators. Generate professional gaming images, edit viral clips, and scale your audience with creator intelligence.",
+  "short_name": "nxClip",
+  "name": "nxclip.app Creator OS",
+  "description": "Install nxclip.app Creator OS. Launch instantly from your home screen or dock. Run offline, enable faster loading, and get full screen canvas editing workspace with no browser bars.",
   "id": "/",
   "start_url": "/",
+  "scope": "/",
+  "lang": "en",
+  "dir": "ltr",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "background_color": "#09090b",
   "theme_color": "#09090b",
-  "orientation": "portrait-primary",
-  "categories": ["utilities", "productivity", "entertainment"],
+  "orientation": "any",
+  "categories": ["productivity", "photo", "utilities"],
   "icons": [
     {
-      "src": "/favicon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
+      "src": "/icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
       "purpose": "any"
     },
     {
-      "src": "/favicon.svg",
-      "type": "image/svg+xml",
-      "sizes": "192x192",
+      "src": "/icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
       "purpose": "maskable"
     },
     {
       "src": "/favicon.svg",
       "type": "image/svg+xml",
-      "sizes": "512x512",
+      "sizes": "any",
       "purpose": "any"
     }
   ],
   "shortcuts": [
     {
-      "name": "Creator Coach",
-      "short_name": "Coach",
-      "description": "Chat with your AI Creator Coach",
-      "url": "/coach",
-      "icons": [{ "src": "/favicon.svg", "sizes": "192x192" }]
+      "name": "Create Hub",
+      "short_name": "Create",
+      "description": "Open Image Studio, Clip Studio, and meme tools",
+      "url": "/create",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Image Studio",
-      "short_name": "Studio",
-      "description": "Generate viral gaming images",
-      "url": "/studio",
-      "icons": [{ "src": "/favicon.svg", "sizes": "192x192" }]
+      "short_name": "Images",
+      "description": "Generate AI images and memes on the full-screen canvas",
+      "url": "/create/image",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Creator Dashboard",
-      "short_name": "Dashboard",
-      "description": "Analyze your audience engagement",
-      "url": "/dashboard",
-      "icons": [{ "src": "/favicon.svg", "sizes": "192x192" }]
+      "name": "Clip Studio",
+      "short_name": "Clips",
+      "description": "Upload, trim, and polish short-form clips",
+      "url": "/create/clip",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Analytics",
+      "short_name": "Analytics",
+      "description": "See live performance and the next move",
+      "url": "/analytics",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }
   ],
   "prefer_related_applications": false

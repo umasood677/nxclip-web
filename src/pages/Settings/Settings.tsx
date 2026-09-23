@@ -344,7 +344,7 @@ export default function Settings() {
                   </button>
                 </div>
 
-                <PwaInstallPrompt variant="banner" className="pt-8 border-t border-border" />
+                <PwaInstallPrompt variant="banner" allowManual className="pt-8 border-t border-border" />
               </div>
             )}
 

@@ -15,6 +15,7 @@ import CapabilitiesV2 from "./components/CapabilitiesV2";
 import OperateV2 from "./components/OperateV2";
 import PipelineV2 from "./components/PipelineV2";
 import UmbrellaStrip from "./components/UmbrellaStrip";
+import InteractiveAppV2 from "./components/InteractiveAppV2";
 
 export default function HomeV2() {
   const { hash } = useLocation();
@@ -44,6 +45,7 @@ export default function HomeV2() {
           <OperateV2 />
           <PipelineV2 />
           <UmbrellaStrip />
+          <InteractiveAppV2 />
           <TrustMetrics />
           <CreatorSpotlight />
           <Pricing />

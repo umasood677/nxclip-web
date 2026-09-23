@@ -1292,3 +1292,24 @@ body.dark,
     background: linear-gradient(145deg, #383838 0%, #2c2c2c 50%, #323232 100%);
   }
 }
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  html,
+  body,
+  #root {
+    min-height: 100dvh;
+  }
+
+  html.dark,
+  html.dark body {
+    background: #09090b;
+  }
+}
