@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, Film, Scissors } from "lucide-react";
+import { ArrowRight, Clapperboard, Film, Scissors, Sparkles } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import {
   getCapabilityReels,
@@ -73,8 +73,8 @@ const CAPS: CapDef[] = [
   {
     key: "storyEngine",
     title: "AI Story Engine",
-    line: "Upload clips from a match, launch, or shoot. AI builds a Story Plan and produces one short or long video in 9:16 or 16:9.",
-    chip: "Story",
+    line: "Multi-clip narrative: upload sources, get a Story Plan, produce one ready-to-post video.",
+    chip: "New · Multi-clip",
     path: "/create/story-engine",
     cta: "Open Story Engine",
     variant: "story",
@@ -160,19 +160,6 @@ function CapChrome({ variant }: { variant?: CapDef["variant"] }) {
       </div>
     );
   }
-  if (variant === "story") {
-    return (
-      <div className="absolute top-3 start-3 end-3 z-10 flex items-center gap-2 pointer-events-none">
-        <span className="inline-flex items-center gap-1.5 rounded-md bg-orange-600/90 px-2 py-1 text-[9px] font-bold text-white">
-          <Film size={11} />
-          Story Plan
-        </span>
-        <span className="rounded-md bg-black/55 px-2 py-1 text-[9px] font-bold text-white/90 backdrop-blur-sm">
-          9:16 · Short
-        </span>
-      </div>
-    );
-  }
   if (variant === "clip") {
     return (
       <div className="absolute top-3 end-3 z-10 rounded-md bg-black/55 px-2 py-1 text-[9px] font-bold text-white/90 backdrop-blur-sm">
@@ -197,6 +184,101 @@ function CapChrome({ variant }: { variant?: CapDef["variant"] }) {
   return null;
 }
 
+function StoryCapCard({
+  def,
+  items,
+  loggedIn,
+  index,
+}: {
+  def: CapDef;
+  items: MarketingMedia[];
+  loggedIn: boolean;
+  index: number;
+}) {
+  const navigate = useNavigate();
+  const go = () => navigate(loggedIn ? def.path : "/login");
+  const steps = ["Upload clips", "Story Plan", "Produce"];
+
+  return (
+    <motion.button
+      type="button"
+      onClick={go}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ delay: index * 0.06, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className={cn(
+        "group relative isolate text-start overflow-hidden rounded-2xl",
+        "border border-orange-500/45 bg-card",
+        "ring-1 ring-inset ring-orange-400/20",
+        "shadow-[0_20px_50px_-28px_rgba(249,115,22,0.45)] transition-shadow duration-300",
+        "hover:shadow-[0_28px_60px_-24px_rgba(249,115,22,0.55)] hover:border-orange-400/60",
+        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orange-400/50 focus-visible:ring-offset-0",
+        def.span,
+        def.height,
+      )}
+    >
+      <div className="absolute inset-0 overflow-hidden bg-muted">
+        <MarketingMediaReel
+          items={items}
+          portrait={def.portrait}
+          intervalMs={def.intervalMs}
+          cut={def.cut}
+          camera={def.camera}
+          showNiche={false}
+        />
+      </div>
+      <div className="absolute inset-0 z-[6] pointer-events-none bg-gradient-to-r from-black/92 via-black/70 to-black/25" />
+      <div className="absolute inset-0 z-[7] pointer-events-none bg-[radial-gradient(ellipse_at_top_left,rgba(249,115,22,0.28),transparent_55%)]" />
+
+      <div className="absolute inset-0 z-20 flex flex-col justify-between p-3.5 md:p-4">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 rounded-md bg-orange-500 px-2 py-0.5 text-[9px] font-bold tracking-wide text-white shadow-sm">
+            <Sparkles size={10} />
+            {def.chip}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-md border border-white/20 bg-black/45 px-2 py-0.5 text-[9px] font-bold text-white/90 backdrop-blur-sm">
+            <Film size={10} />
+            Story Plan · Hook → Peak → CTA
+          </span>
+          <span className="rounded-md border border-white/15 bg-black/40 px-2 py-0.5 text-[9px] font-bold text-orange-100/90 backdrop-blur-sm">
+            Short & Long · 9:16 / 16:9
+          </span>
+        </div>
+
+        <div className="max-w-[22rem] space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-600 text-white shadow-md shadow-orange-600/30">
+              <Clapperboard size={16} />
+            </div>
+            <h3 className="font-display text-base md:text-lg font-bold text-white tracking-tight">
+              {def.title}
+            </h3>
+          </div>
+          <p className="text-[11px] md:text-[12px] text-white/80 font-medium leading-snug">
+            {def.line}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {steps.map((step, i) => (
+              <span
+                key={step}
+                className="inline-flex items-center gap-1 rounded-md border border-orange-400/30 bg-orange-500/15 px-2 py-1 text-[9px] font-bold text-orange-50"
+              >
+                <span className="text-orange-300 tabular-nums">0{i + 1}</span>
+                {step}
+              </span>
+            ))}
+          </div>
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-300 pt-0.5">
+            {def.cta}
+            <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </div>
+      </div>
+    </motion.button>
+  );
+}
+
 function CapCard({
   def,
   items,
@@ -210,6 +292,12 @@ function CapCard({
 }) {
   const navigate = useNavigate();
   const go = () => navigate(loggedIn ? def.path : "/login");
+
+  if (def.variant === "story") {
+    return (
+      <StoryCapCard def={def} items={items} loggedIn={loggedIn} index={index} />
+    );
+  }
 
   return (
     <motion.button
@@ -235,7 +323,7 @@ function CapCard({
           intervalMs={def.intervalMs}
           cut={def.cut}
           camera={def.camera}
-          showNiche={def.key === "imageStudio" || def.key === "viralClips" || def.key === "storyEngine"}
+          showNiche={def.key === "imageStudio" || def.key === "viralClips"}
         />
       </div>
       <div className="absolute inset-0 z-[6] bg-gradient-to-t from-black/95 via-black/45 to-black/15 pointer-events-none" />
