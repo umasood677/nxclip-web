@@ -117,7 +117,11 @@ export default function Navbar() {
             : "bg-transparent border-transparent",
         )}
       >
-        <Logo className={isAr ? "origin-right" : "origin-left"} />
+        <Logo
+          iconSize="w-14 h-14"
+          textSize="text-xl"
+          className={isAr ? "origin-right" : "origin-left"}
+        />
 
         <div className="hidden md:flex items-center gap-2">
           {navLinks.map((link) => {
