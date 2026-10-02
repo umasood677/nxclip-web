@@ -85,6 +85,7 @@ const HomeFeed = lazy(() => import("./pages/HomeFeed/HomeFeed"));
 const CreateHub = lazy(() => import("./pages/CreateHub/CreateHub"));
 const ClipUpload = lazy(() => import("./pages/ClipUpload/ClipUpload"));
 const ClipEditor = lazy(() => import("./pages/ClipEditor/ClipEditor"));
+const EventHighlight = lazy(() => import("./pages/EventHighlight/EventHighlight"));
 const PostDetail = lazy(() => import("./pages/PostDetail/PostDetail"));
 const UserProfilePage = lazy(() => import("./pages/UserProfile/UserProfile"));
 const OwnProfile = lazy(() => import("./pages/OwnProfile/OwnProfile"));
@@ -405,6 +406,7 @@ export default function App() {
                     <Route path="/image-studio" element={<ImageStudio />} />
                     <Route path="/create/clip" element={<ClipUpload />} />
                     <Route path="/create/clip/:id/edit" element={<ClipEditor />} />
+                    <Route path="/create/event-highlight" element={<EventHighlight />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/coach" element={<CreatorCoach />} />
                     <Route path="/my-content" element={<ContentLibrary />} />

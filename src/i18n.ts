@@ -1808,6 +1808,10 @@ const resources = {
             "title": "Clip Studio",
             "description": "Upload your gameplay, trim highlights, and add AI-powered polish."
           },
+          "event_highlight": {
+            "title": "Event Highlight",
+            "description": "Merge 2–8 event clips with AI transitions, hooks, and SFX — then polish and publish."
+          },
           "meme_gen": {
             "title": "Meme Generator",
             "description": "Turn your gaming moments into viral memes with AI captions."
@@ -3801,6 +3805,10 @@ const resources = {
           "clip_editor": {
             "title": "استوديو المقاطع",
             "description": "قم بتحميل لعبك، وقص لقطات البارزة، وأضف لمسات الذكاء الاصطناعي."
+          },
+          "event_highlight": {
+            "title": "أبرز لحظات الحدث",
+            "description": "ادمج ٢–٨ مقاطع مع انتقالات وتأثيرات صوتية عبر الذكاء الاصطناعي ثم انشر."
           },
           "meme_gen": {
             "title": "مولد الميمات",

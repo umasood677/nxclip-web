@@ -1276,6 +1276,57 @@ export const contentApi = {
     });
   },
 
+  createCompose: async (body: {
+    sourceContentIds: string[];
+    aspect?: "9:16" | "16:9";
+    preset?: "teaser" | "reel";
+    title?: string;
+    defaultSegmentMs?: number;
+  }): Promise<ContentDto> => {
+    return performApiRequest<ContentDto>(`/content/compose`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  },
+
+  updateComposeSources: async (
+    id: string,
+    body: {
+      sources: Array<{
+        contentId: string;
+        storageKey?: string;
+        label?: string;
+        order: number;
+        inMs: number;
+        outMs: number;
+      }>;
+      transitions?: Array<{
+        afterIndex: number;
+        type: "cut" | "crossfade" | "flash";
+        durationMs?: number;
+        sfxId?: string;
+      }>;
+    },
+  ): Promise<ContentDto> => {
+    return performApiRequest<ContentDto>(`/content/${id}/compose/sources`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  },
+
+  analyzeCompose: async (
+    id: string,
+    body?: { brief?: string },
+  ): Promise<ContentDto> => {
+    return performApiRequest<ContentDto>(`/content/${id}/compose/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body ?? {}),
+    });
+  },
+
   saveClipEdit: async (
     id: string,
     clipEditSpec: {

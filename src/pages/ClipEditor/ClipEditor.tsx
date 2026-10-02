@@ -42,6 +42,7 @@ import { cn, safeStringify } from "../../lib/utils";
 import { MixGraphTap, MixMeterBars } from "./MixMeterBars";
 import { setMixPreviewGains } from "./useMixAnalyser";
 import { composeSocialCaption } from "./composeSocialCaption";
+import { ComposeTimelinePanel } from "./ComposeTimelinePanel";
 import { TransitionPreviewOverlay } from "./TransitionPreviewOverlay";
 import { ClipPublishPreview } from "./ClipPublishPreview";
 import { pickCoachTransition, polishWindow, toClipRelativeTime } from "./clipEnhanceCoach";
@@ -206,6 +207,27 @@ export default function ClipEditor() {
   
   // Music State
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+  const [composeEnabled, setComposeEnabled] = useState(
+    () => searchParams.get("compose") === "1",
+  );
+  const [composeSources, setComposeSources] = useState<
+    Array<{
+      contentId: string;
+      storageKey?: string;
+      label?: string;
+      order: number;
+      inMs: number;
+      outMs: number;
+    }>
+  >([]);
+  const [composeTransitions, setComposeTransitions] = useState<
+    Array<{
+      afterIndex: number;
+      type: "cut" | "crossfade" | "flash";
+      durationMs?: number;
+      sfxId?: string;
+    }>
+  >([]);
   const [previewingTrackId, setPreviewingTrackId] = useState<string | null>(null);
   const [previewProgress, setPreviewProgress] = useState(0);
   const [title, setTitle] = useState("My Epic Clip");
@@ -333,6 +355,13 @@ export default function ClipEditor() {
             setFinalTrim({ start: spec.inMs / 1000, end: spec.outMs / 1000 });
           }
           if (spec.bgmTrackId) setSelectedTrackId(spec.bgmTrackId);
+          const compose = (spec as { compose?: { enabled?: boolean; sources?: any[]; transitions?: any[] } })
+            .compose;
+          if (compose?.enabled && Array.isArray(compose.sources) && compose.sources.length >= 2) {
+            setComposeEnabled(true);
+            setComposeSources(compose.sources);
+            setComposeTransitions(compose.transitions ?? []);
+          }
           if (typeof spec.voiceVolume === "number") setClipVolume(Math.min(1, Math.max(0, spec.voiceVolume)));
           if (typeof spec.bgmVolume === "number") setMusicVolume(Math.min(1, Math.max(0, spec.bgmVolume)));
           if (typeof spec.masterVolume === "number") setMasterVolume(Math.min(1.5, Math.max(0, spec.masterVolume)));
@@ -2509,6 +2538,19 @@ export default function ClipEditor() {
                 </Badge>
               </div>
             </div>
+
+            {composeEnabled && composeSources.length >= 2 && (
+              <ComposeTimelinePanel
+                contentId={id!}
+                sources={composeSources}
+                transitions={composeTransitions}
+                onUpdated={({ sources, transitions, title: nextTitle }) => {
+                  setComposeSources(sources);
+                  setComposeTransitions(transitions);
+                  if (nextTitle) setTitle(nextTitle);
+                }}
+              />
+            )}
 
             <div className="grid lg:grid-cols-3 gap-6 lg:gap-8 pb-32 md:pb-0">
               {/* Preview Column */}

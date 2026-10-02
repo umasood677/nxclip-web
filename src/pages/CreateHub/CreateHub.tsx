@@ -13,6 +13,7 @@ import {
   CalendarDays,
   Library,
   AlertCircle,
+  Film,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -75,6 +76,21 @@ const tools = [
       desc: "text-teal-800/80 dark:text-teal-200/80",
       chevron: "bg-teal-500/20 text-teal-700 dark:text-teal-300 group-hover:bg-teal-600 group-hover:text-white",
       glow: "from-teal-500/20",
+    },
+  },
+  {
+    title: "create.tools.event_highlight.title",
+    description: "create.tools.event_highlight.description",
+    icon: Film,
+    href: "/create/event-highlight",
+    roleRequired: "creator",
+    tone: {
+      card: "border-orange-500/25 bg-orange-500/10 hover:bg-orange-500/15 hover:border-orange-500/40 dark:bg-orange-500/15 dark:hover:bg-orange-500/25",
+      icon: "bg-orange-600 text-white shadow-sm shadow-orange-600/30 dark:bg-orange-500",
+      title: "text-foreground",
+      desc: "text-orange-900/80 dark:text-orange-200/80",
+      chevron: "bg-orange-500/20 text-orange-800 dark:text-orange-300 group-hover:bg-orange-600 group-hover:text-white",
+      glow: "from-orange-500/20",
     },
   },
   {
