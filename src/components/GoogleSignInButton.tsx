@@ -25,10 +25,6 @@ declare global {
             isSkippedMoment: () => boolean;
             getNotDisplayedReason?: () => string;
           }) => void) => void;
-          renderButton: (
-            parent: HTMLElement,
-            options: Record<string, unknown>,
-          ) => void;
           cancel: () => void;
         };
       };
@@ -84,8 +80,9 @@ export interface GoogleSignInButtonProps {
 }
 
 /**
- * Google Identity Services button.
- * Resolves client ID from VITE_GOOGLE_CLIENT_ID, then GET /auth/google/config.
+ * Full-width app-styled Google Sign-In button.
+ * Avoids Google's renderButton iframe (breaks inside overflow-hidden cards).
+ * Uses GIS One Tap / prompt for the ID token.
  */
 export function GoogleSignInButton({
   onCredential,
@@ -98,7 +95,6 @@ export function GoogleSignInButton({
   const [clientId, setClientId] = useState<string | undefined>(resolveEnvClientId());
   const [scriptError, setScriptError] = useState<string | null>(null);
   const pendingRef = useRef(false);
-  const hostRef = useRef<HTMLDivElement | null>(null);
   const initializedFor = useRef<string | null>(null);
 
   const handleCredential = useCallback(
@@ -153,40 +149,28 @@ export function GoogleSignInButton({
   }, []);
 
   useEffect(() => {
-    if (!clientId || !hostRef.current) return;
+    if (!clientId) return;
     let cancelled = false;
 
-    async function mountOfficialButton() {
+    async function warmGis() {
       try {
         await loadGisScript();
-        if (cancelled || !hostRef.current || !window.google?.accounts?.id) return;
+        if (cancelled || !window.google?.accounts?.id) return;
+        if (initializedFor.current === clientId) return;
 
-        if (initializedFor.current !== clientId) {
-          window.google.accounts.id.initialize({
-            client_id: clientId!,
-            callback: (response) => {
-              if (response?.credential) {
-                void handleCredential(response.credential);
-              }
-            },
-            auto_select: false,
-            cancel_on_tap_outside: true,
-            context: "signin",
-            ux_mode: "popup",
-          });
-          initializedFor.current = clientId!;
-        }
-
-        hostRef.current.innerHTML = "";
-        window.google.accounts.id.renderButton(hostRef.current, {
-          type: "standard",
-          theme: "outline",
-          size: "large",
-          text: "continue_with",
-          shape: "rectangular",
-          logo_alignment: "left",
-          width: Math.min(hostRef.current.clientWidth || 360, 400),
+        window.google.accounts.id.initialize({
+          client_id: clientId!,
+          callback: (response) => {
+            if (response?.credential) {
+              void handleCredential(response.credential);
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+          context: "signin",
+          ux_mode: "popup",
         });
+        initializedFor.current = clientId!;
       } catch (err: any) {
         if (!cancelled) {
           setScriptError(err?.message || "Google Sign-In failed to load");
@@ -194,13 +178,13 @@ export function GoogleSignInButton({
       }
     }
 
-    void mountOfficialButton();
+    void warmGis();
     return () => {
       cancelled = true;
     };
   }, [clientId, handleCredential]);
 
-  const handleFallbackClick = async () => {
+  const handleClick = async () => {
     setScriptError(null);
     if (!clientId) {
       setScriptError("Google Sign-In is not available yet. Please use email sign-in.");
@@ -214,30 +198,37 @@ export function GoogleSignInButton({
         throw new Error("Google Identity Services unavailable");
       }
 
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: (response) => {
-          if (response?.credential) {
-            void handleCredential(response.credential);
-          } else {
-            setBusy(false);
-          }
-        },
-        auto_select: false,
-        cancel_on_tap_outside: true,
-        context: "signin",
-      });
+      if (initializedFor.current !== clientId) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (response) => {
+            if (response?.credential) {
+              void handleCredential(response.credential);
+            } else {
+              setBusy(false);
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+          context: "signin",
+          ux_mode: "popup",
+        });
+        initializedFor.current = clientId;
+      }
 
       window.google.accounts.id.prompt((notification) => {
         if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
           setTimeout(() => {
             if (!pendingRef.current) {
               setBusy(false);
+              const reason = notification.getNotDisplayedReason?.() || "blocked";
               setScriptError(
-                "Choose Continue with Google from the Google button above, or allow pop-ups for this site.",
+                reason === "browser_not_supported" || reason === "opt_out_or_no_session"
+                  ? "Google Sign-In was blocked by the browser. Allow pop-ups, or try another browser."
+                  : "Google Sign-In did not open. Allow pop-ups for this site and try again.",
               );
             }
-          }, 600);
+          }, 400);
         }
       });
     } catch (err: any) {
@@ -252,7 +243,10 @@ export function GoogleSignInButton({
         type="button"
         variant="outline"
         disabled
-        className={cn("w-full gap-2", className)}
+        className={cn(
+          "w-full h-11 gap-2 border-border/60 bg-background text-foreground font-semibold",
+          className,
+        )}
       >
         <Loader2 className="h-4 w-4 animate-spin" />
         Preparing Google Sign-In…
@@ -260,40 +254,28 @@ export function GoogleSignInButton({
     );
   }
 
-  if (!clientId) {
-    return (
-      <div className="space-y-2">
-        <Button
-          type="button"
-          variant="outline"
-          disabled={disabled}
-          onClick={handleFallbackClick}
-          className={cn("w-full gap-2 border-border/60 bg-background", className)}
-        >
-          <GoogleMark />
-          {label}
-        </Button>
-        <p className="text-[11px] text-muted-foreground font-medium text-center">
-          Google Sign-In will activate once the workspace is linked. Use email for now.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className={cn("space-y-2", className)}>
-      <div
-        ref={hostRef}
+      <Button
+        type="button"
+        variant="outline"
+        disabled={disabled || busy || !clientId}
+        onClick={() => void handleClick()}
         className={cn(
-          "w-full flex justify-center min-h-[44px] [&_iframe]:!w-full",
-          (disabled || busy) && "pointer-events-none opacity-60",
+          "w-full h-11 gap-2.5 border-border/60 bg-background hover:bg-muted/50",
+          "text-foreground font-semibold shadow-none",
         )}
-        aria-label={label}
-      />
-      {busy ? (
-        <p className="text-[11px] text-muted-foreground font-medium text-center flex items-center justify-center gap-1.5">
-          <Loader2 className="h-3 w-3 animate-spin" />
-          Entering the AI studio…
+      >
+        {busy ? (
+          <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+        ) : (
+          <GoogleMark />
+        )}
+        <span className="truncate">{busy ? "Entering the AI studio…" : label}</span>
+      </Button>
+      {!clientId ? (
+        <p className="text-[11px] text-muted-foreground font-medium text-center">
+          Google Sign-In will activate once the workspace is linked. Use email for now.
         </p>
       ) : null}
       {scriptError ? (
@@ -305,7 +287,7 @@ export function GoogleSignInButton({
 
 function GoogleMark() {
   return (
-    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" className="shrink-0">
       <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
       <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
       <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />

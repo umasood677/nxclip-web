@@ -464,7 +464,7 @@ const resources = {
         "story_engine": {
           "badge": "New · Multi-clip narrative",
           "title": "AI Story Engine",
-          "description": "Upload clips from a match, launch, or shoot. AI finds the story, builds a short or long plan in 9:16 or 16:9, and produces one scroll-stopping video with hook, captions, and CTA.",
+          "description": "Upload clips from a match, launch, or shoot. AI builds a Story Plan and produces one short or long video in 9:16 or 16:9 — with hook, captions, and CTA.",
           "cta": "Open Story Engine",
           "step_upload": "Upload clips",
           "step_plan": "Story Plan",

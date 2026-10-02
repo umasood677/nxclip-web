@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, Film, Scissors, Sparkles } from "lucide-react";
+import { ArrowRight, Film, Scissors } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import {
   getCapabilityReels,
@@ -12,7 +12,13 @@ import { useAppSelector } from "../../../store/hooks";
 import { selectAuthUser } from "../../../store/slices/authSlice";
 import { MarketingMediaReel } from "./MarketingMediaReel";
 
-type CapKey = "imageStudio" | "meme" | "viralClips" | "clipEditor" | "coach";
+type CapKey =
+  | "imageStudio"
+  | "meme"
+  | "viralClips"
+  | "clipEditor"
+  | "storyEngine"
+  | "coach";
 
 type CapDef = {
   key: CapKey;
@@ -21,7 +27,7 @@ type CapDef = {
   chip: string;
   path: string;
   cta: string;
-  variant?: "meme" | "editor" | "coach" | "clip";
+  variant?: "meme" | "editor" | "coach" | "clip" | "story";
   portrait?: boolean;
   intervalMs: number;
   cut: "dissolve" | "cut" | "whip" | "zoom" | "flash" | "push" | "mix";
@@ -65,6 +71,20 @@ const CAPS: CapDef[] = [
     height: "h-[240px] sm:h-[260px] md:h-[300px] lg:h-[320px]",
   },
   {
+    key: "storyEngine",
+    title: "AI Story Engine",
+    line: "Upload clips from a match, launch, or shoot. AI builds a Story Plan and produces one short or long video in 9:16 or 16:9.",
+    chip: "Story",
+    path: "/create/story-engine",
+    cta: "Open Story Engine",
+    variant: "story",
+    intervalMs: 2200,
+    cut: "whip",
+    camera: "cinematic",
+    span: "md:col-span-7 lg:col-span-8",
+    height: "h-[240px] sm:h-[260px] md:h-[300px] lg:h-[320px]",
+  },
+  {
     key: "viralClips",
     title: "Viral Clips",
     line: "Trend-speed shorts — whip pans, quick cuts, feed-native motion.",
@@ -104,8 +124,8 @@ const CAPS: CapDef[] = [
     intervalMs: 5600,
     cut: "dissolve",
     camera: "drift",
-    span: "md:col-span-12",
-    height: "h-[200px] sm:h-[220px] md:h-[240px] lg:h-[260px]",
+    span: "md:col-span-5 lg:col-span-4",
+    height: "h-[240px] sm:h-[260px] md:h-[300px] lg:h-[320px]",
   },
 ];
 
@@ -137,6 +157,19 @@ function CapChrome({ variant }: { variant?: CapDef["variant"] }) {
             <span className="absolute -top-1 start-[70%] h-4 w-1 rounded-sm bg-rose-400" />
           </div>
         </div>
+      </div>
+    );
+  }
+  if (variant === "story") {
+    return (
+      <div className="absolute top-3 start-3 end-3 z-10 flex items-center gap-2 pointer-events-none">
+        <span className="inline-flex items-center gap-1.5 rounded-md bg-orange-600/90 px-2 py-1 text-[9px] font-bold text-white">
+          <Film size={11} />
+          Story Plan
+        </span>
+        <span className="rounded-md bg-black/55 px-2 py-1 text-[9px] font-bold text-white/90 backdrop-blur-sm">
+          9:16 · Short
+        </span>
       </div>
     );
   }
@@ -202,7 +235,7 @@ function CapCard({
           intervalMs={def.intervalMs}
           cut={def.cut}
           camera={def.camera}
-          showNiche={def.key === "imageStudio" || def.key === "viralClips"}
+          showNiche={def.key === "imageStudio" || def.key === "viralClips" || def.key === "storyEngine"}
         />
       </div>
       <div className="absolute inset-0 z-[6] bg-gradient-to-t from-black/95 via-black/45 to-black/15 pointer-events-none" />
@@ -235,6 +268,7 @@ export default function CapabilitiesV2() {
     meme: [],
     viralClips: [],
     clipEditor: [],
+    storyEngine: [],
     coach: [],
   });
 
@@ -264,120 +298,6 @@ export default function CapabilitiesV2() {
             {t("features.description")}
           </p>
         </div>
-
-        {/* AI Story Engine — live site is HomeV2; must live here (not only /home-old Features) */}
-        <motion.button
-          type="button"
-          onClick={() => navigate(user ? "/create/story-engine" : "/login")}
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-40px" }}
-          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className="group w-full text-start mb-5 md:mb-6 rounded-2xl border border-border/60 bg-card overflow-hidden shadow-[0_20px_50px_-28px_rgba(0,0,0,0.55)] transition-shadow hover:shadow-[0_28px_60px_-28px_rgba(0,0,0,0.55)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
-        >
-          <div className="grid lg:grid-cols-2">
-            <div className="relative p-6 md:p-8 flex flex-col justify-center min-h-[240px]">
-              <div className="inline-flex items-center gap-2 w-fit mb-4 px-2.5 py-1 rounded-md bg-orange-500/15 text-orange-200 text-[9px] font-bold border border-orange-400/25 tracking-wide uppercase">
-                <Sparkles size={11} />
-                {t("features.story_engine.badge")}
-              </div>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-600 text-white">
-                  <Film size={20} />
-                </div>
-                <h3 className="font-display text-xl md:text-2xl font-bold text-foreground tracking-tight">
-                  {t("features.story_engine.title")}
-                </h3>
-              </div>
-              <p className="text-[13px] md:text-[14px] font-medium text-foreground/70 leading-relaxed max-w-md mb-5">
-                {t("features.story_engine.description")}
-              </p>
-              <div className="flex flex-wrap gap-2 mb-5">
-                {[
-                  t("features.story_engine.step_upload"),
-                  t("features.story_engine.step_plan"),
-                  t("features.story_engine.step_produce"),
-                ].map((step, i) => (
-                  <span
-                    key={step}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/40 px-2.5 py-1.5 text-[10px] font-bold text-foreground"
-                  >
-                    <span className="text-orange-500 tabular-nums">0{i + 1}</span>
-                    {step}
-                  </span>
-                ))}
-              </div>
-              <span className="inline-flex items-center gap-1.5 text-[12px] font-bold text-orange-400">
-                {t("features.story_engine.cta")}
-                <ArrowRight
-                  size={13}
-                  className="transition-transform group-hover:translate-x-0.5"
-                />
-              </span>
-            </div>
-
-            <div className="relative border-t lg:border-t-0 lg:border-s border-border/50 bg-muted/20 p-5 md:p-6 overflow-hidden">
-              <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_right,rgba(249,115,22,0.14),transparent_55%)]" />
-              <div className="relative space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
-                    {t("features.story_engine.plan_label")}
-                  </p>
-                  <span className="text-[9px] font-bold text-orange-400">9:16 · Short</span>
-                </div>
-                <div className="rounded-xl border border-border/60 bg-background/80 p-3 space-y-1.5">
-                  <p className="text-[11px] font-bold text-foreground">
-                    {t("features.story_engine.mock_summary_title")}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    {t("features.story_engine.mock_summary")}
-                  </p>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {[0, 1, 2].map((i) => (
-                    <div
-                      key={i}
-                      className="rounded-lg border border-border/50 bg-background/70 overflow-hidden"
-                    >
-                      <div
-                        className={cn(
-                          "aspect-[9/12]",
-                          i === 0
-                            ? "bg-orange-500/30"
-                            : i === 1
-                              ? "bg-teal-500/25"
-                              : "bg-amber-500/25",
-                        )}
-                      />
-                      <div className="px-1.5 py-1 text-[8px] font-bold text-muted-foreground truncate">
-                        {t(`features.story_engine.mock_clip_${i + 1}`)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="space-y-1.5">
-                  {[
-                    t("features.story_engine.mock_act_hook"),
-                    t("features.story_engine.mock_act_peak"),
-                    t("features.story_engine.mock_act_cta"),
-                  ].map((act, i) => (
-                    <div
-                      key={act}
-                      className="flex items-center gap-2 rounded-lg border border-border/50 bg-background/70 px-2.5 py-1.5"
-                    >
-                      <span className="text-[9px] font-black text-orange-500 w-9 shrink-0">
-                        ACT {i + 1}
-                      </span>
-                      <span className="text-[10px] font-medium text-foreground truncate">
-                        {act}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.button>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-5">
           {CAPS.map((cap, i) => (

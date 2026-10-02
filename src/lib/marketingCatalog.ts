@@ -10,6 +10,7 @@ export type MarketingSlot =
   | "meme"
   | "viralClips"
   | "clipEditor"
+  | "storyEngine"
   | "coach"
   | "pipelineCreate"
   | "pipelineModerate"
@@ -580,6 +581,36 @@ export const CLIP_EDITOR_REEL: CatalogPin[] = [
   }),
 ];
 
+export const STORY_ENGINE_REEL: CatalogPin[] = [
+  pin({
+    type: "video",
+    videoId: 3196065,
+    photoId: 274937,
+    niche: "viral",
+    alt: "Crowd energy — multi-clip Story Engine arc",
+    creditName: "Pexels",
+    creditUrl: "https://www.pexels.com/video/3196065/",
+  }),
+  pin({
+    type: "video",
+    videoId: 3571264,
+    photoId: 1181675,
+    niche: "gaming",
+    alt: "Action cut — Story Plan peak beat",
+    creditName: "Pexels",
+    creditUrl: "https://www.pexels.com/video/3571264/",
+  }),
+  pin({
+    type: "video",
+    videoId: 2491284,
+    photoId: 3184291,
+    niche: "influencer",
+    alt: "Creator montage — Story Engine assemble",
+    creditName: "Pexels",
+    creditUrl: "https://www.pexels.com/video/2491284/",
+  }),
+];
+
 export const COACH_REEL: CatalogPin[] = [
   pin({
     type: "image",
@@ -990,6 +1021,7 @@ export const MARKETING_CATALOG: Record<MarketingSlot, CatalogPin> = {
   meme: MEME_REEL[0],
   viralClips: VIRAL_CLIPS_REEL[0],
   clipEditor: CLIP_EDITOR_REEL[0],
+  storyEngine: STORY_ENGINE_REEL[0],
   coach: COACH_REEL[0],
   pipelineCreate: PIPELINE_CREATE_REEL[0],
   pipelineModerate: PIPELINE_MODERATE_REEL[0],

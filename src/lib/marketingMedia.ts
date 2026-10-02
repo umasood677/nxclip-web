@@ -21,6 +21,7 @@ import {
   PIPELINE_MODERATE_REEL,
   PIPELINE_PUBLISH_REEL,
   SPOTLIGHT_CATALOG,
+  STORY_ENGINE_REEL,
   VIRAL_CLIPS_REEL,
   pexelsPhotoSrc,
   type CatalogPin,
@@ -159,21 +160,22 @@ export async function getHeroReelMedia(): Promise<MarketingMedia[]> {
 }
 
 export async function getCapabilityReels(): Promise<Record<
-  "imageStudio" | "meme" | "viralClips" | "clipEditor" | "coach",
+  "imageStudio" | "meme" | "viralClips" | "clipEditor" | "storyEngine" | "coach",
   MarketingMedia[]
 >> {
-  const [imageStudio, meme, viralClips, clipEditor, coach] = await Promise.all([
+  const [imageStudio, meme, viralClips, clipEditor, storyEngine, coach] = await Promise.all([
     resolveReel(IMAGE_STUDIO_REEL, "cap-imageStudio"),
     resolveReel(MEME_REEL, "cap-meme"),
     resolveReel(VIRAL_CLIPS_REEL, "cap-viralClips"),
     resolveReel(CLIP_EDITOR_REEL, "cap-clipEditor"),
+    resolveReel(STORY_ENGINE_REEL, "cap-storyEngine"),
     resolveReel(COACH_REEL, "cap-coach"),
   ]);
-  return { imageStudio, meme, viralClips, clipEditor, coach };
+  return { imageStudio, meme, viralClips, clipEditor, storyEngine, coach };
 }
 
 export async function getCapabilityMedia(): Promise<Record<
-  "imageStudio" | "meme" | "viralClips" | "clipEditor" | "coach",
+  "imageStudio" | "meme" | "viralClips" | "clipEditor" | "storyEngine" | "coach",
   MarketingMedia | null
 >> {
   const reels = await getCapabilityReels();
@@ -182,6 +184,7 @@ export async function getCapabilityMedia(): Promise<Record<
     meme: reels.meme[0] || null,
     viralClips: reels.viralClips[0] || null,
     clipEditor: reels.clipEditor[0] || null,
+    storyEngine: reels.storyEngine[0] || null,
     coach: reels.coach[0] || null,
   };
 }
