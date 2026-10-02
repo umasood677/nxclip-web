@@ -461,6 +461,24 @@ const resources = {
         "title_line2": "high-performance creator.",
         "description": "Eliminate the friction of content creation. Our AI toolset is engineered to help you design, edit, and strategize at elite levels.",
         "elite_tooling": "Elite Tooling",
+        "story_engine": {
+          "badge": "New · Multi-clip narrative",
+          "title": "AI Story Engine",
+          "description": "Upload clips from a match, launch, or shoot. AI finds the story, builds a short or long plan in 9:16 or 16:9, and produces one scroll-stopping video with hook, captions, and CTA.",
+          "cta": "Open Story Engine",
+          "step_upload": "Upload clips",
+          "step_plan": "Story Plan",
+          "step_produce": "Produce",
+          "plan_label": "Story Plan preview",
+          "mock_summary_title": "Director's note",
+          "mock_summary": "Your clips form a launch-day arc — open on the strongest visual, build through the reveal, close on a save CTA.",
+          "mock_clip_1": "Clip A · Hook",
+          "mock_clip_2": "Clip B · Peak",
+          "mock_clip_3": "Clip C · CTA",
+          "mock_act_hook": "HOOK — scroll-stop open",
+          "mock_act_peak": "PEAK — product / clutch beat",
+          "mock_act_cta": "CTA — save / follow"
+        },
         "image_studio": {
           "title": "AI Image & Meme Studio",
           "description": "Generate high-quality gaming images and viral memes from simple text prompts in seconds."
@@ -2463,6 +2481,24 @@ const resources = {
         "title_line2": "العصر الحديث ذوي الأداء العالي.",
         "description": "تخلص من معوقات إنشاء المحتوى. تم تصميم مجموعة أدوات الذكاء الاصطناعي لدينا لمساعدتك في التصميم والتحرير والتخطيط بمستويات متميزة.",
         "elite_tooling": "أدوات متميزة",
+        "story_engine": {
+          "badge": "جديد · سرد متعدد المقاطع",
+          "title": "محرك القصة بالذكاء الاصطناعي",
+          "description": "ارفع مقاطع من مباراة أو إطلاق أو تصوير. يجد الذكاء الاصطناعي القصة ويبني خطة قصيرة أو طويلة بنسبة ٩:١٦ أو ١٦:٩ وينتج فيديو واحد بخطاف وتسميات ودعوة لاتخاذ إجراء.",
+          "cta": "افتح محرك القصة",
+          "step_upload": "رفع المقاطع",
+          "step_plan": "خطة القصة",
+          "step_produce": "إنتاج",
+          "plan_label": "معاينة خطة القصة",
+          "mock_summary_title": "ملاحظة المخرج",
+          "mock_summary": "مقاطعك تشكّل قوس يوم الإطلاق — ابدأ بأقوى لقطة، وابنِ الكشف، واختم بدعوة للحفظ.",
+          "mock_clip_1": "مقطع أ · الخطاف",
+          "mock_clip_2": "مقطع ب · الذروة",
+          "mock_clip_3": "مقطع ج · الدعوة",
+          "mock_act_hook": "الخطاف — افتتاح يوقف التمرير",
+          "mock_act_peak": "الذروة — لحظة المنتج / الكلتش",
+          "mock_act_cta": "الدعوة — احفظ / تابع"
+        },
         "image_studio": {
           "title": "استوديو الصور والميمات بالذكاء الاصطناعي",
           "description": "قم بإنشاء صور ألعاب عالية الجودة وميمات فيروسية من مطالبات نصية بسيطة في ثوانٍ."
