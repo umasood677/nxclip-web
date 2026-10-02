@@ -1,5 +1,5 @@
 /**
- * Manual override panel for Event Highlight compose timelines.
+ * Manual override panel for AI Story Engine compose timelines.
  */
 import { Film, GripVertical, Sparkles, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";

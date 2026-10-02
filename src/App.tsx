@@ -406,6 +406,7 @@ export default function App() {
                     <Route path="/image-studio" element={<ImageStudio />} />
                     <Route path="/create/clip" element={<ClipUpload />} />
                     <Route path="/create/clip/:id/edit" element={<ClipEditor />} />
+                    <Route path="/create/story-engine" element={<EventHighlight />} />
                     <Route path="/create/event-highlight" element={<EventHighlight />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/coach" element={<CreatorCoach />} />

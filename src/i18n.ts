@@ -1808,9 +1808,13 @@ const resources = {
             "title": "Clip Studio",
             "description": "Upload your gameplay, trim highlights, and add AI-powered polish."
           },
+          "story_engine": {
+            "title": "AI Story Engine",
+            "description": "Upload multiple clips — AI finds the story and builds a short or long video in 9:16 or 16:9."
+          },
           "event_highlight": {
-            "title": "Event Highlight",
-            "description": "Merge 2–8 event clips with AI transitions, hooks, and SFX — then polish and publish."
+            "title": "AI Story Engine",
+            "description": "Upload multiple clips — AI finds the story and builds a short or long video in 9:16 or 16:9."
           },
           "meme_gen": {
             "title": "Meme Generator",
@@ -3806,9 +3810,13 @@ const resources = {
             "title": "استوديو المقاطع",
             "description": "قم بتحميل لعبك، وقص لقطات البارزة، وأضف لمسات الذكاء الاصطناعي."
           },
+          "story_engine": {
+            "title": "محرك القصة بالذكاء الاصطناعي",
+            "description": "ارفع عدة مقاطع — يجد الذكاء الاصطناعي القصة ويبني فيديو قصير أو طويل بنسبة ٩:١٦ أو ١٦:٩."
+          },
           "event_highlight": {
-            "title": "أبرز لحظات الحدث",
-            "description": "ادمج ٢–٨ مقاطع مع انتقالات وتأثيرات صوتية عبر الذكاء الاصطناعي ثم انشر."
+            "title": "محرك القصة بالذكاء الاصطناعي",
+            "description": "ارفع عدة مقاطع — يجد الذكاء الاصطناعي القصة ويبني فيديو قصير أو طويل بنسبة ٩:١٦ أو ١٦:٩."
           },
           "meme_gen": {
             "title": "مولد الميمات",

@@ -1279,8 +1279,13 @@ export const contentApi = {
   createCompose: async (body: {
     sourceContentIds: string[];
     aspect?: "9:16" | "16:9";
-    preset?: "teaser" | "reel";
+    preset?: "teaser" | "reel" | "short" | "long";
+    formatLength?: "short" | "long";
     title?: string;
+    context?: string;
+    ctaGoal?: "follow" | "comment" | "save" | "visit_link" | "watch_full";
+    creatorCategory?: string;
+    niches?: string[];
     defaultSegmentMs?: number;
   }): Promise<ContentDto> => {
     return performApiRequest<ContentDto>(`/content/compose`, {
@@ -1318,7 +1323,12 @@ export const contentApi = {
 
   analyzeCompose: async (
     id: string,
-    body?: { brief?: string },
+    body?: {
+      brief?: string;
+      context?: string;
+      ctaGoal?: "follow" | "comment" | "save" | "visit_link" | "watch_full";
+      selectedHookId?: string;
+    },
   ): Promise<ContentDto> => {
     return performApiRequest<ContentDto>(`/content/${id}/compose/analyze`, {
       method: "POST",
@@ -1762,7 +1772,8 @@ export const contentApi = {
         | "meme_ideas"
         | "polish_render"
         | "go_live"
-        | "open_studio";
+        | "open_studio"
+        | "story_engine";
       headline: string;
       reason: string;
       priority: number;

@@ -79,10 +79,10 @@ const tools = [
     },
   },
   {
-    title: "create.tools.event_highlight.title",
-    description: "create.tools.event_highlight.description",
+    title: "create.tools.story_engine.title",
+    description: "create.tools.story_engine.description",
     icon: Film,
-    href: "/create/event-highlight",
+    href: "/create/story-engine",
     roleRequired: "creator",
     tone: {
       card: "border-orange-500/25 bg-orange-500/10 hover:bg-orange-500/15 hover:border-orange-500/40 dark:bg-orange-500/15 dark:hover:bg-orange-500/25",

@@ -190,6 +190,10 @@ export function WorkflowIntelligenceDock({
                       navigate("/onboarding", { state: { renewWeekPlan: true } });
                       return;
                     }
+                    if (item.action === "story_engine") {
+                      navigate("/create/story-engine");
+                      return;
+                    }
                     navigate(item.href);
                   }}
                 >
