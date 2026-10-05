@@ -31,10 +31,8 @@ import {
   type PinCut,
 } from "./marketingCatalog";
 import {
-  fetchPexelsPhotoById,
   fetchPexelsVideoById,
   pickVideoFile,
-  type PexelsPhoto,
   type PexelsVideo,
 } from "../services/pexelsService";
 
@@ -66,22 +64,6 @@ export type OsLayerKey =
 
 const slotCache = new Map<string, MarketingMedia>();
 const reelCache = new Map<string, MarketingMedia[]>();
-
-function photoToMedia(photo: PexelsPhoto, pin?: CatalogPin): MarketingMedia {
-  return {
-    type: "image",
-    src: photo.src.large || photo.src.landscape || photo.src.medium,
-    poster: photo.src.medium,
-    creditName: pin?.creditName || photo.photographer || "Pexels",
-    creditUrl: pin?.creditUrl || photo.photographer_url || photo.url || "https://www.pexels.com",
-    source: "pexels",
-    alt: pin?.alt || photo.alt || "nxClip marketing visual",
-    niche: pin?.niche,
-    cut: pin?.cut,
-    camera: pin?.camera,
-    aspectHint: photo.height > photo.width ? "portrait" : "landscape",
-  };
-}
 
 function videoToMedia(video: PexelsVideo, pin?: CatalogPin): MarketingMedia | null {
   const src = pickVideoFile(video);
@@ -121,25 +103,45 @@ function pinToStaticImage(pin: CatalogPin): MarketingMedia | null {
   };
 }
 
-async function resolvePin(pin: CatalogPin): Promise<MarketingMedia | null> {
-  if (pin.type === "video" && pin.videoId) {
-    const video = await fetchPexelsVideoById(pin.videoId);
-    const media = video ? videoToMedia(video, pin) : null;
-    if (media) return media;
+async function resolvePin(
+  pin: CatalogPin,
+  options: { allowVideoApi?: boolean } = {},
+): Promise<MarketingMedia | null> {
+  const allowVideoApi = options.allowVideoApi !== false;
+
+  // Prefer CDN stills — never call Pexels photo API (rate-limit magnet on Home).
+  if (pin.type === "image" || (!pin.videoId && pin.photoId)) {
+    return pinToStaticImage(pin);
   }
 
-  if (pin.photoId) {
-    const photo = await fetchPexelsPhotoById(pin.photoId);
-    if (photo) return photoToMedia(photo, pin);
+  if (pin.type === "video" && pin.videoId) {
+    if (allowVideoApi) {
+      const video = await fetchPexelsVideoById(pin.videoId);
+      const media = video ? videoToMedia(video, pin) : null;
+      if (media) return media;
+    }
+    // Rate-limit / miss / stills-only: show pinned still instead of empty slot.
+    return pinToStaticImage(pin);
   }
 
   return pinToStaticImage(pin);
 }
 
+/** Reels that keep muted autoplay; everything else uses CDN stills (no Pexels API). */
+const MOTION_REEL_KEYS = new Set([
+  "hero-reel",
+  "gaming-stage",
+  "cap-viralClips",
+  "cap-clipEditor",
+]);
+
 export async function resolveReel(pins: CatalogPin[], cacheKey: string): Promise<MarketingMedia[]> {
   const hit = reelCache.get(cacheKey);
   if (hit?.length) return hit;
-  const resolved = await Promise.all(pins.map((p) => resolvePin(p)));
+  const allowVideoApi = MOTION_REEL_KEYS.has(cacheKey);
+  const resolved = await Promise.all(
+    pins.map((p) => resolvePin(p, { allowVideoApi })),
+  );
   const list = resolved.filter((m): m is MarketingMedia => Boolean(m));
   reelCache.set(cacheKey, list);
   return list;
@@ -150,7 +152,8 @@ export async function getSlotMedia(slot: MarketingSlot): Promise<MarketingMedia 
   if (hit) return hit;
 
   const pin = MARKETING_CATALOG[slot];
-  const media = await resolvePin(pin);
+  // Slot stills never need video API.
+  const media = await resolvePin(pin, { allowVideoApi: false });
   if (media) slotCache.set(slot, media);
   return media;
 }

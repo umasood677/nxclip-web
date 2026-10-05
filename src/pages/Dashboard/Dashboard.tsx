@@ -872,7 +872,7 @@ export default function Dashboard() {
                    </span>
                  </div>
 
-                 <div className="h-[280px] w-full relative" dir="ltr">
+                 <div className="h-[280px] w-full min-h-[280px] relative" dir="ltr">
                     {!chartHasSignal && (
                       <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-muted/40 border border-dashed border-border">
                         <p className="text-sm font-medium text-muted-foreground px-6 text-center">
@@ -880,7 +880,7 @@ export default function Dashboard() {
                         </p>
                       </div>
                     )}
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={280} minWidth={0} minHeight={280}>
                       <AreaChart data={chartData}>
                         <defs>
                           <linearGradient id="snapGrad" x1="0" y1="0" x2="0" y2="1">

@@ -177,8 +177,8 @@ export const PlatformsTab = memo(({ isLoading, platformFilter, platformStats }: 
             {t("analytics.charts.inter_platform")}
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
+        <CardContent className="h-[300px] min-h-[300px]">
+          <ResponsiveContainer width="100%" height={300} minWidth={0} minHeight={280}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.3} />
               <XAxis

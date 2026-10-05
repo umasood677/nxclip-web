@@ -302,6 +302,46 @@ async function startServer() {
     }
   });
 
+  // In-memory cache for pinned Pexels lookups (Home fires dozens of IDs per page load).
+  const PEXELS_CACHE_TTL_MS = 1000 * 60 * 60 * 24; // 24h
+  type PexelsCacheEntry = { status: number; body: unknown; expiresAt: number };
+  const pexelsCache = new Map<string, PexelsCacheEntry>();
+  const pexelsInflight = new Map<string, Promise<PexelsCacheEntry>>();
+
+  async function fetchPexelsCached(
+    cacheKey: string,
+    url: string,
+    apiKey: string,
+  ): Promise<PexelsCacheEntry> {
+    const hit = pexelsCache.get(cacheKey);
+    if (hit && hit.expiresAt > Date.now()) return hit;
+
+    const pending = pexelsInflight.get(cacheKey);
+    if (pending) return pending;
+
+    const task = (async (): Promise<PexelsCacheEntry> => {
+      try {
+        const response = await fetch(url, { headers: { Authorization: apiKey } });
+        const body = await response.json().catch(() => ({}));
+        const entry: PexelsCacheEntry = {
+          status: response.status,
+          body,
+          expiresAt: Date.now() + PEXELS_CACHE_TTL_MS,
+        };
+        // Cache successes and 404s; do not cache 429 so we can recover after the window.
+        if (response.ok || response.status === 404) {
+          pexelsCache.set(cacheKey, entry);
+        }
+        return entry;
+      } finally {
+        pexelsInflight.delete(cacheKey);
+      }
+    })();
+
+    pexelsInflight.set(cacheKey, task);
+    return task;
+  }
+
   // Pinned Home assets — fetch by id so ranking drift cannot swap marketing media
   app.get("/api/pexels/photo/:id", async (req, res) => {
     const apiKey = process.env.PEXELS_API_KEY;
@@ -310,13 +350,13 @@ async function startServer() {
     if (!apiKey) return res.status(204).end();
 
     try {
-      const response = await fetch(`https://api.pexels.com/v1/photos/${id}`, {
-        headers: { Authorization: apiKey },
-      });
-      if (!response.ok) {
-        return res.status(response.status).json(await response.json().catch(() => ({})));
-      }
-      return res.json(await response.json());
+      const entry = await fetchPexelsCached(
+        `photo:${id}`,
+        `https://api.pexels.com/v1/photos/${id}`,
+        apiKey,
+      );
+      res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+      return res.status(entry.status).json(entry.body);
     } catch (error) {
       console.error("Pexels photo-by-id error:", error);
       return res.status(500).json({ error: "Failed to fetch Pexels photo" });
@@ -330,13 +370,13 @@ async function startServer() {
     if (!apiKey) return res.status(204).end();
 
     try {
-      const response = await fetch(`https://api.pexels.com/videos/videos/${id}`, {
-        headers: { Authorization: apiKey },
-      });
-      if (!response.ok) {
-        return res.status(response.status).json(await response.json().catch(() => ({})));
-      }
-      return res.json(await response.json());
+      const entry = await fetchPexelsCached(
+        `video:${id}`,
+        `https://api.pexels.com/videos/videos/${id}`,
+        apiKey,
+      );
+      res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+      return res.status(entry.status).json(entry.body);
     } catch (error) {
       console.error("Pexels video-by-id error:", error);
       return res.status(500).json({ error: "Failed to fetch Pexels video" });

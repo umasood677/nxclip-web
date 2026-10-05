@@ -61,26 +61,138 @@ export interface PexelsVideoSearchResponse {
   next_page?: string;
 }
 
+const CLIENT_CACHE_TTL_MS = 1000 * 60 * 60 * 12; // 12h
+const MAX_CONCURRENT_PEXELS = 2;
+
+type CacheEntry = { value: unknown; expiresAt: number };
+const memoryCache = new Map<string, CacheEntry>();
+const inflightByKey = new Map<string, Promise<unknown>>();
+
+let rateLimitedUntil = 0;
+let activeFetches = 0;
+const waitQueue: Array<() => void> = [];
+
+function enqueuePexelsFetch<T>(run: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const start = () => {
+      if (Date.now() < rateLimitedUntil) {
+        resolve(null as T);
+        const next = waitQueue.shift();
+        if (next) next();
+        return;
+      }
+      activeFetches += 1;
+      run()
+        .then(resolve, reject)
+        .finally(() => {
+          activeFetches -= 1;
+          const next = waitQueue.shift();
+          if (next) next();
+        });
+    };
+
+    if (Date.now() < rateLimitedUntil) {
+      resolve(null as T);
+      return;
+    }
+
+    if (activeFetches < MAX_CONCURRENT_PEXELS) {
+      start();
+    } else {
+      waitQueue.push(start);
+    }
+  });
+}
+
 export async function fetchPexelsPhotoById(id: number): Promise<PexelsPhoto | null> {
-  try {
-    const response = await fetch(`/api/pexels/photo/${id}`);
-    if (!response.ok || response.status === 204) return null;
-    const data = (await response.json()) as PexelsPhoto;
-    return data?.id && data?.src ? data : null;
-  } catch {
-    return null;
+  const key = `photo:${id}`;
+  const cached = memoryCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value as PexelsPhoto;
   }
+
+  const inflight = inflightByKey.get(key);
+  if (inflight) return inflight as Promise<PexelsPhoto | null>;
+
+  const task = (async () => {
+    try {
+      const response = await fetch(`/api/pexels/photo/${id}`);
+      if (response.status === 429) {
+        rateLimitedUntil = Date.now() + 60_000;
+        return null;
+      }
+      if (!response.ok || response.status === 204) return null;
+      const data = (await response.json()) as PexelsPhoto;
+      if (!data?.id || !data?.src) return null;
+      memoryCache.set(key, { value: data, expiresAt: Date.now() + CLIENT_CACHE_TTL_MS });
+      try {
+        sessionStorage.setItem(`pexels:${key}`, JSON.stringify(data));
+      } catch {
+        /* ignore quota */
+      }
+      return data;
+    } catch {
+      return null;
+    } finally {
+      inflightByKey.delete(key);
+    }
+  })();
+
+  inflightByKey.set(key, task);
+  return task;
 }
 
 export async function fetchPexelsVideoById(id: number): Promise<PexelsVideo | null> {
-  try {
-    const response = await fetch(`/api/pexels/video/${id}`);
-    if (!response.ok || response.status === 204) return null;
-    const data = (await response.json()) as PexelsVideo;
-    return data?.id && data?.video_files ? data : null;
-  } catch {
-    return null;
+  const key = `video:${id}`;
+  const cached = memoryCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value as PexelsVideo;
   }
+
+  try {
+    const raw = sessionStorage.getItem(`pexels:${key}`);
+    if (raw) {
+      const data = JSON.parse(raw) as PexelsVideo;
+      if (data?.id && data?.video_files) {
+        memoryCache.set(key, { value: data, expiresAt: Date.now() + CLIENT_CACHE_TTL_MS });
+        return data;
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+
+  if (Date.now() < rateLimitedUntil) return null;
+
+  const inflight = inflightByKey.get(key);
+  if (inflight) return inflight as Promise<PexelsVideo | null>;
+
+  const task = enqueuePexelsFetch(async () => {
+    try {
+      const response = await fetch(`/api/pexels/video/${id}`);
+      if (response.status === 429) {
+        rateLimitedUntil = Date.now() + 60_000;
+        return null;
+      }
+      if (!response.ok || response.status === 204) return null;
+      const data = (await response.json()) as PexelsVideo;
+      if (!data?.id || !data?.video_files) return null;
+      memoryCache.set(key, { value: data, expiresAt: Date.now() + CLIENT_CACHE_TTL_MS });
+      try {
+        sessionStorage.setItem(`pexels:${key}`, JSON.stringify(data));
+      } catch {
+        /* ignore quota */
+      }
+      return data;
+    } catch {
+      return null;
+    } finally {
+      inflightByKey.delete(key);
+    }
+  });
+
+  inflightByKey.set(key, task);
+  return task;
 }
 
 export async function searchGamingPhotos(
