@@ -1098,6 +1098,24 @@ export const identityApi = {
     return result;
   },
 
+  /** SPA fallback when generate-plan returns persisted:false (AI→identity internal save failed). */
+  saveCoachPlan: async (plan: Record<string, unknown>, onboardingCompleted = true) => {
+    const result = await performApiRequest(
+      "/users/me/coach-plan",
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan,
+          onboardingCompleted,
+          jobId: `coach-spa-${Date.now()}`,
+        }),
+      },
+    );
+    userMeCache = null;
+    return result;
+  },
+
   getUserById: async (id: string): Promise<any> => {
     return performApiRequest(
       `/users/${id}`,

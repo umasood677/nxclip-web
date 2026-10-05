@@ -498,9 +498,20 @@ export default function Onboarding() {
       setPlan(weekPlan);
       markOnboardingCompleteLocally(weekPlan);
       clearWeekPlanRenewal();
+
+      let persisted = result.persisted !== false;
+      if (!persisted && weekPlan) {
+        try {
+          await identityApi.saveCoachPlan(weekPlan as Record<string, unknown>, true);
+          persisted = true;
+        } catch (saveErr) {
+          console.warn("SPA coach-plan retry failed", saveErr);
+        }
+      }
+
       await syncProfileFromMe();
 
-      if (result.persisted === false) {
+      if (!persisted) {
         toast.warning("Plan ready locally", {
           description:
             "Could not save niche/plan to your account yet. Stay on this page and tap Generate again, or open Creator Coach → Revise niche.",
