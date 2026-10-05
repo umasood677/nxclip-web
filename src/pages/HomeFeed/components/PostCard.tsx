@@ -117,6 +117,8 @@ interface PostCardProps {
   onMediaLoad?: (naturalWidth: number, naturalHeight: number) => void;
   onLike?: (id: string | number) => void;
   onDelete?: (id: string | number) => void;
+  /** Fired when media permanently fails (e.g. deleted content still in feed projection). */
+  onMediaUnavailable?: (id: string | number) => void;
   onFollow?: (userId: string, currentlyFollowing: boolean) => void;
   /** Optimistic UI update after Live / schedule API succeeds */
   onSocialSchedule?: (postId: string | number, target: SocialTarget) => void;
@@ -211,6 +213,7 @@ export const PostCard = memo(
     aspectRatio,
     onMediaLoad,
     onDelete,
+    onMediaUnavailable,
     onFollow,
     onSocialSchedule,
     priority,
@@ -220,6 +223,7 @@ export const PostCard = memo(
     const navigate = useNavigate();
     const isAr = i18n.language === "ar";
     const [hovered, setHovered] = useState(false);
+    const [mediaGone, setMediaGone] = useState(false);
     const [localTargets, setLocalTargets] = useState<SocialTarget[]>(post.socialTargets || []);
     const [following, setFollowing] = useState(!!post.isFollowing);
     const [socialBusy, setSocialBusy] = useState(false);
@@ -363,6 +367,10 @@ export const PostCard = memo(
             ? "Insight"
             : "Image";
 
+    if (mediaGone) {
+      return null;
+    }
+
     return (
       <article
         className={cn(
@@ -379,9 +387,8 @@ export const PostCard = memo(
           <AuthenticatedMediaPreview
             kind={post.contentType === "clip" ? "video" : "image"}
             src={post.image || imgSrc}
-            fallbackSrc="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80"
             alt={post.content || "Post image"}
-            disableRemoteFallback={false}
+            disableRemoteFallback
             priority={isPriority}
             placeholderAspectRatio={tileAspect}
             wrapperClassName="!absolute !inset-0 !h-full !w-full !bg-transparent overflow-hidden"
@@ -397,7 +404,11 @@ export const PostCard = memo(
                 onMediaLoad?.(el.naturalWidth, el.naturalHeight);
               }
             }}
-            onError={() => setImgSrc("")}
+            onError={() => {
+              setImgSrc("");
+              setMediaGone(true);
+              onMediaUnavailable?.(post.contentId || post.id);
+            }}
             showPlayBadge={false}
           />
 

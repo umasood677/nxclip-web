@@ -107,12 +107,14 @@ function FeedGallery({
   onFollow,
   onDelete,
   onSocialSchedule,
+  onMediaUnavailable,
   priorityCount = 4,
 }: {
   posts: Post[];
   onFollow?: (userId: string, currentlyFollowing: boolean) => void;
   onDelete?: (id: string | number) => void;
   onSocialSchedule?: (postId: string | number, target: SocialTarget) => void;
+  onMediaUnavailable?: (id: string | number) => void;
   priorityCount?: number;
 }) {
   return (
@@ -132,6 +134,7 @@ function FeedGallery({
           onFollow={onFollow}
           onDelete={onDelete}
           onSocialSchedule={onSocialSchedule}
+          onMediaUnavailable={onMediaUnavailable}
         />
       )}
     />
@@ -698,39 +701,33 @@ export default function HomeFeed() {
     );
   }, [trendingPosts, platformFilter, searchQuery]);
 
-  const rawPostsList = useMemo(() => {
-    const map = new Map<string | number, Post>();
-    contentApiPosts.forEach((p) => map.set(p.id, p));
-    feedPosts.forEach((p) => map.set(p.id, p));
-    return Array.from(map.values());
-  }, [contentApiPosts, feedPosts]);
-
   const totalReach = useMemo(
-    () => rawPostsList.reduce((acc, p) => acc + (p.reach || 0), 0),
-    [rawPostsList],
+    () => contentApiPosts.reduce((acc, p) => acc + (p.reach || 0), 0),
+    [contentApiPosts],
   );
 
   const totalLikes = useMemo(
-    () => rawPostsList.reduce((acc, p) => acc + (p.likes || 0), 0),
-    [rawPostsList],
+    () => contentApiPosts.reduce((acc, p) => acc + (p.likes || 0), 0),
+    [contentApiPosts],
   );
 
   const avgEngagementRate = useMemo(() => {
-    if (rawPostsList.length === 0) return "0.0%";
-    const sum = rawPostsList.reduce((acc, p) => acc + (p.engagement || 0), 0);
-    return `${(sum / rawPostsList.length).toFixed(1)}%`;
-  }, [rawPostsList]);
+    if (contentApiPosts.length === 0) return "0.0%";
+    const sum = contentApiPosts.reduce((acc, p) => acc + (p.engagement || 0), 0);
+    return `${(sum / contentApiPosts.length).toFixed(1)}%`;
+  }, [contentApiPosts]);
 
   const publishedOnFeedCount = useMemo(() => {
-    return rawPostsList.filter((p) => {
+    // Count from library truth — feed projections can linger after delete and inflate this.
+    return contentApiPosts.filter((p) => {
       const key = resolveFeedDisplayStatus(p).key;
       return key === "published" || key === "live" || key === "scheduled" || key === "publishing";
     }).length;
-  }, [rawPostsList]);
+  }, [contentApiPosts]);
 
   const liveOnSocialCount = useMemo(() => {
-    return rawPostsList.filter((p) => resolveFeedDisplayStatus(p).key === "live").length;
-  }, [rawPostsList]);
+    return contentApiPosts.filter((p) => resolveFeedDisplayStatus(p).key === "live").length;
+  }, [contentApiPosts]);
 
   const formatCompactNumber = useCallback((num: number) => {
     if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + "M";
@@ -782,6 +779,12 @@ export default function HomeFeed() {
       console.error("Failed to delete creation:", err);
       toast.error("Failed to delete creation.");
     }
+  }, []);
+
+  const handleMediaUnavailable = useCallback((postId: string | number) => {
+    const keep = (p: Post) => String(p.contentId || p.id) !== String(postId);
+    setFeedPosts((prev) => prev.filter(keep));
+    setTrendingPosts((prev) => prev.filter(keep));
   }, []);
 
   const handleSocialSchedule = useCallback(
@@ -848,7 +851,7 @@ export default function HomeFeed() {
                 direction: "neutral",
                 period: "vs last week",
               }}
-              subtext={`${rawPostsList.length} creations tracked`}
+              subtext={`${contentApiPosts.length} creations tracked`}
               icon={Eye}
               iconBg="bg-emerald-500/10 border-emerald-500/20"
               iconColor="text-emerald-500"
@@ -968,6 +971,7 @@ export default function HomeFeed() {
                       onFollow={handleFollow}
                       onDelete={handleDeletePost}
                       onSocialSchedule={handleSocialSchedule}
+                      onMediaUnavailable={handleMediaUnavailable}
                     />
                   )}
                 </TabsContent>
@@ -991,6 +995,7 @@ export default function HomeFeed() {
                         posts={filteredTrendingPosts}
                         onFollow={handleFollow}
                         onSocialSchedule={handleSocialSchedule}
+                        onMediaUnavailable={handleMediaUnavailable}
                       />
                     </div>
                   )}
@@ -1037,6 +1042,7 @@ export default function HomeFeed() {
                         onFollow={handleFollow}
                         onDelete={handleDeletePost}
                         onSocialSchedule={handleSocialSchedule}
+                        onMediaUnavailable={handleMediaUnavailable}
                         priorityCount={2}
                       />
                     )}
