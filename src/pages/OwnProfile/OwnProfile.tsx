@@ -20,8 +20,8 @@ import { AuthenticatedImage } from "../../components/AuthenticatedImage";
 import { auth, handleFirestoreError, OperationType } from "../../firebase";
 import { UserProfile } from "../../types";
 import { Progress } from "../../components/ui/progress";
-import { Badge } from "../../components/ui/badge";
 import { Button, buttonVariants } from "../../components/ui/button";
+import { PlanBadge } from "../../components/PlanBadge";
 import { cn } from "../../lib/utils";
 import { beginWeekPlanRenewal, contentPlanFromOnboarding, weekPlanFromProfile, beginOnboardingRevision } from "../../lib/weekPlan";
 import {
@@ -390,8 +390,8 @@ export default function OwnProfile() {
           uid: me.id || me.uid,
           displayName: me.displayName || me.username || "Creator",
           email: me.email,
-          photoURL: me.avatarUrl || null,
-          coverUrl: me.coverUrl || null,
+          photoURL: me.avatarUrl || me.AvatarUrl || me.photoURL || null,
+          coverUrl: me.coverUrl || me.CoverUrl || null,
           bio: me.bio || "",
           plan: (me.plan || "free").toLowerCase() as UserProfile["plan"],
           role: (me.roles?.[0] || "creator") as UserProfile["role"],
@@ -601,11 +601,20 @@ export default function OwnProfile() {
       }
     } catch (err) {
       console.error("Failed to update photo:", err);
-      toast.error(
-        photoTarget === "cover"
-          ? "Could not update cover. Try a smaller JPEG/PNG."
-          : "Could not update avatar. Try a smaller JPEG/PNG.",
-      );
+      const apiErr = err as { error?: string; message?: string };
+      if (apiErr?.error === "GCS_CORS_BLOCKED") {
+        toast.error("Upload blocked by storage CORS", {
+          description:
+            "Add this site’s origin to the nxclip-media-prod bucket CORS policy, then retry avatar/banner upload.",
+          duration: 12000,
+        });
+      } else {
+        toast.error(
+          photoTarget === "cover"
+            ? "Could not update cover. Try a smaller JPEG/PNG."
+            : "Could not update avatar. Try a smaller JPEG/PNG.",
+        );
+      }
       handleFirestoreError(
         err,
         OperationType.UPDATE,
@@ -902,20 +911,32 @@ export default function OwnProfile() {
               <div className="pb-1 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="ui-title">{profile?.displayName || "Creator"}</h2>
-                  <Badge variant={profile?.plan === "free" ? "secondary" : "brand-gradient"}>
-                    {profile?.plan === "pro"
-                      ? t("profile.plans.pro")
-                      : profile?.plan === "studio"
-                        ? t("profile.plans.studio")
-                        : t("profile.plans.free")}
-                  </Badge>
+                  <PlanBadge plan={profile?.plan} size="lg" linkToUpgrade />
                 </div>
                 <p className="text-muted-foreground font-bold text-sm">
                   @{profile?.email?.split("@")[0] || "creator"}
                 </p>
+                {String(profile?.plan || "free").toLowerCase() !== "studio" && (
+                  <p className="text-xs text-muted-foreground font-medium pt-0.5">
+                    {String(profile?.plan || "free").toLowerCase() === "pro"
+                      ? t("profile.plan_hint.pro")
+                      : t("profile.plan_hint.free")}
+                  </p>
+                )}
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
+              {String(profile?.plan || "free").toLowerCase() !== "studio" && (
+                <Link
+                  to="/upgrade"
+                  className={cn(buttonVariants({ variant: "brand-gradient" }), "gap-2")}
+                >
+                  <Zap size={16} fill="currentColor" />
+                  {String(profile?.plan || "free").toLowerCase() === "pro"
+                    ? t("nav.upgrade_studio")
+                    : t("nav.upgrade_pro")}
+                </Link>
+              )}
               <Link
                 to="/profile/edit"
                 className={cn(buttonVariants({ variant: "secondary" }), "gap-2")}
@@ -939,13 +960,21 @@ export default function OwnProfile() {
                 key={stat.key}
                 className={cn("ui-stat-card p-4 relative", isRtl ? "text-right" : "text-left")}
               >
-                {stat.isPro && profile?.plan === "free" && (
-                  <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center text-center p-2">
+                {stat.isPro && String(profile?.plan || "free").toLowerCase() === "free" && (
+                  <button
+                    type="button"
+                    onClick={() => navigate("/upgrade")}
+                    className="absolute inset-0 z-10 bg-background/85 backdrop-blur-sm flex flex-col items-center justify-center text-center p-2 hover:bg-primary/10 transition-colors cursor-pointer rounded-[inherit]"
+                    aria-label={t("profile.stats.unlock_engagement")}
+                  >
                     <Lock size={14} className="text-primary mb-1" />
-                    <p className="text-[8px] font-bold text-foreground uppercase tracking-widest">
-                      {t("profile.stats.pro_only")}
+                    <p className="text-[9px] font-black text-foreground uppercase tracking-widest">
+                      {t("profile.stats.unlock_engagement")}
                     </p>
-                  </div>
+                    <p className="text-[8px] font-bold text-primary mt-0.5 uppercase tracking-wider">
+                      {t("profile.stats.pro_only_cta")}
+                    </p>
+                  </button>
                 )}
                 <p className="text-xl font-display font-bold text-foreground mb-0.5">
                   {stat.value}

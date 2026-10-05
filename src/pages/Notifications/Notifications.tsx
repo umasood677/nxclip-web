@@ -22,8 +22,13 @@ import { cn } from "../../lib/utils";
 import { socketService, SocketStatus, WebSocketEnvelope } from "../../services/socketService";
 import { notificationApi } from "../../services/apiClient";
 import { normalizeNotification, normalizeNotificationList } from "../../lib/notifications";
+import { buildUpgradeNudge, markUpgradeNudgeShown } from "../../lib/upgradeNudge";
 import { toast } from "sonner";
 import { EmptyState } from "../../components/common/EmptyState";
+import { useAppSelector } from "../../store/hooks";
+import { selectAuthProfile } from "../../store/slices/authSlice";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 interface ClientNotification {
   id: string;
@@ -36,6 +41,7 @@ interface ClientNotification {
   date: string;
   unread: boolean;
   type: "trend" | "system" | "analytics" | "social" | "achievement" | "billing" | "moderation";
+  href?: string;
 }
 
 const TYPE_CONFIG = {
@@ -50,8 +56,8 @@ const TYPE_CONFIG = {
 
 function inferType(title: string, body: string, eventName?: string): ClientNotification["type"] {
   const t = `${eventName || ""} ${title} ${body}`.toLowerCase();
+  if (t.includes("upgrade") || t.includes("bill") || t.includes("subscription")) return "billing";
   if (t.includes("moderat")) return "moderation";
-  if (t.includes("bill") || t.includes("subscription")) return "billing";
   if (t.includes("analytic") || t.includes("report")) return "analytics";
   if (t.includes("social") || t.includes("follow") || t.includes("comment") || t.includes("engagement")) return "social";
   if (t.includes("trend")) return "trend";
@@ -75,6 +81,7 @@ function toClient(raw: Parameters<typeof normalizeNotification>[0]): ClientNotif
     date: created.toLocaleDateString(),
     unread: !n.read,
     type,
+    href: n.href,
   };
 }
 
@@ -100,6 +107,9 @@ function fromSocket(
 }
 
 export default function Notifications() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const profile = useAppSelector(selectAuthProfile);
   const [notifications, setNotifications] = useState<ClientNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [wsStatus, setWsStatus] = useState<SocketStatus>("disconnected");
@@ -114,15 +124,58 @@ export default function Notifications() {
     setLoading(true);
     try {
       const res = await notificationApi.getNotifications(undefined, 50);
-      setNotifications(normalizeNotificationList(res).map((n) => toClient(n as any)));
+      let items = normalizeNotificationList(res).map((n) => toClient(n as any));
+      const nudge = buildUpgradeNudge(profile?.plan, t);
+      if (nudge) {
+        const cfg = TYPE_CONFIG.billing;
+        const now = new Date();
+        items = [
+          {
+            id: nudge.id,
+            title: nudge.title,
+            description: nudge.body,
+            icon: cfg.icon,
+            color: cfg.color,
+            bg: cfg.bg,
+            time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            date: now.toLocaleDateString(),
+            unread: true,
+            type: "billing",
+            href: nudge.href,
+          },
+          ...items.filter((n) => n.id !== nudge.id),
+        ];
+      }
+      setNotifications(items);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to load notifications";
       toast.error("Notifications", { description: message });
-      setNotifications([]);
+      const nudge = buildUpgradeNudge(profile?.plan, t);
+      if (nudge) {
+        const cfg = TYPE_CONFIG.billing;
+        const now = new Date();
+        setNotifications([
+          {
+            id: nudge.id,
+            title: nudge.title,
+            description: nudge.body,
+            icon: cfg.icon,
+            color: cfg.color,
+            bg: cfg.bg,
+            time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            date: now.toLocaleDateString(),
+            unread: true,
+            type: "billing",
+            href: nudge.href,
+          },
+        ]);
+      } else {
+        setNotifications([]);
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [profile?.plan, t]);
 
   useEffect(() => {
     void loadNotifications();
@@ -221,6 +274,7 @@ export default function Notifications() {
   const filters = [
     { id: "all", label: "All" },
     { id: "unread", label: "Unread" },
+    { id: "billing", label: "Upgrade" },
     { id: "moderation", label: "Moderation" },
     { id: "system", label: "System" },
     { id: "analytics", label: "Analytics" },
@@ -320,7 +374,13 @@ export default function Notifications() {
                 >
                   <button
                     type="button"
-                    onClick={() => void markRead(n.id)}
+                    onClick={() => {
+                      void markRead(n.id);
+                      if (n.href || n.id.startsWith("upgrade-nudge")) {
+                        markUpgradeNudgeShown(profile?.plan);
+                        navigate(n.href || "/upgrade");
+                      }
+                    }}
                     className={cn(
                       "w-full text-left rounded-2xl border p-4 transition-colors",
                       n.unread

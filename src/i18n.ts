@@ -22,6 +22,7 @@ const resources = {
         "create_hub": "Create Hub",
         "image_studio": "Image Studio",
         "clip_editor": "Clip Studio",
+        "story_engine": "AI Story Engine",
         "content_library": "Content Library",
         "battles": "Battles",
         "admin_panel": "Admin Settings",
@@ -45,9 +46,18 @@ const resources = {
         "home_tooltip": "nxclip.app Home",
         "growth_tip": {
           "title": "Growth Tip",
-          "description": "Unlock unlimited creations & full analytics with Pro.",
-          "cta": "Upgrade Now"
+          "description": "Unlock unlimited creations, engagement analytics, and AI coaching with Pro.",
+          "cta": "Upgrade to Pro"
         },
+        "growth_tip_pro": {
+          "title": "Studio Tip",
+          "description": "Scale your brand with Studio — team workflows, priority renders, and full creative suite.",
+          "cta": "Upgrade to Studio"
+        },
+        "live_alerts": "Live Alerts",
+        "mark_all_read": "Mark all read",
+        "view_all_notifications": "View all notifications",
+        "no_alerts": "No alerts yet",
         "language": {
           "en": "English",
           "ar": "العربية"
@@ -808,8 +818,10 @@ const resources = {
             "studio": "Studio",
             "limited": "Limited Content Creator",
             "professional": "Professional Creative Suite",
-            "limited_desc": "Basic access to creation tools and analytics.",
-            "professional_desc": "Full access to unlimited creations, AI coaching, and deep analytics."
+            "studio_suite": "Full Studio Suite",
+            "limited_desc": "Basic access to creation tools. Upgrade to Pro to unlock engagement analytics and unlimited AI coaching.",
+            "professional_desc": "Full access to unlimited creations, AI coaching, and deep analytics. Ready for Studio when you scale.",
+            "studio_desc": "Maximum creative throughput — priority renders, advanced workflows, and the full nxClip suite."
           },
           "pricing": {
             "free": "$0.00 / month",
@@ -832,7 +844,9 @@ const resources = {
           },
           "na": "N/A",
           "upgrade": "Upgrade to Pro",
+          "upgrade_studio": "Upgrade to Studio",
           "cancel": "Cancel Subscription",
+          "cancel_scheduled": "Cancellation scheduled",
           "payment_methods": "Payment Methods",
           "history": "Billing History",
           "last_12_months": "Last 12 Months",
@@ -871,7 +885,19 @@ const resources = {
           "followers": "Followers",
           "following": "Following",
           "engagement": "Engagement",
-          "pro_only": "Pro Only"
+          "pro_only": "Pro Only",
+          "unlock_engagement": "Engagement analytics",
+          "pro_only_cta": "Unlock with Pro →"
+        },
+        "plan_hint": {
+          "free": "You're on Free — upgrade to Pro for engagement insights and unlimited coaching.",
+          "pro": "You're on Pro — upgrade to Studio when you're ready to scale your brand.",
+          "studio": "You're on Studio — full creative suite unlocked."
+        },
+        "plans": {
+          "pro": "Pro",
+          "studio": "Studio",
+          "free": "Free"
         },
         "no_bio": "No bio yet. Add one to tell your story!",
         "no_niches": "No content niches added yet.",
@@ -953,16 +979,23 @@ const resources = {
             "generic_error": "Failed to save changes. Please try again."
           }
         },
-        "plans": {
-          "pro": "Pro Creator",
-          "studio": "Studio",
-          "free": "Free"
-        },
         "user_bio": "Competitive CS2 player and strategist. Sharing my best plays and tactical breakdowns daily. 🔫🔥",
         "demo_stats": {
           "posts": "124",
           "followers": "8.2k",
           "following": "245"
+        }
+      },
+      "notifications": {
+        "live_alerts": "Live Alerts",
+        "upgrade": {
+          "free_title": "Free creators grow slower — Pro changes the game",
+          "free_body": "Turn on engagement analytics, unlimited AI coaching, and priority tools. Creators on Pro ship more and learn faster from every post.",
+          "free_cta": "Upgrade to Pro",
+          "pro_title": "Ready for Studio? Scale like a brand",
+          "pro_body": "Studio unlocks the full creative suite — priority renders, advanced workflows, and room to grow a team around your content engine.",
+          "pro_cta": "Upgrade to Studio",
+          "cta_short": "Upgrade"
         }
       },
       "admin": {
@@ -2226,6 +2259,7 @@ const resources = {
         "create_hub": "مركز الإنشاء",
         "image_studio": "استوديو الصور",
         "clip_editor": "استوديو المقاطع",
+        "story_engine": "محرك القصة بالذكاء الاصطناعي",
         "content_library": "مكتبة المحتوى",
         "battles": "المعارك",
         "admin_panel": "إعدادات الإدارة",
@@ -2249,9 +2283,18 @@ const resources = {
         "home_tooltip": "الرئيسية nxclip.app",
         "growth_tip": {
           "title": "نصيحة للنمو",
-          "description": "افتح عمليات إنشاء غير محدودة وتحليلات كاملة مع برو.",
-          "cta": "الترقية الآن"
+          "description": "افتح إنشاءً غير محدود وتحليلات التفاعل وتدريب الذكاء الاصطناعي مع برو.",
+          "cta": "الترقية إلى برو"
         },
+        "growth_tip_pro": {
+          "title": "نصيحة ستوديو",
+          "description": "وسّع علامتك مع ستوديو — سير عمل للفريق، أولوية التصيير، ومجموعة إبداعية كاملة.",
+          "cta": "الترقية إلى ستوديو"
+        },
+        "live_alerts": "تنبيهات مباشرة",
+        "mark_all_read": "تعيين الكل كمقروء",
+        "view_all_notifications": "عرض كل الإشعارات",
+        "no_alerts": "لا توجد تنبيهات بعد",
         "language": {
           "en": "English",
           "ar": "العربية"
@@ -2828,8 +2871,10 @@ const resources = {
             "studio": "استوديو",
             "limited": "منشئ محتوى محدود",
             "professional": "مجموعة إبداعية احترافية",
-            "limited_desc": "وصول أساسي إلى أدوات الإنشاء والتحليلات.",
-            "professional_desc": "وصول كامل لعمليات إنشاء غير محدودة، مدرب الذكاء الاصطناعي، وتحليلات عميقة."
+            "studio_suite": "مجموعة استوديو الكاملة",
+            "limited_desc": "وصول أساسي لأدوات الإنشاء. ترقَّ إلى برو لفتح تحليلات التفاعل وتدريب غير محدود بالذكاء الاصطناعي.",
+            "professional_desc": "وصول كامل لإنشاء غير محدود وتدريب الذكاء الاصطناعي وتحليلات عميقة. جاهز لاستوديو عندما تتوسع.",
+            "studio_desc": "أقصى إنتاجية إبداعية — أولوية التصيير وسير عمل متقدم ومجموعة nxClip الكاملة."
           },
           "pricing": {
             "free": "0.00$ / شهرياً",
@@ -2852,7 +2897,9 @@ const resources = {
           },
           "na": "غير متاح",
           "upgrade": "الترقية إلى برو",
+          "upgrade_studio": "الترقية إلى استوديو",
           "cancel": "إلغاء الاشتراك",
+          "cancel_scheduled": "تم جدولة الإلغاء",
           "payment_methods": "طرق الدفع",
           "history": "سجل الفواتير",
           "last_12_months": "آخر 12 شهراً",
@@ -2891,7 +2938,19 @@ const resources = {
           "followers": "متابعون",
           "following": "متابعة",
           "engagement": "تفاعل",
-          "pro_only": "للمحترفين فقط"
+          "pro_only": "للمحترفين فقط",
+          "unlock_engagement": "تحليلات التفاعل",
+          "pro_only_cta": "افتح مع برو ←"
+        },
+        "plan_hint": {
+          "free": "أنت على الخطة المجانية — ترقَّ إلى برو لتحليلات التفاعل وتدريب غير محدود.",
+          "pro": "أنت على برو — ترقَّ إلى استوديو عندما تكون جاهزاً لتوسيع علامتك.",
+          "studio": "أنت على استوديو — المجموعة الإبداعية الكاملة مفتوحة."
+        },
+        "plans": {
+          "pro": "برو",
+          "studio": "استوديو",
+          "free": "مجاني"
         },
         "no_bio": "لا يوجد نبذة شخصية بعد. أضف واحدة لتروي قصتك!",
         "no_niches": "لم يتم إضافة مجالات ألعاب بعد.",
@@ -2973,16 +3032,23 @@ const resources = {
             "generic_error": "فشل حفظ التغييرات. يرجى المحاولة مرة أخرى."
           }
         },
-        "plans": {
-          "pro": "منشئ محترف",
-          "studio": "استوديو",
-          "free": "مجاني"
-        },
         "user_bio": "لاعب ومخطط CS2 محترف. أشارك أفضل لقطاتي وتحليلاتي التكتيكية يوميًا. 🔫🔥",
         "demo_stats": {
           "posts": "124",
           "followers": "8.2ألف",
           "following": "245"
+        }
+      },
+      "notifications": {
+        "live_alerts": "تنبيهات مباشرة",
+        "upgrade": {
+          "free_title": "المنشئون على المجاني ينمون أبطأ — برو يغيّر اللعبة",
+          "free_body": "فعّل تحليلات التفاعل وتدريب الذكاء الاصطناعي غير المحدود والأدوات ذات الأولوية. منشئو برو ينشرون أكثر ويتعلمون أسرع من كل منشور.",
+          "free_cta": "الترقية إلى برو",
+          "pro_title": "جاهز لاستوديو؟ توسّع كعلامة تجارية",
+          "pro_body": "استوديو يفتح المجموعة الإبداعية الكاملة — أولوية التصيير وسير عمل متقدم ومساحة لبناء فريق حول محرك محتواك.",
+          "pro_cta": "الترقية إلى استوديو",
+          "cta_short": "ترقية"
         }
       },
       "admin": {

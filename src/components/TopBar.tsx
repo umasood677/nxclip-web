@@ -36,7 +36,9 @@ import { selectAuthProvider } from "../store/slices/uiSlice";
 import { identityApi, notificationApi } from "../services/apiClient";
 import { clearPersistedUser } from "../services/auth/authService";
 import { normalizeNotificationList, type NormalizedNotification } from "../lib/notifications";
+import { buildUpgradeNudge, markUpgradeNudgeShown } from "../lib/upgradeNudge";
 import { socketService } from "../services/socketService";
+import { PlanBadge } from "./PlanBadge";
 import {
   CommandDialog,
   CommandEmpty,
@@ -79,13 +81,42 @@ export default function TopBar({ title, subtitle, titleIcon }: TopBarProps) {
       try {
         const res = await notificationApi.getNotifications(undefined, 8);
         if (cancelled) return;
-        const items = normalizeNotificationList(res);
+        let items = normalizeNotificationList(res);
+
+        const nudge = buildUpgradeNudge(profile?.plan, t);
+        if (nudge) {
+          const marketing: NormalizedNotification = {
+            id: nudge.id,
+            title: nudge.title,
+            body: nudge.body,
+            read: false,
+            createdAt: new Date().toISOString(),
+            eventName: "billing:upgrade_nudge",
+          };
+          items = [marketing, ...items.filter((n) => n.id !== nudge.id)];
+        }
+
         setNotifPreview(items);
         setUnreadCount(items.filter((n) => !n.read).length);
       } catch {
         if (!cancelled) {
-          setNotifPreview([]);
-          setUnreadCount(0);
+          const nudge = buildUpgradeNudge(profile?.plan, t);
+          if (nudge) {
+            setNotifPreview([
+              {
+                id: nudge.id,
+                title: nudge.title,
+                body: nudge.body,
+                read: false,
+                createdAt: new Date().toISOString(),
+                eventName: "billing:upgrade_nudge",
+              },
+            ]);
+            setUnreadCount(1);
+          } else {
+            setNotifPreview([]);
+            setUnreadCount(0);
+          }
         }
       }
     };
@@ -108,7 +139,7 @@ export default function TopBar({ title, subtitle, titleIcon }: TopBarProps) {
       cancelled = true;
       unsubs.forEach((u) => u());
     };
-  }, []);
+  }, [profile?.plan, t]);
 
   const handleLogout = async () => {
     setShowUserMenu(false);
@@ -330,6 +361,15 @@ export default function TopBar({ title, subtitle, titleIcon }: TopBarProps) {
                         )}
                         onClick={() => {
                           setShowNotifications(false);
+                          if (notif.id.startsWith("upgrade-nudge") || notif.eventName === "billing:upgrade_nudge") {
+                            markUpgradeNudgeShown(profile?.plan);
+                            navigate("/upgrade");
+                            return;
+                          }
+                          if (notif.href) {
+                            navigate(notif.href);
+                            return;
+                          }
                           navigate("/notifications");
                         }}
                       >
@@ -406,8 +446,11 @@ export default function TopBar({ title, subtitle, titleIcon }: TopBarProps) {
                   exit={{ opacity: 0, y: 8, scale: 0.98 }}
                   className="absolute right-0 mt-2 w-56 bg-card rounded-lg shadow-lg border border-border z-50 overflow-hidden"
                 >
-                  <div className="p-3 border-b border-border">
-                    <p className="text-[13px] font-bold text-foreground">{user?.displayName}</p>
+                  <div className="p-3 border-b border-border space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[13px] font-bold text-foreground truncate">{user?.displayName}</p>
+                      <PlanBadge plan={profile?.plan} size="sm" linkToUpgrade />
+                    </div>
                     <p className="text-[11px] text-muted-foreground truncate">{user?.email}</p>
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">

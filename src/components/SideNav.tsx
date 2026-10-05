@@ -14,6 +14,7 @@ import {
   LucideIcon,
   Image as ImageIcon,
   Video,
+  Film,
   LayoutDashboard,
   Swords,
   Cpu
@@ -26,7 +27,8 @@ import { ScrollArea } from "./ui/scroll-area";
 import { auth, db } from "../firebase";
 import { UserProfile, NotificationItem } from "../types";
 import { Button, buttonVariants } from "./ui/button";
-import { Badge } from "./ui/badge";
+import { PlanBadge } from "./PlanBadge";
+import { buildUpgradeNudge } from "../lib/upgradeNudge";
 import { Logo } from "./Logo";
 import {
   Tooltip,
@@ -38,7 +40,8 @@ import { useAppSelector } from "../store/hooks";
 import { selectAuthProfile, selectResolvedUserPhoto, selectResolvedDisplayName } from "../store/slices/authSlice";
 import { ProfilePhoto } from "./ProfilePhoto";
 import { socketService } from "../services/socketService";
-
+import { notificationApi } from "../services/apiClient";
+import { normalizeNotificationList } from "../lib/notifications";
 import { NotificationPanel } from "./NotificationPanel";
 
 const navItems = [
@@ -50,6 +53,7 @@ const navItems = [
 const toolItems = [
   { icon: ImageIcon, label: "Image Studio", href: "/create/image", translationKey: "nav.image_studio" },
   { icon: Video, label: "Clip Studio", href: "/create/clip", translationKey: "nav.clip_editor" },
+  { icon: Film, label: "AI Story Engine", href: "/create/story-engine", translationKey: "nav.story_engine" },
 ];
 
 const supportItems = [
@@ -143,66 +147,141 @@ export default function SideNav({ isCollapsed, setIsCollapsed }: SideNavProps) {
         : { to: "/upgrade", label: t("nav.upgrade_pro"), variant: "brand-gradient" as const };
 
   useEffect(() => {
-    // Initial simulation if empty
-    if (notifications.length === 0) {
-      setNotifications([
-        {
-          id: "initial-1",
-          title: "Welcome Back!",
-          description: "Check your new growth insights for today.",
-          type: "insight",
-          timestamp: new Date(),
-          unread: true
-        }
-      ]);
-    }
+    let cancelled = false;
 
-    const addNotification = (notif: NotificationItem) => {
-      setNotifications(prev => [notif, ...prev].slice(0, 10)); // Keep last 10
+    const toItem = (
+      id: string,
+      title: string,
+      description: string,
+      type: NotificationItem["type"],
+      unread: boolean,
+      href?: string,
+      createdAt?: string,
+    ): NotificationItem => ({
+      id,
+      title,
+      description,
+      type,
+      timestamp: createdAt ? new Date(createdAt) : new Date(),
+      unread,
+      href,
+    });
+
+    const inferType = (eventName?: string, title = ""): NotificationItem["type"] => {
+      const hay = `${eventName || ""} ${title}`.toLowerCase();
+      if (hay.includes("upgrade") || hay.includes("billing") || hay.includes("subscription")) {
+        return "billing";
+      }
+      if (hay.includes("engagement") || hay.includes("social")) return "engagement";
+      if (hay.includes("analytic") || hay.includes("insight") || hay.includes("report")) {
+        return "insight";
+      }
+      return "update";
     };
 
-    // Subscriptions
-    const unsubEngagement = socketService.subscribe("social:engagement", (event, payload: any) => {
-      const data = payload.data || payload;
-      addNotification({
-        id: `eng-${Date.now()}`,
-        title: data.title || "New Engagement",
-        description: data.message || "Someone interacted with your content.",
-        type: "engagement",
-        timestamp: new Date(),
-        unread: true
-      });
+    const load = async () => {
+      const seed: NotificationItem[] = [];
+      const nudge = buildUpgradeNudge(profile?.plan, t);
+      if (nudge) {
+        seed.push(
+          toItem(nudge.id, nudge.title, nudge.body, "billing", true, nudge.href),
+        );
+      }
+
+      try {
+        const res = await notificationApi.getNotifications(undefined, 12);
+        if (cancelled) return;
+        const items = normalizeNotificationList(res).map((n) =>
+          toItem(
+            n.id,
+            n.title,
+            n.body,
+            inferType(n.eventName, n.title),
+            !n.read,
+            n.href,
+            n.createdAt,
+          ),
+        );
+        setNotifications([
+          ...seed.filter((s) => !items.some((i) => i.id === s.id)),
+          ...items,
+        ].slice(0, 12));
+      } catch {
+        if (!cancelled) {
+          setNotifications(seed);
+        }
+      }
+    };
+
+    void load();
+
+    const addNotification = (notif: NotificationItem) => {
+      setNotifications((prev) => [notif, ...prev.filter((n) => n.id !== notif.id)].slice(0, 12));
+    };
+
+    const unsubEngagement = socketService.subscribe("social:engagement", (_event, payload: any) => {
+      const data = payload?.data || payload || {};
+      addNotification(
+        toItem(
+          `eng-${Date.now()}`,
+          data.title || "New Engagement",
+          data.message || "Someone interacted with your content.",
+          "engagement",
+          true,
+          "/profile",
+        ),
+      );
     });
 
-    const unsubUpdate = socketService.subscribe("system:update", (event, payload: any) => {
-      const data = payload.data || payload;
-      addNotification({
-        id: `upd-${Date.now()}`,
-        title: data.title || "System Update",
-        description: data.message || "New features have been added.",
-        type: "update",
-        timestamp: new Date(),
-        unread: true
-      });
+    const unsubInsight = socketService.subscribe("analytics:report_ready", () => {
+      addNotification(
+        toItem(
+          `ins-${Date.now()}`,
+          "New Growth Insight",
+          "Your analytics report is ready.",
+          "insight",
+          true,
+          "/analytics",
+        ),
+      );
     });
 
-    const unsubInsight = socketService.subscribe("analytics:report_ready", (event, payload: any) => {
-      addNotification({
-        id: `ins-${Date.now()}`,
-        title: "New Growth Insight",
-        description: "Your analytics report is ready.",
-        type: "insight",
-        timestamp: new Date(),
-        unread: true
-      });
+    const unsubOnboarding = socketService.subscribe("onboarding:complete", (_e, payload: any) => {
+      const data = payload?.data || payload || {};
+      addNotification(
+        toItem(
+          `onb-${Date.now()}`,
+          "Onboarding complete",
+          data.message || "Your Creator Coach plan is ready.",
+          "insight",
+          true,
+          "/dashboard",
+        ),
+      );
+    });
+
+    const unsubBilling = socketService.subscribe("billing:subscription_changed", (_e, payload: any) => {
+      const data = payload?.data || payload || {};
+      addNotification(
+        toItem(
+          `bill-${Date.now()}`,
+          "Subscription updated",
+          `Your plan is now ${data.plan || "updated"}.`,
+          "billing",
+          true,
+          "/settings",
+        ),
+      );
     });
 
     return () => {
+      cancelled = true;
       unsubEngagement();
-      unsubUpdate();
       unsubInsight();
+      unsubOnboarding();
+      unsubBilling();
     };
-  }, []);
+  }, [profile?.plan, t]);
 
   const unreadCount = notifications.filter(n => n.unread).length;
 
@@ -265,9 +344,15 @@ export default function SideNav({ isCollapsed, setIsCollapsed }: SideNavProps) {
             )}
             <div className="space-y-0.5">
               {toolItems.map((item) => {
-                const isActive = item.href === "/create/clip"
-                  ? location.pathname.startsWith("/create/clip")
-                  : location.pathname === item.href;
+                const isActive =
+                  item.href === "/create/clip"
+                    ? location.pathname.startsWith("/create/clip")
+                    : item.href === "/create/story-engine"
+                      ? location.pathname.startsWith("/create/story-engine") ||
+                        location.pathname.startsWith("/create/event-highlight")
+                      : location.pathname === item.href ||
+                        (item.href === "/create/image" &&
+                          location.pathname.startsWith("/create/image"));
                 return <NavLink key={item.href} item={item} isActive={isActive} isCollapsed={isCollapsed} t={t} i18n={i18n} />;
               })}
             </div>
@@ -424,7 +509,7 @@ export default function SideNav({ isCollapsed, setIsCollapsed }: SideNavProps) {
       </div>
       {/* User Area */}
       <div className="p-3 border-t border-border mt-auto">
-        {!isCollapsed && profile?.plan === "free" && (
+        {!isCollapsed && currentPlan !== "studio" && (
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -432,16 +517,20 @@ export default function SideNav({ isCollapsed, setIsCollapsed }: SideNavProps) {
           >
             <div className="flex items-center gap-2 text-primary">
               <Zap size={14} fill="currentColor" />
-              <p className="text-[10px] font-bold tracking-wider">{t('nav.growth_tip.title')}</p>
+              <p className="text-[10px] font-bold tracking-wider">
+                {currentPlan === "pro" ? t("nav.growth_tip_pro.title") : t("nav.growth_tip.title")}
+              </p>
             </div>
             <p className="text-[11px] text-muted-foreground font-medium leading-tight">
-              {t('nav.growth_tip.description')}
+              {currentPlan === "pro"
+                ? t("nav.growth_tip_pro.description")
+                : t("nav.growth_tip.description")}
             </p>
             <Link 
               to="/upgrade" 
               className="block w-full py-1.5 bg-primary text-white text-[10px] font-bold text-center rounded tracking-widest hover:bg-primary/90 transition-all"
             >
-              {t('nav.growth_tip.cta')}
+              {currentPlan === "pro" ? t("nav.growth_tip_pro.cta") : t("nav.growth_tip.cta")}
             </Link>
           </motion.div>
         )}
@@ -468,9 +557,7 @@ export default function SideNav({ isCollapsed, setIsCollapsed }: SideNavProps) {
                 <p className="text-[13px] font-bold text-foreground truncate leading-none">
                   {displayName || profile?.displayName || "Creator"}
                 </p>
-                <Badge variant={profile?.plan === "free" ? "secondary" : "brand-gradient"} className="h-4 px-1.5 text-[8px] tracking-tighter shrink-0 border-none">
-                  {profile?.plan === "pro" ? "Pro" : profile?.plan === "studio" ? "Studio" : "Free"}
-                </Badge>
+                <PlanBadge plan={profile?.plan} size="sm" showIcon={false} />
               </div>
               <p className="text-[10px] text-muted-foreground truncate font-medium">
                 {profile?.email}
@@ -480,8 +567,8 @@ export default function SideNav({ isCollapsed, setIsCollapsed }: SideNavProps) {
           {isCollapsed && (
             <div className="absolute -top-1 -right-1">
               <div className={cn(
-                "w-2 h-2 rounded-full border border-card",
-                profile?.plan === "free" ? "bg-muted" : "bg-primary"
+                "w-2.5 h-2.5 rounded-full border border-card",
+                currentPlan === "free" ? "bg-amber-500" : currentPlan === "studio" ? "bg-teal-700" : "bg-primary"
               )} />
             </div>
           )}

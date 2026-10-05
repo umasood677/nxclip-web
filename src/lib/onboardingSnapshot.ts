@@ -230,12 +230,28 @@ export function creatorFieldsFromIdentityMe(me: Record<string, unknown> | null |
     }
   }
 
+  const plan = asRecord(onboardingPlan);
+  const nested = plan ? asRecord(plan.plan) : null;
+  const planNichesRaw = nested?.niches ?? plan?.niches;
+  const planNiches = Array.isArray(planNichesRaw)
+    ? planNichesRaw.map(String).filter(Boolean)
+    : [];
+  const fromMe = Array.isArray(niches) ? niches.map(String).filter(Boolean) : [];
+
+  const category =
+    ((me.creatorCategory ?? me.CreatorCategory ?? null) as string | null) ||
+    (typeof nested?.category === "string" ? nested.category : null) ||
+    (typeof plan?.category === "string" ? plan.category : null);
+  const categoryLabel =
+    ((me.creatorCategoryLabel ?? me.CreatorCategoryLabel ?? null) as string | null) ||
+    (typeof nested?.categoryLabel === "string" ? nested.categoryLabel : null) ||
+    (typeof plan?.categoryLabel === "string" ? plan.categoryLabel : null) ||
+    category;
+
   return {
-    creatorCategory: (me.creatorCategory ?? me.CreatorCategory ?? null) as string | null,
-    creatorCategoryLabel: (me.creatorCategoryLabel ?? me.CreatorCategoryLabel ?? null) as
-      | string
-      | null,
-    creatorNiches: Array.isArray(niches) ? niches.map(String).filter(Boolean) : [],
-    onboardingPlan: asRecord(onboardingPlan),
+    creatorCategory: category,
+    creatorCategoryLabel: categoryLabel,
+    creatorNiches: fromMe.length ? fromMe : planNiches,
+    onboardingPlan: plan,
   };
 }

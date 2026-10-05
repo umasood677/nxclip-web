@@ -35,6 +35,7 @@ import {
   beginWeekPlanRenewal,
   beginOnboardingRevision,
 } from "../../lib/weekPlan";
+import { creatorFieldsFromIdentityMe } from "../../lib/onboardingSnapshot";
 import {
   coachApi,
   identityApi,
@@ -46,11 +47,32 @@ import { socketService } from "../../services/socketService";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { selectAuthUser, selectAuthProfile, setAuthProfile } from "../../store/slices/authSlice";
 
-function extractWeekPlan(result: CoachPlanResponse | Record<string, unknown>): CoachPlanResponse["plan"] | null {
+function extractWeekPlan(
+  result: CoachPlanResponse | Record<string, unknown>,
+): (CoachPlanResponse["plan"] & {
+  category?: string;
+  categoryLabel?: string;
+  niches?: string[];
+}) | null {
   const r = result as CoachPlanResponse & { data?: CoachPlanResponse };
   const payload = r.plan ? r : r.data;
   const plan = payload?.plan;
+  const topCategory =
+    (typeof (result as CoachPlanResponse).category === "string" &&
+      (result as CoachPlanResponse).category) ||
+    undefined;
+  const topLabel =
+    (typeof (result as CoachPlanResponse).categoryLabel === "string" &&
+      (result as CoachPlanResponse).categoryLabel) ||
+    undefined;
+  const topNiches = Array.isArray((result as CoachPlanResponse).niches)
+    ? ((result as CoachPlanResponse).niches as string[]).map(String).filter(Boolean)
+    : [];
+
   if (plan && Array.isArray(plan.days)) {
+    const planNiches = Array.isArray(plan.niches)
+      ? plan.niches.map(String).filter(Boolean)
+      : [];
     return {
       introMessage: plan.introMessage || payload?.message || "Here is your personalized creator plan.",
       days: plan.days.map((d) => ({
@@ -66,6 +88,9 @@ function extractWeekPlan(result: CoachPlanResponse | Record<string, unknown>): C
         primaryColor: "#0D9488",
         motivationalQuote: "",
       },
+      category: plan.category || topCategory,
+      categoryLabel: plan.categoryLabel || topLabel || plan.category || topCategory,
+      niches: planNiches.length ? planNiches : topNiches,
     };
   }
   // Some gateways flatten days onto the root
@@ -90,6 +115,9 @@ function extractWeekPlan(result: CoachPlanResponse | Record<string, unknown>): C
         primaryColor: "#0D9488",
         motivationalQuote: "",
       },
+      category: topCategory,
+      categoryLabel: topLabel || topCategory,
+      niches: topNiches,
     };
   }
   return null;
@@ -198,25 +226,47 @@ export default function Onboarding() {
       const completed =
         user.onboardingCompleted === true ||
         (finishing && reduxProfile?.onboardingCompleted === true);
+      const creator = creatorFieldsFromIdentityMe(user as Record<string, unknown>);
+      const roles = (user.roles ?? user.Roles) as string[] | undefined;
+      const roleFromMe =
+        (Array.isArray(roles) && roles[0]) || user.role || reduxProfile?.role || "creator";
+
+      // Prefer server niches/plan; if identity lag leaves them empty, keep local revise results.
+      const nextNiches =
+        creator.creatorNiches.length > 0
+          ? creator.creatorNiches
+          : reduxProfile?.creatorNiches?.length
+            ? reduxProfile.creatorNiches
+            : [];
+      const nextCategory =
+        creator.creatorCategory ||
+        reduxProfile?.creatorCategory ||
+        null;
+      const nextCategoryLabel =
+        creator.creatorCategoryLabel ||
+        reduxProfile?.creatorCategoryLabel ||
+        nextCategory;
+      const nextPlan =
+        creator.onboardingPlan ||
+        (reduxProfile?.onboardingPlan as Record<string, unknown> | null) ||
+        null;
+
       dispatch(
         setAuthProfile({
           uid: user.id || user.uid || reduxUser?.uid || "",
           displayName: user.displayName || reduxProfile?.displayName || "Creator",
           email: user.email || reduxProfile?.email || "",
-          photoURL: user.photoURL || user.avatarUrl || null,
+          photoURL: user.photoURL || user.avatarUrl || user.AvatarUrl || null,
+          coverUrl: user.coverUrl || user.CoverUrl || reduxProfile?.coverUrl || null,
           plan: (user.plan || reduxProfile?.plan || "free") as "free" | "pro" | "studio",
-          role: user.role || reduxProfile?.role || "user",
+          role: String(roleFromMe).toLowerCase() as "user" | "creator" | "admin",
           onboardingCompleted: completed,
-          onboardingPlan: user.onboardingPlan ?? reduxProfile?.onboardingPlan ?? null,
-          creatorCategory: user.creatorCategory ?? user.CreatorCategory ?? reduxProfile?.creatorCategory ?? null,
-          creatorCategoryLabel:
-            user.creatorCategoryLabel ??
-            user.CreatorCategoryLabel ??
-            reduxProfile?.creatorCategoryLabel ??
-            null,
-          creatorNiches: user.creatorNiches ?? user.CreatorNiches ?? reduxProfile?.creatorNiches ?? [],
+          onboardingPlan: nextPlan,
+          creatorCategory: nextCategory,
+          creatorCategoryLabel: nextCategoryLabel,
+          creatorNiches: nextNiches,
           contentPlan:
-            contentPlanFromOnboarding(user.onboardingPlan) ??
+            contentPlanFromOnboarding(nextPlan) ??
             contentPlanFromOnboarding(reduxProfile?.onboardingPlan) ??
             reduxProfile?.contentPlan,
           createdAt: user.createdAt || reduxProfile?.createdAt || new Date().toISOString(),
@@ -405,15 +455,22 @@ export default function Onboarding() {
       categoryLabel?: string;
       niches?: string[];
     }) | null;
+    const niches = planRec?.niches?.length
+      ? planRec.niches
+      : base.creatorNiches?.length
+        ? base.creatorNiches
+        : [];
     dispatch(
       setAuthProfile({
         ...base,
+        role: (base.role || "creator") as "user" | "creator" | "admin",
         onboardingCompleted: true,
         onboardingPlan: weekPlan,
         contentPlan: contentPlanFromOnboarding(weekPlan),
         creatorCategory: planRec?.category ?? base.creatorCategory ?? null,
-        creatorCategoryLabel: planRec?.categoryLabel ?? planRec?.category ?? base.creatorCategoryLabel ?? null,
-        creatorNiches: planRec?.niches?.length ? planRec.niches : base.creatorNiches || [],
+        creatorCategoryLabel:
+          planRec?.categoryLabel ?? planRec?.category ?? base.creatorCategoryLabel ?? null,
+        creatorNiches: niches,
       }),
     );
     safeSessionStorage.setItem("finishing_onboarding", "true");
@@ -429,12 +486,29 @@ export default function Onboarding() {
       if (!weekPlan) {
         throw new Error("Plan was generated but could not be displayed. Please try again.");
       }
+      // Stamp category/niches from response root when plan object omits them.
+      if (!weekPlan.category && result.category) weekPlan.category = result.category;
+      if (!weekPlan.categoryLabel && result.categoryLabel) {
+        weekPlan.categoryLabel = result.categoryLabel;
+      }
+      if (!weekPlan.niches?.length && result.niches?.length) {
+        weekPlan.niches = result.niches;
+      }
+
       setPlan(weekPlan);
-      // Optimistic complete so Feed is reachable even if identity persist lags.
       markOnboardingCompleteLocally(weekPlan);
       clearWeekPlanRenewal();
-      void syncProfileFromMe();
-      toast.success("Your content plan is ready");
+      await syncProfileFromMe();
+
+      if (result.persisted === false) {
+        toast.warning("Plan ready locally", {
+          description:
+            "Could not save niche/plan to your account yet. Stay on this page and tap Generate again, or open Creator Coach → Revise niche.",
+          duration: 10000,
+        });
+      } else {
+        toast.success("Your content plan is ready");
+      }
     } catch (err: unknown) {
       const message = formatApiError(err);
       setError(message);

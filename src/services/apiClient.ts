@@ -1085,7 +1085,7 @@ export const identityApi = {
     email?: string;
     onboardingCompleted?: boolean;
   }) => {
-    return performApiRequest(
+    const result = await performApiRequest(
       "/users/me",
       {
         method: "PATCH",
@@ -1093,6 +1093,9 @@ export const identityApi = {
         body: JSON.stringify(data),
       }
     );
+    // Avatar/cover (and niche) updates must not be masked by the coalesced /users/me cache.
+    userMeCache = null;
+    return result;
   },
 
   getUserById: async (id: string): Promise<any> => {
@@ -2404,7 +2407,11 @@ export interface CoachStatusResponse {
 export interface CoachPlanResponse {
   message: string;
   category: string;
+  categoryLabel?: string;
+  niches?: string[];
   onboardingCompleted: boolean;
+  /** False when identity persist failed; SPA should keep niches from this response. */
+  persisted?: boolean;
   plan: {
     introMessage: string;
     days: Array<{
@@ -2420,6 +2427,10 @@ export interface CoachPlanResponse {
       primaryColor: string;
       motivationalQuote: string;
     };
+    customSystemPromptSuggestion?: string;
+    category?: string;
+    categoryLabel?: string;
+    niches?: string[];
   };
 }
 

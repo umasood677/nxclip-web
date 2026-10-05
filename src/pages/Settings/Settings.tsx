@@ -18,6 +18,7 @@ import { auth, handleFirestoreError, OperationType } from "../../firebase";
 import { useNavigate } from "react-router-dom";
 import { UserProfile } from "../../types";
 import { Badge } from "../../components/ui/badge";
+import { PlanBadge } from "../../components/PlanBadge";
 import { Input } from "../../components/ui/input";
 import { FormField } from "../../components/ui/form-field";
 import { Skeleton } from "../../components/ui/skeleton";
@@ -145,6 +146,9 @@ export default function Settings() {
       })
     : null;
 
+  /** Older accounts may omit plan — treat as Free so upgrade CTAs still appear. */
+  const planTier = String(profile?.plan || "free").toLowerCase();
+
   const handleCancelSubscription = async () => {
     setBillingBusy(true);
     try {
@@ -175,8 +179,8 @@ export default function Settings() {
             uid: res.id || res.uid,
             displayName: res.displayName || res.username || "Creator",
             email: res.email,
-            photoURL: res.avatarUrl || null,
-            coverUrl: res.coverUrl || null,
+            photoURL: res.avatarUrl || res.AvatarUrl || null,
+            coverUrl: res.coverUrl || res.CoverUrl || null,
             plan: (res.plan || "free").toLowerCase() as any,
             role: (res.roles?.[0] || "creator") as any,
             onboardingCompleted: res.onboardingCompleted ?? false,
@@ -357,17 +361,15 @@ export default function Settings() {
 
                 <div className="p-8 bg-card border border-border rounded-lg shadow-sm relative overflow-hidden group">
                   <div className={cn("absolute top-0 opacity-5 group-hover:opacity-10 transition-opacity p-6", i18n.language === 'ar' ? "left-0" : "right-0")}>
-                    {profile?.plan === "free" ? <CreditCard size={120} /> : <Sparkles size={120} className="text-primary" />}
+                    {planTier === "free" ? <CreditCard size={120} /> : <Sparkles size={120} className="text-primary" />}
                   </div>
                   
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
                     <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <Badge variant={profile?.plan === "free" ? "secondary" : "brand-gradient"} className="px-4 py-1 text-[10px] font-black uppercase tracking-widest border-none">
-                          {profile?.plan === "pro" ? t('settings.billing.plans.pro') : profile?.plan === "studio" ? t('settings.billing.plans.studio') : t('settings.billing.plans.free')}
-                        </Badge>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <PlanBadge plan={planTier} size="lg" linkToUpgrade />
                         <span className="text-sm font-bold text-foreground font-mono">
-                          {profile?.plan === "pro" ? t('settings.billing.pricing.pro') : profile?.plan === "studio" ? t('settings.billing.pricing.studio') : t('settings.billing.pricing.free')}
+                          {planTier === "pro" ? t('settings.billing.pricing.pro') : planTier === "studio" ? t('settings.billing.pricing.studio') : t('settings.billing.pricing.free')}
                         </span>
                         {billingInterval && (
                           <Badge variant="outline" className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest">
@@ -380,12 +382,18 @@ export default function Settings() {
                       
                       <div className="space-y-1">
                         <h4 className="text-lg font-bold text-foreground leading-none">
-                          {profile?.plan === "free" ? t('settings.billing.plans.limited') : t('settings.billing.plans.professional')}
+                          {planTier === "free"
+                            ? t('settings.billing.plans.limited')
+                            : planTier === "studio"
+                              ? t('settings.billing.plans.studio_suite')
+                              : t('settings.billing.plans.professional')}
                         </h4>
                         <p className="text-sm text-muted-foreground font-medium">
-                          {profile?.plan === "free" 
-                            ? t('settings.billing.plans.limited_desc') 
-                            : t('settings.billing.plans.professional_desc')}
+                          {planTier === "free"
+                            ? t('settings.billing.plans.limited_desc')
+                            : planTier === "studio"
+                              ? t('settings.billing.plans.studio_desc')
+                              : t('settings.billing.plans.professional_desc')}
                         </p>
                       </div>
 
@@ -393,8 +401,8 @@ export default function Settings() {
                         <div className="space-y-1">
                           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('settings.billing.status.label')}</p>
                           <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                            <div className={cn("w-2 h-2 rounded-full", profile?.plan === "free" ? "bg-muted" : "bg-primary animate-pulse")} />
-                            {profile?.plan === "free" ? t('settings.billing.status.active_basic') : t('settings.billing.status.active_premium')}
+                            <div className={cn("w-2 h-2 rounded-full", planTier === "free" ? "bg-amber-500" : "bg-primary animate-pulse")} />
+                            {planTier === "free" ? t('settings.billing.status.active_basic') : t('settings.billing.status.active_premium')}
                           </div>
                         </div>
                         <div className="space-y-1">
@@ -404,7 +412,7 @@ export default function Settings() {
                               : t('settings.billing.next_renewal')}
                           </p>
                           <p className="text-xs font-bold text-foreground">
-                            {profile?.plan === "free" || !renewalDate
+                            {planTier === "free" || !renewalDate
                               ? t('settings.billing.na')
                               : renewalDate}
                           </p>
@@ -420,7 +428,7 @@ export default function Settings() {
                     </div>
 
                     <div className="flex flex-col gap-2 shrink-0">
-                      {profile?.plan === "free" ? (
+                      {planTier === "free" && (
                         <button 
                           onClick={() => navigate("/upgrade")}
                           className="px-8 py-3 bg-primary text-primary-foreground rounded-md font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
@@ -428,14 +436,35 @@ export default function Settings() {
                           <Zap size={16} fill="currentColor" />
                           {t('settings.billing.upgrade')}
                         </button>
-                      ) : (
+                      )}
+                      {planTier === "pro" && (
+                        <>
+                          <button
+                            onClick={() => navigate("/upgrade")}
+                            className="px-8 py-3 bg-primary text-primary-foreground rounded-md font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+                          >
+                            <Sparkles size={16} />
+                            {t('settings.billing.upgrade_studio')}
+                          </button>
+                          <button
+                            disabled={billingBusy || billingStatus?.cancelAtPeriodEnd}
+                            onClick={() => void handleCancelSubscription()}
+                            className="px-8 py-3 bg-muted text-foreground rounded-md font-bold border border-border hover:bg-muted/80 transition-all disabled:opacity-50"
+                          >
+                            {billingStatus?.cancelAtPeriodEnd
+                              ? t('settings.billing.cancel_scheduled')
+                              : t('settings.billing.cancel')}
+                          </button>
+                        </>
+                      )}
+                      {planTier === "studio" && (
                         <button
                           disabled={billingBusy || billingStatus?.cancelAtPeriodEnd}
                           onClick={() => void handleCancelSubscription()}
                           className="px-8 py-3 bg-muted text-foreground rounded-md font-bold border border-border hover:bg-muted/80 transition-all disabled:opacity-50"
                         >
                           {billingStatus?.cancelAtPeriodEnd
-                            ? "Cancellation scheduled"
+                            ? t('settings.billing.cancel_scheduled')
                             : t('settings.billing.cancel')}
                         </button>
                       )}

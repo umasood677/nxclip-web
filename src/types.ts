@@ -84,7 +84,8 @@ export interface NotificationItem {
   id: string;
   title: string;
   description: string;
-  type: "engagement" | "update" | "insight";
+  type: "engagement" | "update" | "insight" | "billing";
   timestamp: Date;
   unread: boolean;
+  href?: string;
 }
