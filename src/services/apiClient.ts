@@ -990,7 +990,11 @@ export const identityApi = {
     );
   },
 
-  resetPassword: async (dto: { email: string; code: string; newPassword?: string }): Promise<{ success: boolean }> => {
+  resetPassword: async (dto: {
+    email: string;
+    code: string;
+    newPassword: string;
+  }): Promise<{ success: boolean }> => {
     return performApiRequest<{ success: boolean }>(
       "/auth/reset-password",
       {
@@ -998,6 +1002,16 @@ export const identityApi = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dto),
       }
+    );
+  },
+
+  /** Development-only: fetch reset code when SMTP is unavailable. */
+  getPasswordResetCode: async (
+    email: string,
+  ): Promise<{ email: string; token: string; expiresAt?: string; verifyUrl?: string }> => {
+    return performApiRequest<{ email: string; token: string; expiresAt?: string; verifyUrl?: string }>(
+      `/auth/dev/password-reset-code?email=${encodeURIComponent(email)}`,
+      { method: "GET", suppressErrorLog: true },
     );
   },
 
