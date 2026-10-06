@@ -188,6 +188,9 @@ export interface CanvasPanelProps {
   /** Matches left-panel primary action so canvas footer is not a second conflicting verb. */
   willCreateNewImage?: boolean;
   onStartFreshDraft?: () => void;
+  /** Free daily image generations remaining (null = unknown / unlimited plan UI). */
+  generationsLeft?: number | null;
+  dailyGenerationLimit?: number;
   /** False until AuthenticatedImage fires onLoad — gates captions/hashtags. */
   previewReady?: boolean;
   onPreviewReady?: () => void;

@@ -129,7 +129,12 @@ function tapMediaElement(el: HTMLMediaElement | null, dest: AudioNode, graph: Mi
   }
 }
 
-/** Preview mix: hub = master (can exceed 1), inserts = clip / BGM. BGM muted when no track. */
+/**
+ * Preview mix gains.
+ * Clip voice (NR / meter) goes through the Web Audio graph.
+ * BGM stays on the HTMLAudioElement — SoundHelix (and other CDN) URLs are
+ * cross-origin without CORS, so createMediaElementSource would silence them.
+ */
 export function setMixPreviewGains(opts: {
   master: number;
   clip: number;
@@ -139,7 +144,8 @@ export function setMixPreviewGains(opts: {
   lastPreviewGains = opts;
   const graph = mixGraph;
   if (!graph) return false;
-  applyPreviewGains(graph, opts);
+  // BGM is not tapped into the graph; keep bgmInsert at 0.
+  applyPreviewGains(graph, { ...opts, musicOn: false });
   return true;
 }
 
@@ -199,9 +205,11 @@ export function useMixGraphTap({
     const graph = ensureMixGraph();
     if (!graph) return;
     void graph.ctx.resume().catch(() => {});
+    // Only tap the clip — never BGM (cross-origin MediaElementSource → silent preview).
     tapMediaElement(videoRef.current, graph.clipInsert, graph);
-    tapMediaElement(bgmRef.current, graph.bgmInsert, graph);
-    applyPreviewGains(graph, lastPreviewGains);
+    void bgmRef;
+    void bgmKey;
+    applyPreviewGains(graph, { ...lastPreviewGains, musicOn: false });
     if (noiseReduced !== undefined) setMixClipNoiseReduction(noiseReduced);
   }, [tap, wake, videoRef, bgmRef, videoKey, bgmKey, noiseReduced]);
 }

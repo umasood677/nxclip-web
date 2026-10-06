@@ -59,7 +59,8 @@ export function ClipPublishPreview({
           </DialogTitle>
           <DialogDescription className="text-xs">
             {t("clip_editor.polish.publish_preview.subtitle", {
-              defaultValue: "This is what goes live on your feed and selected socials.",
+              defaultValue:
+                "Publish applies polish first (BGM, captions, hooks) then posts the rendered clip. This card preview is muted — use the polish player to hear audio.",
             })}
           </DialogDescription>
         </DialogHeader>

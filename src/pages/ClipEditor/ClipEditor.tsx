@@ -144,8 +144,13 @@ export default function ClipEditor() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
   const [renderStatus, setRenderStatus] = useState<string | null>(null);
+  const [contentStatus, setContentStatus] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const step = searchParams.get("step") || "trim";
+  const isAlreadyPublished = String(contentStatus || "").toLowerCase() === "published";
+  const publishBlockedReason = isAlreadyPublished
+    ? "This clip is already published. Publish is locked — use Download to export a new polished MP4."
+    : null;
   const [isPlaying, setIsPlaying] = useState(false);
   const [trimStart, setTrimStart] = useState(0);
   
@@ -342,6 +347,7 @@ export default function ClipEditor() {
           setAiSuggestions(item.captions.slice(0, 3));
         }
         if (item.renderStatus) setRenderStatus(item.renderStatus);
+        if (item.status) setContentStatus(String(item.status));
         const spec = item.clipEditSpec;
         const isAnimate =
           Boolean(spec?.animate) ||
@@ -544,46 +550,13 @@ export default function ClipEditor() {
       toast.error("No active clip ID found.");
       return;
     }
-    setPublishPreviewOpen(true);
-  };
-
-  const handlePublishContent = async () => {
-    if (!id) {
-      toast.error("No active clip ID found.");
+    if (isAlreadyPublished) {
+      toast.error("Already published", {
+        description: publishBlockedReason || undefined,
+      });
       return;
     }
-    setIsPublishing(true);
-    triggerHaptic('medium');
-    try {
-      toast.loading("Submitting to content moderation and feed...", { id: "publish-clip" });
-      await saveClipEditToServer();
-      await contentApi.publish(id, {
-        title,
-        description,
-        caption: socialCaption || title,
-        hashtags: hashtags.length ? hashtags : undefined,
-        socialPlatforms: socialPlatforms.length ? socialPlatforms : undefined,
-      });
-
-      toast.success("Published to your feed", { id: "publish-clip" });
-      const planDay = searchParams.get("planDay");
-      if (planDay && profile?.uid && id) {
-        markPlanDayComplete(profile.uid, planDay, id);
-      }
-      triggerHaptic('success');
-      setIsDirty(false);
-      setPublishPreviewOpen(false);
-      navigate("/feed");
-    } catch (err: any) {
-      console.error(err);
-      toast.error("Failed to publish clip", {
-        description: formatClipApiError(err, "An unexpected error occurred during publication."),
-        id: "publish-clip"
-      });
-      triggerHaptic('error');
-    } finally {
-      setIsPublishing(false);
-    }
+    setPublishPreviewOpen(true);
   };
 
   const scanHighlights = async () => {
@@ -751,7 +724,8 @@ export default function ClipEditor() {
         bgm.muted = true;
         bgm.volume = 0;
       } else {
-        bgm.volume = usedGraph ? 1 : Math.max(0, Math.min(1, music * master));
+        // BGM is element-routed (not Web Audio) so CORS CDNs stay audible.
+        bgm.volume = Math.max(0, Math.min(1, music * master));
         bgm.muted = isMusicMuted || isMasterMuted || music === 0 || master === 0;
       }
     }
@@ -1211,7 +1185,11 @@ export default function ClipEditor() {
       bgm.currentTime = 0;
     }
     applyPreviewMix();
-  }, [selectedTrackId, clearMixBgm, applyPreviewMix]);
+    const video = videoRef.current;
+    if (video && !video.paused && step === "polish") {
+      void bgm.play().catch(() => {});
+    }
+  }, [selectedTrackId, clearMixBgm, applyPreviewMix, step]);
 
   const generateAITitle = async () => {
     setIsGeneratingTitle(true);
@@ -1371,6 +1349,129 @@ export default function ClipEditor() {
     }
   }, [id, buildClipEditSpec]);
 
+  const polishNeedsBurnIn = useCallback(() => {
+    return Boolean(
+      selectedTrackId ||
+        topText.trim() ||
+        bottomText.trim() ||
+        hooks.some((h) => Boolean(h?.text?.trim())) ||
+        silenceEnabled ||
+        appliedTransitions.length,
+    );
+  }, [
+    selectedTrackId,
+    topText,
+    bottomText,
+    hooks,
+    silenceEnabled,
+    appliedTransitions.length,
+  ]);
+
+  /** Persist clipEditSpec and wait for media-worker polish (BGM, captions, hooks, trim). */
+  const ensurePolishedRender = useCallback(
+    async (opts?: { download?: boolean; toastId?: string }) => {
+      if (!id) throw new Error("No active clip ID found.");
+      const toastId = opts?.toastId ?? "render-clip";
+      toast.loading("Saving edit and applying polish (BGM, captions)…", { id: toastId });
+      const spec = buildClipEditSpec();
+      await contentApi.saveClipEdit(id, spec);
+      const queued = await contentApi.renderClip(id, { clipEditSpec: spec });
+      setRenderStatus(queued.renderStatus || "queued");
+
+      const started = Date.now();
+      let status = queued.renderStatus || "queued";
+      while (Date.now() - started < 120_000) {
+        await new Promise((r) => setTimeout(r, 1500));
+        const latest = await contentApi.getOwnedContentById(id, { suppressErrorLog: true });
+        status = latest.renderStatus || status;
+        setRenderStatus(status);
+        if (status === "completed" || status === "failed") break;
+      }
+
+      if (status !== "completed") {
+        throw new Error(status === "failed" ? "Render failed on the server" : "Render timed out");
+      }
+
+      if (opts?.download) {
+        const token = getAccessToken();
+        const mediaUrl = `${resolveBaseGatewayUrl()}/content/${id}/media?variant=render`;
+        const res = await fetch(mediaUrl, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        if (!res.ok) throw new Error(`Download failed (${res.status})`);
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = `${(title || "clip").replace(/[^\w\-]+/g, "_")}.mp4`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(objectUrl);
+      }
+
+      setIsDirty(false);
+      return status;
+    },
+    [id, buildClipEditSpec, title],
+  );
+
+  const handlePublishContent = async () => {
+    if (!id) {
+      toast.error("No active clip ID found.");
+      return;
+    }
+    if (isAlreadyPublished) {
+      toast.error("Already published", {
+        description: publishBlockedReason || undefined,
+      });
+      return;
+    }
+    setIsPublishing(true);
+    triggerHaptic("medium");
+    try {
+      const needsRender =
+        polishNeedsBurnIn() || isDirty || String(renderStatus || "").toLowerCase() !== "completed";
+      if (needsRender) {
+        setIsRendering(true);
+        toast.loading("Applying polish before publish…", { id: "publish-clip" });
+        await ensurePolishedRender({ toastId: "publish-clip" });
+        setIsRendering(false);
+      } else {
+        await saveClipEditToServer();
+      }
+
+      toast.loading("Submitting to content moderation and feed...", { id: "publish-clip" });
+      await contentApi.publish(id, {
+        title,
+        description,
+        caption: socialCaption || title,
+        hashtags: hashtags.length ? hashtags : undefined,
+        socialPlatforms: socialPlatforms.length ? socialPlatforms : undefined,
+      });
+
+      toast.success("Published to your feed", { id: "publish-clip" });
+      const planDay = searchParams.get("planDay");
+      if (planDay && profile?.uid && id) {
+        markPlanDayComplete(profile.uid, planDay, id);
+      }
+      triggerHaptic("success");
+      setIsDirty(false);
+      setPublishPreviewOpen(false);
+      navigate("/feed");
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Failed to publish clip", {
+        description: formatClipApiError(err, "An unexpected error occurred during publication."),
+        id: "publish-clip",
+      });
+      triggerHaptic("error");
+    } finally {
+      setIsRendering(false);
+      setIsPublishing(false);
+    }
+  };
+
   // Dashboard Workflow Intelligence: ?action=hooks generates viral hooks once.
   const autoHooksRanRef = useRef(false);
   useEffect(() => {
@@ -1522,44 +1623,7 @@ export default function ClipEditor() {
     setIsRendering(true);
     triggerHaptic("medium");
     try {
-      toast.loading("Saving edit and starting render…", { id: "render-clip" });
-      const spec = buildClipEditSpec();
-      await contentApi.saveClipEdit(id, spec);
-      const queued = await contentApi.renderClip(id, { clipEditSpec: spec });
-      setRenderStatus(queued.renderStatus || "queued");
-
-      // Poll until completed/failed (WS is nice-to-have; poll is reliable for Phase 0).
-      const started = Date.now();
-      let status = queued.renderStatus || "queued";
-      while (Date.now() - started < 120_000) {
-        await new Promise((r) => setTimeout(r, 1500));
-        const latest = await contentApi.getOwnedContentById(id, { suppressErrorLog: true });
-        status = latest.renderStatus || status;
-        setRenderStatus(status);
-        if (status === "completed" || status === "failed") break;
-      }
-
-      if (status !== "completed") {
-        throw new Error(status === "failed" ? "Render failed on the server" : "Render timed out");
-      }
-
-      const token = getAccessToken();
-      const mediaUrl = `${resolveBaseGatewayUrl()}/content/${id}/media?variant=render`;
-      const res = await fetch(mediaUrl, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-      if (!res.ok) throw new Error(`Download failed (${res.status})`);
-      const blob = await res.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = objectUrl;
-      a.download = `${(title || "clip").replace(/[^\w\-]+/g, "_")}.mp4`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(objectUrl);
-
-      setIsDirty(false);
+      await ensurePolishedRender({ download: true, toastId: "render-clip" });
       toast.success("Render ready — download started", { id: "render-clip" });
       triggerHaptic("success");
     } catch (err: any) {
@@ -2536,8 +2600,20 @@ export default function ClipEditor() {
                 <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider px-3 py-1">
                   {t('clip_editor.polish.polishing')}
                 </Badge>
+                {isAlreadyPublished ? (
+                  <Badge variant="outline" className="bg-muted border-border text-muted-foreground text-[10px] font-bold uppercase tracking-wider px-3 py-1">
+                    Published
+                  </Badge>
+                ) : null}
               </div>
             </div>
+
+            {isAlreadyPublished ? (
+              <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+                This clip is already published. Publish and social targets are locked. You can still tweak polish and use{" "}
+                <span className="font-semibold text-foreground">Download</span> to export a new MP4.
+              </div>
+            ) : null}
 
             {composeEnabled && composeSources.length >= 2 && (
               <ComposeTimelinePanel
@@ -3671,26 +3747,39 @@ export default function ClipEditor() {
                 <SocialPublishTargets
                   selected={socialPlatforms}
                   onChange={setSocialPlatforms}
-                  disabled={isPublishing}
+                  disabled={isPublishing || isAlreadyPublished}
                 />
-                <Button 
-                  size="default" 
-                  onClick={openPublishPreview}
-                  disabled={isPublishing}
-                  className="w-full flex items-center justify-center gap-2 shadow-lg shadow-primary/20 rounded-full font-bold bg-primary hover:bg-primary-strong transition-all h-11"
-                >
-                  {isPublishing ? (
-                    <>
-                      <span className="w-3.5 h-3.5 border-2 border-background border-t-transparent rounded-full animate-spin mr-2" />
-                      Publishing...
-                    </>
-                  ) : (
-                    <>
-                      {t('clip_editor.polish.actions.publish')}
-                      <ChevronRight size={18} />
-                    </>
-                  )}
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="block w-full">
+                      <Button 
+                        size="default" 
+                        onClick={openPublishPreview}
+                        disabled={isPublishing || isAlreadyPublished}
+                        className="w-full flex items-center justify-center gap-2 shadow-lg shadow-primary/20 rounded-full font-bold bg-primary hover:bg-primary-strong transition-all h-11 disabled:opacity-60"
+                      >
+                        {isPublishing ? (
+                          <>
+                            <span className="w-3.5 h-3.5 border-2 border-background border-t-transparent rounded-full animate-spin mr-2" />
+                            Publishing...
+                          </>
+                        ) : (
+                          <>
+                            {isAlreadyPublished
+                              ? "Already published"
+                              : t('clip_editor.polish.actions.publish')}
+                            {!isAlreadyPublished ? <ChevronRight size={18} /> : null}
+                          </>
+                        )}
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {publishBlockedReason ? (
+                    <TooltipContent side="top" className="max-w-[260px]">
+                      {publishBlockedReason}
+                    </TooltipContent>
+                  ) : null}
+                </Tooltip>
                 <Button 
                   variant="outline" 
                   size="default" 
@@ -3719,7 +3808,7 @@ export default function ClipEditor() {
                 <SocialPublishTargets
                   selected={socialPlatforms}
                   onChange={setSocialPlatforms}
-                  disabled={isPublishing}
+                  disabled={isPublishing || isAlreadyPublished}
                 />
               </div>
               <div className="lg:hidden fixed bottom-20 left-0 right-0 p-4 bg-background/95 backdrop-blur-xl border-t border-border z-50 animate-in fade-in slide-in-from-bottom-5 duration-300 shadow-soft-xl">
@@ -3733,21 +3822,38 @@ export default function ClipEditor() {
                   >
                     {isRendering ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
                   </Button>
-                  <Button 
-                    onClick={openPublishPreview}
-                    size="2xl" 
-                    disabled={isPublishing}
-                    className="col-span-5 flex items-center justify-center gap-2 shadow-soft-lg rounded-xl font-bold text-sm bg-primary hover:bg-primary-strong transition-all active:scale-95 text-primary-foreground"
-                  >
-                    <div className="flex items-center gap-1.5 mr-1">
-                      <SocialPlatformIcon platform="youtube" size={14} variant="mono" />
-                      <SocialPlatformIcon platform="instagram" size={14} variant="mono" />
-                      <SocialPlatformIcon platform="facebook" size={14} variant="mono" />
-                      <SocialPlatformIcon platform="tiktok" size={14} variant="mono" />
-                    </div>
-                    {isPublishing ? "Publishing..." : t('clip_editor.polish.actions.publish_socials')}
-                    <ChevronRight size={16} />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="col-span-5 block">
+                        <Button 
+                          onClick={openPublishPreview}
+                          size="2xl" 
+                          disabled={isPublishing || isAlreadyPublished}
+                          className="w-full flex items-center justify-center gap-2 shadow-soft-lg rounded-xl font-bold text-sm bg-primary hover:bg-primary-strong transition-all active:scale-95 text-primary-foreground disabled:opacity-60"
+                        >
+                          {!isAlreadyPublished ? (
+                            <div className="flex items-center gap-1.5 mr-1">
+                              <SocialPlatformIcon platform="youtube" size={14} variant="mono" />
+                              <SocialPlatformIcon platform="instagram" size={14} variant="mono" />
+                              <SocialPlatformIcon platform="facebook" size={14} variant="mono" />
+                              <SocialPlatformIcon platform="tiktok" size={14} variant="mono" />
+                            </div>
+                          ) : null}
+                          {isPublishing
+                            ? "Publishing..."
+                            : isAlreadyPublished
+                              ? "Already published"
+                              : t('clip_editor.polish.actions.publish_socials')}
+                          {!isAlreadyPublished ? <ChevronRight size={16} /> : null}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {publishBlockedReason ? (
+                      <TooltipContent side="top" className="max-w-[260px]">
+                        {publishBlockedReason}
+                      </TooltipContent>
+                    ) : null}
+                  </Tooltip>
                 </div>
               </div>
             </div>

@@ -23,6 +23,11 @@ export type AuthenticatedMediaPreviewProps = Omit<
   showPlayBadge?: boolean;
   /** Smaller shimmer for list-row thumbnails */
   loadingCompact?: boolean;
+  /**
+   * When true, click toggles play/pause (detail / fullscreen).
+   * Tile thumbs stay non-interactive (default false).
+   */
+  playable?: boolean;
 };
 
 function useGatewayMediaUrl(src: string, enabled: boolean): {
@@ -76,11 +81,13 @@ function AuthenticatedVideoPreview({
   onError,
   showPlayBadge = true,
   loadingCompact = false,
+  playable = false,
 }: AuthenticatedMediaPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const { url, waiting } = useGatewayMediaUrl(src, !failed);
   const resolvedUrl = url
     ? retryCount > 0
@@ -92,6 +99,7 @@ function AuthenticatedVideoPreview({
     setLoaded(false);
     setFailed(false);
     setRetryCount(0);
+    setIsPlaying(false);
   }, [src]);
 
   useEffect(() => {
@@ -120,10 +128,44 @@ function AuthenticatedVideoPreview({
     onLoad?.(e);
   };
 
+  const togglePlayback = async () => {
+    const el = videoRef.current;
+    if (!el || !playable) return;
+    try {
+      if (el.paused) {
+        el.muted = false;
+        await el.play();
+        setIsPlaying(true);
+      } else {
+        el.pause();
+        setIsPlaying(false);
+      }
+    } catch {
+      try {
+        el.muted = true;
+        await el.play();
+        setIsPlaying(true);
+      } catch {
+        /* autoplay / gesture blocked */
+      }
+    }
+  };
+
   return (
     <div
-      className={cn("relative overflow-hidden", wrapperClassName)}
-      onClick={onClick}
+      className={cn(
+        "relative overflow-hidden",
+        playable && loaded && !failed ? "cursor-pointer" : null,
+        wrapperClassName,
+      )}
+      onClick={(e) => {
+        onClick?.(e);
+        if (!playable || !loaded || failed) return;
+        // While playing, native controls own interaction; first tap starts playback.
+        if (isPlaying) return;
+        e.stopPropagation();
+        void togglePlayback();
+      }}
     >
       {(waiting || (!loaded && !failed)) ? (
         <MediaTileLoadingPlaceholder compact={loadingCompact} />
@@ -138,11 +180,15 @@ function AuthenticatedVideoPreview({
             !loaded ? "opacity-0" : "opacity-100",
             className,
           )}
-          muted
+          muted={!playable}
           playsInline
+          controls={playable && isPlaying}
           preload={priority ? "auto" : "metadata"}
           aria-label={alt}
           onLoadedData={handleLoaded}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onEnded={() => setIsPlaying(false)}
           onError={(e) => {
             if (retryCount < 1) {
               setRetryCount(1);
@@ -153,10 +199,15 @@ function AuthenticatedVideoPreview({
           }}
         />
       ) : null}
-      {showPlayBadge && loaded && !failed ? (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm border border-white/20">
-            <Play size={18} className="ml-0.5 fill-white" />
+      {showPlayBadge && loaded && !failed && !isPlaying ? (
+        <div
+          className={cn(
+            "absolute inset-0 flex items-center justify-center",
+            playable ? "pointer-events-none" : "pointer-events-none",
+          )}
+        >
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm border border-white/20 shadow-lg">
+            <Play size={22} className="ml-0.5 fill-white" />
           </div>
         </div>
       ) : null}
@@ -173,6 +224,7 @@ export function AuthenticatedMediaPreview({
   item,
   showPlayBadge,
   loadingCompact,
+  playable,
   ...props
 }: AuthenticatedMediaPreviewProps) {
   const resolvedKind =
@@ -184,6 +236,7 @@ export function AuthenticatedMediaPreview({
         {...props}
         loadingCompact={loadingCompact}
         showPlayBadge={showPlayBadge ?? true}
+        playable={playable}
       />
     );
   }

@@ -604,7 +604,7 @@ body.dark,
   }
 
   .ui-dashboard-top-content-grid {
-    @apply grid w-full gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4;
+    @apply grid w-full gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-start;
   }
 
   .ui-dashboard-main {

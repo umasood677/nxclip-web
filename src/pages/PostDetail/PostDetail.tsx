@@ -97,13 +97,18 @@ function pickPrompt(data: any): string {
 
 function pickAspectRatio(data: any): string {
   if (!data) return "1:1";
-  return (
+  const direct =
     data.aspectRatio ||
     data.metadata?.aspectRatio ||
     data.clipEditSpec?.aspect ||
     data.content?.aspectRatio ||
-    "1:1"
-  );
+    "";
+  if (direct) return String(direct);
+  const ct = String(data.contentType || data.type || data.content?.contentType || "")
+    .trim()
+    .toLowerCase();
+  if (ct === "clip" || ct === "video") return "9:16";
+  return "1:1";
 }
 
 function pickSelectedCaption(data: any): string {
@@ -745,10 +750,19 @@ export default function PostDetail() {
           
           {/* Main Media Showcase Card */}
           <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
-            {/* Top Media Frame */}
-            <div className="group relative flex min-h-[280px] max-h-[520px] items-center justify-center overflow-hidden bg-black/80">
+            {/* Top Media Frame — size from content aspect so 9:16 and 16:9 both fill properly */}
+            <div
+              className={cn(
+                "group relative w-full overflow-hidden bg-black",
+                contentType === "CLIP" ? "mx-auto max-w-md" : "max-w-full",
+              )}
+              style={{
+                aspectRatio: String(aspectRatio || "1:1").replace(":", " / "),
+                maxHeight: contentType === "CLIP" ? "min(72vh, 720px)" : "min(70vh, 640px)",
+              }}
+            >
               {loading ? (
-                <div className="flex flex-col items-center justify-center gap-3 py-24">
+                <div className="flex flex-col items-center justify-center gap-3 py-24 absolute inset-0">
                   <Loader2 className="animate-spin text-primary" size={36} />
                   <p className="font-mono text-xs text-muted-foreground">Loading content media...</p>
                 </div>
@@ -760,7 +774,8 @@ export default function PostDetail() {
                     src={imageUrl}
                     fallbackSrc={GLOBAL_FALLBACK_IMAGES[0]}
                     alt={title}
-                    className="!h-full !max-h-[520px] !w-full !object-contain transition-transform duration-500 group-hover:scale-[1.01]"
+                    playable={contentType === "CLIP"}
+                    className="!absolute !inset-0 !h-full !w-full !object-contain"
                     wrapperClassName="!absolute !inset-0 !h-full !w-full !aspect-auto !bg-transparent"
                     showPlayBadge={contentType === "CLIP"}
                     onError={handleImageError}
@@ -793,10 +808,14 @@ export default function PostDetail() {
                     </div>
                   </div>
 
-                  {/* Expand Fullscreen Button */}
+                  {/* Expand Fullscreen Button — always visible so clips/mobile can open it */}
                   <button 
-                    onClick={() => setIsFullscreenImage(true)}
-                    className="absolute bottom-4 right-4 z-20 rounded-xl border border-white/20 bg-black/60 p-2.5 text-white opacity-0 shadow-lg backdrop-blur-md transition-all hover:bg-black/80 group-hover:opacity-100"
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsFullscreenImage(true);
+                    }}
+                    className="absolute bottom-4 right-4 z-30 rounded-xl border border-white/20 bg-black/70 p-2.5 text-white shadow-lg backdrop-blur-md transition-all hover:bg-black/90"
                     title="View Fullscreen"
                   >
                     <Maximize2 size={16} />
@@ -1369,28 +1388,57 @@ export default function PostDetail() {
 
       </div>
 
-      {/* Fullscreen Image Modal */}
+      {/* Fullscreen media modal */}
       {isFullscreenImage && (
         <div 
           className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 sm:p-8"
           onClick={() => setIsFullscreenImage(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Fullscreen media"
         >
           <button 
-            onClick={() => setIsFullscreenImage(false)}
-            className="absolute top-6 right-6 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all border border-white/20 z-10"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsFullscreenImage(false);
+            }}
+            className="absolute top-6 right-6 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all border border-white/20 z-20"
           >
             <X size={20} />
           </button>
-          <AuthenticatedMediaPreview
-            item={postData}
-            kind={contentType === "CLIP" ? "video" : "auto"}
-            src={imageUrl}
-            alt={title}
-            className="max-w-full max-h-full object-contain rounded-xl border border-white/10 shadow-2xl"
-            wrapperClassName="!max-w-full !max-h-full !bg-transparent"
-            showPlayBadge={false}
-            onClick={(e) => e.stopPropagation()}
-          />
+          {(() => {
+            const token = String(aspectRatio || (contentType === "CLIP" ? "9:16" : "1:1"));
+            const [aw, ah] = token.split(/[:/]/).map((n) => Number(n.trim()));
+            const w = aw > 0 ? aw : 9;
+            const h = ah > 0 ? ah : 16;
+            // Size from viewport so video parent has definite box (clips were collapsing to 0).
+            const widthCss = `min(90vw, calc(90vh * ${w} / ${h}), ${contentType === "CLIP" ? "28rem" : "70rem"})`;
+            return (
+              <div
+                className="relative overflow-hidden rounded-xl border border-white/10 shadow-2xl bg-black"
+                style={{
+                  aspectRatio: `${w} / ${h}`,
+                  width: widthCss,
+                  height: "auto",
+                  maxHeight: "90vh",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <AuthenticatedMediaPreview
+                  item={postData}
+                  kind={contentType === "CLIP" ? "video" : "auto"}
+                  src={imageUrl}
+                  alt={title}
+                  playable={contentType === "CLIP"}
+                  priority
+                  className="!absolute !inset-0 !h-full !w-full !max-h-none !max-w-none !object-contain"
+                  wrapperClassName="!absolute !inset-0 !h-full !w-full !max-w-none !max-h-none !aspect-auto !bg-transparent"
+                  showPlayBadge={contentType === "CLIP"}
+                />
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>

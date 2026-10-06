@@ -214,14 +214,17 @@ function buildAnimateStillSuggestion(args: {
 }
 
 function findRelatedClipForDay(day: WeekPlanDay, content: ContentDto[]): ContentDto | undefined {
-  return content.find((c) => {
+  const clips = content.filter((c) => {
     const t = (c.contentType || "").toLowerCase();
     const s = (c.status || "").toLowerCase();
     return t === "clip" && s !== "deleted" && contentMatchesPlanDay(c, day);
   });
+  // Prefer drafts so Polish & render can still publish; published clips are view/export only.
+  return clips.find((c) => !isPublishedStatus(c.status)) || clips[0];
 }
 
 function clipNeedsPolish(clip: ContentDto): boolean {
+  if (isPublishedStatus(clip.status)) return false;
   const render = String(clip.renderStatus || "").toLowerCase();
   if (render === "completed") return false;
   return !!clip.storageKey;

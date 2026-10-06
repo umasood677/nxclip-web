@@ -222,6 +222,16 @@ export function GeneratePanel({
       ));
   const canGenerate =
     !isGenerating && promptOk && templateOk && generationsLeft !== 0 && !isUploadingReference;
+  const quotaExhausted = generationsLeft === 0;
+  const generateDisabledReason = quotaExhausted
+    ? `Daily Free limit reached (0/${dailyGenerationLimit}). Resets at midnight UTC — not a one-time lifetime cap. Upgrade for unlimited.`
+    : isUploadingReference
+      ? "Wait for reference uploads to finish before generating."
+      : !promptOk
+        ? "Add a prompt to generate or refine."
+        : !templateOk
+          ? "Select a meme template first."
+          : null;
   const selectedRefCount = referenceContentIds.length + referenceUploads.length;
   const libraryCandidateCount = libraryImages.filter((h) => h.id && h.url).length;
   const recentPromptItems = history
@@ -1296,30 +1306,46 @@ export function GeneratePanel({
       </ScrollArea>
 
       <div className="p-4 border-t border-border/50 shrink-0 bg-background/80 backdrop-blur-sm">
-        <Button
-          variant={generationsLeft === 0 ? "secondary" : "brand-gradient"}
-          className={cn(
-            "w-full font-bold shadow-lg shadow-primary/20",
-            generationsLeft === 0 && "bg-muted text-muted-foreground",
-            isRTL && "flex-row-reverse",
-          )}
-          onClick={handleGenerate}
-          disabled={!canGenerate}
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className={cn(isRTL ? "ml-2" : "mr-2", "h-4 w-4 animate-spin")} />
-              {t("image_studio.buttons.generating")}
-            </>
-          ) : (
-            <>
-              <Zap className={cn(isRTL ? "ml-2" : "mr-2", "h-4 w-4 fill-current")} />
-              {willCreateNewImage
-                ? t("image_studio.buttons.generate", { defaultValue: "Generate" })
-                : "Refine draft"}
-            </>
-          )}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="block w-full">
+              <Button
+                variant={generationsLeft === 0 ? "secondary" : "brand-gradient"}
+                className={cn(
+                  "w-full font-bold shadow-lg shadow-primary/20",
+                  generationsLeft === 0 && "bg-muted text-muted-foreground",
+                  isRTL && "flex-row-reverse",
+                )}
+                onClick={handleGenerate}
+                disabled={!canGenerate}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className={cn(isRTL ? "ml-2" : "mr-2", "h-4 w-4 animate-spin")} />
+                    {t("image_studio.buttons.generating")}
+                  </>
+                ) : (
+                  <>
+                    <Zap className={cn(isRTL ? "ml-2" : "mr-2", "h-4 w-4 fill-current")} />
+                    {willCreateNewImage
+                      ? t("image_studio.buttons.generate", { defaultValue: "Generate" })
+                      : "Refine draft"}
+                  </>
+                )}
+              </Button>
+            </span>
+          </TooltipTrigger>
+          {generateDisabledReason ? (
+            <TooltipContent side="top" className="max-w-[280px]">
+              {generateDisabledReason}
+            </TooltipContent>
+          ) : null}
+        </Tooltip>
+        {quotaExhausted && !isGenerating ? (
+          <p className="mt-1.5 text-[10px] text-center text-amber-600/90 dark:text-amber-400/90">
+            0/{dailyGenerationLimit} left today — Free quota refreshes daily at midnight UTC.
+          </p>
+        ) : null}
         {!willCreateNewImage && !isGenerating && (
           <p className="mt-1.5 text-[10px] text-center text-muted-foreground">
             Same action as the canvas button: updates this draft in place using the current preview as

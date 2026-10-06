@@ -69,6 +69,8 @@ export function CanvasPanel({
   refinePrompt,
   willCreateNewImage = true,
   onStartFreshDraft,
+  generationsLeft = null,
+  dailyGenerationLimit = 5,
   previewReady = false,
   onPreviewReady,
   libraryPickerOpen = false,
@@ -940,15 +942,25 @@ export function CanvasPanel({
           <div className="p-4 border-t border-border/50 bg-background/95 backdrop-blur-md shrink-0 flex flex-wrap justify-center items-center gap-3 relative z-30 shadow-lg">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2 h-9 text-xs font-bold" onClick={handleGenerate}>
-                  <RefreshCw className="h-4 w-4" />
-                  {willCreateNewImage ? "Generate" : "Refine draft"}
-                </Button>
+                <span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 h-9 text-xs font-bold"
+                    onClick={handleGenerate}
+                    disabled={generationsLeft === 0}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    {willCreateNewImage ? "Generate" : "Refine draft"}
+                  </Button>
+                </span>
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-[240px]">
-                {willCreateNewImage
-                  ? "Creates a new draft from the current prompt and options."
-                  : "Updates this draft in place using the current preview as the base. Same action as the left panel button."}
+              <TooltipContent side="top" className="max-w-[280px]">
+                {generationsLeft === 0
+                  ? `Daily Free limit reached (0/${dailyGenerationLimit}). Resets at midnight UTC — not a one-time lifetime cap.`
+                  : willCreateNewImage
+                    ? "Creates a new draft from the current prompt and options."
+                    : "Updates this draft in place using the current preview as the base. Same action as the left panel button."}
               </TooltipContent>
             </Tooltip>
             {!willCreateNewImage && onStartFreshDraft ? (

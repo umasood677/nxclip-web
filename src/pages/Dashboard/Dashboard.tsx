@@ -66,7 +66,8 @@ import {
   type FeedItemDto,
   type SocialPlatform,
 } from "../../services/apiClient";
-import { AuthenticatedImage } from "../../components/AuthenticatedImage";
+import { AuthenticatedMediaPreview } from "../../components/AuthenticatedMediaPreview";
+import { resolveContentKind, contentKindLabel } from "../../lib/contentKind";
 import { useAppSelector } from "../../store/hooks";
 import { selectAuthProfile } from "../../store/slices/authSlice";
 import { CreatorNicheTags } from "../../components/CreatorNicheTags";
@@ -87,7 +88,6 @@ import {
   mergeWorkflowSuggestions,
   type PlanWorkflowSuggestion,
 } from "../../lib/weekPlanWorkflow";
-import { contentKindLabel, resolveContentKind } from "../../lib/contentKind";
 import { resolveLibraryTitle } from "../ContentLibrary/lib/title";
 
 function formatCompact(n: number): string {
@@ -514,16 +514,18 @@ export default function Dashboard() {
       .slice(0, 4)
       .map((i) => {
         const insight = resolveSocialInsight(i.id);
-        const aspect = resolveItemAspectRatio(i);
+        const kind = resolveContentKind(i);
+        const aspect = resolveItemAspectRatio(i) || (kind === "clip" ? "9:16" : "1:1");
         const stampSource = i.publishedAt || i.createdAt;
         return {
           id: i.id,
           title: resolveLibraryTitle(i),
           thumbnail: resolveThumb(i),
+          kind,
           status: insight.displayLabel,
           displayStatus: insight.displayStatus,
           livePlatforms: insight.livePlatforms,
-          contentType: contentKindLabel(resolveContentKind(i)),
+          contentType: contentKindLabel(kind),
           aspectRatio: parseAspectRatio(aspect),
           aspectCss: cssAspectRatio(aspect),
           publishedStamp: formatPublishedStamp(stampSource, i18n.language),
@@ -942,23 +944,25 @@ export default function Dashboard() {
                       {TOP_CONTENT.map((content) => (
                       <Card
                         key={content.id}
-                        className="ui-top-content-card group flex flex-col overflow-hidden !p-2.5 min-w-0 bg-card h-full"
+                        className="ui-top-content-card group flex flex-col overflow-hidden !p-2.5 min-w-0 bg-card"
                       >
                         <div
-                          className="relative w-full rounded-lg overflow-hidden bg-muted shrink-0 isolate aspect-[4/5]"
-                          style={content.aspectCss ? { aspectRatio: content.aspectCss } : undefined}
+                          className="relative w-full rounded-lg overflow-hidden bg-muted shrink-0 isolate"
+                          style={{ aspectRatio: content.aspectCss || (content.kind === "clip" ? "9 / 16" : "1 / 1") }}
                         >
                           {content.thumbnail ? (
-                            <AuthenticatedImage
+                            <AuthenticatedMediaPreview
                               key={content.thumbnail}
                               src={content.thumbnail}
+                              kind={content.kind === "clip" ? "video" : "image"}
                               alt=""
                               disableRemoteFallback
                               priority
                               placeholderAspectRatio={content.aspectCss}
                               loadTimeoutMs={15000}
                               className="!absolute inset-0 !h-full !w-full !max-w-none !object-cover"
-                              wrapperClassName="!absolute inset-0 !h-full !w-full min-h-full"
+                              wrapperClassName="!absolute inset-0 !h-full !w-full min-h-full !aspect-auto overflow-hidden [&>video]:!absolute [&>video]:inset-0 [&>video]:!h-full [&>video]:!w-full [&>video]:!object-cover"
+                              showPlayBadge={content.kind === "clip"}
                             />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/40">

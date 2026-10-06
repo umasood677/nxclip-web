@@ -2578,6 +2578,8 @@ export default function ImageStudio() {
               refinePrompt={draftRefinePrompt}
               willCreateNewImage={willCreateNewImage}
               onStartFreshDraft={startFreshDraft}
+              generationsLeft={generationsLeft}
+              dailyGenerationLimit={dailyGenerationLimit ?? FREE_DAILY_GENERATION_LIMIT}
               previewReady={previewReady}
               onPreviewReady={() => setPreviewReady(true)}
               libraryPickerOpen={libraryPickerOpen}
@@ -2738,6 +2740,8 @@ export default function ImageStudio() {
           refinePrompt={draftRefinePrompt}
           willCreateNewImage={willCreateNewImage}
           onStartFreshDraft={startFreshDraft}
+          generationsLeft={generationsLeft}
+          dailyGenerationLimit={dailyGenerationLimit ?? FREE_DAILY_GENERATION_LIMIT}
           previewReady={previewReady}
           onPreviewReady={() => setPreviewReady(true)}
           libraryPickerOpen={libraryPickerOpen}
