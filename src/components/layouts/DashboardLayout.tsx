@@ -35,6 +35,7 @@ export default function DashboardLayout() {
       "/create": t("nav.create_hub"),
       "/analytics": t("analytics.title", { defaultValue: "Creator Analytics" }),
       "/coach": t("nav.coach"),
+      "/plan": t("profile.strategy.title", { defaultValue: "Week plan" }),
       "/my-content": t("nav.content_library"),
       "/library": t("nav.content_library"),
       "/profile": t("profile.title"),

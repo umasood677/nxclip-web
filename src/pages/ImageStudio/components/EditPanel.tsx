@@ -20,7 +20,7 @@ import { EditPanelProps } from "../types";
 
 export function EditPanel({ 
   resultImage, brightness, setBrightness, contrast, setContrast, saturation, setSaturation, 
-  isUpscaling, handleUpscale, isRemovingBg, handleRemoveBg, onPublishClick, onAnimateAsClipClick, isAnimatingAsClip, onViewHistoryClick, isPublishing, isPublished, className 
+  isUpscaling, handleUpscale, isRemovingBg, handleRemoveBg, onPublishClick, onAnimateAsClipClick, isAnimatingAsClip, canAnimateAsClip = true, animateCtaLabel = "Animate in Clip Studio", onViewHistoryClick, isPublishing, isPublished, className 
 }: EditPanelProps) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === "rtl";
@@ -208,7 +208,7 @@ export function EditPanel({
               variant="outline"
               className={cn("w-full text-xs gap-2 h-9 font-bold", isRTL && "flex-row-reverse")}
               onClick={onAnimateAsClipClick}
-              disabled={isAnimatingAsClip || isPublishing}
+              disabled={isAnimatingAsClip || isPublishing || !canAnimateAsClip}
             >
               {isAnimatingAsClip ? (
                 <>
@@ -218,10 +218,15 @@ export function EditPanel({
               ) : (
                 <>
                   <Clapperboard className="h-4 w-4" />
-                  Animate in Clip Studio
+                  {animateCtaLabel}
                 </>
               )}
             </Button>
+            {!canAnimateAsClip && isPublished ? (
+              <p className="text-[10px] text-muted-foreground leading-snug">
+                Published stills cannot be refined. Use Continue as draft &amp; animate from the week plan to create a clip.
+              </p>
+            ) : null}
             <Button 
               variant="brand-gradient" 
               className={cn("w-full text-xs gap-2 h-9 font-bold shadow-lg shadow-primary/20", isRTL && "flex-row-reverse")}

@@ -167,6 +167,9 @@ export interface CanvasPanelProps {
   onPublishClick?: () => void;
   onAnimateAsClipClick?: () => void;
   isAnimatingAsClip?: boolean;
+  /** When false, Animate is disabled (e.g. no draft / published without continue path). */
+  canAnimateAsClip?: boolean;
+  animateCtaLabel?: string;
   isPublishing?: boolean;
   isPublished?: boolean;
   watermarked?: boolean;
@@ -234,6 +237,8 @@ export interface EditPanelProps {
   onPublishClick?: () => void;
   onAnimateAsClipClick?: () => void;
   isAnimatingAsClip?: boolean;
+  canAnimateAsClip?: boolean;
+  animateCtaLabel?: string;
   onViewHistoryClick?: () => void;
   isPublishing?: boolean;
   isPublished?: boolean;

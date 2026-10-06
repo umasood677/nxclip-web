@@ -1,0 +1,1 @@
+import{j as o,cr as s,l as e}from"./index-BX_F6KKg.js";function i({className:a,orientation:r="horizontal",...t}){return o.jsx(s,{"data-slot":"separator",orientation:r,className:e("shrink-0 bg-border data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch",a),...t})}export{i as S};

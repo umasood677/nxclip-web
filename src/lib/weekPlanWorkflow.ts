@@ -131,6 +131,15 @@ export function contentMatchesPlanDay(content: ContentDto, day: WeekPlanDay): bo
   return true;
 }
 
+function isDraftLikeStatus(status: string | undefined | null): boolean {
+  const s = (status || "").toLowerCase();
+  return s === "draft" || s === "approved" || s === "processing";
+}
+
+function isPublishedStatus(status: string | undefined | null): boolean {
+  return (status || "").toLowerCase() === "published";
+}
+
 function findRelatedStillForClipDay(day: WeekPlanDay, content: ContentDto[]): ContentDto | undefined {
   const stills = content.filter((c) => {
     const t = (c.contentType || "").toLowerCase();
@@ -143,13 +152,65 @@ function findRelatedStillForClipDay(day: WeekPlanDay, content: ContentDto[]): Co
       !s.includes("fail")
     );
   });
-  return (
-    stills.find((c) => contentThemeMatchesDay(c, day)) ||
-    stills.find((c) => {
+  const themeOrPlan = (c: ContentDto) =>
+    contentThemeMatchesDay(c, day) ||
+    (() => {
       const planDay = String((c as { planDay?: string }).planDay || "").toLowerCase();
       return planDay && planDay === normalizePlanDayKey(day.day);
-    })
+    })();
+
+  const matched = stills.filter(themeOrPlan);
+  // Prefer drafts so Animate can run in-place; published stills need a continue-as-draft path.
+  return (
+    matched.find((c) => isDraftLikeStatus(c.status)) ||
+    matched.find((c) => isPublishedStatus(c.status)) ||
+    matched[0]
   );
+}
+
+function buildAnimateStillSuggestion(args: {
+  day: WeekPlanDay;
+  dayKey: string;
+  still: ContentDto;
+  planTier: "FREE" | "PRO" | "STUDIO";
+  isToday: boolean;
+  index: number;
+  planDayStatus: PlanDayStatus;
+}): PlanWorkflowSuggestion {
+  const { day, dayKey, still, planTier, isToday, index, planDayStatus } = args;
+  const useI2v = planTier !== "FREE";
+  const suggest = useI2v ? "animate_i2v" : "animate_ken_burns";
+  const published = isPublishedStatus(still.status);
+  const href = published
+    ? `/create/image?editId=${still.id}&suggest=${suggest}&forClip=1&fromPublished=1&planDay=${encodeURIComponent(day.day)}`
+    : `/create/image?editId=${still.id}&suggest=${suggest}&forClip=1&planDay=${encodeURIComponent(day.day)}`;
+
+  return {
+    id: `plan-${dayKey}${published ? "-pub" : ""}`,
+    contentId: still.id,
+    contentType: (still.contentType as "image" | "meme") || "image",
+    title: day.title || day.theme,
+    thumbnailUrl: still.thumbnailUrl || still.cdnUrl || still.imageUrl,
+    action: published ? "continue_animate_published" : useI2v ? "animate_i2v" : "animate_ken_burns",
+    headline: published
+      ? `${day.day}: Continue from published still`
+      : `${day.day}: Animate your base image`,
+    reason: published
+      ? `“${day.title || day.theme}” is already published. Continue as a new clip draft (Ken Burns / AI motion) — refine stays locked on the published still.`
+      : useI2v
+        ? `Base still ready for “${day.title || day.theme}”. Run AI motion → Clip Studio to finish the short.`
+        : `Base still ready for “${day.title || day.theme}”. Use Ken Burns → Clip Studio (AI motion needs Pro/Studio).`,
+    priority: isToday ? (published ? 98 : 100) : published ? 85 - index : 92 - index,
+    ctaLabel: published
+      ? "Continue as draft & animate"
+      : useI2v
+        ? "Animate with AI"
+        : "Animate clip",
+    href,
+    planDay: day.day,
+    planDayStatus,
+    source: "week_plan",
+  };
 }
 
 function findRelatedClipForDay(day: WeekPlanDay, content: ContentDto[]): ContentDto | undefined {
@@ -314,25 +375,15 @@ export function buildPlanWorkflowSuggestions(
 
       const still = findRelatedStillForClipDay(item.day, activeContent);
       if (still) {
-        const useI2v = planTier !== "FREE";
-        return {
-          id: `plan-${item.dayKey}`,
-          contentId: still.id,
-          contentType: (still.contentType as "image" | "meme") || "image",
-          title: item.day.title || item.day.theme,
-          thumbnailUrl: still.thumbnailUrl || still.cdnUrl || still.imageUrl,
-          action: useI2v ? "animate_i2v" : "animate_ken_burns",
-          headline: `${item.day.day}: Animate your base image`,
-          reason: useI2v
-            ? `Base still ready for “${item.day.title || item.day.theme}”. Run AI motion → Clip Studio to finish the short.`
-            : `Base still ready for “${item.day.title || item.day.theme}”. Use Ken Burns → Clip Studio (AI motion needs Pro/Studio).`,
-          priority: isToday ? 100 : 92 - item.index,
-          ctaLabel: useI2v ? "Animate with AI" : "Animate clip",
-          href: `/create/image?editId=${still.id}&suggest=${useI2v ? "animate_i2v" : "animate_ken_burns"}&forClip=1&planDay=${encodeURIComponent(item.day.day)}`,
-          planDay: item.day.day,
+        return buildAnimateStillSuggestion({
+          day: item.day,
+          dayKey: item.dayKey,
+          still,
+          planTier,
+          isToday,
+          index: item.index,
           planDayStatus: "pending",
-          source: "week_plan",
-        };
+        });
       }
 
       return {
@@ -387,48 +438,65 @@ export function buildPlanWorkflowSuggestions(
     };
   });
 
-  // Secondary nudge: done days whose clip still needs polish
+  // Secondary nudge: done days whose clip still needs polish — or published still awaiting animate
   for (const item of evaluated.filter((e) => e.status === "done")) {
     if (inferCreationType(item.day.contentType) !== "clip") continue;
     const clip =
       (item.matchedContentId &&
         activeContent.find((c) => c.id === item.matchedContentId && (c.contentType || "").toLowerCase() === "clip")) ||
       findRelatedClipForDay(item.day, activeContent);
-    if (!clip) continue;
-    if (clipAnimateFailed(clip)) {
-      suggestions.push({
-        id: `plan-resume-${item.dayKey}`,
-        contentId: clip.id,
-        contentType: "clip",
-        title: item.day.title || item.day.theme,
-        thumbnailUrl: clip.thumbnailUrl || clip.cdnUrl,
-        action: "open_studio",
-        headline: `${item.day.day}: Finish failed clip`,
-        reason: "Animation did not complete — retry so this plan day actually ships.",
-        priority: item.index === todayIdx ? 97 : 70,
-        ctaLabel: "Retry animation",
-        href: `/create/clip/${clip.id}/edit?step=polish&retryAnimate=1`,
-        planDay: item.day.day,
-        planDayStatus: "done",
-        source: "week_plan",
-      });
-    } else if (clipNeedsPolish(clip)) {
-      suggestions.push({
-        id: `plan-polish-${item.dayKey}`,
-        contentId: clip.id,
-        contentType: "clip",
-        title: item.day.title || item.day.theme,
-        thumbnailUrl: clip.thumbnailUrl || clip.cdnUrl,
-        action: "polish_render",
-        headline: `${item.day.day}: Finish polish`,
-        reason: "Clip exists for this plan day — add hooks/captions and render before Go Live.",
-        priority: item.index === todayIdx ? 96 : 68,
-        ctaLabel: "Polish & render",
-        href: `/create/clip/${clip.id}/edit?step=polish`,
-        planDay: item.day.day,
-        planDayStatus: "done",
-        source: "week_plan",
-      });
+    if (clip) {
+      if (clipAnimateFailed(clip)) {
+        suggestions.push({
+          id: `plan-resume-${item.dayKey}`,
+          contentId: clip.id,
+          contentType: "clip",
+          title: item.day.title || item.day.theme,
+          thumbnailUrl: clip.thumbnailUrl || clip.cdnUrl,
+          action: "open_studio",
+          headline: `${item.day.day}: Finish failed clip`,
+          reason: "Animation did not complete — retry so this plan day actually ships.",
+          priority: item.index === todayIdx ? 97 : 70,
+          ctaLabel: "Retry animation",
+          href: `/create/clip/${clip.id}/edit?step=polish&retryAnimate=1`,
+          planDay: item.day.day,
+          planDayStatus: "done",
+          source: "week_plan",
+        });
+      } else if (clipNeedsPolish(clip)) {
+        suggestions.push({
+          id: `plan-polish-${item.dayKey}`,
+          contentId: clip.id,
+          contentType: "clip",
+          title: item.day.title || item.day.theme,
+          thumbnailUrl: clip.thumbnailUrl || clip.cdnUrl,
+          action: "polish_render",
+          headline: `${item.day.day}: Finish polish`,
+          reason: "Clip exists for this plan day — add hooks/captions and render before Go Live.",
+          priority: item.index === todayIdx ? 96 : 68,
+          ctaLabel: "Polish & render",
+          href: `/create/clip/${clip.id}/edit?step=polish`,
+          planDay: item.day.day,
+          planDayStatus: "done",
+          source: "week_plan",
+        });
+      }
+      continue;
+    }
+
+    const still = findRelatedStillForClipDay(item.day, activeContent);
+    if (still) {
+      suggestions.push(
+        buildAnimateStillSuggestion({
+          day: item.day,
+          dayKey: item.dayKey,
+          still,
+          planTier,
+          isToday: item.index === todayIdx,
+          index: item.index,
+          planDayStatus: "done",
+        }),
+      );
     }
   }
 
@@ -461,7 +529,14 @@ export function mergeWorkflowSuggestions(
   limit = 12,
 ): PlanWorkflowSuggestion[] {
   const planPending = planSuggestions.filter(
-    (s) => s.action !== "renew_plan" && (s.planDayStatus !== "done" || s.action === "polish_render" || s.action === "open_studio"),
+    (s) =>
+      s.action !== "renew_plan" &&
+      (s.planDayStatus !== "done" ||
+        s.action === "polish_render" ||
+        s.action === "open_studio" ||
+        s.action === "continue_animate_published" ||
+        s.action === "animate_ken_burns" ||
+        s.action === "animate_i2v"),
   );
   const planRenew = planSuggestions.filter((s) => s.action === "renew_plan");
   const merged = [

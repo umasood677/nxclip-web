@@ -657,7 +657,7 @@ export default function Dashboard() {
         value: planProgressValue,
         hint: planHint,
         icon: ListChecks,
-        path: weekPlan ? "/profile?tab=plan#profile-week-plan" : "/onboarding",
+        path: weekPlan ? "/plan" : "/onboarding",
         onClick: weekPlan
           ? undefined
           : () => {
@@ -1184,7 +1184,7 @@ export default function Dashboard() {
                           </p>
                         </div>
                         <Button
-                          onClick={() => navigate("/profile?tab=plan#profile-week-plan")}
+                          onClick={() => navigate("/plan")}
                           variant="outline"
                           className="w-full h-9 text-xs font-semibold"
                         >

@@ -21,6 +21,7 @@ import { auth, handleFirestoreError, OperationType } from "../../firebase";
 import { UserProfile } from "../../types";
 import { Progress } from "../../components/ui/progress";
 import { Button, buttonVariants } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
 import { PlanBadge } from "../../components/PlanBadge";
 import { cn } from "../../lib/utils";
 import { beginWeekPlanRenewal, contentPlanFromOnboarding, weekPlanFromProfile, beginOnboardingRevision } from "../../lib/weekPlan";

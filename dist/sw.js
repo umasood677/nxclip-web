@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v4';
 const STATIC_CACHE_NAME = `nxclip-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `nxclip-dynamic-${CACHE_VERSION}`;
 
@@ -7,7 +7,11 @@ const CORE_ASSETS = [
   '/',
   '/index.html',
   '/favicon.svg',
-  '/manifest.json'
+  '/manifest.json',
+  '/nexa-logo.png',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/apple-touch-icon.png',
 ];
 
 // Install Event: Cache critical shell assets
@@ -60,6 +64,20 @@ self.addEventListener('message', (event) => {
   }
 });
 
+function offlineShell() {
+  return caches.match('/index.html').then((cached) => {
+    if (cached) return cached;
+    return caches.match('/').then((root) => {
+      if (root) return root;
+      return new Response('Offline', {
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: { 'Content-Type': 'text/plain' },
+      });
+    });
+  });
+}
+
 // Fetch Event: Robust caching strategy (App Shell / Stale-While-Revalidate / Offline Safeguard)
 self.addEventListener('fetch', (event) => {
   const { request } = event;
@@ -83,10 +101,15 @@ self.addEventListener('fetch', (event) => {
   // If user requests a page, serve '/index.html' from static cache if offline
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => {
-        console.log('[Service Worker] Navigation failed or offline. Displaying App Shell index.html.');
-        return caches.match('/index.html') || caches.match('/');
-      })
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.ok) return networkResponse;
+          return offlineShell();
+        })
+        .catch(() => {
+          console.log('[Service Worker] Navigation failed or offline. Displaying App Shell index.html.');
+          return offlineShell();
+        })
     );
     return;
   }
@@ -107,7 +130,8 @@ self.addEventListener('fetch', (event) => {
         })
         .catch((error) => {
           console.warn('[Service Worker] Background fetch failed (likely offline):', error);
-          // Return the cached response if offline fetch failed
+          if (cachedResponse) return cachedResponse;
+          return new Response('', { status: 408, statusText: 'Request Timeout' });
         });
 
       // Serve the cached copy immediately for high speed while updating in the background,
@@ -132,4 +156,3 @@ self.addEventListener('sync', (event) => {
     );
   }
 });
-

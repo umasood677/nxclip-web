@@ -54,6 +54,8 @@ export function CanvasPanel({
   onPublishClick,
   onAnimateAsClipClick,
   isAnimatingAsClip,
+  canAnimateAsClip = true,
+  animateCtaLabel = "Animate in Clip Studio",
   isPublishing,
   isPublished,
   watermarked: _watermarked,
@@ -554,10 +556,10 @@ export function CanvasPanel({
                           <TooltipTrigger asChild>
                             <button
                               type="button"
-                              aria-label="Animate in Clip Studio"
-                              disabled={isAnimatingAsClip || isPublishing}
+                              aria-label={animateCtaLabel}
+                              disabled={isAnimatingAsClip || isPublishing || !canAnimateAsClip}
                               onClick={onAnimateAsClipClick}
-                              className="h-8 w-8 rounded-full backdrop-blur-md text-white flex items-center justify-center border border-white/10 transition-all duration-200 bg-black/55 hover:bg-black/75 hover:scale-105 disabled:opacity-60"
+                              className="h-8 w-8 rounded-full backdrop-blur-md text-white flex items-center justify-center border border-white/10 transition-all duration-200 bg-black/55 hover:bg-black/75 hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
                             >
                               {isAnimatingAsClip ? (
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -566,7 +568,13 @@ export function CanvasPanel({
                               )}
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent>Animate in Clip Studio</TooltipContent>
+                          <TooltipContent>
+                            {canAnimateAsClip
+                              ? animateCtaLabel
+                              : isPublished
+                                ? "Published — use Continue as draft & animate from the week plan"
+                                : "Generate or open a draft first"}
+                          </TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>

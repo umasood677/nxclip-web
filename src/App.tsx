@@ -89,6 +89,7 @@ const EventHighlight = lazy(() => import("./pages/EventHighlight/EventHighlight"
 const PostDetail = lazy(() => import("./pages/PostDetail/PostDetail"));
 const UserProfilePage = lazy(() => import("./pages/UserProfile/UserProfile"));
 const OwnProfile = lazy(() => import("./pages/OwnProfile/OwnProfile"));
+const WeekPlanPage = lazy(() => import("./pages/WeekPlan/WeekPlanPage"));
 const EditProfile = lazy(() => import("./pages/EditProfile/EditProfile"));
 const ContentLibrary = lazy(() => import("./pages/ContentLibrary/ContentLibrary"));
 const BillingSuccessPage = lazy(() => import("./pages/Billing/BillingSuccessPage"));
@@ -410,6 +411,7 @@ export default function App() {
                     <Route path="/create/event-highlight" element={<EventHighlight />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/coach" element={<CreatorCoach />} />
+                    <Route path="/plan" element={<WeekPlanPage />} />
                     <Route path="/my-content" element={<ContentLibrary />} />
                     <Route path="/profile" element={<OwnProfile />} />
                     <Route path="/profile/edit" element={<EditProfile />} />

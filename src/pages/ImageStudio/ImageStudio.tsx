@@ -966,6 +966,9 @@ export default function ImageStudio() {
   const [isAnimatingAsClip, setIsAnimatingAsClip] = useState(false);
   const [animatePickerOpen, setAnimatePickerOpen] = useState(false);
   const [animateMode, setAnimateMode] = useState<"ken_burns" | "i2v">("ken_burns");
+  /** Source still for animate-as-clip — kept even when published remix clears currentContentId. */
+  const [animateSourceContentId, setAnimateSourceContentId] = useState<string | null>(null);
+  const [animateFromPublished, setAnimateFromPublished] = useState(false);
   const [motionPrompt, setMotionPrompt] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   /** True only after the preview image has finished loading (keeps captions behind the image). */
@@ -1035,6 +1038,10 @@ export default function ImageStudio() {
     contentStatus === "published" ||
     // Pure template memes are deterministic; AI + hybrid refine the same draft.
     (mode === "meme" && memeMode === "template");
+
+  const canAnimateAsClip = Boolean(animateSourceContentId || (!isPublished && currentContentId));
+  const animateCtaLabel =
+    isPublished || animateFromPublished ? "Continue as clip" : "Animate in Clip Studio";
 
   const activeDraftItem = currentContentId
     ? history.find((h) => h.id === currentContentId)
@@ -1158,6 +1165,9 @@ export default function ImageStudio() {
       // Remix published work as a new create with the image as Reference Image 1.
       setCurrentContentId(null);
       setForceNewGenerate(true);
+      // Still allow still→clip using the published asset as the animate source.
+      setAnimateSourceContentId(item.id || null);
+      setAnimateFromPublished(true);
       if (item.id) {
         setReferenceContentIds([item.id]);
         if (resolvedUrl) {
@@ -1166,7 +1176,9 @@ export default function ImageStudio() {
       }
     } else {
       setCurrentContentId(item.id);
+      setAnimateSourceContentId(item.id || null);
       setForceNewGenerate(false);
+      setAnimateFromPublished(false);
     }
   };
 
@@ -1176,6 +1188,8 @@ export default function ImageStudio() {
     clearViewedPrompts();
     setForceNewGenerate(false);
     setCurrentContentId(null);
+    setAnimateSourceContentId(null);
+    setAnimateFromPublished(false);
     setContentStatus(null);
     setIsPublished(false);
     setIsPublishing(false);
@@ -1305,6 +1319,7 @@ export default function ImageStudio() {
     const promptParam = searchParams.get("prompt");
     const planDayParam = searchParams.get("planDay");
     const forClipParam = searchParams.get("forClip") === "1";
+    const fromPublishedParam = searchParams.get("fromPublished") === "1";
     const ratioParam = searchParams.get("ratio");
     if (promptParam && !location.state?.prompt) {
       setPrompt(promptParam);
@@ -1318,13 +1333,20 @@ export default function ImageStudio() {
       setAspectRatio((current) =>
         ratioParam && ["1:1", "16:9", "9:16", "4:5"].includes(ratioParam) ? ratioParam : "9:16",
       );
-      toast.message("Week plan · Clip day", {
-        description:
-          "Generate your base image first, then use Animate → Clip Studio to finish the short for your niche.",
-        duration: 6000,
-      });
+      toast.message(
+        fromPublishedParam ? "Week plan · Continue published still" : "Week plan · Clip day",
+        {
+          description: fromPublishedParam
+            ? "This still is published. Animate creates a new clip draft — refine stays locked on the published image."
+            : "Generate your base image first, then use Animate → Clip Studio to finish the short for your niche.",
+          duration: 6000,
+        },
+      );
     } else if (ratioParam && ["1:1", "16:9", "9:16", "4:5"].includes(ratioParam)) {
       setAspectRatio(ratioParam);
+    }
+    if (fromPublishedParam) {
+      setAnimateFromPublished(true);
     }
     if (suggest === "animate_i2v" || suggest === "animate_ken_burns") {
       setAnimateMode(suggest === "animate_i2v" ? "i2v" : "ken_burns");
@@ -2189,8 +2211,13 @@ export default function ImageStudio() {
   };
 
   const handleAnimateAsClip = async (mode: "ken_burns" | "i2v" = animateMode) => {
-    if (!currentContentId) {
-      toast.error("Generate or open a draft first.");
+    const sourceId = animateSourceContentId || currentContentId;
+    if (!sourceId) {
+      toast.error(
+        isPublished
+          ? "Open Continue as draft & animate from the week plan to turn this published still into a clip."
+          : "Generate or open a draft first.",
+      );
       return;
     }
     if (mode === "i2v" && readUserPlan() === "FREE") {
@@ -2206,7 +2233,7 @@ export default function ImageStudio() {
     setAnimatePickerOpen(false);
     setIsAnimatingAsClip(true);
     try {
-      const res = await contentApi.animateAsClip(currentContentId, {
+      const res = await contentApi.animateAsClip(sourceId, {
         mode,
         motionPrompt: mode === "i2v" ? motionPrompt.trim() || undefined : undefined,
         durationSec: 6,
@@ -2298,12 +2325,16 @@ export default function ImageStudio() {
     }
     if (published) {
       setCurrentContentId(null);
+      setAnimateSourceContentId(item.id || null);
+      setAnimateFromPublished(true);
       if (item.id) {
         setReferenceContentIds([item.id]);
         if (item.url) setReferenceLibraryPreviews({ [item.id]: item.url });
       }
     } else if (item.id) {
       setCurrentContentId(item.id);
+      setAnimateSourceContentId(item.id);
+      setAnimateFromPublished(false);
     }
     setContentStatus(item.status || "draft");
     setWatermarked(Boolean(item.watermarked));
@@ -2532,6 +2563,8 @@ export default function ImageStudio() {
               onPublishClick={() => setIsPublishModalOpen(true)}
               onAnimateAsClipClick={() => setAnimatePickerOpen(true)}
               isAnimatingAsClip={isAnimatingAsClip}
+              canAnimateAsClip={canAnimateAsClip}
+              animateCtaLabel={animateCtaLabel}
               isPublishing={isPublishing}
               isPublished={isPublished}
               watermarked={watermarked}
@@ -2590,6 +2623,8 @@ export default function ImageStudio() {
               onPublishClick={() => setIsPublishModalOpen(true)}
               onAnimateAsClipClick={() => setAnimatePickerOpen(true)}
               isAnimatingAsClip={isAnimatingAsClip}
+              canAnimateAsClip={canAnimateAsClip}
+              animateCtaLabel={animateCtaLabel}
               onViewHistoryClick={scrollToHistory}
               isPublishing={isPublishing}
               isPublished={isPublished}
@@ -2688,6 +2723,8 @@ export default function ImageStudio() {
           onPublishClick={() => setIsPublishModalOpen(true)}
           onAnimateAsClipClick={() => setAnimatePickerOpen(true)}
           isAnimatingAsClip={isAnimatingAsClip}
+          canAnimateAsClip={canAnimateAsClip}
+          animateCtaLabel={animateCtaLabel}
           isPublishing={isPublishing}
           isPublished={isPublished}
           watermarked={watermarked}
@@ -2744,6 +2781,8 @@ export default function ImageStudio() {
           onPublishClick={() => setIsPublishModalOpen(true)}
           onAnimateAsClipClick={() => setAnimatePickerOpen(true)}
           isAnimatingAsClip={isAnimatingAsClip}
+          canAnimateAsClip={canAnimateAsClip}
+          animateCtaLabel={animateCtaLabel}
           onViewHistoryClick={scrollToHistory}
           isPublishing={isPublishing}
           isPublished={isPublished}
