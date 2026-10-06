@@ -1022,6 +1022,8 @@ export const identityApi = {
   createCheckout: async (dto: {
     planId: string;
     billingInterval?: "monthly" | "annual";
+    /** Browser origin for Stripe success/cancel (e.g. https://nxclip.app). */
+    returnOrigin?: string;
   }): Promise<{ checkoutUrl: string; sessionId: string }> => {
     return performApiRequest(
       "/billing/create-checkout",

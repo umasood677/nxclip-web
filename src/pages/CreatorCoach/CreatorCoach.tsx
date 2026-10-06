@@ -1032,7 +1032,7 @@ export default function CreatorCoach() {
                       variant="ghost"
                       size="sm"
                       className="h-8 text-[10px] font-bold"
-                      onClick={() => navigate("/profile?tab=plan")}
+                      onClick={() => navigate("/profile?tab=plan#profile-week-plan")}
                     >
                       Open full plan
                     </Button>

@@ -12,6 +12,8 @@ export async function startCheckout(
   const res = await identityApi.createCheckout({
     planId,
     billingInterval,
+    // Prefer the live SPA origin so Stripe never redirects to a stale FRONTEND_URL=localhost.
+    returnOrigin: typeof window !== "undefined" ? window.location.origin : undefined,
   });
   if (!res?.checkoutUrl) {
     throw new Error("Checkout URL missing from billing service");

@@ -657,7 +657,7 @@ export default function Dashboard() {
         value: planProgressValue,
         hint: planHint,
         icon: ListChecks,
-        path: weekPlan ? "/profile?tab=plan" : "/onboarding",
+        path: weekPlan ? "/profile?tab=plan#profile-week-plan" : "/onboarding",
         onClick: weekPlan
           ? undefined
           : () => {
@@ -690,6 +690,8 @@ export default function Dashboard() {
     ];
   }, [t, mine, weekPlan, planDayStatuses, navigate, isLiveContent]);
 
+  const chartRangeDays = dateRange === "30d" ? 30 : dateRange === "90d" ? 90 : 7;
+
   const chartData = useMemo(() => {
     const days = [
       t("dashboard.days.mon"),
@@ -701,14 +703,18 @@ export default function Dashboard() {
       t("dashboard.days.sun"),
     ];
     const buckets = Array(7).fill(0) as number[];
+    // Only published/approved posts inside the selected window — not drafts or historical creates.
     mine.forEach((item) => {
-      const d = new Date(item.publishedAt || item.createdAt || 0);
+      if (!isPublishedOnFeed(item)) return;
+      const stamp = item.publishedAt || item.createdAt;
+      if (!isWithinLastDays(stamp, chartRangeDays)) return;
+      const d = new Date(stamp || 0);
       if (isNaN(d.getTime())) return;
       const idx = (d.getDay() + 6) % 7; // Mon=0
       buckets[idx] += 1;
     });
     return days.map((name, i) => ({ name, posts: buckets[i] }));
-  }, [t, mine]);
+  }, [t, mine, chartRangeDays]);
 
   const chartHasSignal = useMemo(
     () => chartData.some((d) => d.posts > 0),
@@ -851,7 +857,7 @@ export default function Dashboard() {
                     <div>
                       <SectionHeader
                         title={t('dashboard.performance.title')}
-                        subtitle="Posts created by weekday — how active your pipeline was this week."
+                        subtitle={`Published posts by weekday — last ${dateRange === "30d" ? "30" : dateRange === "90d" ? "90" : "7"} days.`}
                       />
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
@@ -865,10 +871,10 @@ export default function Dashboard() {
                  <div className="flex items-center gap-2 mb-4">
                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">
                      <span className="h-2.5 w-2.5 rounded-full bg-primary" />
-                     Posts / day
+                     Published / weekday
                    </span>
                    <span className="text-xs text-muted-foreground font-medium">
-                     · Based on your content create / publish dates
+                     · Drafts and deleted posts are excluded
                    </span>
                  </div>
 
@@ -1177,7 +1183,11 @@ export default function Dashboard() {
                             })()}
                           </p>
                         </div>
-                        <Button onClick={() => navigate("/profile?tab=plan")} variant="outline" className="w-full h-9 text-xs font-semibold">
+                        <Button
+                          onClick={() => navigate("/profile?tab=plan#profile-week-plan")}
+                          variant="outline"
+                          className="w-full h-9 text-xs font-semibold"
+                        >
                           {t("dashboard.progress.view_full")}
                         </Button>
                         <Button

@@ -31,7 +31,11 @@ First deploy prints the service URL in the job summary, like:
 
 ## 3. After the first URL exists
 
-1. **Backend repo** (`NxClip`) → Actions variable or secret `FRONTEND_URL` = that origin (no trailing slash). Redeploy backend (or at least `api-gateway` + `identity-service`) so CORS and verification emails match.
+1. **Backend repo** (`NxClip`) → Actions variable or secret `FRONTEND_URL` = that origin (no trailing slash). **Current live SPA:**
+
+   `https://nxclip-web-216098834386.us-central1.run.app`
+
+   Redeploy backend (or at least `api-gateway` + `identity-service`) so CORS, Stripe return URLs, and verification emails match.
 2. **Google Cloud Console → APIs & Services → Credentials** → the OAuth Web client: add the Cloud Run origin under **Authorized JavaScript origins** (and redirect URIs if you use them).
 3. **GCS bucket CORS**: allow `PUT` from the new origin (same policy you already have for localhost).
 4. Open `{FRONTEND_URL}/health` — expect `{ "status": "ok", "env": "production" }`.

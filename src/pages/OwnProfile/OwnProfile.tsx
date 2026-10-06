@@ -266,6 +266,17 @@ export default function OwnProfile() {
   }, [searchParams]);
 
   useEffect(() => {
+    if (activeTab !== "plan" || loading) return;
+    const timer = window.setTimeout(() => {
+      document.getElementById("profile-week-plan")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [activeTab, loading]);
+
+  useEffect(() => {
     const wantsSocial =
       location.hash === "#profile-social-channels" ||
       searchParams.get("focus") === "social";
@@ -375,7 +386,8 @@ export default function OwnProfile() {
   }, []);
 
   useEffect(() => {
-    if (!auth.currentUser) {
+    // Email/password sessions are JWT-only — Firebase auth.currentUser is often null.
+    if (!authUser && !auth.currentUser) {
       navigate("/login");
       return;
     }
@@ -416,7 +428,7 @@ export default function OwnProfile() {
     void fetchProfile();
     // Intentionally once on mount + when auth identity is available
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate, dispatch, mergeExtras]);
+  }, [navigate, dispatch, mergeExtras, authUser?.uid]);
 
   useEffect(() => {
     if (!profile) return;
@@ -560,7 +572,7 @@ export default function OwnProfile() {
   };
 
   const handleUpdatePhoto = async (photoDataUrl: string) => {
-    if (!auth.currentUser || !profile) return;
+    if ((!authUser && !auth.currentUser) || !profile) return;
     setIsUpdatingPhoto(true);
     try {
       let mediaUrl = photoDataUrl;
@@ -888,7 +900,7 @@ export default function OwnProfile() {
               >
                 <ProfilePhoto
                   src={profile?.photoURL || resolvedUserPhoto}
-                  email={auth.currentUser?.email}
+                  email={authUser?.email || profile?.email || auth.currentUser?.email}
                   className={cn(
                     "ui-profile-avatar !h-full !w-full",
                     isUpdatingPhoto && photoTarget === "avatar" && "opacity-50",
@@ -1299,7 +1311,7 @@ export default function OwnProfile() {
           ))}
 
         {activeTab === "plan" && (
-          <div className="space-y-5">
+          <div id="profile-week-plan" className="space-y-5 scroll-mt-24">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <Calendar className="text-teal-600 dark:text-teal-400" size={20} />
