@@ -130,6 +130,59 @@ function pickSelectedCaption(data: any): string {
   return "";
 }
 
+function pickSelectedHashtags(data: any): string[] {
+  if (!data) return [];
+
+  const asList = (value: unknown): string[] => {
+    if (Array.isArray(value)) {
+      return value
+        .map((tag) => String(tag || "").trim())
+        .filter(Boolean)
+        .map((tag) => (tag.startsWith("#") ? tag : `#${tag.replace(/^#+/, "")}`));
+    }
+    if (typeof value === "string" && value.trim()) {
+      return value
+        .split(/[\s,]+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((tag) => (tag.startsWith("#") ? tag : `#${tag.replace(/^#+/, "")}`));
+    }
+    return [];
+  };
+
+  const candidates: unknown[] = [
+    data.selectedHashtags,
+    data.hashtags,
+    Array.isArray(data.hashtagSets) ? data.hashtagSets[0] : undefined,
+    data.clipEditSpec?.extras?.hashtags,
+    data.content?.selectedHashtags,
+    data.content?.hashtags,
+    Array.isArray(data.content?.hashtagSets) ? data.content.hashtagSets[0] : undefined,
+    data.content?.clipEditSpec?.extras?.hashtags,
+  ];
+
+  for (const candidate of candidates) {
+    const list = asList(candidate);
+    if (list.length) return list;
+  }
+
+  // Last resort: pull #tags from caption / description body
+  const text = [
+    data.selectedCaption,
+    data.caption,
+    data.description,
+    data.content?.description,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const fromText = text.match(/#[\w\u00C0-\u024F]+/g);
+  if (fromText?.length) {
+    return [...new Set(fromText)];
+  }
+
+  return [];
+}
+
 export default function PostDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -534,12 +587,7 @@ export default function PostDetail() {
   const contentType = resolveDisplayContentType(postData);
   const status = (postData?.status || postData?.content?.status || "published").toLowerCase();
   
-  const rawHashtags = postData?.selectedHashtags || postData?.hashtags || postData?.content?.selectedHashtags;
-  const selectedHashtags: string[] = Array.isArray(rawHashtags) 
-    ? rawHashtags 
-    : typeof rawHashtags === "string" 
-      ? rawHashtags.split(",").map((s: string) => s.trim().startsWith("#") ? s.trim() : `#${s.trim()}`).filter(Boolean)
-      : [];
+  const selectedHashtags = pickSelectedHashtags(postData);
 
   const prompt = pickPrompt(postData);
 
@@ -1139,9 +1187,14 @@ export default function PostDetail() {
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {selectedHashtags.map((tag, idx) => (
+                {selectedHashtags.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    No hashtags on this post. Add them in Studio before publishing.
+                  </p>
+                ) : (
+                  selectedHashtags.map((tag, idx) => (
                   <button 
-                    key={idx}
+                    key={`${tag}-${idx}`}
                     onClick={() => handleCopyText(tag, "hashtag", tag)}
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all cursor-pointer"
                     title="Click to copy hashtag"
@@ -1149,7 +1202,8 @@ export default function PostDetail() {
                     {copiedHashtag === tag ? <Check size={12} /> : null}
                     <span>{tag}</span>
                   </button>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 

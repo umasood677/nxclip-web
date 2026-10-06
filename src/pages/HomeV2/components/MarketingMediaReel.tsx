@@ -45,14 +45,28 @@ export function MarketingMediaReel({
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [flash, setFlash] = useState(0);
-  const [nicheFilter, setNicheFilter] = useState<NicheKey | null>(null);
   const skipFlash = useRef(true);
 
+  /** One lead clip per niche (catalog order) so the hero rotates categories, not only gaming. */
+  const categoryReel = useMemo(() => {
+    const byNiche = new Map<NicheKey, MarketingMedia>();
+    for (const media of items) {
+      if (!media.niche || byNiche.has(media.niche)) continue;
+      byNiche.set(media.niche, media);
+    }
+    return NICHE_ORDER.filter((niche) => byNiche.has(niche)).map((niche) => byNiche.get(niche)!);
+  }, [items]);
+
+  const nichesInReel = useMemo(() => {
+    if (nicheTabs) return categoryReel.map((m) => m.niche!).filter(Boolean) as NicheKey[];
+    const present = new Set(items.map((m) => m.niche).filter(Boolean) as NicheKey[]);
+    return NICHE_ORDER.filter((n) => present.has(n));
+  }, [items, nicheTabs, categoryReel]);
+
   const visible = useMemo(() => {
-    if (!nicheTabs || !nicheFilter) return items;
-    const filtered = items.filter((m) => m.niche === nicheFilter);
-    return filtered.length ? filtered : items;
-  }, [items, nicheTabs, nicheFilter]);
+    if (!nicheTabs) return items;
+    return categoryReel.length ? categoryReel : items;
+  }, [items, nicheTabs, categoryReel]);
 
   const current = visible[index] || visible[0];
   const activeCut: Exclude<ReelCut, "mix" | "cinematic"> =
@@ -65,7 +79,7 @@ export function MarketingMediaReel({
 
   useEffect(() => {
     setIndex(0);
-  }, [nicheFilter, items.length]);
+  }, [items.length, nicheTabs]);
 
   useEffect(() => {
     if (visible.length < 2 || paused) return;
@@ -89,16 +103,6 @@ export function MarketingMediaReel({
     const t = window.setTimeout(() => setFlash(0), activeCut === "flash" ? 140 : 70);
     return () => window.clearTimeout(t);
   }, [index, activeCut]);
-
-  const nichesInReel = useMemo(() => {
-    const present = new Set(items.map((m) => m.niche).filter(Boolean) as NicheKey[]);
-    return NICHE_ORDER.filter((n) => present.has(n));
-  }, [items]);
-
-  useEffect(() => {
-    if (!nicheTabs || nicheFilter || !items[0]?.niche) return;
-    setNicheFilter(items[0].niche);
-  }, [nicheTabs, nicheFilter, items]);
 
   if (!items.length) {
     return <MarketingMediaFrame media={null} className={className} />;
@@ -171,15 +175,15 @@ export function MarketingMediaReel({
         <div className="absolute bottom-3 start-3 end-3 z-20 flex flex-col gap-2 pointer-events-auto">
           <div className="flex flex-wrap gap-1.5 pb-0.5">
             {nichesInReel.map((niche) => {
-              const on = (nicheFilter || current?.niche) === niche;
+              const on = current?.niche === niche;
               return (
                 <button
                   key={niche}
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setNicheFilter(niche);
-                    setIndex(0);
+                    const next = visible.findIndex((m) => m.niche === niche);
+                    if (next >= 0) setIndex(next);
                   }}
                   className={cn(
                     "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide backdrop-blur-md border transition-colors",
@@ -195,14 +199,16 @@ export function MarketingMediaReel({
           </div>
           <div className="flex items-center justify-between gap-2">
             <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/70">
-              {cutLabel(activeCut)} · {current?.type === "video" ? "Reel" : "Still"}
+              {current?.niche ? NICHE_LABEL[current.niche] : cutLabel(activeCut)}
+              {" · "}
+              {current?.type === "video" ? "Reel" : "Still"}
             </span>
             <div className="flex gap-1">
-              {visible.map((_, i) => (
+              {visible.map((item, i) => (
                 <button
-                  key={i}
+                  key={item.niche ?? i}
                   type="button"
-                  aria-label={`Show look ${i + 1}`}
+                  aria-label={`Show ${item.niche ? NICHE_LABEL[item.niche] : `look ${i + 1}`}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     setIndex(i);
