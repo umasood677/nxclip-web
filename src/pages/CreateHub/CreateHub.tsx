@@ -401,7 +401,7 @@ export default function CreateHub() {
     () => items.filter((item) => isNxClipGeneratedClip(item)).slice(0, 4),
     [items],
   );
-  const weekDays = weekPlan?.days?.slice(0, 2) ?? [];
+  const weekDays = weekPlan?.days ?? [];
 
   const userRole: UserProfile["role"] = reduxProfile?.role || "user";
   const isAdmin = userRole === "admin";

@@ -168,10 +168,13 @@ export const DashboardSkeleton = memo(() => {
           <Skeleton className="h-4 w-72" />
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Skeleton className="w-[80px] h-9 rounded" />
-          <Skeleton className="w-[120px] h-9 rounded" />
           <Skeleton className="w-[110px] h-9 rounded" />
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 py-2 border-b border-border/40">
+        <Skeleton className="w-[120px] h-10 rounded-xl" />
+        <Skeleton className="w-[190px] h-10 rounded-xl" />
       </div>
 
       {/* --- KPI Row --- */}

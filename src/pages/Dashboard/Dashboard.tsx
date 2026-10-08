@@ -19,6 +19,8 @@ import {
   ListChecks,
   Loader2,
   RefreshCw,
+  Filter,
+  ChevronDown,
 } from "lucide-react";
 import { 
   AreaChart, 
@@ -35,12 +37,12 @@ import { Badge } from "../../components/ui/badge";
 import { cn } from "../../lib/utils";
 import { SEO } from "../../components/SEO";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu";
+import { buildActivityTimeline } from "./lib/activityTimeline";
 
 // --- Types & Components ---
 import { KPICard, KPICardProps } from "./components/KPICard";
@@ -695,28 +697,12 @@ export default function Dashboard() {
   const chartRangeDays = dateRange === "30d" ? 30 : dateRange === "90d" ? 90 : 7;
 
   const chartData = useMemo(() => {
-    const days = [
-      t("dashboard.days.mon"),
-      t("dashboard.days.tue"),
-      t("dashboard.days.wed"),
-      t("dashboard.days.thu"),
-      t("dashboard.days.fri"),
-      t("dashboard.days.sat"),
-      t("dashboard.days.sun"),
-    ];
-    const buckets = Array(7).fill(0) as number[];
-    // Only published/approved posts inside the selected window — not drafts or historical creates.
-    mine.forEach((item) => {
-      if (!isPublishedOnFeed(item)) return;
-      const stamp = item.publishedAt || item.createdAt;
-      if (!isWithinLastDays(stamp, chartRangeDays)) return;
-      const d = new Date(stamp || 0);
-      if (isNaN(d.getTime())) return;
-      const idx = (d.getDay() + 6) % 7; // Mon=0
-      buckets[idx] += 1;
-    });
-    return days.map((name, i) => ({ name, posts: buckets[i] }));
-  }, [t, mine, chartRangeDays]);
+    return buildActivityTimeline(
+      mine.filter(isPublishedOnFeed).map(item => item.publishedAt || item.createdAt),
+      chartRangeDays,
+      i18n.language,
+    );
+  }, [mine, chartRangeDays, i18n.language]);
 
   const chartHasSignal = useMemo(
     () => chartData.some((d) => d.posts > 0),
@@ -812,33 +798,56 @@ export default function Dashboard() {
             ) : null}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-             <Select value={dateRange} onValueChange={setDateRange}>
-                <SelectTrigger className="w-[80px] h-9 text-xs font-semibold bg-card border-border">
-                  <SelectValue placeholder="7D" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7d">7D</SelectItem>
-                  <SelectItem value="30d">30D</SelectItem>
-                  <SelectItem value="90d">90D</SelectItem>
-                </SelectContent>
-             </Select>
-
-              <Select value={activePlatform} onValueChange={setActivePlatform}>
-                <SelectTrigger className="w-[120px] h-9 text-xs font-semibold bg-card border-border">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('common.all_platforms')}</SelectItem>
-                  <SelectItem value="tiktok">TikTok</SelectItem>
-                  <SelectItem value="youtube">YouTube</SelectItem>
-                  <SelectItem value="instagram">Instagram</SelectItem>
-                  <SelectItem value="facebook">Facebook</SelectItem>
-                </SelectContent>
-             </Select>
-
+          <div className="shrink-0">
              <CreatePostDialog onPost={handlePostCreated} />
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 w-full bg-background/80 backdrop-blur-md py-2 border-b border-border/40">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-10 px-3 bg-zinc-900/40 border-white/5 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-xl gap-2 font-bold text-[10px] uppercase tracking-widest transition-all">
+                <Calendar size={13} className="text-primary" />
+                {t('dashboard.filters.period', { defaultValue: 'Period' })}: <span className="text-white">{dateRange.toUpperCase()}</span>
+                <ChevronDown size={13} className="opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align={isAr ? "end" : "start"} className="w-48 bg-zinc-900/95 border-white/10 backdrop-blur-xl p-1.5 rounded-xl">
+              {["7d", "30d", "90d"].map(range => (
+                <DropdownMenuItem key={range} onClick={() => setDateRange(range)} className={cn(
+                  "gap-3 py-2.5 cursor-pointer rounded-lg font-bold text-[10px] uppercase tracking-widest transition-colors",
+                  dateRange === range ? "bg-primary/10 text-primary" : "text-zinc-400 focus:bg-white/5 focus:text-white",
+                )}>
+                  {range.toUpperCase()}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-10 px-3 bg-zinc-900/40 border-white/5 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-xl gap-2 font-bold text-[10px] uppercase tracking-widest transition-all">
+                <Filter size={13} className="text-primary" />
+                {t('dashboard.filters.platform', { defaultValue: 'Platform' })}: <span className="text-white">{activePlatform === "all" ? t('common.all_platforms') : ({ tiktok: "TikTok", youtube: "YouTube", instagram: "Instagram", facebook: "Facebook" } as Record<string, string>)[activePlatform]}</span>
+                <ChevronDown size={13} className="opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align={isAr ? "end" : "start"} className="w-48 bg-zinc-900/95 border-white/10 backdrop-blur-xl p-1.5 rounded-xl">
+              {[
+                { id: "all", label: t('common.all_platforms') },
+                { id: "tiktok", label: "TikTok" },
+                { id: "youtube", label: "YouTube" },
+                { id: "instagram", label: "Instagram" },
+                { id: "facebook", label: "Facebook" },
+              ].map(platform => (
+                <DropdownMenuItem key={platform.id} onClick={() => setActivePlatform(platform.id)} className={cn(
+                  "gap-3 py-2.5 cursor-pointer rounded-lg font-bold text-[10px] uppercase tracking-widest transition-colors",
+                  activePlatform === platform.id ? "bg-primary/10 text-primary" : "text-zinc-400 focus:bg-white/5 focus:text-white",
+                )}>
+                  {platform.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <PwaInstallPrompt variant="banner" allowManual className="mb-6 mt-2" />
@@ -859,7 +868,7 @@ export default function Dashboard() {
                     <div>
                       <SectionHeader
                         title={t('dashboard.performance.title')}
-                        subtitle={`Published posts by weekday — last ${dateRange === "30d" ? "30" : dateRange === "90d" ? "90" : "7"} days.`}
+                        subtitle={`Published posts by date — last ${chartRangeDays} days, ending today.`}
                       />
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
@@ -884,7 +893,7 @@ export default function Dashboard() {
                     {!chartHasSignal && (
                       <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-muted/40 border border-dashed border-border">
                         <p className="text-sm font-medium text-muted-foreground px-6 text-center">
-                          No weekday activity yet — create or publish content to see this chart fill in.
+                          No published activity in this period — publish content to see this chart fill in.
                         </p>
                       </div>
                     )}
@@ -897,7 +906,7 @@ export default function Dashboard() {
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.45} />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--foreground)", fontWeight: 600 }} dy={10} reversed={isAr} />
+                        <XAxis dataKey="name" interval="preserveStartEnd" minTickGap={20} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--foreground)", fontWeight: 600 }} dy={10} reversed={isAr} />
                         <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--muted-foreground)", fontWeight: 600 }} orientation={isAr ? "right" : "left"} />
                         <RechartsTooltip 
                            contentStyle={{ backgroundColor: "var(--popover)", borderColor: "var(--border)", borderRadius: "8px", fontSize: "13px", fontWeight: 600 }}

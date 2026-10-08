@@ -99,6 +99,7 @@ const resources = {
       },
       "dashboard": {
         "welcome": "Welcome back, {{name}}",
+        "filters": { "period": "Period", "platform": "Platform" },
         "overview": "Overview",
         "recent_activity": "Recent Activity",
         "geo_intel": "Geo Intelligence",
@@ -2355,6 +2356,7 @@ const resources = {
       },
       "dashboard": {
         "welcome": "مرحباً بعودتك، {{name}}",
+        "filters": { "period": "الفترة", "platform": "المنصة" },
         "overview": "نظرة عامة",
         "recent_activity": "النشاط الأخير",
         "geo_intel": "الذكاء الجغرافي",
