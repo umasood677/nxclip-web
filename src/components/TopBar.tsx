@@ -46,7 +46,6 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandShortcut,
   CommandSeparator,
 } from "./ui/command";
 
@@ -65,6 +64,7 @@ export default function TopBar({ title, subtitle, titleIcon }: TopBarProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [open, setOpen] = useState(false);
+  const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/i.test(navigator.platform);
   const [notifPreview, setNotifPreview] = useState<NormalizedNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const profile = useAppSelector(selectAuthProfile);
@@ -156,7 +156,8 @@ export default function TopBar({ title, subtitle, titleIcon }: TopBarProps) {
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+      if (!e.defaultPrevented && !e.repeat && !e.isComposing && !e.altKey && !e.shiftKey &&
+          e.key.toLowerCase() === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setOpen((open) => !open);
       }
@@ -202,7 +203,12 @@ export default function TopBar({ title, subtitle, titleIcon }: TopBarProps) {
 
       <div className="flex items-center gap-3 md:gap-5">
         {/* Search */}
-        <div 
+        <button
+          type="button"
+          aria-label={t('top_bar.search_placeholder')}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-keyshortcuts={isMac ? "Meta+K" : "Control+K"}
           onClick={() => setOpen(true)}
           className={cn(
             "hidden lg:flex items-center gap-2.5 bg-muted border border-transparent px-3 py-1.5 rounded-md w-64 hover:border-border hover:bg-card transition-all cursor-pointer group",
@@ -211,56 +217,49 @@ export default function TopBar({ title, subtitle, titleIcon }: TopBarProps) {
         >
           <Search size={16} className="text-muted-foreground group-hover:text-foreground transition-colors" />
           <span className="text-[13px] text-muted-foreground group-hover:text-foreground transition-colors">{t('top_bar.search_placeholder')}</span>
-          <kbd className={cn(
+          <kbd dir="ltr" className={cn(
             "pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100",
             isAr ? "mr-auto" : "ml-auto"
           )}>
-            <span className="text-xs">⌘</span>K
+            {isMac ? "⌘ K" : "Ctrl K"}
           </kbd>
-        </div>
+        </button>
 
         <CommandDialog open={open} onOpenChange={setOpen}>
           <CommandInput placeholder={t('top_bar.command_placeholder')} />
           <CommandList>
             <CommandEmpty>{t('top_bar.no_results')}</CommandEmpty>
             <CommandGroup heading={t('top_bar.quick_actions')}>
-              <CommandItem onSelect={() => runCommand(() => navigate("/editor"))}>
+              <CommandItem onSelect={() => runCommand(() => navigate("/create/clip"))}>
                 <Video className={cn("h-4 w-4 text-primary", isAr ? "ml-2" : "mr-2")} />
                 <span>{t('top_bar.actions.editor')}</span>
-                <CommandShortcut>⌘E</CommandShortcut>
               </CommandItem>
               <CommandItem onSelect={() => runCommand(() => navigate("/create/image"))}>
                 <ImageIcon className={cn("h-4 w-4 text-amber-500", isAr ? "ml-2" : "mr-2")} />
                 <span>{t('top_bar.actions.studio')}</span>
-                <CommandShortcut>⌘I</CommandShortcut>
               </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => setOpen(false))}>
+              <CommandItem onSelect={() => runCommand(() => navigate("/coach"))}>
                 <MessageSquare className={cn("h-4 w-4 text-brand-secondary", isAr ? "ml-2" : "mr-2")} />
                 <span>{t('top_bar.actions.coach')}</span>
-                <CommandShortcut>⌘N</CommandShortcut>
               </CommandItem>
             </CommandGroup>
             <CommandSeparator />
             <CommandGroup heading={t('top_bar.navigation')}>
-              <CommandItem onSelect={() => runCommand(() => navigate("/"))}>
+              <CommandItem onSelect={() => runCommand(() => navigate("/dashboard"))}>
                 <LayoutDashboard className={cn("h-4 w-4", isAr ? "ml-2" : "mr-2")} />
                 <span>{t('top_bar.actions.dashboard')}</span>
-                <CommandShortcut>⌘D</CommandShortcut>
               </CommandItem>
               <CommandItem onSelect={() => runCommand(() => navigate("/analytics"))}>
                 <BarChart3 className={cn("h-4 w-4", isAr ? "ml-2" : "mr-2")} />
                 <span>{t('top_bar.actions.analytics')}</span>
-                <CommandShortcut>⌘A</CommandShortcut>
               </CommandItem>
               <CommandItem onSelect={() => runCommand(() => navigate("/coach"))}>
                 <Wand2 className={cn("h-4 w-4", isAr ? "ml-2" : "mr-2")} />
                 <span>{t('top_bar.actions.ai_coach')}</span>
-                <CommandShortcut>⌘K</CommandShortcut>
               </CommandItem>
               <CommandItem onSelect={() => runCommand(() => navigate("/my-content"))}>
                 <FolderHeart className={cn("h-4 w-4", isAr ? "ml-2" : "mr-2")} />
                 <span>{t('top_bar.actions.library')}</span>
-                <CommandShortcut>⌘L</CommandShortcut>
               </CommandItem>
             </CommandGroup>
             <CommandSeparator />
@@ -268,12 +267,10 @@ export default function TopBar({ title, subtitle, titleIcon }: TopBarProps) {
               <CommandItem onSelect={() => runCommand(() => navigate("/profile"))}>
                 <User className={cn("h-4 w-4", isAr ? "ml-2" : "mr-2")} />
                 <span>{t('top_bar.actions.profile')}</span>
-                <CommandShortcut>⌘P</CommandShortcut>
               </CommandItem>
               <CommandItem onSelect={() => runCommand(() => navigate("/settings"))}>
                 <Settings className={cn("h-4 w-4", isAr ? "ml-2" : "mr-2")} />
                 <span>{t('top_bar.actions.settings')}</span>
-                <CommandShortcut>⌘S</CommandShortcut>
               </CommandItem>
             </CommandGroup>
             <CommandSeparator />

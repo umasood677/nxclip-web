@@ -604,7 +604,13 @@ body.dark,
   }
 
   .ui-dashboard-top-content-grid {
-    @apply grid w-full gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-start;
+    @apply w-full gap-3 columns-1 sm:columns-2 lg:columns-4;
+    column-fill: balance;
+  }
+
+  .ui-dashboard-top-content-grid > .ui-top-content-card {
+    @apply inline-flex w-full mb-3 align-top;
+    break-inside: avoid;
   }
 
   .ui-dashboard-main {
