@@ -65,6 +65,7 @@ import { extensionForMimeType, toDownloadableBlob } from "../../lib/imageDownloa
 import { StudioPlanBanner } from "../../components/StudioPlanBanner";
 import { useCreatorStudioContext } from "../../hooks/useCreatorStudioContext";
 import { markPlanDayComplete } from "../../lib/weekPlanWorkflow";
+import { describeImageEditError } from "./lib/imageEditError";
 import { clipImageFirstBannerCopy } from "../../lib/weekPlan";
 
 /** Strip leading # so UI can safely render `#{tag}` without producing `##tag`. */
@@ -1637,7 +1638,7 @@ export default function ImageStudio() {
     } catch (err) {
       console.error(err);
       toast.error("Upscale failed", {
-        description: err instanceof Error ? err.message : "Please try again.",
+        description: describeImageEditError(err),
       });
     } finally {
       setIsUpscaling(false);
@@ -1657,7 +1658,7 @@ export default function ImageStudio() {
     } catch (err) {
       console.error(err);
       toast.error("Background remove failed", {
-        description: err instanceof Error ? err.message : "Please try again.",
+        description: describeImageEditError(err),
       });
     } finally {
       setIsRemovingBg(false);
@@ -1678,7 +1679,7 @@ export default function ImageStudio() {
     } catch (err) {
       console.error(err);
       toast.error("Apply adjust failed", {
-        description: err instanceof Error ? err.message : "Please try again.",
+        description: describeImageEditError(err),
       });
     } finally {
       setIsApplyingAdjust(false);
@@ -1697,7 +1698,7 @@ export default function ImageStudio() {
     } catch (err) {
       console.error(err);
       toast.error("Apply text failed", {
-        description: err instanceof Error ? err.message : "Please try again.",
+        description: describeImageEditError(err),
       });
     } finally {
       setIsApplyingCompose(false);
