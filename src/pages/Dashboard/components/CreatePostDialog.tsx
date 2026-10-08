@@ -304,7 +304,7 @@ export default function CreatePostDialog({ onPost }: CreatePostDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="rounded-md font-bold px-6">{t('dashboard.header.post_button')}</Button>
+        <Button className="h-8 rounded-lg text-[11px] font-bold px-3">{t('dashboard.header.post_button')}</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-5xl max-h-[95vh] overflow-hidden flex flex-col p-0 premium-card border-none bg-background/80 backdrop-blur-3xl">
         <div className={cn(

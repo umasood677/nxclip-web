@@ -160,21 +160,18 @@ SidebarWidgetSkeleton.displayName = "SidebarWidgetSkeleton";
 
 export const DashboardSkeleton = memo(() => {
   return (
-    <div className="ui-dashboard-page space-y-6 animate-pulse">
+    <div className="ui-dashboard-page !pt-3 !space-y-5 animate-pulse">
       {/* --- Page Header --- */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-56" />
-          <Skeleton className="h-4 w-72" />
+      <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-2 border-b border-border/40 pb-3">
+        <div className="space-y-1">
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-5 w-40" />
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Skeleton className="w-[110px] h-9 rounded" />
+        <div className="flex flex-wrap items-center gap-2">
+          <Skeleton className="w-[110px] h-8 rounded-lg" />
+          <Skeleton className="w-[170px] h-8 rounded-lg" />
+          <Skeleton className="w-[130px] h-8 rounded-lg" />
         </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2 py-2 border-b border-border/40">
-        <Skeleton className="w-[120px] h-10 rounded-xl" />
-        <Skeleton className="w-[190px] h-10 rounded-xl" />
       </div>
 
       {/* --- KPI Row --- */}

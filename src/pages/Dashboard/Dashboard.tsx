@@ -267,10 +267,12 @@ export default function Dashboard() {
   }, [navigate]);
 
   useEffect(() => {
+    let cancelled = false;
     async function loadDashboard() {
+      setLoading(true);
       try {
         const [items, summary, accounts, feedRes] = await Promise.all([
-          contentApi.getUserContentList(80),
+          contentApi.getUserContentList(100, undefined, { fetchAll: true }),
           analyticsApi.fetchSummaryMetrics().catch(() => null),
           socialApi.listAccounts().catch(() => []),
           feedApi.fetchPersonalFeed(undefined, 80).catch(() => ({ items: [] as FeedItemDto[] })),
@@ -283,6 +285,7 @@ export default function Dashboard() {
         for (const feedItem of feedRes?.items ?? []) {
           if (feedItem.contentId) feedMap.set(feedItem.contentId, feedItem);
         }
+        if (cancelled) return;
         setFeedByContentId(feedMap);
         setDistributionsByContentId(new Map());
         setMine(cleaned);
@@ -291,13 +294,14 @@ export default function Dashboard() {
         setConnectedSocials(connectedMapFromAccounts(accounts || []));
       } catch (err) {
         console.error("Failed to load dashboard:", err);
-        setHasContent(false);
+        if (!cancelled) setHasContent(false);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     void loadDashboard();
-  }, []);
+    return () => { cancelled = true; };
+  }, [authProfile?.uid]);
 
   useEffect(() => {
     if (!mine.length) return;
@@ -513,7 +517,6 @@ export default function Dashboard() {
     return [...mine]
       .filter((i) => isPublishedOnFeed(i))
       .sort((a, b) => (b.views || b.likes || 0) - (a.views || a.likes || 0))
-      .slice(0, 4)
       .map((i) => {
         const insight = resolveSocialInsight(i.id);
         const kind = resolveContentKind(i);
@@ -758,29 +761,26 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="ui-dashboard-page">
+    <div className="ui-dashboard-page !pt-3 !space-y-5">
       <SEO 
         title="Creator Dashboard | NexaClip.ai"
         description="Monitor your gaming content performance, viral reach, and AI-powered creator insights."
       />
       {/* --- Page Header --- */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-2 border-b border-border/40 pb-3">
           <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground tracking-tight">{t('dashboard.header.title')}</h1>
-            <p className="text-sm font-medium text-muted-foreground">
-              {t('dashboard.header.subtitle')}
-            </p>
+            <h1 className="text-lg md:text-xl font-display font-bold text-foreground tracking-tight">{t('dashboard.header.title')}</h1>
             {onboarding || weekPlan ? (
-              <div className="pt-1.5 space-y-2">
+              <div className="pt-1 space-y-1">
                 <CreatorNicheTags
                   categoryLabel={onboarding?.categoryLabel}
                   niches={onboarding?.niches || []}
-                  size="md"
+                  size="sm"
                   emptyLabel={t("dashboard.header.niche_not_set")}
                 />
                 {isLegacyOnboarding || !onboarding?.categoryLabel ? (
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-xs text-muted-foreground max-w-md leading-relaxed">
+                    <p className="text-[10px] text-muted-foreground max-w-md leading-snug">
                       {t("dashboard.header.legacy_onboarding_note")}
                     </p>
                     <Button
@@ -798,15 +798,10 @@ export default function Dashboard() {
             ) : null}
           </div>
 
-          <div className="shrink-0">
-             <CreatePostDialog onPost={handlePostCreated} />
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 w-full bg-background/80 backdrop-blur-md py-2 border-b border-border/40">
+        <div className="flex flex-wrap items-center gap-2 shrink-0 xl:justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="h-10 px-3 bg-zinc-900/40 border-white/5 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-xl gap-2 font-bold text-[10px] uppercase tracking-widest transition-all">
+              <Button variant="outline" className="h-8 px-2.5 bg-zinc-900/40 border-white/5 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-lg gap-1.5 font-bold text-[10px] uppercase tracking-wider transition-all">
                 <Calendar size={13} className="text-primary" />
                 {t('dashboard.filters.period', { defaultValue: 'Period' })}: <span className="text-white">{dateRange.toUpperCase()}</span>
                 <ChevronDown size={13} className="opacity-50" />
@@ -825,7 +820,7 @@ export default function Dashboard() {
           </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="h-10 px-3 bg-zinc-900/40 border-white/5 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-xl gap-2 font-bold text-[10px] uppercase tracking-widest transition-all">
+              <Button variant="outline" className="h-8 px-2.5 bg-zinc-900/40 border-white/5 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-lg gap-1.5 font-bold text-[10px] uppercase tracking-wider transition-all">
                 <Filter size={13} className="text-primary" />
                 {t('dashboard.filters.platform', { defaultValue: 'Platform' })}: <span className="text-white">{activePlatform === "all" ? t('common.all_platforms') : ({ tiktok: "TikTok", youtube: "YouTube", instagram: "Instagram", facebook: "Facebook" } as Record<string, string>)[activePlatform]}</span>
                 <ChevronDown size={13} className="opacity-50" />
@@ -848,9 +843,11 @@ export default function Dashboard() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+          <CreatePostDialog onPost={handlePostCreated} />
+        </div>
         </div>
 
-        <PwaInstallPrompt variant="banner" allowManual className="mb-6 mt-2" />
+        <PwaInstallPrompt variant="banner" allowManual />
 
         {/* --- KPI Row --- */}
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
@@ -932,17 +929,17 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Published this week — under By format, 4 compact tiles */}
+              {/* All published content owned by the current user. */}
               <div>
                 <SectionHeader
-                  title="Published this week"
+                  title={t("dashboard.published_content_title")}
                   subtitle="Thumbnail plus title, status, and next step — text stays below the media so nothing overlaps your content."
                 />
                 <div className="pt-2">
                   {TOP_CONTENT.length === 0 ? (
                     <Card className="p-6 border-dashed text-center">
                       <p className="text-sm font-medium text-muted-foreground">
-                        No published posts yet — publish from Studio or Feed to populate this week’s top content.
+                        No published posts yet — publish from Studio or Feed to see your content here.
                       </p>
                       <Button className="mt-3" size="sm" onClick={() => navigate("/create")}>
                         Open Creator Hub

@@ -1723,7 +1723,7 @@ export const contentApi = {
   getUserContentList: async (
     limitCount = 100,
     cursor?: string,
-    options?: { excludeUploads?: boolean },
+    options?: { excludeUploads?: boolean; fetchAll?: boolean },
   ): Promise<ContentDto[]> => {
     const pageLimit = Math.min(Math.max(1, limitCount || 100), 100);
     // When filtering uploads client-side, over-fetch so generations still fill the page.
@@ -1734,7 +1734,9 @@ export const contentApi = {
     let currentCursor = cursor;
     let hasMore = true;
     let pageCount = 0;
-    const maxPages = Math.ceil(fetchTarget / pageLimit);
+    const maxPages = options?.fetchAll ? Infinity : Math.ceil(fetchTarget / pageLimit);
+    const seenCursors = new Set<string>();
+    if (currentCursor) seenCursors.add(currentCursor);
 
     // Drop any previously persisted mine-list snapshots (upload-only 304 ghosts).
     try {
@@ -1805,7 +1807,11 @@ export const contentApi = {
 
       allItems.push(...items);
 
-      if (nextCursor && items.length > 0 && allItems.length < fetchTarget) {
+      if (nextCursor && items.length > 0 && (options?.fetchAll || allItems.length < fetchTarget)) {
+        if (seenCursors.has(nextCursor)) {
+          throw new Error("Content pagination returned a repeated cursor. Please reload and try again.");
+        }
+        seenCursors.add(nextCursor);
         currentCursor = nextCursor;
       } else {
         hasMore = false;
@@ -1816,7 +1822,8 @@ export const contentApi = {
       ? allItems.filter((item) => !isSourceUpload(item))
       : allItems;
 
-    return filtered.slice(0, limitCount || 100);
+    const uniqueItems = [...new Map(filtered.map(item => [item.id, item])).values()];
+    return options?.fetchAll ? uniqueItems : filtered.slice(0, limitCount || 100);
   },
 
   getContentById: async (id: string, options?: { suppressErrorLog?: boolean }): Promise<ContentDto> => {

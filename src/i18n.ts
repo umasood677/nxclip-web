@@ -99,6 +99,7 @@ const resources = {
       },
       "dashboard": {
         "welcome": "Welcome back, {{name}}",
+        "published_content_title": "Published content",
         "filters": { "period": "Period", "platform": "Platform" },
         "overview": "Overview",
         "recent_activity": "Recent Activity",
@@ -2356,6 +2357,7 @@ const resources = {
       },
       "dashboard": {
         "welcome": "مرحباً بعودتك، {{name}}",
+        "published_content_title": "المحتوى المنشور",
         "filters": { "period": "الفترة", "platform": "المنصة" },
         "overview": "نظرة عامة",
         "recent_activity": "النشاط الأخير",
