@@ -23,6 +23,8 @@ export interface JustifiedLayoutOptions {
   minRowHeight?: number;
   /** Ceiling for the target height; the main lever for how wide wide media gets. */
   maxRowHeight?: number;
+  /** Optional hard width limit for every tile, including non-trailing rows. */
+  maxTileWidth?: number;
   /**
    * Hard cap on tiles per row.
    *
@@ -38,6 +40,7 @@ const DEFAULTS = {
   minRowHeight: 360,
   maxRowHeight: 470,
   maxColumns: 6,
+  maxTileWidth: Infinity,
 } satisfies Required<JustifiedLayoutOptions>;
 
 /**
@@ -82,8 +85,8 @@ export interface JustifiedRow<T> {
   entries: Array<JustifiedEntry<T>>;
   height: number;
   /**
-   * True when the trailing row could not fill the width without exceeding the
-   * height band, so it should be centred rather than stretched.
+   * True when a row is capped by the trailing height band or tile width limit,
+   * so it should be centred rather than stretched.
    */
   centered: boolean;
 }
@@ -145,7 +148,7 @@ export function buildJustifiedRows<T>(
 ): Array<JustifiedRow<T>> {
   if (!entries.length || containerWidth <= 0) return [];
 
-  const { maxColumns, minTileEdge } = { ...DEFAULTS, ...options };
+  const { maxColumns, minTileEdge, maxTileWidth } = { ...DEFAULTS, ...options };
   const target = targetRowHeight(
     entries.map((e) => e.ratio),
     containerWidth,
@@ -247,6 +250,12 @@ export function buildJustifiedRows<T>(
       }
       // Prefer readable tile width over a perfectly short trailing row.
       capped = Math.min(natural, Math.max(capped, Math.min(minHeightForEdge, lastRowMax * 1.25)));
+    }
+    // Opt-in surfaces must never stretch wide media to fill the screen. Apply
+    // after the readability adjustment so it cannot override the hard limit.
+    if (Number.isFinite(maxTileWidth) && maxTileWidth > 0) {
+      const widestRatio = Math.max(...entries.slice(start, end).map(entry => entry.ratio));
+      capped = Math.min(capped, maxTileWidth / widestRatio);
     }
     rows.push({
       entries: entries.slice(start, end),

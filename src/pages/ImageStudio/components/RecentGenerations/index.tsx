@@ -21,6 +21,8 @@ const STUDIO_HISTORY_LAYOUT: JustifiedLayoutOptions = {
   minTileEdge: 220,
   minRowHeight: 380,
   maxRowHeight: 480,
+  // Keep landscape history compact even when a sparse/mixed row cannot fill.
+  maxTileWidth: 560,
 };
 
 export interface RecentGenerationsGalleryProps {
