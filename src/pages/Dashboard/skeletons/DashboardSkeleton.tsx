@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { Card } from "../../../components/ui/card";
 import { Skeleton } from "../../../components/ui/skeleton";
+import { PublishedContentGrid } from "../components/PublishedContentGrid";
 
 export const KPICardSkeleton = memo(() => {
   return (
@@ -204,11 +205,11 @@ export const DashboardSkeleton = memo(() => {
               <Skeleton className="h-5 w-48" />
               <Skeleton className="h-3 w-72" />
             </div>
-            <div className="ui-dashboard-top-content-grid pt-2">
+            <PublishedContentGrid className="pt-2">
               {Array.from({ length: 4 }).map((_, idx) => (
                 <TopContentCardSkeleton key={idx} />
               ))}
-            </div>
+            </PublishedContentGrid>
           </div>
         </div>
 

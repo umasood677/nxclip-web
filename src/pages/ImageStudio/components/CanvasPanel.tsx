@@ -479,6 +479,9 @@ export function CanvasPanel({
                   <div
                     style={{
                       containerType: "size",
+                      // Preview-only checkerboard: PNG transparency is never flattened on export.
+                      backgroundImage: "conic-gradient(rgba(128,128,128,0.16) 25%, transparent 0 50%, rgba(128,128,128,0.16) 0 75%, transparent 0)",
+                      backgroundSize: "20px 20px",
                       aspectRatio: loadedImageSize?.src === canvasImage
                         ? `${loadedImageSize.width} / ${loadedImageSize.height}`
                         : undefined,

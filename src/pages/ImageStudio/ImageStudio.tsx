@@ -1526,6 +1526,8 @@ export default function ImageStudio() {
   const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
   const [isUpscaling, setIsUpscaling] = useState(false);
   const [isRemovingBg, setIsRemovingBg] = useState(false);
+  const [backgroundMode, setBackgroundMode] = useState<"transparent" | "solid">("transparent");
+  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
   const [isApplyingAdjust, setIsApplyingAdjust] = useState(false);
   const [isApplyingCompose, setIsApplyingCompose] = useState(false);
   const [editLayers, setEditLayers] = useState<ImageEditTextLayer[]>([
@@ -1646,7 +1648,11 @@ export default function ImageStudio() {
     if (!currentContentId || editToolsDisabled) return;
     setIsRemovingBg(true);
     try {
-      const apiResponse = await contentApi.editImage(currentContentId, { op: "remove_bg" });
+      const apiResponse = await contentApi.editImage(currentContentId, {
+        op: "remove_bg",
+        backgroundMode,
+        ...(backgroundMode === "solid" ? { backgroundColor } : {}),
+      });
       await applyEditResult(apiResponse, "Background remove", "remove_bg");
     } catch (err) {
       console.error(err);
@@ -2909,6 +2915,10 @@ export default function ImageStudio() {
               handleUpscale={handleUpscale}
               isRemovingBg={isRemovingBg}
               handleRemoveBg={handleRemoveBg}
+              backgroundMode={backgroundMode}
+              setBackgroundMode={setBackgroundMode}
+              backgroundColor={backgroundColor}
+              setBackgroundColor={setBackgroundColor}
               isApplyingAdjust={isApplyingAdjust}
               handleApplyAdjust={handleApplyAdjust}
               isApplyingCompose={isApplyingCompose}
@@ -3086,6 +3096,10 @@ export default function ImageStudio() {
           handleUpscale={handleUpscale}
           isRemovingBg={isRemovingBg}
           handleRemoveBg={handleRemoveBg}
+          backgroundMode={backgroundMode}
+          setBackgroundMode={setBackgroundMode}
+          backgroundColor={backgroundColor}
+          setBackgroundColor={setBackgroundColor}
           isApplyingAdjust={isApplyingAdjust}
           handleApplyAdjust={handleApplyAdjust}
           isApplyingCompose={isApplyingCompose}

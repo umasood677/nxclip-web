@@ -1609,7 +1609,7 @@ export const contentApi = {
     id: string,
     data:
       | { op: "upscale"; scale?: 1 | 2 }
-      | { op: "remove_bg" }
+      | { op: "remove_bg"; backgroundMode?: "transparent" | "solid"; backgroundColor?: string }
       | { op: "adjust"; brightness: number; contrast: number; saturation: number }
       | {
           op: "compose";

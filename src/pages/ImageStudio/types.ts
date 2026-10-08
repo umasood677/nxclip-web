@@ -261,6 +261,10 @@ export interface EditPanelProps {
   handleUpscale: () => void;
   isRemovingBg: boolean;
   handleRemoveBg: () => void;
+  backgroundMode: "transparent" | "solid";
+  setBackgroundMode: (mode: "transparent" | "solid") => void;
+  backgroundColor: string;
+  setBackgroundColor: (color: string) => void;
   isApplyingAdjust?: boolean;
   handleApplyAdjust?: () => void;
   isApplyingCompose?: boolean;

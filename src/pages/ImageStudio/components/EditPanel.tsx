@@ -30,6 +30,7 @@ import { EditPanelProps, ImageEditTextLayer } from "../types";
 export function EditPanel({ 
   resultImage, brightness, setBrightness, contrast, setContrast, saturation, setSaturation, 
   isUpscaling, handleUpscale, isRemovingBg, handleRemoveBg,
+  backgroundMode, setBackgroundMode, backgroundColor, setBackgroundColor,
   isApplyingAdjust, handleApplyAdjust, isApplyingCompose, handleApplyCompose,
   editLayers = [], selectedLayerId, onSelectLayer, onAddTextLayer,
   onUpdateSelectedLayer, onRemoveSelectedLayer, onToggleLayerVisible, onMoveLayer,
@@ -177,6 +178,25 @@ export function EditPanel({
               <Separator className="bg-border/50" />
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{t('image_studio.edit.quick_actions')}</Label>
+                <div className="space-y-2 rounded-lg border border-border/50 bg-muted/10 p-2.5">
+                  <Label className="text-[10px] font-bold">{t('image_studio.edit.background_output')}</Label>
+                  <Select value={backgroundMode} onValueChange={(value) => setBackgroundMode(value as "transparent" | "solid")} disabled={toolsLocked}>
+                    <SelectTrigger className="h-8 text-[11px]" aria-label={t('image_studio.edit.background_output')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="transparent">{t('image_studio.edit.background_transparent')}</SelectItem>
+                      <SelectItem value="solid">{t('image_studio.edit.background_solid')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {backgroundMode === "solid" ? (
+                    <div className="flex items-center gap-2">
+                      <Input type="color" value={backgroundColor} onChange={(event) => setBackgroundColor(event.target.value)} disabled={toolsLocked} className="h-8 w-12 cursor-pointer p-1" aria-label={t('image_studio.edit.background_color')} />
+                      <span className="text-[11px] font-mono text-muted-foreground">{backgroundColor.toUpperCase()}</span>
+                    </div>
+                  ) : null}
+                  <p className="text-[10px] leading-relaxed text-muted-foreground">{t('image_studio.edit.background_help')}</p>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>

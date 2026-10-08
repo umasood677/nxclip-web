@@ -43,6 +43,8 @@ import {
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
 import { buildActivityTimeline } from "./lib/activityTimeline";
+import { newestPublishedFirst } from "./lib/publishedContentOrder";
+import { PublishedContentGrid } from "./components/PublishedContentGrid";
 
 // --- Types & Components ---
 import { KPICard, KPICardProps } from "./components/KPICard";
@@ -516,7 +518,7 @@ export default function Dashboard() {
   const topContent = useMemo(() => {
     return [...mine]
       .filter((i) => isPublishedOnFeed(i))
-      .sort((a, b) => (b.views || b.likes || 0) - (a.views || a.likes || 0))
+      .sort(newestPublishedFirst)
       .map((i) => {
         const insight = resolveSocialInsight(i.id);
         const kind = resolveContentKind(i);
@@ -933,7 +935,7 @@ export default function Dashboard() {
               <div>
                 <SectionHeader
                   title={t("dashboard.published_content_title")}
-                  subtitle="Thumbnail plus title, status, and next step — text stays below the media so nothing overlaps your content."
+                  subtitle={t("dashboard.published_content_description")}
                 />
                 <div className="pt-2">
                   {TOP_CONTENT.length === 0 ? (
@@ -946,7 +948,7 @@ export default function Dashboard() {
                       </Button>
                     </Card>
                   ) : (
-                    <div className="ui-dashboard-top-content-grid pt-0.5">
+                    <PublishedContentGrid className="pt-0.5">
                     {TOP_CONTENT.map((content) => (
                       <Card
                         key={content.id}
@@ -1057,7 +1059,7 @@ export default function Dashboard() {
                          </div>
                       </Card>
                     ))}
-                    </div>
+                    </PublishedContentGrid>
                   )}
                  </div>
               </div>
