@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useId, useRef, useState } from "react";
+import React, { memo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   Clipboard,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AuthenticatedImage } from "../../../../components/AuthenticatedImage";
+import { Dialog, DialogContent, DialogTitle } from "../../../../components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -76,8 +77,6 @@ function GenerationCardComponent({
   const [hovered, setHovered] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
-  const popupRef = useRef<HTMLDivElement>(null);
-  const titleId = useId();
 
   const displayTitle = resolveLibraryTitle(
     {
@@ -94,27 +93,7 @@ function GenerationCardComponent({
   const createdDate = formatCreatedDate(item.timestamp);
   const createdTime = formatCreatedTime(item.timestamp);
 
-  const closeDetail = useCallback(() => setDetailOpen(false), []);
-
-  useEffect(() => {
-    if (!detailOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeDetail();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [detailOpen, closeDetail]);
-
-  useEffect(() => {
-    if (!detailOpen) return;
-    const onPointer = (e: MouseEvent) => {
-      if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
-        closeDetail();
-      }
-    };
-    window.addEventListener("mousedown", onPointer);
-    return () => window.removeEventListener("mousedown", onPointer);
-  }, [detailOpen, closeDetail]);
+  const closeDetail = () => setDetailOpen(false);
 
   const copyPrompt = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -199,7 +178,6 @@ function GenerationCardComponent({
               </div>
               <button
                 type="button"
-                id={titleId}
                 className="text-left w-full"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -337,18 +315,10 @@ function GenerationCardComponent({
       </div>
 
       {/* Detail popup */}
-      <AnimatePresence>
-        {detailOpen && (
-          <motion.div
-            ref={popupRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            initial={{ opacity: 0, scale: 0.96, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 8 }}
-            transition={{ duration: TRANSITION_MS }}
-            className="absolute inset-3 z-40 rounded-2xl border border-white/10 bg-zinc-950/95 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col"
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+          <DialogContent
+            showCloseButton={false}
+            className="h-[min(32rem,80dvh)] sm:max-w-md rounded-2xl border-white/10 bg-zinc-950/95 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col gap-0 p-0"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-3 border-b border-white/10 space-y-2.5">
@@ -364,7 +334,7 @@ function GenerationCardComponent({
                   />
                 </div>
                 <div className="min-w-0 flex-1 space-y-1">
-                  <p className="text-sm font-semibold text-white line-clamp-2">{displayTitle}</p>
+                  <DialogTitle className="text-sm font-semibold text-white line-clamp-2">{displayTitle}</DialogTitle>
                   <p className="text-[10px] text-white/45">
                     {createdDate} · {createdTime}
                   </p>
@@ -402,7 +372,7 @@ function GenerationCardComponent({
               ) : null}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3 space-y-3 text-[11px]">
+            <div className="min-h-0 flex-1 overflow-y-auto p-3 space-y-3 text-[11px]">
               {item.basePrompt ? (
                 <DetailRow
                   label="Base prompt"
@@ -570,9 +540,8 @@ function GenerationCardComponent({
                 <Copy className="h-3.5 w-3.5" />
               </button>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </DialogContent>
+      </Dialog>
     </motion.article>
   );
 }

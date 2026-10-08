@@ -1,29 +1,10 @@
-import React, { useCallback } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { History, Image as ImageIcon, Sparkles } from "lucide-react";
 import { Button } from "../../../../components/ui/button";
 import { cn } from "../../../../lib/utils";
-import {
-  JustifiedGallery,
-  JustifiedLayoutOptions,
-  parseAspectRatio,
-} from "../../../../components/JustifiedGallery";
 import { GenerationHistoryItem } from "../../types";
-import { GenerationCard } from "./GenerationCard";
-
-/**
- * Studio history is sparse and portrait-heavy. A higher min edge keeps 9:16
- * tiles wide enough for the hover toolbar; preferDeclared keeps every new
- * 9:16 at the same shape as older ones even when pixel dims are slightly off.
- */
-const STUDIO_HISTORY_LAYOUT: JustifiedLayoutOptions = {
-  maxColumns: 5,
-  minTileEdge: 220,
-  minRowHeight: 380,
-  maxRowHeight: 480,
-  // Keep landscape history compact even when a sparse/mixed row cannot fill.
-  maxTileWidth: 560,
-};
+import { GenerationMasonry } from "./GenerationMasonry";
 
 export interface RecentGenerationsGalleryProps {
   items: GenerationHistoryItem[];
@@ -45,24 +26,6 @@ export function RecentGenerationsGallery({
   className,
 }: RecentGenerationsGalleryProps) {
   const { t } = useTranslation();
-  const getRatio = useCallback(
-    (item: GenerationHistoryItem) => parseAspectRatio(item.aspectRatio),
-    [],
-  );
-  const getKey = useCallback(
-    (item: GenerationHistoryItem, index: number) =>
-      `${item.id || "item"}-${item.mediaRevision || item.storageKey || item.timestamp}-${index}`,
-    [],
-  );
-  // Deliberately without the index that getKey carries: a measured ratio belongs
-  // to the media, and a new generation shifts every item's position.
-  const getRatioKey = useCallback(
-    (item: GenerationHistoryItem) =>
-      item.id
-        ? `${item.id}-${item.mediaRevision || item.storageKey || ""}`
-        : undefined,
-    [],
-  );
 
   return (
     <section
@@ -126,23 +89,11 @@ export function RecentGenerationsGallery({
             ) : null}
           </div>
         ) : (
-          <JustifiedGallery
+          <GenerationMasonry
             items={items}
-            getRatio={getRatio}
-            getKey={getKey}
-            getRatioKey={getRatioKey}
-            preferDeclaredRatio
-            options={STUDIO_HISTORY_LAYOUT}
-            renderItem={({ item, resolvedRatio, reportRatio }) => (
-              <GenerationCard
-                item={item}
-                aspectRatio={resolvedRatio ?? undefined}
-                onMediaLoad={reportRatio}
-                onReuse={onReuse}
-                onDownload={onDownload}
-                onOpen={onOpen}
-              />
-            )}
+            onReuse={onReuse}
+            onDownload={onDownload}
+            onOpen={onOpen}
           />
         )}
       </div>
