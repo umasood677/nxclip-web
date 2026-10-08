@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import CreatePostDialog from "./components/CreatePostDialog";
 import { DashboardSkeleton } from "./skeletons/DashboardSkeleton";
-import {
+import { 
   Sparkles, 
   BrainCircuit, 
   TrendingUp,
@@ -941,7 +941,7 @@ export default function Dashboard() {
                     </Card>
                   ) : (
                     <div className="ui-dashboard-top-content-grid pt-0.5">
-                      {TOP_CONTENT.map((content) => (
+                    {TOP_CONTENT.map((content) => (
                       <Card
                         key={content.id}
                         className="ui-top-content-card group flex flex-col overflow-hidden !p-2.5 min-w-0 bg-card"
@@ -980,8 +980,8 @@ export default function Dashboard() {
                               onClick={() => navigate(`/feed/post/${content.id}`)}
                             >
                               {isAr ? <ChevronLeft size={12} className="me-0.5" /> : <ArrowUpRight size={12} className="ms-0.5" />} {t("dashboard.top_content.view_details")}
-                            </Button>
-                          </div>
+                               </Button>
+                            </div>
                         </div>
 
                         <div className="flex flex-col gap-2 pt-2.5 min-w-0 flex-1">
@@ -1015,7 +1015,7 @@ export default function Dashboard() {
                             <Badge className="h-5 px-1.5 text-[10px] font-semibold border-none bg-primary/15 text-primary leading-none shrink-0">
                               {content.contentType}
                             </Badge>
-                          </div>
+                         </div>
 
                           <h4 className="text-sm font-semibold text-foreground leading-snug line-clamp-2 break-words">
                             {content.title}
@@ -1038,7 +1038,7 @@ export default function Dashboard() {
                                 {content.actionLine}
                               </p>
                             ) : null}
-                          </div>
+                               </div>
 
                           <Button
                             variant="ghost"
@@ -1047,13 +1047,13 @@ export default function Dashboard() {
                             onClick={() => navigate(`/feed/post/${content.id}`)}
                           >
                             {content.actionCta} <ArrowUpRight size={11} className="ms-0.5" />
-                          </Button>
-                        </div>
+                            </Button>
+                         </div>
                       </Card>
-                      ))}
+                    ))}
                     </div>
                   )}
-                </div>
+                 </div>
               </div>
            </div>
 
@@ -1070,7 +1070,7 @@ export default function Dashboard() {
                        </div>
                        <h3 className="text-base font-display font-bold leading-snug">{t('dashboard.command.insight')}</h3>
                     </div>
-                    <div className="space-y-2">
+                       <div className="space-y-2">
                        <p className="text-[10px] font-semibold opacity-80">{t('dashboard.command.next_best')}</p>
                        <div className="space-y-1.5">
                           {(t('dashboard.command.actions', { returnObjects: true }) as string[]).map((action, i) => (
@@ -1154,8 +1154,8 @@ export default function Dashboard() {
                                     <span className="text-xs font-medium text-muted-foreground">
                                       {day.contentType}
                                     </span>
-                                  </div>
-                                </div>
+                       </div>
+                    </div>
                                 <p className="text-sm font-semibold text-foreground line-clamp-1">
                                   {day.title || day.theme}
                                 </p>
@@ -1169,10 +1169,10 @@ export default function Dashboard() {
                                     {cta}
                                   </Button>
                                 ) : null}
-                              </div>
+                       </div>
                             );
                           })}
-                        </div>
+                       </div>
                         <div className="p-3 rounded-md bg-teal-500/5 border border-teal-500/20">
                           <p className="text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-300 mb-1">
                             {t("dashboard.progress.up_next")}
@@ -1186,7 +1186,7 @@ export default function Dashboard() {
                               return `${next.day.day}: ${next.day.title || next.day.theme}`;
                             })()}
                           </p>
-                        </div>
+                    </div>
                         <Button
                           onClick={() => navigate("/plan")}
                           variant="outline"
@@ -1318,7 +1318,7 @@ export default function Dashboard() {
                     <div className="flex items-center gap-2 min-w-0">
                       <Sparkles size={16} className="shrink-0" />
                       <p className="text-xs font-bold truncate">{t('dashboard.tip.title')}</p>
-                    </div>
+                 </div>
                     <button
                       type="button"
                       aria-label={t("dashboard.tip.refresh")}

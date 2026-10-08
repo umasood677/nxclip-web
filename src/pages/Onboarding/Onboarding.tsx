@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import {
-  Sparkles,
-  Loader2,
+import { 
+  Sparkles, 
+  Loader2, 
   CheckCircle2,
   ArrowRight,
   BrainCircuit,
@@ -272,9 +272,9 @@ export default function Onboarding() {
           createdAt: user.createdAt || reduxProfile?.createdAt || new Date().toISOString(),
         }),
       );
-    } catch (err) {
+      } catch (err) {
       console.warn("Failed to refresh /auth/me after coach", err);
-    }
+      }
   }, [dispatch, reduxProfile, reduxUser]);
 
   useEffect(() => {
@@ -401,7 +401,7 @@ export default function Onboarding() {
       setSelected((prev) =>
         prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip],
       );
-    } else {
+      } else {
       setSelected([chip]);
     }
   };
@@ -542,7 +542,7 @@ export default function Onboarding() {
           replace: true,
           state: { fromOnboarding: true, initialPrompt: theme },
         });
-      } else {
+    } else {
         navigate("/feed", { replace: true });
       }
     } finally {
@@ -580,7 +580,7 @@ export default function Onboarding() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+            </div>
     );
   }
 
@@ -588,7 +588,7 @@ export default function Onboarding() {
     <div className="min-h-screen bg-background relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-teal-500/[0.07] via-transparent to-amber-500/[0.05] pointer-events-none" />
       <div
-        className={cn(
+                className={cn(
           "relative z-10 mx-auto px-4 py-12 md:py-16",
           plan ? "max-w-6xl" : "max-w-2xl",
         )}
@@ -604,7 +604,7 @@ export default function Onboarding() {
                 ? "Update your niche and answers, then get a fresh week plan"
                 : "Quick setup for your creator workspace"}
             </p>
-          </div>
+        </div>
         </header>
 
         {(isRevisingOnboarding() || isRenewingWeekPlan()) && !plan ? (
@@ -627,13 +627,13 @@ export default function Onboarding() {
             transition={{ type: "spring", stiffness: 120, damping: 20 }}
           />
         </div>
-
-        {error && (
+      
+          {error && (
           <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
+                <AlertCircle className="h-4 w-4" />
             <AlertTitle>Something went wrong</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
-          </Alert>
+              </Alert>
         )}
 
         {progressHint && (
@@ -645,19 +645,19 @@ export default function Onboarding() {
 
         <AnimatePresence mode="wait">
           {plan ? (
-            <motion.div
+              <motion.div 
               key="plan"
               initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="space-y-8"
-            >
+                className="space-y-8"
+              >
               <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
                 <div className="max-w-2xl">
                   <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/25 bg-teal-500/10 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-teal-700 dark:text-teal-300 mb-3">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     Week plan ready
-                  </div>
+                </div>
                   <h2 className="text-3xl md:text-4xl font-semibold tracking-tight leading-tight">
                     Your week plan
                   </h2>
@@ -669,13 +669,13 @@ export default function Onboarding() {
                       {plan.workspaceTheme.motivationalQuote}
                     </p>
                   ) : null}
-                </div>
+                  </div>
                 <div className="flex flex-col sm:flex-row gap-3 shrink-0">
                   <Button disabled={submitting} onClick={() => void finish(true)}>
                     Start creating
                     <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                  <Button
+                    </Button>
+                  <Button 
                     variant="outline"
                     disabled={submitting}
                     onClick={() => void finish(false)}
@@ -683,9 +683,9 @@ export default function Onboarding() {
                     Go to Feed
                   </Button>
                 </div>
-              </div>
+                </div>
 
-              <motion.div
+              <motion.div 
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
                 initial="hidden"
                 animate="show"
@@ -722,7 +722,7 @@ export default function Onboarding() {
                             {day.day}
                           </p>
                           <p className="text-[11px] text-muted-foreground mt-1">{day.contentType}</p>
-                        </div>
+                      </div>
                         <span
                           className="text-2xl leading-none select-none"
                           aria-hidden
@@ -747,7 +747,7 @@ export default function Onboarding() {
                           Day {index + 1} of 7
                         </span>
                         <span className="h-1.5 w-1.5 rounded-full bg-teal-500/70" />
-                      </div>
+                </div>
                     </motion.article>
                   );
                 })}
@@ -783,7 +783,7 @@ export default function Onboarding() {
                       <Sparkles className="h-4 w-4 mr-2" />
                     )}
                     Generate plan
-                  </Button>
+                    </Button>
                   <Button variant="ghost" disabled={submitting} onClick={() => void restart()}>
                     Restart
                   </Button>
@@ -792,12 +792,12 @@ export default function Onboarding() {
                   </Button>
                 </div>
               </Card>
-            </motion.div>
+              </motion.div>
           ) : coach ? (
-            <motion.div
+              <motion.div 
               key={`q-${coach.question}-${coach.status}-${coach.category ?? "none"}`}
               initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
             >
               <Card className="p-6 md:p-8 space-y-6">
@@ -831,7 +831,7 @@ export default function Onboarding() {
                           key={`cat-${chip}-${i}`}
                           type="button"
                           onClick={() => toggleChip(chip)}
-                          className={cn(
+                      className={cn(
                             "text-left rounded-2xl border p-4 transition-colors",
                             active
                               ? "border-primary bg-primary/10 shadow-sm"
@@ -846,14 +846,14 @@ export default function Onboarding() {
                               )}
                             >
                               <Icon className="h-4 w-4" />
-                            </div>
+                </div>
                             <div className="min-w-0">
                               <p className="text-sm font-semibold leading-snug">{label}</p>
                               <p className="text-[11px] text-muted-foreground mt-1 truncate">
                                 {chip}
                               </p>
-                            </div>
-                          </div>
+                    </div>
+                  </div>
                         </button>
                       );
                     })}
@@ -882,7 +882,7 @@ export default function Onboarding() {
                   </div>
                 )}
 
-                <div className="space-y-2">
+                        <div className="space-y-2">
                   <label className="text-xs font-medium text-muted-foreground">
                     {isCategoryStep
                       ? "Or describe your niche"
@@ -902,7 +902,7 @@ export default function Onboarding() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <Button
+                  <Button 
                     className="flex-1"
                     disabled={submitting}
                     onClick={() => void submitAnswer()}
@@ -919,7 +919,7 @@ export default function Onboarding() {
                   </Button>
                 </div>
               </Card>
-            </motion.div>
+              </motion.div>
           ) : (
             <Card className="p-8 text-center space-y-4">
               <p className="text-muted-foreground">No coach session available.</p>
@@ -928,9 +928,9 @@ export default function Onboarding() {
                 Skip for now
               </Button>
             </Card>
-          )}
-        </AnimatePresence>
-      </div>
+            )}
+          </AnimatePresence>
+        </div>
     </div>
   );
 }

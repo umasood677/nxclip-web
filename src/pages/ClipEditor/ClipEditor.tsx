@@ -648,10 +648,10 @@ export default function ClipEditor() {
         durationSec: DURATION,
       });
       if (res.smartTrim && typeof res.smartTrim.start === "number" && typeof res.smartTrim.end === "number") {
-        setSuggestedTrim({
+          setSuggestedTrim({
           start: Math.max(0, Math.min(DURATION, res.smartTrim.start)),
           end: Math.max(res.smartTrim.start + 1, Math.min(DURATION, res.smartTrim.end)),
-        });
+          });
       }
     } catch (error) {
       console.error("Error suggesting smart trim:", error);
@@ -1041,7 +1041,7 @@ export default function ClipEditor() {
       mergeSearchParams({ step: "polish" });
     } finally {
       if (still()) {
-        setIsPolishing(false);
+          setIsPolishing(false);
         polishBusyRef.current = false;
       }
     }
@@ -1746,8 +1746,8 @@ export default function ClipEditor() {
     if (!el) return;
 
     const onWheel = (e: globalThis.WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
         const zoomAmount = e.deltaY > 0 ? -0.2 : 0.2;
         setZoomLevel((z) => Math.min(5, Math.max(1, z + zoomAmount)));
         return;
@@ -2487,7 +2487,7 @@ export default function ClipEditor() {
                             "These marks are the story of the clip: open on the hook, keep the peak, cut after the close. Click a beat to jump there. Drag handles snap to them.",
                         })}
                       </p>
-                    </div>
+                  </div>
                     <Button
                       type="button"
                       size="sm"
@@ -2743,8 +2743,8 @@ export default function ClipEditor() {
                       style={{ fontFamily: clipCaptionFontCss(captionFontId), fontWeight: 700 }}
                     >
                       {hooks[0].text}
+                </div>
                     </div>
-                  </div>
                 ) : null}
                 {topText ? (
                   <DraggableCaptionOverlay
@@ -2768,7 +2768,7 @@ export default function ClipEditor() {
                     label={t("clip_editor.polish.meme.bottom_text")}
                   />
                 ) : null}
-              </div>
+                  </div>
                 <Button
                   type="button"
                   size="lg"
@@ -2781,7 +2781,7 @@ export default function ClipEditor() {
                     ? t("clip_editor.player.pause")
                     : t("clip_editor.polish.audio.play_mix", { defaultValue: "Play clip + music mix" })}
                 </Button>
-                </div>
+              </div>
             </div>
 
             {/* Controls Column */}
@@ -3182,7 +3182,7 @@ export default function ClipEditor() {
                             <p className="text-[10px] text-muted-foreground px-1">
                               Burned into Download/Render via media-worker (OFL pack).
                             </p>
-                          </div>
+                        </div>
 
                           <div className="flex flex-wrap gap-2">
                             <Button
@@ -3238,14 +3238,14 @@ export default function ClipEditor() {
                             </p>
                           ) : null}
 
-                          <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Sparkles size={14} className="text-primary" />
-                              <p className="text-[10px] font-bold text-foreground">{t('clip_editor.polish.meme.pro_tip')}</p>
-                            </div>
-                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Sparkles size={14} className="text-primary" />
+                            <p className="text-[10px] font-bold text-foreground">{t('clip_editor.polish.meme.pro_tip')}</p>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
                               Captions, hooks, BGM, and silence cuts burn into the exported MP4 on Download/Render — not just this preview.
-                            </p>
+                          </p>
                           </div>
                         </div>
                       </div>
@@ -3428,16 +3428,16 @@ export default function ClipEditor() {
                               </SelectItem>
                               {TRACKS.map((track) => (
                                 <SelectItem
-                                  key={track.id}
+                                    key={track.id}
                                   value={track.id}
                                   label={`${track.title} · ${track.genre}`}
-                                >
+                                  >
                                   {track.title} · {track.genre}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                          <Button
+                                    <Button
                             type="button"
                             size="sm"
                             variant="outline"
@@ -3454,12 +3454,12 @@ export default function ClipEditor() {
                                 <Play size={14} className="mr-1" /> Preview
                               </>
                             )}
-                          </Button>
-                        </div>
+                                    </Button>
+                            </div>
                         {previewingTrackId && (
                           <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
                             <div className="h-full bg-primary transition-all" style={{ width: `${previewProgress}%` }} />
-                          </div>
+                        </div>
                         )}
                       </div>
                     </TabsContent>
@@ -3470,14 +3470,14 @@ export default function ClipEditor() {
                           <h3 className="text-base md:text-lg font-display font-bold text-foreground flex items-center gap-2 min-w-0">
                             <Sparkles size={18} className="text-primary shrink-0" />
                             <span className="truncate">{t("clip_editor.polish.tabs.enhance")}</span>
-                          </h3>
+                        </h3>
                           <Badge
                             variant="secondary"
                             className="shrink-0 bg-muted text-muted-foreground border-border text-[10px] font-bold"
                           >
                             {t("clip_editor.polish.enhance.live_preview", { defaultValue: "Live preview" })}
-                          </Badge>
-                        </div>
+                        </Badge>
+                      </div>
                         <p className="text-xs text-muted-foreground leading-relaxed">
                           {t("clip_editor.polish.enhance.preview_hint", {
                             defaultValue:
@@ -3498,8 +3498,8 @@ export default function ClipEditor() {
                       </div>
                       {/* Audio Enhancement Section */}
                       <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <Volume2 size={16} className="text-muted-foreground" />
+                          <div className="flex items-center gap-2">
+                            <Volume2 size={16} className="text-muted-foreground" />
                           <span className="text-[10px] font-bold text-muted-foreground">
                             {t("clip_editor.polish.enhance.audio_polish")}
                           </span>
@@ -3575,7 +3575,7 @@ export default function ClipEditor() {
                           </div>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <button
+                              <button 
                                 type="button"
                                 onClick={() => {
                                   const next = !isAutoColorEnabled;
@@ -3752,26 +3752,26 @@ export default function ClipEditor() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="block w-full">
-                      <Button 
+                <Button 
                         size="default" 
                         onClick={openPublishPreview}
                         disabled={isPublishing || isAlreadyPublished}
                         className="w-full flex items-center justify-center gap-2 shadow-lg shadow-primary/20 rounded-full font-bold bg-primary hover:bg-primary-strong transition-all h-11 disabled:opacity-60"
-                      >
-                        {isPublishing ? (
-                          <>
-                            <span className="w-3.5 h-3.5 border-2 border-background border-t-transparent rounded-full animate-spin mr-2" />
-                            Publishing...
-                          </>
-                        ) : (
-                          <>
+                >
+                  {isPublishing ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-background border-t-transparent rounded-full animate-spin mr-2" />
+                      Publishing...
+                    </>
+                  ) : (
+                    <>
                             {isAlreadyPublished
                               ? "Already published"
                               : t('clip_editor.polish.actions.publish')}
                             {!isAlreadyPublished ? <ChevronRight size={18} /> : null}
-                          </>
-                        )}
-                      </Button>
+                    </>
+                  )}
+                </Button>
                     </span>
                   </TooltipTrigger>
                   {publishBlockedReason ? (
@@ -3796,8 +3796,8 @@ export default function ClipEditor() {
                     </>
                   ) : (
                     <>
-                      <Download size={18} className="mr-2" />
-                      {t('clip_editor.polish.actions.download')}
+                  <Download size={18} className="mr-2" />
+                  {t('clip_editor.polish.actions.download')}
                     </>
                   )}
                 </Button>
@@ -3825,19 +3825,19 @@ export default function ClipEditor() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="col-span-5 block">
-                        <Button 
+                  <Button 
                           onClick={openPublishPreview}
-                          size="2xl" 
+                    size="2xl" 
                           disabled={isPublishing || isAlreadyPublished}
                           className="w-full flex items-center justify-center gap-2 shadow-soft-lg rounded-xl font-bold text-sm bg-primary hover:bg-primary-strong transition-all active:scale-95 text-primary-foreground disabled:opacity-60"
-                        >
+                  >
                           {!isAlreadyPublished ? (
-                            <div className="flex items-center gap-1.5 mr-1">
+                    <div className="flex items-center gap-1.5 mr-1">
                               <SocialPlatformIcon platform="youtube" size={14} variant="mono" />
                               <SocialPlatformIcon platform="instagram" size={14} variant="mono" />
                               <SocialPlatformIcon platform="facebook" size={14} variant="mono" />
                               <SocialPlatformIcon platform="tiktok" size={14} variant="mono" />
-                            </div>
+                    </div>
                           ) : null}
                           {isPublishing
                             ? "Publishing..."
@@ -3845,7 +3845,7 @@ export default function ClipEditor() {
                               ? "Already published"
                               : t('clip_editor.polish.actions.publish_socials')}
                           {!isAlreadyPublished ? <ChevronRight size={16} /> : null}
-                        </Button>
+                  </Button>
                       </span>
                     </TooltipTrigger>
                     {publishBlockedReason ? (

@@ -291,7 +291,7 @@ export default function SideNav({ isCollapsed, setIsCollapsed }: SideNavProps) {
       initial={false}
       animate={{ width: isCollapsed ? 64 : 240 }}
       className={cn(
-        "fixed top-0 h-screen bg-card border-r border-border z-50 hidden lg:flex flex-col transition-colors duration-300",
+        "fixed top-0 h-[100dvh] max-h-[100dvh] bg-card border-r border-border z-50 hidden lg:flex flex-col transition-colors duration-300 pb-[env(safe-area-inset-bottom,0px)]",
         i18n.language === 'ar' ? "right-0 border-l border-r-0" : "left-0"
       )}
     >

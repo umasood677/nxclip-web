@@ -1,4 +1,5 @@
 import React from "react";
+import "./image-edit-fonts.css";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -99,9 +100,13 @@ export function CanvasPanel({
   onUseWeekPlanDay,
   onCloseWeekPlanCanvas,
   memeTemplates = [],
+  editLayers = [],
+  editBaseImage = null,
 }: CanvasPanelProps) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === "rtl";
+  const canvasImage = editBaseImage || resultImage;
+  const [loadedImageSize, setLoadedImageSize] = React.useState<{ src: string; width: number; height: number } | null>(null);
   const statusBadge = getStatusBadge(contentStatus || (isPublished ? "published" : "draft"));
   const typeBadge = getTypeBadge({
     type: mode === "meme" ? "meme" : "image",
@@ -472,21 +477,34 @@ export function CanvasPanel({
                   )}
                 >
                   <div
+                    style={{
+                      containerType: "size",
+                      aspectRatio: loadedImageSize?.src === canvasImage
+                        ? `${loadedImageSize.width} / ${loadedImageSize.height}`
+                        : undefined,
+                    }}
                     className={cn(
                       "relative overflow-hidden rounded-[20px] border border-border/50 bg-zinc-950/40 shadow-[0_12px_40px_rgba(0,0,0,0.25)]",
                       getAspectRatioClass(aspectRatio),
                     )}
                   >
-                    {resultImage ? (
+                    {canvasImage ? (
                       <AuthenticatedImage
-                        key={resultImage}
-                        src={resultImage}
+                        key={canvasImage}
+                        src={canvasImage}
                         alt="Generated"
                         priority
                         disableRemoteFallback
-                        onLoad={() => onPreviewReady?.()}
+                        onLoad={(event: React.SyntheticEvent<HTMLImageElement>) => {
+                          const image = event.currentTarget;
+                          if (image.naturalWidth && image.naturalHeight) {
+                            setLoadedImageSize({ src: canvasImage, width: image.naturalWidth, height: image.naturalHeight });
+                          }
+                          onPreviewReady?.();
+                        }}
                         onError={() => onPreviewReady?.()}
                         style={{
+                          visibility: editLayers.some((layer) => layer.type === "base" && layer.visible === false) ? "hidden" : "visible",
                           filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`,
                         }}
                         className={cn(
@@ -503,6 +521,46 @@ export function CanvasPanel({
                         }
                       />
                     ) : null}
+
+                    {previewReady && canvasImage
+                      ? editLayers
+                          .filter((layer) => layer.type === "text" && layer.visible !== false && (layer.text || "").trim())
+                          .map((layer) => (
+                            <div
+                              key={layer.id}
+                              className="pointer-events-none absolute z-[2] max-w-[90%]"
+                              style={{
+                                left: `${layer.xPct ?? 50}%`,
+                                top: `${layer.yPct ?? 50}%`,
+                                transform:
+                                  layer.align === "left"
+                                    ? "translate(0, -50%)"
+                                    : layer.align === "right"
+                                      ? "translate(-100%, -50%)"
+                                      : "translate(-50%, -50%)",
+                                color: layer.color || "#ffffff",
+                                fontSize: `${Math.max(2, Math.min(40, layer.fontSizePct ?? 8))}cqh`,
+                                fontWeight: 400,
+                                width: "max-content",
+                                fontFamily:
+                                  layer.fontId === "montserrat"
+                                    ? '"Studio Montserrat", sans-serif'
+                                    : layer.fontId === "inter"
+                                      ? '"Studio Inter", sans-serif'
+                                      : '"Studio Anton", sans-serif',
+                                textAlign: layer.align || "center",
+                                WebkitTextStroke: `0.04em ${layer.strokeColor || "#000000"}`,
+                                paintOrder: "stroke fill",
+                                lineHeight: 1.1,
+                                whiteSpace: "pre-wrap",
+                                wordBreak: "break-all",
+                                filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`,
+                              }}
+                            >
+                              {layer.text}
+                            </div>
+                          ))
+                      : null}
 
                     {(isGenerating || !previewReady || !resultImage) && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gradient-to-b from-zinc-900/90 via-zinc-900/80 to-zinc-950/95">

@@ -44,7 +44,7 @@ import { SEO } from "../../components/SEO";
 import { toast } from "sonner";
 import { cn, compressImageBase64, safeStringify } from "../../lib/utils";
 import { safeLocalStorage } from "../../lib/safeStorage";
-import { GenerationHistoryItem, OrderedReferenceChip, ReferenceUploadItem } from "./types";
+import { GenerationHistoryItem, ImageEditTextLayer, OrderedReferenceChip, ReferenceUploadItem } from "./types";
 import { GeneratePanel } from "./components/GeneratePanel";
 import { CanvasPanel } from "./components/CanvasPanel";
 import { EditPanel } from "./components/EditPanel";
@@ -88,6 +88,33 @@ function normalizeHashtagSets(sets?: string[][] | null): string[][] {
 function normalizeHashtagList(tags?: string[] | null): string[] {
   if (!Array.isArray(tags) || !tags.length) return [];
   return tags.map((tag) => normalizeHashtag(String(tag))).filter(Boolean);
+}
+
+const freshBaseEditLayer = (): ImageEditTextLayer => ({
+  id: "base",
+  type: "base",
+  visible: true,
+});
+
+function normalizeImageEditLayers(
+  spec?: ContentDto["imageEditSpec"] | GenerationHistoryItem["imageEditSpec"],
+): ImageEditTextLayer[] {
+  const layers = Array.isArray(spec?.layers)
+    ? spec.layers
+        .filter((layer) => layer?.id && (layer.type === "base" || layer.type === "text"))
+        .slice(0, 24)
+        .map((layer) => ({ ...layer, visible: layer.visible !== false }))
+    : [];
+  if (!layers.some((layer) => layer.type === "base")) layers.unshift(freshBaseEditLayer());
+  return layers.length ? layers : [freshBaseEditLayer()];
+}
+
+function buildEditBaseMediaUrl(contentId: string): string {
+  const base = resolveBaseGatewayUrl().replace(/\/$/, "");
+  return withContentMediaRevision(
+    `${base}/content/${encodeURIComponent(contentId)}/media?variant=edit-base`,
+    `edit-base-${Date.now()}`,
+  );
 }
 
 const SUGGESTION_POOL = [
@@ -134,12 +161,14 @@ function startOfUtcDayMs(): number {
 function estimateGenerationsLeft(items: GenerationHistoryItem[], plan: string): number | null {
   if (plan !== "FREE") return null; // unlimited / not metered in UI
   const since = startOfUtcDayMs();
-  // Backend counts rows with prompt IS NOT NULL created today (UTC).
+  // Include paid edit operations on older drafts, not just today's new rows.
   const used = items.filter((item) => {
     if (!(item.prompt || "").trim()) return false;
     return item.timestamp >= since;
   }).length;
-  return Math.max(0, FREE_DAILY_GENERATION_LIMIT - used);
+  const edits = items.reduce((sum, item) => sum + (item.imageEditSpec?.meteredEditTimestamps || [])
+    .filter(value => Date.parse(value) >= since).length, 0);
+  return Math.max(0, FREE_DAILY_GENERATION_LIMIT - used - edits);
 }
 
 /** Bust browser/CDN cache so regenerate of the same /content/{id}/media URL actually refreshes. */
@@ -495,6 +524,12 @@ export default function ImageStudio() {
           captions: item.captions,
           hashtagSets: item.hashtagSets,
           memeSpec: item.memeSpec,
+          imageEditSpec: item.imageEditSpec
+            ? {
+                ...item.imageEditSpec,
+                layers: normalizeImageEditLayers(item.imageEditSpec),
+              }
+            : undefined,
           timestamp: itemTimestamp,
         };
       };
@@ -1082,6 +1117,9 @@ export default function ImageStudio() {
   };
 
   const startFreshDraft = () => {
+    setEditLayers([freshBaseEditLayer()]);
+    setSelectedLayerId(null);
+    setEditBaseImage(null);
     clearMemeFormOptions();
     clearViewedPrompts();
     setForceNewGenerate(true);
@@ -1118,6 +1156,21 @@ export default function ImageStudio() {
       setAspectRatio(item.aspectRatio);
     }
     setMode(isMemeItem ? "meme" : "image");
+    const canRestoreComposedLayers =
+      item.imageEditSpec?.lastOp !== "compose" || item.imageEditSpec.baseAvailable === true;
+    const restoredEditLayers = canRestoreComposedLayers
+      ? normalizeImageEditLayers(item.imageEditSpec)
+      : [freshBaseEditLayer()];
+    setEditLayers(restoredEditLayers);
+    setSelectedLayerId(
+      restoredEditLayers.find((layer) => layer.type === "text")?.id || null,
+    );
+    setEditBaseImage(
+      item.imageEditSpec?.lastOp === "compose" &&
+        item.imageEditSpec.baseAvailable === true
+        ? buildEditBaseMediaUrl(item.id)
+        : null,
+    );
     if (isMemeItem) {
       const memeModeFromSpec =
         item.memeSpec?.mode === "template" || item.memeSpec?.mode === "hybrid"
@@ -1208,6 +1261,9 @@ export default function ImageStudio() {
     setBrightness(100);
     setContrast(100);
     setSaturation(100);
+    setEditLayers([freshBaseEditLayer()]);
+    setSelectedLayerId(null);
+    setEditBaseImage(null);
   };
 
   // Initialize draft data from location state or search params (full replace — no additive leak)
@@ -1470,34 +1526,231 @@ export default function ImageStudio() {
   const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
   const [isUpscaling, setIsUpscaling] = useState(false);
   const [isRemovingBg, setIsRemovingBg] = useState(false);
+  const [isApplyingAdjust, setIsApplyingAdjust] = useState(false);
+  const [isApplyingCompose, setIsApplyingCompose] = useState(false);
+  const [editLayers, setEditLayers] = useState<ImageEditTextLayer[]>([
+    freshBaseEditLayer(),
+  ]);
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const [editBaseImage, setEditBaseImage] = useState<string | null>(null);
+  const editTargetRef = useRef(currentContentId);
+  editTargetRef.current = currentContentId;
+  const isEditingImage = isUpscaling || isRemovingBg || isApplyingAdjust || isApplyingCompose;
   const [showPayloadModal, setShowPayloadModal] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<any>(null);
   const [isCopied, setIsCopied] = useState(false);
 
+  const editToolsDisabled =
+    !currentContentId ||
+    isPublished ||
+    contentStatus === "published" ||
+    isGenerating ||
+    isPublishing ||
+    isUpscaling || isRemovingBg || isApplyingAdjust || isApplyingCompose ||
+    !resultImage;
+
+  const editDisabledReason = isPublished || contentStatus === "published"
+    ? t("image_studio.edit.published_lock")
+    : !currentContentId || !resultImage
+      ? t("image_studio.edit.no_draft")
+      : undefined;
+
+  const applyEditResult = async (
+    apiResponse: Awaited<ReturnType<typeof contentApi.editImage>>,
+    opLabel: string,
+    op: "upscale" | "remove_bg" | "adjust" | "compose",
+  ) => {
+    const contentId = apiResponse.contentId || currentContentId;
+    if (!contentId) {
+      throw new Error("Edit response missing contentId");
+    }
+    const img =
+      extractValidImageUrl(apiResponse) ||
+      apiResponse.imageUrl ||
+      apiResponse.cdnUrl ||
+      apiResponse.thumbnailUrl;
+    if (!img) {
+      throw new Error("Edit response did not contain an image payload.");
+    }
+
+    if (editTargetRef.current !== contentId) return;
+    await applyPreviewImage(img);
+    if (editTargetRef.current !== contentId) return;
+    const feedRevision = `edit-${Date.now()}`;
+    const feedUrl = withContentMediaRevision(img, feedRevision);
+    setHistory((prev) =>
+      prev.map((h) =>
+        h.id === contentId
+          ? {
+              ...h,
+              url: feedUrl,
+              mediaRevision: feedRevision,
+              status: "draft",
+              watermarked: Boolean(apiResponse.watermarked ?? h.watermarked),
+              captions: apiResponse.captions ?? h.captions,
+              hashtagSets: apiResponse.hashtagSets ?? h.hashtagSets,
+              imageEditSpec: {
+                meteredEditTimestamps: [
+                  ...(h.imageEditSpec?.meteredEditTimestamps || []),
+                  ...(op === "upscale" || op === "remove_bg" ? [new Date().toISOString()] : []),
+                ],
+                layers: op === "compose" ? editLayers : [freshBaseEditLayer()],
+                lastOp: op,
+                baseAvailable: op === "compose",
+              },
+            }
+          : h,
+      ),
+    );
+    setContentStatus("draft");
+    setIsPublished(false);
+    setWatermarked(Boolean(apiResponse.watermarked));
+    setBrightness(100);
+    setContrast(100);
+    setSaturation(100);
+    if (op === "compose") {
+      setEditBaseImage(buildEditBaseMediaUrl(contentId));
+    } else {
+      setEditLayers([freshBaseEditLayer()]);
+      setSelectedLayerId(null);
+      setEditBaseImage(null);
+    }
+    if (op === "upscale" || op === "remove_bg") {
+      setGenerationsLeft((current) => {
+        if (readUserPlan() !== "FREE") return null;
+        const next = Math.max(0, (current ?? FREE_DAILY_GENERATION_LIMIT) - 1);
+        safeLocalStorage.setItem("nxclip_generations_left", String(next));
+        return next;
+      });
+    }
+    toast.success(`${opLabel} complete`);
+  };
+
   const handleUpscale = async () => {
-    if (!resultImage) return;
+    if (!currentContentId || editToolsDisabled) return;
     setIsUpscaling(true);
     try {
-      // Upscale logic would go here if supported by the API Gateway
-      toast.info("Upscaling is currently handled by the media processing pipeline on the gateway.");
+      const apiResponse = await contentApi.editImage(currentContentId, { op: "upscale", scale: 2 });
+      await applyEditResult(apiResponse, "Upscale", "upscale");
     } catch (err) {
       console.error(err);
+      toast.error("Upscale failed", {
+        description: err instanceof Error ? err.message : "Please try again.",
+      });
     } finally {
       setIsUpscaling(false);
     }
   };
 
   const handleRemoveBg = async () => {
-    if (!resultImage) return;
+    if (!currentContentId || editToolsDisabled) return;
     setIsRemovingBg(true);
     try {
-      // Background removal would go here if supported by the API Gateway
-      toast.info("Background removal is processed by the AI edge nodes.");
+      const apiResponse = await contentApi.editImage(currentContentId, { op: "remove_bg" });
+      await applyEditResult(apiResponse, "Background remove", "remove_bg");
     } catch (err) {
       console.error(err);
+      toast.error("Background remove failed", {
+        description: err instanceof Error ? err.message : "Please try again.",
+      });
     } finally {
       setIsRemovingBg(false);
     }
+  };
+
+  const handleApplyAdjust = async () => {
+    if (!currentContentId || editToolsDisabled) return;
+    setIsApplyingAdjust(true);
+    try {
+      const apiResponse = await contentApi.editImage(currentContentId, {
+        op: "adjust",
+        brightness,
+        contrast,
+        saturation,
+      });
+      await applyEditResult(apiResponse, "Adjust", "adjust");
+    } catch (err) {
+      console.error(err);
+      toast.error("Apply adjust failed", {
+        description: err instanceof Error ? err.message : "Please try again.",
+      });
+    } finally {
+      setIsApplyingAdjust(false);
+    }
+  };
+
+  const handleApplyCompose = async () => {
+    if (!currentContentId || editToolsDisabled) return;
+    setIsApplyingCompose(true);
+    try {
+      const apiResponse = await contentApi.editImage(currentContentId, {
+        op: "compose",
+        layers: editLayers,
+      });
+      await applyEditResult(apiResponse, "Text compose", "compose");
+    } catch (err) {
+      console.error(err);
+      toast.error("Apply text failed", {
+        description: err instanceof Error ? err.message : "Please try again.",
+      });
+    } finally {
+      setIsApplyingCompose(false);
+    }
+  };
+
+  const handleAddTextLayer = () => {
+    if (editToolsDisabled || editLayers.length >= 24) return;
+    const id = `text-${Date.now()}`;
+    const layer: ImageEditTextLayer = {
+      id,
+      type: "text",
+      visible: true,
+      text: t("image_studio.edit.default_text"),
+      xPct: 50,
+      yPct: 82,
+      fontSizePct: 8,
+      color: "#ffffff",
+      strokeColor: "#000000",
+      align: "center",
+      fontId: "impact",
+    };
+    setEditLayers((prev) => [...prev, layer]);
+    setSelectedLayerId(id);
+  };
+
+  const handleUpdateSelectedLayer = (patch: Partial<ImageEditTextLayer>) => {
+    if (!selectedLayerId || editToolsDisabled) return;
+    setEditLayers((prev) =>
+      prev.map((layer) => (layer.id === selectedLayerId ? { ...layer, ...patch } : layer)),
+    );
+  };
+
+  const handleRemoveSelectedLayer = () => {
+    if (!selectedLayerId || editToolsDisabled) return;
+    setEditLayers((prev) => prev.filter((layer) => layer.id !== selectedLayerId || layer.type === "base"));
+    setSelectedLayerId(null);
+  };
+
+  const handleToggleLayerVisible = (id: string) => {
+    if (editToolsDisabled) return;
+    setEditLayers((prev) =>
+      prev.map((layer) =>
+        layer.id === id ? { ...layer, visible: layer.visible === false } : layer,
+      ),
+    );
+  };
+
+  const handleMoveLayer = (id: string, direction: "up" | "down") => {
+    if (editToolsDisabled) return;
+    setEditLayers((prev) => {
+      const idx = prev.findIndex((l) => l.id === id);
+      if (idx < 0 || prev[idx].type !== "text") return prev;
+      const swapWith = direction === "up" ? idx + 1 : idx - 1;
+      if (swapWith < 0 || swapWith >= prev.length || prev[swapWith].type !== "text") return prev;
+      const next = [...prev];
+      [next[idx], next[swapWith]] = [next[swapWith], next[idx]];
+      return next;
+    });
   };
 
   const handleGenerateTitle = async () => {
@@ -1526,6 +1779,7 @@ export default function ImageStudio() {
   };
 
   const handleGenerate = () => {
+    if (isEditingImage) return;
     if (mode === "meme" && (memeMode === "template" || memeMode === "hybrid")) {
       if (!selectedTemplateId) {
         toast.error("Pick a meme template");
@@ -1755,6 +2009,9 @@ export default function ImageStudio() {
 
       // Prefer a no-store blob so refine of the same /content/{id}/media path updates the canvas.
       await applyPreviewImage(img);
+      setEditLayers([freshBaseEditLayer()]);
+      setSelectedLayerId(null);
+      setEditBaseImage(null);
 
       // Optimistically refresh the matching Recent Generations tile (same media path after refine).
       const feedRevision = `local-${Date.now()}`;
@@ -1823,6 +2080,7 @@ export default function ImageStudio() {
                 watermarked: Boolean(apiResponse.watermarked),
                 captions: apiResponse.captions ?? h.captions,
                 hashtagSets: apiResponse.hashtagSets ?? h.hashtagSets,
+                imageEditSpec: { meteredEditTimestamps: h.imageEditSpec?.meteredEditTimestamps },
                 memeSpec:
                   isMeme && memeMode === "hybrid"
                     ? {
@@ -1978,12 +2236,21 @@ export default function ImageStudio() {
       if (!img) throw new Error("Retry did not return an image payload.");
       updateApiLogSuccess(generateLogId, 200, apiResponse, "Retry completed");
       await applyPreviewImage(img);
+      setEditLayers([freshBaseEditLayer()]);
+      setSelectedLayerId(null);
+      setEditBaseImage(null);
       const feedRevision = `local-${Date.now()}`;
       const feedUrl = withContentMediaRevision(img, feedRevision);
       setHistory((prev) =>
         prev.map((h) =>
           h.id === contentId
-            ? { ...h, url: feedUrl, mediaRevision: feedRevision, status: "draft" }
+            ? {
+                ...h,
+                url: feedUrl,
+                mediaRevision: feedRevision,
+                status: "draft",
+                imageEditSpec: { meteredEditTimestamps: h.imageEditSpec?.meteredEditTimestamps },
+              }
             : h,
         ),
       );
@@ -2041,6 +2308,7 @@ export default function ImageStudio() {
   };
 
   const handlePublish = async () => {
+    if (isEditingImage) return;
     if (!currentContentId) {
       toast.error("No active image to publish.");
       return;
@@ -2211,6 +2479,7 @@ export default function ImageStudio() {
   };
 
   const handleAnimateAsClip = async (mode: "ken_burns" | "i2v" = animateMode) => {
+    if (isEditingImage) return;
     const sourceId = animateSourceContentId || currentContentId;
     if (!sourceId) {
       toast.error(
@@ -2297,8 +2566,24 @@ export default function ImageStudio() {
       setAspectRatio(item.aspectRatio);
     }
     if (isMemeItem || item.type) {
-      setMode(isMemeItem ? "meme" : ((item.type as "image" | "meme") || "image"));
+    setMode(isMemeItem ? "meme" : ((item.type as "image" | "meme") || "image"));
     }
+    const canRestoreComposedLayers =
+      item.imageEditSpec?.lastOp !== "compose" || item.imageEditSpec.baseAvailable === true;
+    const restoredEditLayers = canRestoreComposedLayers
+      ? normalizeImageEditLayers(item.imageEditSpec)
+      : [freshBaseEditLayer()];
+    setEditLayers(restoredEditLayers);
+    setSelectedLayerId(
+      restoredEditLayers.find((layer) => layer.type === "text")?.id || null,
+    );
+    setEditBaseImage(
+      item.id &&
+        item.imageEditSpec?.lastOp === "compose" &&
+        item.imageEditSpec.baseAvailable === true
+        ? buildEditBaseMediaUrl(item.id)
+        : null,
+    );
     if (isMemeItem) {
       const memeModeFromSpec =
         item.memeSpec?.mode === "template" || item.memeSpec?.mode === "hybrid"
@@ -2608,6 +2893,8 @@ export default function ImageStudio() {
               onUseWeekPlanDay={handleUseWeekPlanDay}
               onCloseWeekPlanCanvas={() => setWeekPlanCanvasOpen(false)}
               memeTemplates={memeTemplates}
+              editLayers={editLayers}
+              editBaseImage={editBaseImage}
             />
           </TabsContent>
 
@@ -2622,6 +2909,21 @@ export default function ImageStudio() {
               handleUpscale={handleUpscale}
               isRemovingBg={isRemovingBg}
               handleRemoveBg={handleRemoveBg}
+              isApplyingAdjust={isApplyingAdjust}
+              handleApplyAdjust={handleApplyAdjust}
+              isApplyingCompose={isApplyingCompose}
+              handleApplyCompose={handleApplyCompose}
+              editLayers={editLayers}
+              selectedLayerId={selectedLayerId}
+              onSelectLayer={setSelectedLayerId}
+              onAddTextLayer={handleAddTextLayer}
+              onUpdateSelectedLayer={handleUpdateSelectedLayer}
+              onRemoveSelectedLayer={handleRemoveSelectedLayer}
+              onToggleLayerVisible={handleToggleLayerVisible}
+              onMoveLayer={handleMoveLayer}
+              editToolsDisabled={editToolsDisabled}
+              editDisabledReason={editDisabledReason}
+              hasComposedText={Boolean(editBaseImage)}
               onPublishClick={() => setIsPublishModalOpen(true)}
               onAnimateAsClipClick={() => setAnimatePickerOpen(true)}
               isAnimatingAsClip={isAnimatingAsClip}
@@ -2770,6 +3072,8 @@ export default function ImageStudio() {
           onUseWeekPlanDay={handleUseWeekPlanDay}
           onCloseWeekPlanCanvas={() => setWeekPlanCanvasOpen(false)}
           memeTemplates={memeTemplates}
+          editLayers={editLayers}
+          editBaseImage={editBaseImage}
         />
 
         {/* RIGHT PANEL - Studio Tools */}
@@ -2782,6 +3086,21 @@ export default function ImageStudio() {
           handleUpscale={handleUpscale}
           isRemovingBg={isRemovingBg}
           handleRemoveBg={handleRemoveBg}
+          isApplyingAdjust={isApplyingAdjust}
+          handleApplyAdjust={handleApplyAdjust}
+          isApplyingCompose={isApplyingCompose}
+          handleApplyCompose={handleApplyCompose}
+          editLayers={editLayers}
+          selectedLayerId={selectedLayerId}
+          onSelectLayer={setSelectedLayerId}
+          onAddTextLayer={handleAddTextLayer}
+          onUpdateSelectedLayer={handleUpdateSelectedLayer}
+          onRemoveSelectedLayer={handleRemoveSelectedLayer}
+          onToggleLayerVisible={handleToggleLayerVisible}
+          onMoveLayer={handleMoveLayer}
+          editToolsDisabled={editToolsDisabled}
+          editDisabledReason={editDisabledReason}
+          hasComposedText={Boolean(editBaseImage)}
           onPublishClick={() => setIsPublishModalOpen(true)}
           onAnimateAsClipClick={() => setAnimatePickerOpen(true)}
           isAnimatingAsClip={isAnimatingAsClip}

@@ -87,7 +87,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({
   }
 
   return (
-    <div className="flex flex-col h-[400px]">
+    <div className="flex flex-col min-h-0 max-h-[min(400px,calc(100dvh-14rem))] h-[min(400px,calc(100dvh-14rem))]">
       <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/30">
         <div className="flex items-center gap-2">
           <Bell size={14} className="text-primary" />

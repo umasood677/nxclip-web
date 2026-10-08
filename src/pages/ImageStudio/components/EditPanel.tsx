@@ -1,43 +1,69 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { 
-  Settings2, Loader2, Maximize2, Image as ImageIcon, Plus, Check, History, Clapperboard
+  Settings2, Loader2, Maximize2, Image as ImageIcon, Plus, Check, History, Clapperboard,
+  Eye, EyeOff, ChevronUp, ChevronDown, Trash2
 } from "lucide-react";
 import { Card } from "../../../components/ui/card";
 import { Label } from "../../../components/ui/label";
 import { Button } from "../../../components/ui/button";
 import { Slider } from "../../../components/ui/slider";
+import { Input } from "../../../components/ui/input";
 import { ScrollArea } from "../../../components/ui/scroll-area";
 import { Separator } from "../../../components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../../components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "../../../components/ui/tooltip";
 import { cn } from "../../../lib/utils";
-import { EditPanelProps } from "../types";
+import { EditPanelProps, ImageEditTextLayer } from "../types";
 
 export function EditPanel({ 
   resultImage, brightness, setBrightness, contrast, setContrast, saturation, setSaturation, 
-  isUpscaling, handleUpscale, isRemovingBg, handleRemoveBg, onPublishClick, onAnimateAsClipClick, isAnimatingAsClip, canAnimateAsClip = true, animateCtaLabel = "Animate in Clip Studio", onViewHistoryClick, isPublishing, isPublished, className 
+  isUpscaling, handleUpscale, isRemovingBg, handleRemoveBg,
+  isApplyingAdjust, handleApplyAdjust, isApplyingCompose, handleApplyCompose,
+  editLayers = [], selectedLayerId, onSelectLayer, onAddTextLayer,
+  onUpdateSelectedLayer, onRemoveSelectedLayer, onToggleLayerVisible, onMoveLayer,
+  editToolsDisabled, editDisabledReason, hasComposedText = false,
+  onPublishClick, onAnimateAsClipClick, isAnimatingAsClip, canAnimateAsClip = true, animateCtaLabel = "Animate in Clip Studio", onViewHistoryClick, isPublishing, isPublished, className
 }: EditPanelProps) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === "rtl";
+  const [activeTab, setActiveTab] = React.useState("adjust");
+  const toolsLocked = Boolean(editToolsDisabled || !resultImage);
+  const selected = editLayers.find((l) => l.id === selectedLayerId && l.type === "text") as
+    | ImageEditTextLayer
+    | undefined;
+  const textLayers = editLayers.filter((l) => l.type === "text");
 
   return (
     <Card className={cn("flex flex-col border-border glass shrink-0 h-full min-h-0 overflow-hidden", className, isRTL ? "direction-rtl" : "direction-ltr")}>
-      <Tabs defaultValue="adjust" className="flex-1 flex flex-col min-h-0">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
         <div className="p-2 border-b border-border/50 shrink-0">
           <TabsList className="grid w-full grid-cols-3 h-9">
             <TabsTrigger value="adjust" className="text-[10px] font-bold">{t('image_studio.edit.tabs.adjust')}</TabsTrigger>
-            <TabsTrigger value="text" className="text-[10px] font-bold">Text (Soon)</TabsTrigger>
-            <TabsTrigger value="layers" className="text-[10px] font-bold">Layers (Soon)</TabsTrigger>
+            <TabsTrigger value="text" className="text-[10px] font-bold">{t('image_studio.edit.tabs.text')}</TabsTrigger>
+            <TabsTrigger value="layers" className="text-[10px] font-bold">{t('image_studio.edit.tabs.layers')}</TabsTrigger>
           </TabsList>
         </div>
 
         <ScrollArea className="flex-1 min-h-0">
           <div className="p-4">
+            {editDisabledReason ? (
+              <p className="mb-4 text-[10px] text-muted-foreground leading-relaxed rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+                {editDisabledReason}
+              </p>
+            ) : null}
+
             <TabsContent value="adjust" className="m-0 space-y-6">
               <div className="space-y-4">
                 <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
@@ -51,6 +77,7 @@ export function EditPanel({
                       setContrast(100);
                       setSaturation(100);
                     }}
+                    disabled={toolsLocked}
                   >
                     {t('image_studio.canvas.reset')}
                   </Button>
@@ -76,7 +103,8 @@ export function EditPanel({
                           if (typeof val === 'number') setBrightness(val);
                         }} 
                         onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
-                        min={0} max={200} step={1} 
+                        min={0} max={200} step={1}
+                        disabled={toolsLocked}
                       />
                     </div>
                     <div className="space-y-3">
@@ -99,7 +127,8 @@ export function EditPanel({
                           if (typeof val === 'number') setContrast(val);
                         }} 
                         onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
-                        min={0} max={200} step={1} 
+                        min={0} max={200} step={1}
+                        disabled={toolsLocked}
                       />
                     </div>
                     <div className="space-y-3">
@@ -122,37 +151,52 @@ export function EditPanel({
                           if (typeof val === 'number') setSaturation(val);
                         }} 
                         onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
-                        min={0} max={200} step={1} 
+                        min={0} max={200} step={1}
+                        disabled={toolsLocked}
                       />
                     </div>
                   </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="w-full text-[10px] h-9 font-bold"
+                        onClick={handleApplyAdjust}
+                        disabled={toolsLocked || isApplyingAdjust}
+                      >
+                        {isApplyingAdjust ? (
+                          <Loader2 className="h-3 w-3 animate-spin mr-2" />
+                        ) : null}
+                        {t('image_studio.edit.apply_adjust')}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{t('image_studio.edit.apply_adjust_tooltip')}</TooltipContent>
+                  </Tooltip>
               </div>
               <Separator className="bg-border/50" />
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{t('image_studio.edit.quick_actions')}</Label>
-                <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  Adjustments below are preview-only for now. Exported media still comes from the saved content draft.
-                </p>
                 <div className="grid grid-cols-2 gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="text-[10px] h-12 flex flex-col gap-1 font-bold border-border/50 opacity-70"
+                        className="text-[10px] h-12 flex flex-col gap-1 font-bold border-border/50"
                         onClick={handleUpscale}
-                        disabled={!resultImage || isUpscaling}
+                        disabled={toolsLocked || isUpscaling}
                       >
                         {isUpscaling ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
                           <Maximize2 className="h-3 w-3" />
                         )}
-                        {isUpscaling ? t('image_studio.edit.processing') : "Upscale (Soon)"}
+                        {isUpscaling ? t('image_studio.edit.processing') : t('image_studio.edit.upscale')}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      Planned for a later media-processing update.
+                      {editDisabledReason || t('image_studio.edit.upscale_tooltip')}
                     </TooltipContent>
                   </Tooltip>
                   
@@ -161,42 +205,287 @@ export function EditPanel({
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="text-[10px] h-12 flex flex-col gap-1 font-bold border-border/50 opacity-70"
+                        className="text-[10px] h-12 flex flex-col gap-1 font-bold border-border/50"
                         onClick={handleRemoveBg}
-                        disabled={!resultImage || isRemovingBg}
+                        disabled={toolsLocked || isRemovingBg}
                       >
                         {isRemovingBg ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
                           <ImageIcon className="h-3 w-3" />
                         )}
-                        {isRemovingBg ? t('image_studio.edit.removing') : "BG Remove (Soon)"}
+                        {isRemovingBg ? t('image_studio.edit.removing') : t('image_studio.edit.bg_remove')}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
-                      Planned for a later media-processing update.
+                      {editDisabledReason || t('image_studio.edit.bg_remove_tooltip')}
                     </TooltipContent>
                   </Tooltip>
                 </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="text" className="m-0 space-y-6">
-              <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-4 space-y-2">
-                <Label className="text-[10px] font-bold text-muted-foreground">Text tools are planned</Label>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Text overlays for freeform editing are not active yet. Meme text is currently handled through Meme Studio configuration on the left panel.
-                </p>
-              </div>
+            <TabsContent value="text" className="m-0 space-y-4">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-[10px] h-9 font-bold gap-2"
+                onClick={onAddTextLayer}
+                disabled={toolsLocked}
+              >
+                <Plus className="h-3 w-3" />
+                {t('image_studio.edit.add_text')}
+              </Button>
+
+              {selected ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold">{t('image_studio.edit.font_placeholder')}</Label>
+                    <Input
+                      value={selected.text || ""}
+                      onChange={(e) => onUpdateSelectedLayer?.({ text: e.target.value })}
+                      placeholder={t('image_studio.edit.font_placeholder')}
+                      className="h-9 text-xs"
+                      disabled={toolsLocked}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold">{t('image_studio.edit.color')}</Label>
+                      <Input
+                        type="color"
+                        value={selected.color || "#ffffff"}
+                        onChange={(e) => onUpdateSelectedLayer?.({ color: e.target.value })}
+                        className="h-9 p-1"
+                        disabled={toolsLocked}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold">{t('image_studio.edit.stroke_color')}</Label>
+                      <Input
+                        type="color"
+                        value={selected.strokeColor || "#000000"}
+                        onChange={(e) => onUpdateSelectedLayer?.({ strokeColor: e.target.value })}
+                        className="h-9 p-1"
+                        disabled={toolsLocked}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold">{t('image_studio.edit.font')}</Label>
+                      <Select
+                        value={selected.fontId || "impact"}
+                        onValueChange={(value) =>
+                          onUpdateSelectedLayer?.({
+                            fontId: value as "impact" | "inter" | "montserrat",
+                          })
+                        }
+                        disabled={toolsLocked}
+                      >
+                        <SelectTrigger className="h-8 text-[10px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="impact">Anton (Impact style)</SelectItem>
+                          <SelectItem value="inter">Inter</SelectItem>
+                          <SelectItem value="montserrat">Montserrat</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold">{t('image_studio.edit.align')}</Label>
+                      <div className="grid grid-cols-3 gap-1">
+                        {(["left", "center", "right"] as const).map((align) => (
+                          <Button
+                            key={align}
+                            type="button"
+                            size="sm"
+                            variant={selected.align === align ? "secondary" : "outline"}
+                            className="h-8 text-[9px] font-bold capitalize"
+                            onClick={() => onUpdateSelectedLayer?.({ align })}
+                            disabled={toolsLocked}
+                          >
+                            {align[0]}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label className="text-[10px] font-bold">{t('image_studio.edit.size')}</Label>
+                      <span className="text-[10px] text-muted-foreground">{selected.fontSizePct ?? 8}%</span>
+                    </div>
+                    <Slider
+                      value={[selected.fontSizePct ?? 8]}
+                      onValueChange={(v) => {
+                        const val = Array.isArray(v) ? v[0] : v;
+                        if (typeof val === "number") onUpdateSelectedLayer?.({ fontSizePct: val });
+                      }}
+                      min={2}
+                      max={24}
+                      step={1}
+                      disabled={toolsLocked}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label className="text-[10px] font-bold">X</Label>
+                      <span className="text-[10px] text-muted-foreground">{selected.xPct ?? 50}%</span>
+                    </div>
+                    <Slider
+                      value={[selected.xPct ?? 50]}
+                      onValueChange={(v) => {
+                        const val = Array.isArray(v) ? v[0] : v;
+                        if (typeof val === "number") onUpdateSelectedLayer?.({ xPct: val });
+                      }}
+                      min={0}
+                      max={100}
+                      step={1}
+                      disabled={toolsLocked}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label className="text-[10px] font-bold">Y</Label>
+                      <span className="text-[10px] text-muted-foreground">{selected.yPct ?? 50}%</span>
+                    </div>
+                    <Slider
+                      value={[selected.yPct ?? 50]}
+                      onValueChange={(v) => {
+                        const val = Array.isArray(v) ? v[0] : v;
+                        if (typeof val === "number") onUpdateSelectedLayer?.({ yPct: val });
+                      }}
+                      min={0}
+                      max={100}
+                      step={1}
+                      disabled={toolsLocked}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="flex-1 text-[10px] font-bold"
+                      onClick={handleApplyCompose}
+                      disabled={toolsLocked || isApplyingCompose}
+                    >
+                      {isApplyingCompose ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
+                      {t('image_studio.edit.apply_compose')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-[10px] font-bold text-destructive"
+                      onClick={onRemoveSelectedLayer}
+                      disabled={toolsLocked}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    {t('image_studio.edit.text_help')}
+                  </p>
+                  {hasComposedText ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="w-full text-[10px] font-bold"
+                      onClick={handleApplyCompose}
+                      disabled={toolsLocked || isApplyingCompose}
+                    >
+                      {isApplyingCompose ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
+                      {t('image_studio.edit.apply_compose')}
+                    </Button>
+                  ) : null}
+                </div>
+              )}
             </TabsContent>
 
-            <TabsContent value="layers" className="m-0 space-y-4">
-              <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-4 space-y-2">
-                <Label className="text-[10px] font-bold text-muted-foreground">Layer controls are planned</Label>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  This panel will later manage editable image/text layers. For now, the generated draft preview is the only active layer.
-                </p>
+            <TabsContent value="layers" className="m-0 space-y-3">
+              <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                {t('image_studio.edit.text_layers')}
+              </Label>
+              <div className="space-y-2">
+                {editLayers.map((layer) => {
+                  const isSelected = layer.id === selectedLayerId;
+                  const label =
+                    layer.type === "base"
+                      ? t('image_studio.edit.background_layer')
+                      : (layer.text || t('image_studio.edit.empty_layer'));
+                  return (
+                    <div
+                      key={layer.id}
+                      className={cn(
+                        "rounded-lg border px-2 py-2 flex items-center gap-2",
+                        isSelected ? "border-primary/60 bg-primary/5" : "border-border/50 bg-muted/10",
+                      )}
+                    >
+                      <button
+                        type="button"
+                        className="flex-1 text-left text-[11px] font-medium truncate"
+                        onClick={() => { if (layer.type === "text") { onSelectLayer?.(layer.id); setActiveTab("text"); } }}
+                        disabled={toolsLocked && layer.type === "text"}
+                      >
+                        {label}
+                      </button>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            onClick={() => onToggleLayerVisible?.(layer.id)}
+                            aria-label={t(layer.visible !== false ? 'image_studio.edit.layer_visible' : 'image_studio.edit.layer_hidden')}
+                            disabled={toolsLocked}
+                          >
+                            {layer.visible !== false ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                          </Button>
+                      {layer.type === "text" ? (
+                        <>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            onClick={() => onMoveLayer?.(layer.id, "up")}
+                            aria-label={t('image_studio.edit.move_up')}
+                            disabled={toolsLocked}
+                          >
+                            <ChevronUp className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            onClick={() => onMoveLayer?.(layer.id, "down")}
+                            aria-label={t('image_studio.edit.move_down')}
+                            disabled={toolsLocked}
+                          >
+                            <ChevronDown className="h-3 w-3" />
+                          </Button>
+                        </>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </div>
+              {editLayers.length > 0 || hasComposedText ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="w-full text-[10px] font-bold"
+                  onClick={handleApplyCompose}
+                  disabled={toolsLocked || isApplyingCompose}
+                >
+                  {isApplyingCompose ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
+                  {t('image_studio.edit.apply_compose')}
+                </Button>
+              ) : null}
             </TabsContent>
           </div>
         </ScrollArea>

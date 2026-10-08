@@ -1207,6 +1207,24 @@ export interface ContentDto {
     templateId?: string;
     texts?: Array<{ slot: string; text: string }>;
   };
+  imageEditSpec?: {
+    layers?: Array<{
+      id: string;
+      type: "base" | "text";
+      visible?: boolean;
+      text?: string;
+      xPct?: number;
+      yPct?: number;
+      fontSizePct?: number;
+      color?: string;
+      strokeColor?: string;
+      align?: "left" | "center" | "right";
+      fontId?: "impact" | "inter" | "montserrat";
+    }>;
+    lastOp?: "upscale" | "remove_bg" | "adjust" | "compose" | string;
+    baseAvailable?: boolean;
+    meteredEditTimestamps?: string[];
+  };
     clipEditSpec?: {
     inMs?: number;
     outMs?: number;
@@ -1585,6 +1603,44 @@ export const contentApi = {
         body: JSON.stringify(data),
       }
     );
+  },
+
+  editImage: async (
+    id: string,
+    data:
+      | { op: "upscale"; scale?: 1 | 2 }
+      | { op: "remove_bg" }
+      | { op: "adjust"; brightness: number; contrast: number; saturation: number }
+      | {
+          op: "compose";
+          layers: Array<{
+            id: string;
+            type: "base" | "text";
+            visible?: boolean;
+            text?: string;
+            xPct?: number;
+            yPct?: number;
+            fontSizePct?: number;
+            color?: string;
+            strokeColor?: string;
+            align?: "left" | "center" | "right";
+            fontId?: "impact" | "inter" | "montserrat";
+          }>;
+        },
+  ): Promise<{
+    contentId: string;
+    cdnUrl?: string;
+    thumbnailUrl?: string;
+    imageUrl?: string;
+    captions?: string[];
+    hashtagSets?: string[][];
+    watermarked?: boolean;
+  }> => {
+    return performApiRequest(`/content/${id}/edit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
   },
 
   createMeme: async (dto: CreateMemeRequestDto): Promise<any> => {

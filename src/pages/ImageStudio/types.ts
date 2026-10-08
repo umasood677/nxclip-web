@@ -23,6 +23,12 @@ export interface GenerationHistoryItem {
     templateId?: string;
     texts?: Array<{ slot: string; text: string }>;
   };
+  imageEditSpec?: {
+    layers?: ImageEditTextLayer[];
+    lastOp?: string;
+    baseAvailable?: boolean;
+    meteredEditTimestamps?: string[];
+  };
   timestamp: number;
 }
 
@@ -223,6 +229,24 @@ export interface CanvasPanelProps {
   onUseWeekPlanDay?: () => void;
   onCloseWeekPlanCanvas?: () => void;
   memeTemplates?: import("../../services/apiClient").MemeTemplateDto[];
+  /** Non-destructive text overlays before compose burn-in. */
+  editLayers?: ImageEditTextLayer[];
+  /** Original raster used while editing a previously composed text stack. */
+  editBaseImage?: string | null;
+}
+
+export interface ImageEditTextLayer {
+  id: string;
+  type: "base" | "text";
+  visible: boolean;
+  text?: string;
+  xPct?: number;
+  yPct?: number;
+  fontSizePct?: number;
+  color?: string;
+  strokeColor?: string;
+  align?: "left" | "center" | "right";
+  fontId?: "impact" | "inter" | "montserrat";
 }
 
 export interface EditPanelProps {
@@ -237,6 +261,22 @@ export interface EditPanelProps {
   handleUpscale: () => void;
   isRemovingBg: boolean;
   handleRemoveBg: () => void;
+  isApplyingAdjust?: boolean;
+  handleApplyAdjust?: () => void;
+  isApplyingCompose?: boolean;
+  handleApplyCompose?: () => void;
+  editLayers?: ImageEditTextLayer[];
+  selectedLayerId?: string | null;
+  onSelectLayer?: (id: string) => void;
+  onAddTextLayer?: () => void;
+  onUpdateSelectedLayer?: (patch: Partial<ImageEditTextLayer>) => void;
+  onRemoveSelectedLayer?: () => void;
+  onToggleLayerVisible?: (id: string) => void;
+  onMoveLayer?: (id: string, direction: "up" | "down") => void;
+  editToolsDisabled?: boolean;
+  editDisabledReason?: string;
+  /** Allows applying an empty stack to remove previously baked text. */
+  hasComposedText?: boolean;
   onPublishClick?: () => void;
   onAnimateAsClipClick?: () => void;
   isAnimatingAsClip?: boolean;

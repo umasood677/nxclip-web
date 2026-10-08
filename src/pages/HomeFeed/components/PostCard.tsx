@@ -394,7 +394,7 @@ export const PostCard = memo(
             wrapperClassName="!absolute !inset-0 !h-full !w-full !bg-transparent overflow-hidden"
             className={cn(
               "absolute inset-0 h-full w-full cursor-pointer origin-center transition-transform duration-500 ease-out will-change-transform",
-              aspectRatio ? "object-cover" : "object-contain",
+              post.contentType === "clip" || aspectRatio ? "object-cover" : "object-contain",
               hovered && "scale-110",
             )}
             onClick={() => navigate(`/feed/post/${detailId}`)}
@@ -402,6 +402,8 @@ export const PostCard = memo(
               const el = e.currentTarget;
               if (el instanceof HTMLImageElement) {
                 onMediaLoad?.(el.naturalWidth, el.naturalHeight);
+              } else if (el instanceof HTMLVideoElement) {
+                onMediaLoad?.(el.videoWidth, el.videoHeight);
               }
             }}
             onError={() => {
