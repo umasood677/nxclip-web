@@ -47,6 +47,8 @@ import {
 import { cn } from "../../../lib/utils";
 import { toast } from "sonner";
 import { GeneratePanelProps } from "../types";
+import { SmartEnhance } from "./SmartEnhance";
+import type { ImageComposition } from "../lib/imagePromptContext";
 import { ScrollableSuggestions } from "./ScrollableSuggestions";
 import { AuthenticatedImage } from "../../../components/AuthenticatedImage";
 import { MemeDirectorPanel } from "./MemeDirectorPanel";
@@ -82,6 +84,13 @@ const PROMPT_HELPERS = [
 ];
 
 export function GeneratePanel({
+  composition = "auto",
+  setComposition,
+  refinementInstruction = "",
+  setRefinementInstruction,
+  promptContext,
+  onApplyEnhancement,
+  appliedEnhancement,
   mode,
   setMode,
   memeMode,
@@ -944,6 +953,16 @@ export function GeneratePanel({
                 </button>
               ) : null}
             </div>
+            {mode === "image" && promptContext && onApplyEnhancement && import.meta.env.VITE_IMAGE_SMART_ENHANCE !== "false" ? (
+              <SmartEnhance context={promptContext} disabled={isGenerating || isUploadingReference} applied={appliedEnhancement} onApply={onApplyEnhancement} />
+            ) : null}
+            {mode === "image" && !willCreateNewImage && setRefinementInstruction ? (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Refinement instruction (optional)</Label>
+                <Textarea aria-label="Refinement instruction" placeholder="What should change? Other visual details will be preserved." value={refinementInstruction} maxLength={500} disabled={isGenerating} onChange={(event) => setRefinementInstruction(event.target.value)} className="min-h-20 resize-none text-xs bg-muted/30 border-border/50" />
+                <p className="text-[10px] text-muted-foreground text-right">{refinementInstruction.length}/500</p>
+              </div>
+            ) : null}
             <AnimatePresence>
               {tagSuggestions.length > 0 && (
                 <motion.div
@@ -1187,6 +1206,16 @@ export function GeneratePanel({
                   </div>
                 ) : null}
 
+                {mode === "image" && setComposition && import.meta.env.VITE_IMAGE_COMPOSITION_CONTROL !== "false" ? <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Composition · optional</Label>
+                  <Select value={composition} onValueChange={(value) => setComposition(value as ImageComposition)}>
+                    <SelectTrigger className="h-9 text-xs bg-muted/30 border-border/50"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {([["auto", "Auto"], ["cinematic", "Cinematic"], ["split_scene", "Split Scene"], ["hero", "Hero"], ["close_up", "Close-up"], ["wide", "Wide"], ["pov", "POV"]] as const).map(([value, label]) => <SelectItem key={value} value={value} className="text-xs">{label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">Auto lets the model choose; it does not force split scenes.</p>
+                </div> : null}
                 {/* Enhancers */}
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -1349,7 +1378,7 @@ export function GeneratePanel({
         {!willCreateNewImage && !isGenerating && (
           <p className="mt-1.5 text-[10px] text-center text-muted-foreground">
             Same action as the canvas button: updates this draft in place using the current preview as
-            the base. Change the prompt and click again. Adding or changing references switches to
+            the base. {mode === "image" && setRefinementInstruction ? "Describe the requested change in Refinement instruction." : "Change the prompt and click again."} Adding or changing references switches to
             Generate (new {mode === "meme" ? "meme" : "image"}, no previous base).
           </p>
         )}

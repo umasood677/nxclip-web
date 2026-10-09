@@ -1174,6 +1174,7 @@ export const identityApi = {
 // ==========================================
 
 export interface ContentDto {
+  promptContext?: import("../pages/ImageStudio/lib/imagePromptContext").ImagePromptContext;
   id: string;
   userId: string;
   title: string;
@@ -1558,8 +1559,10 @@ export const contentApi = {
     referenceContentIds?: string[],
     referenceUploadIds?: string[],
     title?: string,
+    promptContext?: import("../pages/ImageStudio/lib/imagePromptContext").ImagePromptContext,
   ) => {
     const payload: Record<string, any> = { prompt, style, aspectRatio };
+    if (promptContext) payload.promptContext = promptContext;
     if (model && model !== "default") payload.model = model;
     if (referenceContentIds && referenceContentIds.length > 0) payload.referenceContentIds = referenceContentIds;
     if (referenceUploadIds && referenceUploadIds.length > 0) payload.referenceUploadIds = referenceUploadIds;
@@ -1579,6 +1582,7 @@ export const contentApi = {
   regenerateImage: async (
     id: string, 
     data: { 
+      promptContext?: import("../pages/ImageStudio/lib/imagePromptContext").ImagePromptContext;
       prompt?: string; 
       style?: string; 
       aspectRatio?: string; 
@@ -1603,6 +1607,13 @@ export const contentApi = {
         body: JSON.stringify(data),
       }
     );
+  },
+
+  enhanceImagePrompt: async (context: import("../pages/ImageStudio/lib/imagePromptContext").ImagePromptContext): Promise<{ enhancedPrompt: string; provider: string }> => {
+    return performApiRequest("/content/image-prompt/enhance", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(context),
+      suppressErrorLog: true,
+    });
   },
 
   editImage: async (

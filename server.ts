@@ -539,8 +539,8 @@ async function startServer() {
         if (!body.prompt || body.prompt.length < 3 || body.prompt.length > 2000) {
           return sendErrorResponse(400, "Conformity Violation: AI prompt is required and must be between 3 and 2000 characters.", "CONFORMITY_ERR_INVALID_PROMPT");
         }
-        if (body.aspectRatio && !["1:1", "16:9", "9:16"].includes(body.aspectRatio)) {
-          return sendErrorResponse(400, "Conformity Violation: Aspect ratio must be exactly '1:1', '16:9', or '9:16'.", "CONFORMITY_ERR_INVALID_ASPECT_RATIO");
+        if (body.aspectRatio && !["1:1", "16:9", "9:16", "4:5"].includes(body.aspectRatio)) {
+          return sendErrorResponse(400, "Conformity Violation: Aspect ratio must be '1:1', '16:9', '9:16', or '4:5'.", "CONFORMITY_ERR_INVALID_ASPECT_RATIO");
         }
       }
 
@@ -739,7 +739,9 @@ async function startServer() {
 
       return res.status(response.status).send(Buffer.from(response.data));
     } catch (error: any) {
-      console.error("[Gateway Proxy] Proxy error:", error);
+      console.error("[Gateway Proxy] Proxy error:", cleanSubPath === "content/image-prompt/enhance"
+        ? { code: error?.code, status: error?.response?.status, correlationId }
+        : error);
       // Return normalized 502 Bad Gateway conformant error
       return sendErrorResponse(
         502,

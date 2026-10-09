@@ -1,4 +1,7 @@
+import type { ImageComposition, ImagePromptContext } from "./lib/imagePromptContext";
+
 export interface GenerationHistoryItem {
+  promptContext?: ImagePromptContext;
   id?: string;
   url: string;
   title?: string;
@@ -57,6 +60,13 @@ export interface OrderedReferenceChip {
 }
 
 export interface GeneratePanelProps {
+  composition?: ImageComposition;
+  setComposition?: (value: ImageComposition) => void;
+  refinementInstruction?: string;
+  setRefinementInstruction?: (value: string) => void;
+  promptContext?: ImagePromptContext;
+  onApplyEnhancement?: (value: string) => void;
+  appliedEnhancement?: string;
   mode: "image" | "meme";
   setMode: (mode: "image" | "meme") => void;
   memeMode: "ai" | "template" | "hybrid";

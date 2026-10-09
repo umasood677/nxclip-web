@@ -46,6 +46,7 @@ import { cn, compressImageBase64, safeStringify } from "../../lib/utils";
 import { safeLocalStorage } from "../../lib/safeStorage";
 import { GenerationHistoryItem, ImageEditTextLayer, OrderedReferenceChip, ReferenceUploadItem } from "./types";
 import { GeneratePanel } from "./components/GeneratePanel";
+import { parseImageBrief, structuredImagePromptsEnabled, type ImageComposition, type ImagePromptContext } from "./lib/imagePromptContext";
 import { CanvasPanel } from "./components/CanvasPanel";
 import { EditPanel } from "./components/EditPanel";
 import { RecentGenerationsGallery } from "./components/RecentGenerations";
@@ -510,6 +511,7 @@ export default function ImageStudio() {
           prompt: (item.prompt || item.refinePrompt || item.basePrompt || "").trim(),
           basePrompt: (item.basePrompt || item.prompt || "").trim() || undefined,
           refinePrompt: (item.refinePrompt || "").trim() || undefined,
+          promptContext: item.promptContext,
           type:
             item.contentType === "meme" ||
             item.style === "meme" ||
@@ -925,9 +927,20 @@ export default function ImageStudio() {
   const [topText, setTopText] = useState("");
   const [bottomText, setBottomText] = useState("");
 
-  // Prompt enhancers (folded into prompt — not separate API fields)
+  // Structured image requests keep these settings separate; legacy/meme requests fold them in.
   const [lighting, setLighting] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
+  const [composition, setComposition] = useState<ImageComposition>("auto");
+  const [refinementInstruction, setRefinementInstruction] = useState("");
+  const [appliedEnhancement, setAppliedEnhancement] = useState("");
+  const [promptSource, setPromptSource] = useState<"manual" | "content-calendar" | "suggestion">("manual");
+
+  // A changed idea invalidates its enhancement; settings remain independently editable.
+  const lastIdeaRef = useRef(prompt);
+  useEffect(() => {
+    if (lastIdeaRef.current !== prompt) setAppliedEnhancement("");
+    lastIdeaRef.current = prompt;
+  }, [prompt]);
 
   // Reference images for generate / regenerate
   const [referenceContentIds, setReferenceContentIds] = useState<string[]>([]);
@@ -956,6 +969,22 @@ export default function ImageStudio() {
     ...referenceContentIds,
   ];
 
+  const [caption, setCaption] = useState("");
+  const imagePromptContext: ImagePromptContext = {
+    basePrompt: prompt.trim(),
+    contentContext: { ...parseImageBrief(prompt, promptSource), title: title.trim() || parseImageBrief(prompt, promptSource)?.title },
+    generation: {
+      aspectRatio: aspectRatio as NonNullable<ImagePromptContext["generation"]>["aspectRatio"],
+      style, lighting: lighting || undefined,
+      composition: import.meta.env.VITE_IMAGE_COMPOSITION_CONTROL === "false" ? "auto" : composition,
+      referenceImages: orderedReadyReferenceIds,
+      caption: caption.trim().slice(0, 500) || undefined,
+    },
+    enhancement: { enabled: Boolean(appliedEnhancement), enhancedPrompt: appliedEnhancement || undefined },
+    negativeInstructions: negativePrompt.split(",").map((value) => value.replace(/^\s*Avoid:\s*/i, "").trim()).filter(Boolean),
+    refinement: { instruction: refinementInstruction.trim() || undefined },
+  };
+
   const orderedReferenceChips: OrderedReferenceChip[] = [
     ...referenceUploads.map((u, idx) => ({
       key: `upload-${u.localId}`,
@@ -982,7 +1011,6 @@ export default function ImageStudio() {
   const [contrast, setContrast] = useState(100);
   const [saturation, setSaturation] = useState(100);
   const [generationsLeft, setGenerationsLeft] = useState<number | null>(null);
-  const [caption, setCaption] = useState("");
   const [captionSuggestions, setCaptionSuggestions] = useState<string[]>([]);
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
   
@@ -1101,11 +1129,26 @@ export default function ImageStudio() {
   };
 
   const markReferencesDirty = () => {
+    setAppliedEnhancement("");
     // Changing refs must not silently regenerate the previous output as multimodal base.
     setForceNewGenerate(true);
   };
 
+  const restoreImagePromptContext = (context?: ImagePromptContext) => {
+    setComposition(context?.generation?.composition ?? "auto");
+    setLighting(context?.generation?.lighting ?? "");
+    setNegativePrompt(context?.negativeInstructions?.join(", ") ?? "");
+    setRefinementInstruction("");
+    setPromptSource(context?.contentContext?.source ?? "manual");
+    setAppliedEnhancement(context?.enhancement?.enabled ? context.enhancement.enhancedPrompt ?? "" : "");
+    if (context) lastIdeaRef.current = context.basePrompt;
+  };
+
   const clearMemeFormOptions = () => {
+    setComposition("auto");
+    setRefinementInstruction("");
+    setAppliedEnhancement("");
+    setPromptSource("manual");
     setPrompt("");
     setTopText("");
     setBottomText("");
@@ -1141,8 +1184,9 @@ export default function ImageStudio() {
     clearReferences();
     revokePreviewBlob();
     applyViewedPrompts(item);
+    if (!isMemeItem) restoreImagePromptContext(item.promptContext);
     setPrompt(
-      item.refinePrompt ||
+      (!isMemeItem && structuredImagePromptsEnabled ? item.promptContext?.basePrompt || item.basePrompt : undefined) || item.refinePrompt ||
         item.prompt ||
         item.basePrompt ||
         item.caption ||
@@ -1237,6 +1281,7 @@ export default function ImageStudio() {
   };
 
   const resetStudioSession = () => {
+    restoreImagePromptContext();
     clearReferences();
     revokePreviewBlob();
     clearViewedPrompts();
@@ -1382,6 +1427,7 @@ export default function ImageStudio() {
       setPrompt(promptParam);
     }
     if (planDayParam) {
+      setPromptSource("content-calendar");
       planDayRef.current = planDayParam;
     }
     if (forClipParam) {
@@ -1787,6 +1833,10 @@ export default function ImageStudio() {
 
   const handleGenerate = () => {
     if (isEditingImage) return;
+    if (mode === "image" && (prompt.trim().length < 3 || prompt.length > 500 || refinementInstruction.length > 500)) {
+      toast.error("Use a 3–500 character idea and a refinement of at most 500 characters.");
+      return;
+    }
     if (mode === "meme" && (memeMode === "template" || memeMode === "hybrid")) {
       if (!selectedTemplateId) {
         toast.error("Pick a meme template");
@@ -1915,9 +1965,10 @@ export default function ImageStudio() {
               ...refs,
             };
 
+    const structuredContext = !isMeme && structuredImagePromptsEnabled ? { ...imagePromptContext, generation: { ...imagePromptContext.generation, caption: caption.trim().slice(0, 500) || undefined }, refinement: canRegenerate ? imagePromptContext.refinement : undefined } : undefined;
     const payload = isMeme
       ? memePayload
-      : { prompt: targetPrompt, style: studioStyle, aspectRatio: ratio, ...refs };
+      : { prompt: structuredContext ? prompt.trim() : targetPrompt, promptContext: structuredContext, style: studioStyle, aspectRatio: ratio, ...refs };
     const apiPath = canRegenerate
       ? `/content/${currentContentId}/regenerate`
       : isMeme
@@ -1940,11 +1991,12 @@ export default function ImageStudio() {
         const regeneratePrompt =
           isMeme && memeMode !== "template"
             ? memeImagePrompt
-            : targetPrompt;
+            : structuredContext ? prompt.trim() : targetPrompt;
         apiResponse = await contentApi.regenerateImage(currentContentId, {
           // Omit short/empty prompts so the server reuses the stored prompt
           // (needed for hybrid caption-only edits after the field is cleared).
           prompt: regeneratePrompt.trim().length >= 3 ? regeneratePrompt : undefined,
+          promptContext: structuredContext,
           style: studioStyle,
           aspectRatio: ratio,
           title: title.trim() || undefined,
@@ -1966,13 +2018,14 @@ export default function ImageStudio() {
         apiResponse = await contentApi.createMeme(memePayload);
       } else {
         apiResponse = await contentApi.generateImage(
-          targetPrompt,
+          structuredContext ? prompt.trim() : targetPrompt,
           studioStyle,
           ratio,
           undefined,
           refs.referenceContentIds,
           undefined,
           title.trim() || undefined,
+          structuredContext,
         );
       }
       const contentId = apiResponse.contentId || apiResponse.id || apiResponse.jobId;
@@ -2028,8 +2081,8 @@ export default function ImageStudio() {
       const frozenBase = isRefinePass
         ? (existingHistory!.basePrompt || existingHistory!.prompt || targetPrompt).trim() ||
           targetPrompt
-        : targetPrompt.trim();
-      const nextPromptText = isRefinePass
+        : (structuredContext?.basePrompt ?? targetPrompt).trim();
+      const nextPromptText = structuredContext ? (canRegenerate ? refinementInstruction.trim() || existingHistory?.refinePrompt || "" : structuredContext.basePrompt) : isRefinePass
         ? targetPrompt.trim().length >= 3
           ? targetPrompt.trim()
           : (existingHistory!.refinePrompt || existingHistory!.prompt || frozenBase).trim()
@@ -2049,8 +2102,9 @@ export default function ImageStudio() {
               url: feedUrl,
               mediaRevision: feedRevision,
               title: title.trim() || undefined,
-              prompt: targetPrompt,
-              basePrompt: targetPrompt,
+              prompt: structuredContext?.basePrompt ?? targetPrompt,
+              basePrompt: structuredContext?.basePrompt ?? targetPrompt,
+              promptContext: structuredContext,
               refinePrompt: undefined,
               type: isMeme ? "meme" : "image",
               style: studioStyle,
@@ -2079,7 +2133,8 @@ export default function ImageStudio() {
                 mediaRevision: feedRevision,
                 prompt: nextPromptText,
                 basePrompt: frozenBase,
-                refinePrompt: nextPromptText,
+                refinePrompt: nextPromptText || undefined,
+                promptContext: structuredContext,
                 title: title.trim() || h.title,
                 style: studioStyle,
                 status: "draft",
@@ -2127,6 +2182,7 @@ export default function ImageStudio() {
         setForceNewGenerate(templateOnly);
       } else {
         setForceNewGenerate(false);
+        setRefinementInstruction("");
       }
       
       if (apiResponse.captions) {
@@ -2555,6 +2611,7 @@ export default function ImageStudio() {
   };
 
   const handleSuggestionClick = (suggestion: string) => {
+    setPromptSource("suggestion");
     setPrompt(suggestion);
   };
 
@@ -2566,7 +2623,8 @@ export default function ImageStudio() {
     setForceNewGenerate(published);
     applyViewedPrompts(item);
     // Editor field: prefer last refine for next edit; preview shows base + refine separately.
-    setPrompt(item.refinePrompt || item.basePrompt || item.prompt || "");
+    if (!isMemeItem) restoreImagePromptContext(item.promptContext);
+    setPrompt(!isMemeItem && structuredImagePromptsEnabled ? item.promptContext?.basePrompt || item.basePrompt || item.prompt || "" : item.refinePrompt || item.basePrompt || item.prompt || "");
     setTitle(item.title || "");
     setStyle(item.style || (isMemeItem ? "meme" : "cinematic"));
     if (item.aspectRatio && ["1:1", "16:9", "9:16", "4:5"].includes(item.aspectRatio)) {
@@ -2723,6 +2781,7 @@ export default function ImageStudio() {
           const brief = applyDuePrompt();
           if (!brief) return;
           setPrompt(brief);
+          setPromptSource("content-calendar");
           if (dueToday && /meme/i.test(dueToday.contentType)) {
             setMode("meme");
             setMemeMode("template");
@@ -2770,11 +2829,11 @@ export default function ImageStudio() {
               mode={mode} setMode={setMode}
               memeMode={memeMode} setMemeMode={setMemeMode}
               prompt={prompt} setPrompt={setPrompt}
-              title={title} setTitle={setTitle}
+              title={title} setTitle={(value) => { setTitle(value); setAppliedEnhancement(""); }}
               isGeneratingTitle={isGeneratingTitle}
               handleGenerateTitle={handleGenerateTitle}
-              style={style} setStyle={setStyle}
-              aspectRatio={aspectRatio} setAspectRatio={setAspectRatio}
+              style={style} setStyle={(value) => { setStyle(value); setAppliedEnhancement(""); }}
+              aspectRatio={aspectRatio} setAspectRatio={(value) => { setAspectRatio(value); setAppliedEnhancement(""); }}
               isGenerating={isGenerating}
               handleGenerate={handleGenerate}
               activeSuggestions={activeSuggestions}
@@ -2807,8 +2866,11 @@ export default function ImageStudio() {
               setMemeCustomVoice={setMemeCustomVoice}
               memeHumorIntensity={memeHumorIntensity}
               setMemeHumorIntensity={setMemeHumorIntensity}
-              lighting={lighting} setLighting={setLighting}
-              negativePrompt={negativePrompt} setNegativePrompt={setNegativePrompt}
+              lighting={lighting} setLighting={(value) => { setLighting(value); setAppliedEnhancement(""); }}
+              composition={composition} setComposition={structuredImagePromptsEnabled ? (value) => { setComposition(value); setAppliedEnhancement(""); } : undefined}
+              refinementInstruction={refinementInstruction} setRefinementInstruction={structuredImagePromptsEnabled ? setRefinementInstruction : undefined}
+              promptContext={structuredImagePromptsEnabled ? imagePromptContext : undefined} appliedEnhancement={appliedEnhancement} onApplyEnhancement={setAppliedEnhancement}
+              negativePrompt={negativePrompt} setNegativePrompt={(value) => { setNegativePrompt(value); setAppliedEnhancement(""); }}
               caption={caption} setCaption={setCaption}
               isGeneratingCaption={isGeneratingCaption}
               handleGenerateCaption={handleGenerateCaption}
@@ -2954,11 +3016,11 @@ export default function ImageStudio() {
           mode={mode} setMode={setMode}
           memeMode={memeMode} setMemeMode={setMemeMode}
           prompt={prompt} setPrompt={setPrompt}
-          title={title} setTitle={setTitle}
+          title={title} setTitle={(value) => { setTitle(value); setAppliedEnhancement(""); }}
           isGeneratingTitle={isGeneratingTitle}
           handleGenerateTitle={handleGenerateTitle}
-          style={style} setStyle={setStyle}
-          aspectRatio={aspectRatio} setAspectRatio={setAspectRatio}
+          style={style} setStyle={(value) => { setStyle(value); setAppliedEnhancement(""); }}
+          aspectRatio={aspectRatio} setAspectRatio={(value) => { setAspectRatio(value); setAppliedEnhancement(""); }}
           isGenerating={isGenerating}
           handleGenerate={handleGenerate}
           activeSuggestions={activeSuggestions}
@@ -2991,8 +3053,11 @@ export default function ImageStudio() {
           setMemeCustomVoice={setMemeCustomVoice}
           memeHumorIntensity={memeHumorIntensity}
           setMemeHumorIntensity={setMemeHumorIntensity}
-          lighting={lighting} setLighting={setLighting}
-          negativePrompt={negativePrompt} setNegativePrompt={setNegativePrompt}
+          lighting={lighting} setLighting={(value) => { setLighting(value); setAppliedEnhancement(""); }}
+          composition={composition} setComposition={structuredImagePromptsEnabled ? (value) => { setComposition(value); setAppliedEnhancement(""); } : undefined}
+          refinementInstruction={refinementInstruction} setRefinementInstruction={structuredImagePromptsEnabled ? setRefinementInstruction : undefined}
+          promptContext={structuredImagePromptsEnabled ? imagePromptContext : undefined} appliedEnhancement={appliedEnhancement} onApplyEnhancement={setAppliedEnhancement}
+          negativePrompt={negativePrompt} setNegativePrompt={(value) => { setNegativePrompt(value); setAppliedEnhancement(""); }}
           caption={caption} setCaption={setCaption}
           isGeneratingCaption={isGeneratingCaption}
           handleGenerateCaption={handleGenerateCaption}
