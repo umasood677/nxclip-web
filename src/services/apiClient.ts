@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { ClipCoachResult, CoachMode } from '../pages/ClipEditor/ClipCoachPanel';
 import { apiGatewayInstance } from "./api/interceptors";
 import { safeLocalStorage, safeSessionStorage } from "../lib/safeStorage";
 import { measureImageFile } from "../lib/imageDimensions";
@@ -1227,6 +1228,7 @@ export interface ContentDto {
     meteredEditTimestamps?: string[];
   };
     clipEditSpec?: {
+      creatorContext?: string;
     inMs?: number;
     outMs?: number;
     aspect?: string;
@@ -1518,12 +1520,11 @@ export const contentApi = {
     smartTrim?: { start: number; end: number };
     transitions?: Array<{ time: number; type: string; caption?: string; sfx?: string }>;
   }> => {
-    return performApiRequest(`/content/${id}/clip-timeline`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    return performApiRequest(`/content/${id}/clip-timeline`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   },
+
+  analyzeClipCoach: async (id: string, body: { creatorContext?: string; mode?: CoachMode; durationSec: number }): Promise<ClipCoachResult> => performApiRequest(`/content/${id}/clip-coach`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), suppressErrorLog: true }),
+  applyClipCoach: async (id: string, apply: boolean, captionsReviewed = false, options?: { plan: Pick<ClipCoachResult['editPlan'], 'segments' | 'hookOverlay' | 'captionStyle' | 'duckBgm' | 'contextOverlay' | 'captionEmphasis'>; expectedContext: string; expectedMode: CoachMode }): Promise<ContentDto> => performApiRequest(`/content/${id}/clip-coach/${apply ? 'apply' : 'original'}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ captionsReviewed, ...options, ...(options ? { plan: { segments: options.plan.segments, hookOverlay: options.plan.hookOverlay, captionStyle: options.plan.captionStyle, duckBgm: options.plan.duckBgm, contextOverlay: options.plan.contextOverlay, captionEmphasis: options.plan.captionEmphasis } } : {}) }) }),
 
   animateAsClip: async (
     id: string,

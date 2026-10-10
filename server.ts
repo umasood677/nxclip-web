@@ -739,7 +739,7 @@ async function startServer() {
 
       return res.status(response.status).send(Buffer.from(response.data));
     } catch (error: any) {
-      console.error("[Gateway Proxy] Proxy error:", cleanSubPath === "content/image-prompt/enhance"
+      console.error("[Gateway Proxy] Proxy error:", cleanSubPath === "content/image-prompt/enhance" || /\/clip-coach(?:\/|$)/.test(cleanSubPath)
         ? { code: error?.code, status: error?.response?.status, correlationId }
         : error);
       // Return normalized 502 Bad Gateway conformant error

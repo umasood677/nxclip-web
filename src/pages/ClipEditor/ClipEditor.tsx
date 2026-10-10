@@ -43,6 +43,7 @@ import { MixGraphTap, MixMeterBars } from "./MixMeterBars";
 import { setMixPreviewGains } from "./useMixAnalyser";
 import { composeSocialCaption } from "./composeSocialCaption";
 import { ComposeTimelinePanel } from "./ComposeTimelinePanel";
+import { ClipCoachPanel } from './ClipCoachPanel';
 import { TransitionPreviewOverlay } from "./TransitionPreviewOverlay";
 import { ClipPublishPreview } from "./ClipPublishPreview";
 import { pickCoachTransition, polishWindow, toClipRelativeTime } from "./clipEnhanceCoach";
@@ -255,6 +256,7 @@ export default function ClipEditor() {
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [prompt, setPrompt] = useState(searchParams.get("prompt") || "");
+  const [coachAdvice, setCoachAdvice] = useState<{ context: string; advice: string } | null>(null);
   
   // Enhancement States
   const [isNoiseReduced, setIsNoiseReduced] = useState(false);
@@ -391,7 +393,8 @@ export default function ClipEditor() {
           if (spec.hooks?.length) setHooks(spec.hooks);
           if (spec.silence?.enabled === false) setSilenceEnabled(false);
           if (spec.transcript) setTranscriptPreview(spec.transcript);
-          if (spec.polishPrompt) setPrompt(spec.polishPrompt);
+          if (typeof spec.creatorContext === 'string') setPrompt(spec.creatorContext);
+          else if (spec.polishPrompt) setPrompt(spec.polishPrompt);
           const extras = (spec as { extras?: Record<string, unknown> }).extras;
           const extrasHashtags = extras?.hashtags;
           if (Array.isArray(extrasHashtags)) {
@@ -592,7 +595,7 @@ export default function ClipEditor() {
           }))
         : [];
       const inRange = markersInDuration(fromApi, dur);
-      const next = inRange.length > 0 ? inRange : heuristicHighlightMarkers(dur, categoryLabel, niches);
+      const next = inRange.length > 0 ? inRange : heuristicHighlightMarkers(dur);
       setMarkers(next);
       toast.success(
         t("clip_editor.trim.scan_found", {
@@ -611,7 +614,7 @@ export default function ClipEditor() {
         videoRef.current && Number.isFinite(videoRef.current.duration) && videoRef.current.duration > 0
           ? videoRef.current.duration
           : DURATION;
-      const fallback = heuristicHighlightMarkers(Math.max(0.5, mediaDur), categoryLabel, niches);
+      const fallback = heuristicHighlightMarkers(Math.max(0.5, mediaDur));
       setMarkers(fallback);
       toast.error("Highlight scan failed", {
         description: formatClipApiError(error, t("clip_editor.trim.scan_fallback", { defaultValue: "Placed generic beats on this clip so you can still trim." })),
@@ -1299,6 +1302,7 @@ export default function ClipEditor() {
       silence: { enabled: silenceEnabled, minSilenceMs: 700 },
       crop: { mode: "face" as const },
       polishPrompt: prompt || undefined,
+      creatorContext: prompt,
       extras: {
         hashtags: hashtags.length ? hashtags : undefined,
         transitions: appliedTransitions.length ? appliedTransitions : undefined,
@@ -1906,6 +1910,7 @@ export default function ClipEditor() {
           ))}
         </div>
 
+        {!composeEnabled && id && <ClipCoachPanel id={id} context={prompt} onContext={setPrompt} duration={DURATION} save={async () => contentApi.saveClipEdit(id, buildClipEditSpec())} onBeats={setMarkers} onUnderstanding={r => setCoachAdvice({ context: r.creativeBrief.creatorContext, advice: r.creativeBrief.recommendations.slice(0, 2).join(' ') || r.creativeBrief.summary })} seek={seekVideo} />}
         {step === "trim" && (
           <div className="space-y-8">
             {/* Video Player Area */}
@@ -2851,7 +2856,7 @@ export default function ClipEditor() {
                       {/* Title & Description */}
                       <div className="space-y-4">
                         {/* Creation Prompt (Optional Context for AI) */}
-                        <div className="space-y-1.5">
+                        {composeEnabled && <div className="space-y-1.5">
                           <div className="flex justify-between items-center px-1">
                             <label className="text-[10px] font-bold text-muted-foreground">{t('clip_editor.polish.details.context_label')}</label>
                             <span className={cn(
@@ -2868,7 +2873,7 @@ export default function ClipEditor() {
                             className="h-10 bg-muted/20 border-border rounded-md text-xs font-medium"
                           />
                           <p className="text-[9px] text-muted-foreground">{t('clip_editor.polish.details.context_help')}</p>
-                        </div>
+                        </div>}
 
                         <div className="space-y-1.5">
                           <div className="flex justify-between items-center">
@@ -3727,7 +3732,7 @@ export default function ClipEditor() {
                           <p className="text-[10px] font-bold">{t('clip_editor.polish.enhance.coach_title')}</p>
                         </div>
                         <p className="text-[11px] text-muted-foreground leading-relaxed italic relative z-10">
-                          {coachBeat
+                          {coachAdvice?.context === prompt ? coachAdvice.advice : coachBeat
                             ? t("clip_editor.polish.enhance.coach_tip_pick", {
                                 type: coachBeat.type,
                                 time: formatTime(coachBeat.time),
