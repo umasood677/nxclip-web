@@ -43,7 +43,7 @@ import { MixGraphTap, MixMeterBars } from "./MixMeterBars";
 import { setMixPreviewGains } from "./useMixAnalyser";
 import { composeSocialCaption } from "./composeSocialCaption";
 import { ComposeTimelinePanel } from "./ComposeTimelinePanel";
-import { ClipCoachPanel } from './ClipCoachPanel';
+import { ClipCoachPanel, type CoachPreviewPayload } from './ClipCoachPanel';
 import { TransitionPreviewOverlay } from "./TransitionPreviewOverlay";
 import { ClipPublishPreview } from "./ClipPublishPreview";
 import { pickCoachTransition, polishWindow, toClipRelativeTime } from "./clipEnhanceCoach";
@@ -256,6 +256,8 @@ export default function ClipEditor() {
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [prompt, setPrompt] = useState(searchParams.get("prompt") || "");
+  /** Raw uploads must not inherit Coach calendar briefs as Creator Context. */
+  const [isUserUploadClip, setIsUserUploadClip] = useState(false);
   const [coachAdvice, setCoachAdvice] = useState<{ context: string; advice: string } | null>(null);
   
   // Enhancement States
@@ -356,6 +358,10 @@ export default function ClipEditor() {
           Boolean(spec?.sourceContentId) ||
           String(item.contentType || "").toLowerCase().includes("animate");
         setIsAnimateClip(isAnimate);
+        const storageKey = String(item.storageKey || "");
+        const userUpload =
+          storageKey.startsWith("uploads/") && !isAnimate;
+        setIsUserUploadClip(userUpload);
         if (spec) {
           if (typeof spec.inMs === "number") setTrimStart(spec.inMs / 1000);
           if (typeof spec.outMs === "number") setTrimEnd(spec.outMs / 1000);
@@ -393,8 +399,26 @@ export default function ClipEditor() {
           if (spec.hooks?.length) setHooks(spec.hooks);
           if (spec.silence?.enabled === false) setSilenceEnabled(false);
           if (spec.transcript) setTranscriptPreview(spec.transcript);
-          if (typeof spec.creatorContext === 'string') setPrompt(spec.creatorContext);
-          else if (spec.polishPrompt) setPrompt(spec.polishPrompt);
+          {
+            const storedContext =
+              typeof spec.creatorContext === "string"
+                ? spec.creatorContext
+                : typeof spec.polishPrompt === "string"
+                  ? spec.polishPrompt
+                  : "";
+            const dueBrief = applyDuePrompt();
+            // Uploaded event footage: ignore auto-injected Coach calendar briefs.
+            // nxClip-generated / I2V clips may keep the day brief as polish context.
+            const weekPlanBrief =
+              Boolean(dueBrief && storedContext.trim() === dueBrief.trim()) ||
+              (/—\s*Niche:/i.test(storedContext) &&
+                /—\s*Focus:/i.test(storedContext));
+            if (userUpload && weekPlanBrief) {
+              setPrompt("");
+            } else if (storedContext) {
+              setPrompt(storedContext);
+            }
+          }
           const extras = (spec as { extras?: Record<string, unknown> }).extras;
           const extrasHashtags = extras?.hashtags;
           if (Array.isArray(extrasHashtags)) {
@@ -520,12 +544,20 @@ export default function ClipEditor() {
     };
   }, [id]);
 
-  // Seed coach due-today brief into polish prompt once.
+  // Seed Coach calendar brief only for nxClip-generated / I2V clips — never for raw uploads.
   useEffect(() => {
+    if (isUserUploadClip) {
+      const dueBrief = applyDuePrompt();
+      const looksLikeCalendar =
+        Boolean(dueBrief && prompt.trim() === dueBrief.trim()) ||
+        (/—\s*Niche:/i.test(prompt) && /—\s*Focus:/i.test(prompt));
+      if (looksLikeCalendar) setPrompt("");
+      return;
+    }
     if (!prompt && dueToday) {
       setPrompt(applyDuePrompt());
     }
-  }, [dueToday]);
+  }, [dueToday, isUserUploadClip, prompt, applyDuePrompt]);
 
   // Simulated audio waveform data
   const waveformData = useRef(Array.from({ length: 100 }, () => 20 + Math.random() * 60)).current;
@@ -1869,7 +1901,11 @@ export default function ClipEditor() {
           const brief = applyDuePrompt();
           if (brief) {
             setPrompt(brief);
-            toast.success("Today’s coach brief applied to polish");
+            toast.success(
+              isUserUploadClip
+                ? "Today’s coach brief added — edit Creator Context if it doesn’t match this footage"
+                : "Today’s coach brief applied to polish",
+            );
           }
         }}
         onRequestNicheChange={() => setNicheDialogOpen(true)}
@@ -1911,7 +1947,47 @@ export default function ClipEditor() {
           ))}
         </div>
 
-        {!composeEnabled && id && <ClipCoachPanel id={id} context={prompt} onContext={setPrompt} duration={DURATION} save={async () => contentApi.saveClipEdit(id, buildClipEditSpec())} onBeats={setMarkers} onUnderstanding={r => setCoachAdvice({ context: r.creativeBrief.creatorContext, advice: r.creativeBrief.recommendations.slice(0, 2).join(' ') || r.creativeBrief.summary })} seek={seekVideo} />}
+        {!composeEnabled && id && (
+          <ClipCoachPanel
+            id={id}
+            context={prompt}
+            onContext={setPrompt}
+            duration={DURATION}
+            save={async () => contentApi.saveClipEdit(id, buildClipEditSpec())}
+            onBeats={setMarkers}
+            onUnderstanding={(r) =>
+              setCoachAdvice({
+                context: r.creativeBrief.creatorContext,
+                advice:
+                  r.creativeBrief.recommendations.slice(0, 2).join(" ") ||
+                  r.creativeBrief.summary,
+              })
+            }
+            onPreview={(payload: CoachPreviewPayload | null) => {
+              if (!payload) return;
+              const style =
+                payload.captionStyle === "kinetic_hormozi"
+                  ? "kinetic_hormozi"
+                  : "clean_subtitle";
+              setMemeCaptionStyle(style);
+              if (payload.hookText.trim()) {
+                setTopText(payload.hookText.trim().slice(0, 50));
+                setHooks([
+                  {
+                    text: payload.hookText.trim().slice(0, 80),
+                    startMs: Math.round((payload.segments[0]?.start ?? 0) * 1000),
+                    durationMs: 2800,
+                    styleId: style,
+                  },
+                ]);
+              }
+              if (payload.contextText?.trim()) {
+                setBottomText(payload.contextText.trim().slice(0, 50));
+              }
+            }}
+            seek={seekVideo}
+          />
+        )}
         {step === "trim" && (
           <div className="space-y-8">
             {/* Video Player Area */}
@@ -1971,6 +2047,34 @@ export default function ClipEditor() {
                   )}
                 </div>
               )}
+
+              {/* AI Coach / caption live preview on trim stage */}
+              {(topText || hooks[0]?.text) && (
+                <div
+                  className="absolute z-20 left-1/2 top-[14%] max-w-[88%] -translate-x-1/2 -translate-y-1/2 px-2 text-center pointer-events-none"
+                  style={{
+                    fontFamily: clipCaptionFontCss(captionFontId),
+                    fontWeight: 900,
+                  }}
+                >
+                  <span className="block text-white text-base sm:text-xl uppercase leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                    {topText || hooks[0]?.text}
+                  </span>
+                </div>
+              )}
+              {bottomText ? (
+                <div
+                  className="absolute z-20 left-1/2 top-[86%] max-w-[88%] -translate-x-1/2 -translate-y-1/2 px-2 text-center pointer-events-none"
+                  style={{
+                    fontFamily: clipCaptionFontCss(captionFontId),
+                    fontWeight: 900,
+                  }}
+                >
+                  <span className="block text-white text-sm sm:text-lg uppercase leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                    {bottomText}
+                  </span>
+                </div>
+              ) : null}
               
               {/* Auto-play indicator */}
               <div className="absolute top-4 left-4 md:top-6 md:left-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
@@ -2741,16 +2845,19 @@ export default function ClipEditor() {
                   </div>
                 </div>
                 
-                {/* Caption / hook overlays from editor state */}
-                {hooks[0]?.text ? (
-                  <div className="absolute top-24 left-0 right-0 px-6 text-center pointer-events-none">
-                    <div
-                      className="inline-block bg-black/70 text-yellow-300 text-lg py-2 px-4 rounded-md"
-                      style={{ fontFamily: clipCaptionFontCss(captionFontId), fontWeight: 700 }}
-                    >
+                {/* Caption / hook overlays — same theme as Clip Studio caption fonts */}
+                {hooks[0]?.text && !topText ? (
+                  <div
+                    className="absolute z-20 left-1/2 top-[14%] max-w-[88%] -translate-x-1/2 -translate-y-1/2 px-2 text-center pointer-events-none"
+                    style={{
+                      fontFamily: clipCaptionFontCss(captionFontId),
+                      fontWeight: 900,
+                    }}
+                  >
+                    <span className="block text-white text-lg sm:text-xl uppercase leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
                       {hooks[0].text}
-                </div>
-                    </div>
+                    </span>
+                  </div>
                 ) : null}
                 {topText ? (
                   <DraggableCaptionOverlay

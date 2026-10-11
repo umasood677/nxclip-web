@@ -5,7 +5,10 @@ import {
   resolveContentKind,
   type ContentKind,
 } from "../../../../lib/contentKind";
-import { isReferenceAsset } from "../../../../lib/isReferenceAsset";
+import {
+  isNxClipGeneratedClip,
+  isReferenceAsset,
+} from "../../../../lib/isReferenceAsset";
 
 export { isReferenceAsset };
 
@@ -75,9 +78,13 @@ export function getDisplayStatusBadge(item: {
       dotClassName: "bg-violet-400",
     };
   }
-  const kind = resolveContentKind(item);
   const status = (item.status || "").toLowerCase();
-  if (kind === "clip" && (status === "draft" || status === "processing") && item.storageKey) {
+  // Only NxClip-produced clips earn "Generated"; raw Clip Studio uploads stay Draft/Processing.
+  if (
+    isNxClipGeneratedClip(item) &&
+    (status === "draft" || status === "processing") &&
+    item.storageKey
+  ) {
     return {
       label: "Generated",
       className: PILL_BASE,

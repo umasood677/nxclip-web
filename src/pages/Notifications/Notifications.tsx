@@ -21,7 +21,11 @@ import { Card, CardContent } from "../../components/ui/card";
 import { cn } from "../../lib/utils";
 import { socketService, SocketStatus, WebSocketEnvelope } from "../../services/socketService";
 import { notificationApi } from "../../services/apiClient";
-import { normalizeNotification, normalizeNotificationList } from "../../lib/notifications";
+import {
+  describeNotificationEvent,
+  normalizeNotification,
+  normalizeNotificationList,
+} from "../../lib/notifications";
 import { buildUpgradeNudge, markUpgradeNudgeShown } from "../../lib/upgradeNudge";
 import { toast } from "sonner";
 import { EmptyState } from "../../components/common/EmptyState";
@@ -199,37 +203,44 @@ export default function Notifications() {
     });
 
     const unsubGenComplete = socketService.subscribe("content:generation_complete", (_e, payload) => {
-      const data = (payload as WebSocketEnvelope<any>)?.data || payload;
+      const data = (payload as WebSocketEnvelope<any>)?.data || payload || {};
       setActiveGeneration(null);
-      pushLive(
-        fromSocket(
-          "Generation complete",
-          `Content ${data.contentId || ""} is ready in your library.`,
-          "system",
-        ),
-      );
+      const copy = describeNotificationEvent("content:generation_complete", data);
+      pushLive(fromSocket(copy.title, copy.body, "system"));
       void loadNotifications();
     });
 
     const unsubModeration = socketService.subscribe("content:moderation_complete", (_e, payload) => {
-      const data = (payload as WebSocketEnvelope<any>)?.data || payload;
-      const status = String(data.status || "").toLowerCase();
-      const approved = status === "approved" || status === "published";
-      const published = status === "published";
-      pushLive(
-        fromSocket(
-          published ? "Content published" : approved ? "Content approved" : "Content rejected",
-          data.reason ||
-            (published
-              ? "Your post is live on the Home feed."
-              : approved
-                ? "Your post cleared moderation and can appear on the feed."
-                : "Moderation rejected this draft — edit and re-publish."),
-          "moderation",
-        ),
-      );
+      const data = (payload as WebSocketEnvelope<any>)?.data || payload || {};
+      const copy = describeNotificationEvent("content:moderation_complete", data);
+      pushLive(fromSocket(copy.title, copy.body, "moderation"));
       void loadNotifications();
     });
+
+    const liveEvents: Array<{
+      event: string;
+      type: ClientNotification["type"];
+      clearProgress?: boolean;
+    }> = [
+      { event: "content:generation_failed", type: "system", clearProgress: true },
+      { event: "content:transcription_complete", type: "system" },
+      { event: "content:render_complete", type: "system", clearProgress: true },
+      { event: "content:render_failed", type: "system", clearProgress: true },
+      { event: "content:story_plan_ready", type: "system" },
+      { event: "content:story_plan_failed", type: "system" },
+      { event: "content:captions_ready", type: "system" },
+      { event: "content:polish_complete", type: "system" },
+    ];
+
+    const liveUnsubs = liveEvents.map(({ event, type, clearProgress }) =>
+      socketService.subscribe(event, (_e, payload) => {
+        const data = (payload as WebSocketEnvelope<any>)?.data || payload || {};
+        if (clearProgress) setActiveGeneration(null);
+        const copy = describeNotificationEvent(event, data);
+        pushLive(fromSocket(copy.title, copy.body, type));
+        void loadNotifications();
+      }),
+    );
 
     const unsubOnboarding = socketService.subscribe("onboarding:complete", () => {
       pushLive(fromSocket("Onboarding complete", "Your Creator Coach plan is ready.", "achievement"));
@@ -241,6 +252,7 @@ export default function Notifications() {
       unsubProcessing();
       unsubGenComplete();
       unsubModeration();
+      liveUnsubs.forEach((u) => u());
       unsubOnboarding();
     };
   }, [loadNotifications]);
@@ -282,38 +294,31 @@ export default function Notifications() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] px-1 py-2 md:px-2 max-w-3xl mx-auto">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            Generation, moderation, and system updates from your account
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge
-            variant="outline"
-            className={cn(
-              "gap-1.5",
-              wsStatus === "connected" ? "text-emerald-500" : "text-muted-foreground",
-            )}
-          >
-            {wsStatus === "connected" ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
-            {wsStatus}
-          </Badge>
-          {unreadCount > 0 && (
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground tabular-nums">
-              {unreadCount} new
-            </span>
+      <div className="flex flex-wrap items-center justify-end gap-2 mb-6">
+        <Badge
+          variant="outline"
+          className={cn(
+            "gap-1.5",
+            wsStatus === "connected" ? "text-emerald-500" : "text-muted-foreground",
           )}
-          <Button variant="outline" size="sm" onClick={() => void loadNotifications()}>
-            <RefreshCw className="h-4 w-4 mr-1" />
-            Refresh
+        >
+          {wsStatus === "connected" ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+          {wsStatus}
+        </Badge>
+        {unreadCount > 0 && (
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground tabular-nums">
+            {unreadCount} new
+          </span>
+        )}
+        <Button variant="outline" size="sm" onClick={() => void loadNotifications()}>
+          <RefreshCw className="h-4 w-4 mr-1" />
+          Refresh
+        </Button>
+        {unreadCount > 0 && (
+          <Button variant="ghost" size="sm" onClick={() => void markAllRead()}>
+            Mark all read
           </Button>
-          {unreadCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={() => void markAllRead()}>
-              Mark all read
-            </Button>
-          )}
-        </div>
+        )}
       </div>
 
       {activeGeneration && (

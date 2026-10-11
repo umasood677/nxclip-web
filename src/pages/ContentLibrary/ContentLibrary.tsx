@@ -571,7 +571,7 @@ export default function ContentLibrary() {
                         <div className="flex items-center gap-4 mt-2">
                           <StatusBadge
                             status={
-                              item.storageKey?.startsWith("uploads/")
+                              isReferenceAsset(item)
                                 ? ("reference" as any)
                                 : ((item.status as any) || "draft")
                             }

@@ -266,7 +266,8 @@ function ContentCardComponent({
             loadTimeoutMs={10000}
             className={cn(
               "absolute inset-0 h-full w-full transition-[filter] duration-200 cursor-pointer",
-              aspectRatio ? "object-cover" : "object-contain",
+              // Clips fill the tile (no letterbox bars); stills letterbox until ratio is known.
+              type === "clip" || aspectRatio ? "object-cover" : "object-contain",
               hovered && "brightness-[0.88]",
               isSelected && "brightness-[0.8]",
             )}
@@ -275,6 +276,12 @@ function ContentCardComponent({
               const el = e.currentTarget;
               if (el instanceof HTMLImageElement) {
                 onMediaLoad?.(el.naturalWidth, el.naturalHeight);
+              } else if (
+                el instanceof HTMLVideoElement &&
+                el.videoWidth > 0 &&
+                el.videoHeight > 0
+              ) {
+                onMediaLoad?.(el.videoWidth, el.videoHeight);
               }
             }}
             onError={() => setImageFailed(true)}

@@ -163,7 +163,10 @@ async function openCreation(
         return;
       }
     }
-    navigate(`/create/clip/${id}/edit?step=${item.storageKey ? "polish" : "trim"}`);
+    // Uploaded drafts open on trim/coach; generated masters jump to polish.
+    const step =
+      isSourceUpload(item) || !item.storageKey ? "trim" : "polish";
+    navigate(`/create/clip/${id}/edit?step=${step}`);
     return;
   }
 
@@ -238,6 +241,17 @@ function formatHubStamp(iso?: string | null): string | null {
   const t = new Date(iso).getTime();
   if (!Number.isFinite(t)) return null;
   return `${formatCreatedDate(t)} · ${formatCreatedTime(t)}`;
+}
+
+/** CTA copy for hub clip thumbs — distinguish uploads from NxClip-generated. */
+function clipHubCta(item: ContentDto): string {
+  if (isFailedAnimateClip(item)) return "Fix & retry";
+  if ((item.status || "").toLowerCase() === "published") return "Open post";
+  if (isSourceUpload(item)) {
+    return item.storageKey ? "Continue editing" : "Finish upload";
+  }
+  if ((item.status || "").toLowerCase() === "processing") return "In progress";
+  return item.storageKey ? "Polish clip" : "Open clip";
 }
 
 function earliestLiveAt(
@@ -356,13 +370,13 @@ export default function CreateHub() {
     setLoading(true);
     try {
       const [data, metrics] = await Promise.all([
-        contentApi.getUserContentList(100, undefined, {
-          excludeUploads: true,
-        }),
+        // Include Clip Studio source uploads so Continue / Recent can show them.
+        // Reference stills are still dropped client-side via isReferenceAsset.
+        contentApi.getUserContentList(100),
         socialApi.listLiveMetrics().catch(() => ({ items: [] as Array<{ contentId: string }> })),
       ]);
       const filtered = data
-        .filter((item) => !isSourceUpload(item) && !isReferenceAsset(item))
+        .filter((item) => !isReferenceAsset(item))
         .filter((item) => {
           const s = (item.status || "").toLowerCase();
           return s !== "deleted" && s !== "archived";
@@ -393,12 +407,20 @@ export default function CreateHub() {
   );
   const continueItems = useMemo(() => {
     const unfinished = items.filter((item) => isUnfinished(item) && !isReadyToGoLive(item));
-    const newestClip = unfinished.find((item) => isNxClipGeneratedClip(item));
+    // Prefer the newest clip draft (generated or user-uploaded) at the top of Continue.
+    const newestClip = unfinished.find((item) => resolveContentKind(item) === "clip");
     const rest = unfinished.filter((item) => item.id !== newestClip?.id);
     return [newestClip, ...rest].filter((item): item is ContentDto => !!item).slice(0, 4);
   }, [items]);
   const recentClips = useMemo(
-    () => items.filter((item) => isNxClipGeneratedClip(item)).slice(0, 4),
+    () =>
+      items
+        .filter(
+          (item) =>
+            resolveContentKind(item) === "clip" &&
+            (isNxClipGeneratedClip(item) || isSourceUpload(item)),
+        )
+        .slice(0, 4),
     [items],
   );
   const weekDays = weekPlan?.days ?? [];
@@ -425,7 +447,7 @@ export default function CreateHub() {
             {t("create.header.plan")}
           </h2>
           <p className="text-xs md:text-sm text-muted-foreground font-medium">
-            Pick a tool, finish what’s open, then go Live. Generated clips show below and in Library.
+            Pick a tool, finish what’s open, then go Live. Uploaded and generated clips show below and in Library.
           </p>
         </div>
         <Button
@@ -583,15 +605,7 @@ export default function CreateHub() {
                 key={item.id}
                 item={item}
                 liveAt={liveAtById.get(item.id)}
-                cta={
-                  isFailedAnimateClip(item)
-                    ? "Fix & retry"
-                    : item.status === "published"
-                      ? "Open post"
-                      : item.storageKey
-                        ? "Polish clip"
-                        : "Open clip"
-                }
+                cta={clipHubCta(item)}
                 onOpen={() => void openCreation(navigate, item)}
               />
             ))}
@@ -637,7 +651,7 @@ export default function CreateHub() {
                     (item.status || "").includes("reject")
                       ? "Fix & retry"
                       : resolveContentKind(item) === "clip"
-                        ? "Polish clip"
+                        ? clipHubCta(item)
                         : "Resume"
                   }
                   onOpen={() => void openCreation(navigate, item)}

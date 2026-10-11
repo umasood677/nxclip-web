@@ -130,8 +130,13 @@ export default function TopBar({ title, subtitle, titleIcon }: TopBarProps) {
       socketService.subscribe("content:moderation_complete", refresh),
       socketService.subscribe("content:generation_complete", refresh),
       socketService.subscribe("content:generation_failed", refresh),
+      socketService.subscribe("content:transcription_complete", refresh),
       socketService.subscribe("content:render_failed", refresh),
       socketService.subscribe("content:render_complete", refresh),
+      socketService.subscribe("content:story_plan_ready", refresh),
+      socketService.subscribe("content:story_plan_failed", refresh),
+      socketService.subscribe("content:captions_ready", refresh),
+      socketService.subscribe("content:polish_complete", refresh),
       socketService.subscribe("onboarding:complete", refresh),
     ];
 

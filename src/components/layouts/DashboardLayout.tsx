@@ -2,7 +2,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import AppShell from "../AppShell";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BarChart3, Clapperboard, FileImage, Home, LayoutDashboard, LayoutGrid, Sparkles, User, Video } from "lucide-react";
+import { BarChart3, Bell, Clapperboard, FileImage, Home, LayoutDashboard, LayoutGrid, Sparkles, User, Video } from "lucide-react";
 
 /**
  * DashboardLayout wraps authenticated routes with the AppShell.
@@ -26,6 +26,7 @@ export default function DashboardLayout() {
     location.pathname === "/profile" ||
     location.pathname.startsWith("/profile/") ||
     location.pathname.startsWith("/users/");
+  const isNotifications = location.pathname === "/notifications";
 
   useEffect(() => {
     const path = location.pathname;
@@ -96,8 +97,23 @@ export default function DashboardLayout() {
         defaultValue: "Upload and edit short-form clips.",
       });
     }
+    if (isNotifications) {
+      return t("notifications.header.subtitle", {
+        defaultValue: "Generation, moderation, and system updates from your account.",
+      });
+    }
     return undefined;
-  }, [isDashboard, isLibrary, isFeed, isAnalytics, isImageStudio, isCreateHub, isClipEditor, t]);
+  }, [
+    isDashboard,
+    isLibrary,
+    isFeed,
+    isAnalytics,
+    isImageStudio,
+    isCreateHub,
+    isClipEditor,
+    isNotifications,
+    t,
+  ]);
 
   const titleIcon = isDashboard ? (
     <LayoutDashboard className="h-4 w-4" />
@@ -117,6 +133,8 @@ export default function DashboardLayout() {
     <FileImage className="h-4 w-4" />
   ) : isProfile ? (
     <User className="h-4 w-4" />
+  ) : isNotifications ? (
+    <Bell className="h-4 w-4" />
   ) : undefined;
 
   const dense =
@@ -127,7 +145,8 @@ export default function DashboardLayout() {
     isCreateHub ||
     isClipEditor ||
     isPostDetail ||
-    isDashboard;
+    isDashboard ||
+    isNotifications;
 
   return (
     <AppShell title={title} subtitle={subtitle} titleIcon={titleIcon} dense={dense}>

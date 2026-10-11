@@ -81,10 +81,10 @@ export default function ClipUpload() {
 
       triggerHaptic("success");
       toast.success("Clip ready to edit", {
-        description: coachDay
-          ? `Coach brief: ${coachDay.title || coachDay.theme}`
-          : `contentId: ${contentId}`,
+        description:
+          "Uploaded footage opens with an empty Creator Context so AI Coach can read the video — not the calendar brief.",
       });
+      // Do not pass ?prompt= calendar brief into Clip Studio for raw uploads.
       const planQs = planDayParam ? `&planDay=${encodeURIComponent(planDayParam)}` : "";
       setTimeout(() => {
         navigate(`/create/clip/${contentId}/edit?step=trim${planQs}`);
