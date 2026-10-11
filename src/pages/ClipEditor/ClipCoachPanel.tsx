@@ -27,6 +27,8 @@ export interface ClipCoachResult {
     captionReviewRequired: boolean;
     moments: Array<{ time: number; label: string; reason: string }>;
     recommendations: string[];
+    storyOptions?: Array<{ id: string; title: string; rationale?: string }>;
+    selectedStoryId?: string;
   };
   editPlan: {
     narrative: string;
@@ -86,7 +88,7 @@ export function ClipCoachPanel({
     setEmphasisText("");
     setApplied(false);
     void contentApi
-      .getContentById(id)
+      .getOwnedContentById(id, { suppressErrorLog: true })
       .then((item) => {
         if (!alive) return;
         const extras = item.clipEditSpec?.extras as
@@ -162,15 +164,24 @@ export function ClipCoachPanel({
     setBusy(true);
     try {
       await save();
-      const item = await contentApi.getContentById(id);
+      // Drafts live on /content/mine/:id — published-only /content/:id 404s here.
+      const item = await contentApi.getOwnedContentById(id, {
+        suppressErrorLog: true,
+      });
       if (typeof item.clipEditSpec?.transcript !== "string") {
         await contentApi.transcribeClip(id);
-        await waitForClipTranscript(() => contentApi.getContentById(id), {
-          isCancelled: () => latest.current.id !== id,
-        });
+        await waitForClipTranscript(
+          () =>
+            contentApi.getOwnedContentById(id, { suppressErrorLog: true }),
+          {
+            isCancelled: () => latest.current.id !== id,
+          },
+        );
       }
       setTranscript(
-        (await contentApi.getContentById(id)).clipEditSpec?.transcript || "",
+        (
+          await contentApi.getOwnedContentById(id, { suppressErrorLog: true })
+        ).clipEditSpec?.transcript || "",
       );
       setReviewed(false);
       const next = await contentApi.analyzeClipCoach(id, {
@@ -310,6 +321,61 @@ export function ClipCoachPanel({
               : "Transcript only — visuals not analyzed"}
           </div>
           <p className="text-sm">{result.creativeBrief.summary}</p>
+          {(result.creativeBrief.storyOptions?.length ?? 0) > 1 ? (
+            <div className="space-y-2">
+              <p className="text-xs font-medium">
+                AI found {result.creativeBrief.storyOptions!.length} possible
+                stories
+              </p>
+              <div className="grid gap-2">
+                {result.creativeBrief.storyOptions!.map((opt, index) => {
+                  const selected =
+                    (result.creativeBrief.selectedStoryId ||
+                      result.creativeBrief.storyOptions![0]?.id) === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() =>
+                        setResult({
+                          ...result,
+                          creativeBrief: {
+                            ...result.creativeBrief,
+                            selectedStoryId: opt.id,
+                            summary:
+                              index === 0
+                                ? result.creativeBrief.summary
+                                : opt.title,
+                          },
+                        })
+                      }
+                      className={`text-left rounded-md border p-2 text-xs ${
+                        selected
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-background/50"
+                      }`}
+                    >
+                      <span className="font-semibold">
+                        {index === 0 ? "Best Story · " : `${index + 1}. `}
+                        {opt.title}
+                      </span>
+                      {opt.rationale ? (
+                        <p className="text-muted-foreground mt-1">
+                          {opt.rationale}
+                        </p>
+                      ) : null}
+                      {!selected ? (
+                        <p className="text-muted-foreground mt-1">
+                          Re-analyze with this focus in Creator Context to
+                          rebuild the edit plan around it.
+                        </p>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
           {!current && (
             <p className="text-xs text-amber-500">
               Direction changed. Re-analyze before applying or rendering this
@@ -319,7 +385,8 @@ export function ClipCoachPanel({
           <div className="text-xs text-muted-foreground">
             Original {duration.toFixed(1)}s → proposed{" "}
             {plan!.segments.reduce((n, s) => n + s.end - s.start, 0).toFixed(1)}
-            s · source ranges below
+            s · source ranges below · click a segment to preview on the
+            timeline
           </div>
           <p className="text-xs">{result.editPlan.narrative}</p>
           <div className="grid gap-2 sm:grid-cols-2">

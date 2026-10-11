@@ -1301,8 +1301,9 @@ export default function ClipEditor() {
       hooks: hooks.length ? hooks : undefined,
       silence: { enabled: silenceEnabled, minSilenceMs: 700 },
       crop: { mode: "face" as const },
-      polishPrompt: prompt || undefined,
-      creatorContext: prompt,
+      // creatorContext is authoritative (up to 500). polishPrompt stays ≤200 for legacy readers.
+      polishPrompt: prompt ? prompt.slice(0, 200) : undefined,
+      creatorContext: prompt || undefined,
       extras: {
         hashtags: hashtags.length ? hashtags : undefined,
         transitions: appliedTransitions.length ? appliedTransitions : undefined,
