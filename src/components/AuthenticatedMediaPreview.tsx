@@ -203,11 +203,19 @@ function AuthenticatedVideoPreview({
         <div
           className={cn(
             "absolute inset-0 flex items-center justify-center",
-            playable ? "pointer-events-none" : "pointer-events-none",
+            "pointer-events-none",
           )}
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm border border-white/20 shadow-lg">
-            <Play size={22} className="ml-0.5 fill-white" />
+          <div
+            className={cn(
+              "flex items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm border border-white/20 shadow-lg",
+              loadingCompact ? "h-6 w-6" : "h-12 w-12",
+            )}
+          >
+            <Play
+              size={loadingCompact ? 11 : 22}
+              className="ml-px fill-white"
+            />
           </div>
         </div>
       ) : null}
