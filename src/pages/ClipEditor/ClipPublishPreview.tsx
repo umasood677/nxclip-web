@@ -74,20 +74,32 @@ export function ClipPublishPreview({
                 {t("clip_editor.polish.publish_preview.no_preview", { defaultValue: "No preview" })}
               </div>
             )}
-            {hook ? (
-              <div className="absolute top-8 inset-x-1 text-center pointer-events-none">
-                <span className="inline-block bg-black/70 text-yellow-300 text-[9px] font-bold px-1.5 py-0.5 rounded">
-                  {hook}
-                </span>
-              </div>
-            ) : null}
-            {topText ? (
-              <div className="absolute top-2 inset-x-1 text-center pointer-events-none">
-                <span className="inline-block text-white text-[9px] font-black uppercase drop-shadow">
-                  {topText}
-                </span>
-              </div>
-            ) : null}
+            {(() => {
+              const top = topText?.trim() || "";
+              const hookText = hook?.trim() || "";
+              const sameAsTop =
+                Boolean(top && hookText) && top.toLowerCase() === hookText.toLowerCase();
+              // Single overlay: prefer on-clip top text; yellow hook only when it is a different line.
+              if (top) {
+                return (
+                  <div className="absolute top-2 inset-x-1 text-center pointer-events-none">
+                    <span className="inline-block text-white text-[9px] font-black uppercase drop-shadow">
+                      {top}
+                    </span>
+                  </div>
+                );
+              }
+              if (hookText && !sameAsTop) {
+                return (
+                  <div className="absolute top-8 inset-x-1 text-center pointer-events-none">
+                    <span className="inline-block bg-black/70 text-yellow-300 text-[9px] font-bold px-1.5 py-0.5 rounded">
+                      {hookText}
+                    </span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
             {bottomText ? (
               <div className="absolute bottom-2 inset-x-1 text-center pointer-events-none">
                 <span className="inline-block text-white text-[9px] font-black uppercase drop-shadow">
@@ -121,12 +133,12 @@ export function ClipPublishPreview({
                 ))}
               </div>
             ) : null}
-            {hook ? (
+            {(hook || topText)?.trim() ? (
               <p className="text-[11px] text-muted-foreground">
                 <span className="font-bold text-foreground">
                   {t("clip_editor.polish.publish_preview.hook", { defaultValue: "Hook" })}:{" "}
                 </span>
-                {hook}
+                {(topText || hook || "").trim()}
               </p>
             ) : null}
             <div className="flex flex-wrap items-center gap-1.5">

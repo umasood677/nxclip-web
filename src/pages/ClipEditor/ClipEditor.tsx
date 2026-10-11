@@ -46,7 +46,14 @@ import { ComposeTimelinePanel } from "./ComposeTimelinePanel";
 import { ClipCoachPanel, type CoachPreviewPayload } from './ClipCoachPanel';
 import { TransitionPreviewOverlay } from "./TransitionPreviewOverlay";
 import { ClipPublishPreview } from "./ClipPublishPreview";
-import { pickCoachTransition, polishWindow, toClipRelativeTime } from "./clipEnhanceCoach";
+import {
+  pickCoachTransition,
+  polishWindow,
+  toClipRelativeTime,
+  transitionsFromCoachBeats,
+} from "./clipEnhanceCoach";
+import { resolveCoachImpactPack, transitionsFromCoachSegments } from "./coachImpactPlan";
+import { enhanceDefaultsFromBrief } from "./coachBriefEnhance";
 import {
   beatPurpose,
   heuristicHighlightMarkers,
@@ -168,6 +175,7 @@ export default function ClipEditor() {
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
   const [videoLoading, setVideoLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const trimPreviewRef = useRef<HTMLDivElement | null>(null);
   const polishPreviewRef = useRef<HTMLDivElement | null>(null);
   const [activePolishTab, setActivePolishTab] = useState(
     () => (searchParams.get("action") === "hooks" ? "details" : "audio"),
@@ -248,6 +256,11 @@ export default function ClipEditor() {
   const [memeCaptionStyle, setMemeCaptionStyle] = useState("kinetic_hormozi");
   const [captionFontId, setCaptionFontId] = useState<ClipCaptionFontId>(CLIP_CAPTION_FONT_DEFAULT);
   const [hooks, setHooks] = useState<Array<{ text: string; startMs: number; durationMs: number; styleId?: string }>>([]);
+  /** AI alternatives from Generate hooks — pick one to overwrite the active on-clip hook. */
+  const [hookOptions, setHookOptions] = useState<
+    Array<{ text: string; startMs: number; durationMs: number; styleId?: string }>
+  >([]);
+  const [selectedHookOptionIndex, setSelectedHookOptionIndex] = useState<number | null>(null);
   const [silenceEnabled, setSilenceEnabled] = useState(true);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isGeneratingHooks, setIsGeneratingHooks] = useState(false);
@@ -259,6 +272,8 @@ export default function ClipEditor() {
   /** Raw uploads must not inherit Coach calendar briefs as Creator Context. */
   const [isUserUploadClip, setIsUserUploadClip] = useState(false);
   const [coachAdvice, setCoachAdvice] = useState<{ context: string; advice: string } | null>(null);
+  const [coachMeta, setCoachMeta] = useState<{ mode?: string; contentType?: string } | null>(null);
+  const [cropMode, setCropMode] = useState<"face" | "center">("face");
   
   // Enhancement States
   const [isNoiseReduced, setIsNoiseReduced] = useState(false);
@@ -397,6 +412,35 @@ export default function ClipEditor() {
             if (allowed) setCaptionFontId(spec.captions.fontId as ClipCaptionFontId);
           }
           if (spec.hooks?.length) setHooks(spec.hooks);
+          {
+            const extras = spec.extras as Record<string, unknown> | undefined;
+            const opts = extras?.hookOptions;
+            if (Array.isArray(opts) && opts.length) {
+              setHookOptions(
+                opts
+                  .filter((h): h is { text: string; startMs?: number; durationMs?: number; styleId?: string } =>
+                    Boolean(h && typeof h === "object" && typeof (h as { text?: unknown }).text === "string"),
+                  )
+                  .map((h) => ({
+                    text: String(h.text).slice(0, 80),
+                    startMs: Math.max(0, Math.round(Number(h.startMs) || 0)),
+                    durationMs: Math.max(400, Math.round(Number(h.durationMs) || 2200)),
+                    styleId: typeof h.styleId === "string" ? h.styleId : undefined,
+                  })),
+              );
+              const active = (spec.captions?.topText || spec.hooks?.[0]?.text || "").trim().toLowerCase();
+              if (active) {
+                const idx = opts.findIndex(
+                  (h) =>
+                    h &&
+                    typeof h === "object" &&
+                    typeof (h as { text?: unknown }).text === "string" &&
+                    String((h as { text: string }).text).trim().toLowerCase() === active,
+                );
+                setSelectedHookOptionIndex(idx >= 0 ? idx : null);
+              }
+            }
+          }
           if (spec.silence?.enabled === false) setSilenceEnabled(false);
           if (spec.transcript) setTranscriptPreview(spec.transcript);
           {
@@ -1049,8 +1093,43 @@ export default function ClipEditor() {
       if (id) {
         try {
           await contentApi.saveClipEdit(id, buildClipEditSpec());
-          const hooksRes = await contentApi.generateClipHooks(id);
-          if (still() && hooksRes.hooks?.length) setHooks(hooksRes.hooks);
+          // Coach / prior edit already set the active hook — do not auto-overwrite it.
+          // Still fetch alternatives into hookOptions when empty so Details can offer picks.
+          const existingHook =
+            topText.trim() || hooks.find((h) => Boolean(h?.text?.trim()))?.text?.trim() || "";
+          if (existingHook) {
+            if (still() && (!hooks.length || !hooks[0]?.text?.trim())) {
+              setHooks([
+                {
+                  text: existingHook.slice(0, 80),
+                  startMs: Math.round((finalTrim?.start ?? trimStart) * 1000),
+                  durationMs: 2800,
+                  styleId: memeCaptionStyle,
+                },
+              ]);
+            }
+            if (still() && hookOptions.length < 3) {
+              try {
+                const hooksRes = await contentApi.generateClipHooks(id);
+                if (still() && hooksRes.hooks?.length) {
+                  setHookOptions(hooksRes.hooks);
+                }
+              } catch {
+                /* optional alternatives */
+              }
+            }
+          } else {
+            const hooksRes = await contentApi.generateClipHooks(id);
+            if (still() && hooksRes.hooks?.length) {
+              setHookOptions(hooksRes.hooks);
+              const first = hooksRes.hooks[0];
+              if (first?.text?.trim()) {
+                setTopText(first.text.trim().slice(0, 50));
+                setHooks([first]);
+                setSelectedHookOptionIndex(0);
+              }
+            }
+          }
         } catch {
           /* hooks stay empty — user can retry on polish */
         }
@@ -1330,9 +1409,19 @@ export default function ClipEditor() {
         bottomX: bottomOverlay.x,
         bottomY: bottomOverlay.y,
       },
-      hooks: hooks.length ? hooks : undefined,
+      // Omit hooks that duplicate topText so render does not stack white MemeTop + yellow Hook.
+      hooks: (() => {
+        const topNorm = topText.trim().toLowerCase();
+        const unique = hooks.filter((h) => {
+          const t = (h?.text || "").trim();
+          if (!t) return false;
+          if (!topNorm) return true;
+          return t.toLowerCase() !== topNorm;
+        });
+        return unique.length ? unique : undefined;
+      })(),
       silence: { enabled: silenceEnabled, minSilenceMs: 700 },
-      crop: { mode: "face" as const },
+      crop: { mode: cropMode },
       // creatorContext is authoritative (up to 500). polishPrompt stays ≤200 for legacy readers.
       polishPrompt: prompt ? prompt.slice(0, 200) : undefined,
       creatorContext: prompt || undefined,
@@ -1372,6 +1461,7 @@ export default function ClipEditor() {
     isNoiseReduced,
     colorCorrection,
     appliedTransitions,
+    cropMode,
   ]);
 
   const saveClipEditToServer = useCallback(async () => {
@@ -1526,7 +1616,7 @@ export default function ClipEditor() {
     requestAnimationFrame(() => {
       document.getElementById("clip-hooks-editor")?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
-    if (hooks.length > 0) {
+    if (hookOptions.length >= 3) {
       autoHooksRanRef.current = true;
       return;
     }
@@ -1539,8 +1629,19 @@ export default function ClipEditor() {
         if (cancelled) return;
         const res = await contentApi.generateClipHooks(id);
         if (cancelled) return;
-        setHooks(res.hooks || []);
-        toast.success(`Generated ${res.hooks?.length ?? 0} hooks`);
+        const next = res.hooks || [];
+        setHookOptions(next);
+        if (!topText.trim() && next[0]?.text?.trim()) {
+          setTopText(next[0].text.trim().slice(0, 50));
+          setHooks([next[0]]);
+          setSelectedHookOptionIndex(0);
+        }
+        toast.success(
+          t("clip_editor.polish.details.hooks_ready", {
+            defaultValue: "{{count}} hooks ready — tap one to replace the on-clip hook",
+            count: next.length,
+          }),
+        );
         const next = new URLSearchParams(searchParams);
         next.delete("action");
         if (!next.get("step")) next.set("step", "polish");
@@ -1558,7 +1659,7 @@ export default function ClipEditor() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot deep link
-  }, [id, searchParams, hooks.length, saveClipEditToServer, videoLoading]);
+  }, [id, searchParams, hookOptions.length, saveClipEditToServer, videoLoading]);
 
   // Auto-generate AI caption once when polish loads and description is empty.
   useEffect(() => {
@@ -1747,11 +1848,24 @@ export default function ClipEditor() {
     };
   }, [isDirty]);
 
-  const generateTransitionSuggestions = async () => {
+  const generateTransitionSuggestions = useCallback(async (opts?: { silent?: boolean }) => {
     setIsGeneratingTransitions(true);
+    const window = polishWindow(finalTrim, trimStart, trimEnd);
+    const applyCoachFallback = () => {
+      const fromCoach = transitionsFromCoachBeats(markers, window.start, window.end);
+      if (fromCoach.length) {
+        setTransitionSuggestions(fromCoach);
+        if (!opts?.silent) {
+          toast.message("Transitions from AI Coach beats", {
+            description: "Preview on the player — burn-in on export is next.",
+          });
+        }
+        return true;
+      }
+      return false;
+    };
     try {
       if (!id) throw new Error("Missing clip id");
-      const window = polishWindow(finalTrim, trimStart, trimEnd);
       const res = await contentApi.suggestClipTimeline(id, {
         kind: "transitions",
         durationSec: Math.max(window.end, DURATION),
@@ -1767,16 +1881,56 @@ export default function ClipEditor() {
             sfx: s.sfx ? String(s.sfx) : undefined,
           })),
         );
+        if (!opts?.silent) {
+          toast.success("Transition suggestions ready");
+        }
+        return;
+      }
+      if (!applyCoachFallback() && !opts?.silent) {
+        toast.message("No transitions yet", {
+          description: "Run AI Coach analyze (or AI Scan on Trim) so we have beats to suggest from.",
+        });
       }
     } catch (error) {
       console.error("Error generating transitions:", error);
-      toast.error("Transition suggestions failed", {
-        description: formatClipApiError(error, "Enhance transitions are preview-only."),
-      });
+      if (applyCoachFallback()) return;
+      if (!opts?.silent) {
+        toast.error("Transition suggestions failed", {
+          description: formatClipApiError(error, "Enhance transitions are preview-only."),
+        });
+      }
     } finally {
       setIsGeneratingTransitions(false);
     }
-  };
+  }, [DURATION, finalTrim, id, markers, trimEnd, trimStart]);
+
+  // Auto-suggest transitions when entering Polish / Enhance (AI Coach analyze alone does not fill this list).
+  const transitionsAutoForIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (step !== "polish" || !id) return;
+    if (transitionSuggestions.length > 0 || isGeneratingTransitions) return;
+    if (transitionsAutoForIdRef.current === id) return;
+    transitionsAutoForIdRef.current = id;
+    void generateTransitionSuggestions({ silent: true });
+  }, [
+    step,
+    id,
+    transitionSuggestions.length,
+    isGeneratingTransitions,
+    generateTransitionSuggestions,
+  ]);
+
+  useEffect(() => {
+    if (step !== "polish" || activePolishTab !== "enhance") return;
+    if (transitionSuggestions.length > 0 || isGeneratingTransitions) return;
+    void generateTransitionSuggestions({ silent: true });
+  }, [
+    activePolishTab,
+    step,
+    transitionSuggestions.length,
+    isGeneratingTransitions,
+    generateTransitionSuggestions,
+  ]);
 
   useEffect(() => {
     const el = scrollContainerRef.current;
@@ -1947,51 +2101,167 @@ export default function ClipEditor() {
           ))}
         </div>
 
-        {!composeEnabled && id && (
-          <ClipCoachPanel
-            id={id}
-            context={prompt}
-            onContext={setPrompt}
-            duration={DURATION}
-            save={async () => contentApi.saveClipEdit(id, buildClipEditSpec())}
-            onBeats={setMarkers}
-            onUnderstanding={(r) =>
-              setCoachAdvice({
-                context: r.creativeBrief.creatorContext,
-                advice:
-                  r.creativeBrief.recommendations.slice(0, 2).join(" ") ||
-                  r.creativeBrief.summary,
-              })
-            }
-            onPreview={(payload: CoachPreviewPayload | null) => {
-              if (!payload) return;
-              const style =
-                payload.captionStyle === "kinetic_hormozi"
-                  ? "kinetic_hormozi"
-                  : "clean_subtitle";
-              setMemeCaptionStyle(style);
-              if (payload.hookText.trim()) {
-                setTopText(payload.hookText.trim().slice(0, 50));
-                setHooks([
-                  {
-                    text: payload.hookText.trim().slice(0, 80),
-                    startMs: Math.round((payload.segments[0]?.start ?? 0) * 1000),
-                    durationMs: 2800,
-                    styleId: style,
-                  },
-                ]);
-              }
-              if (payload.contextText?.trim()) {
-                setBottomText(payload.contextText.trim().slice(0, 50));
-              }
-            }}
-            seek={seekVideo}
-          />
-        )}
+        <div
+          className={cn(
+            !composeEnabled && id
+              ? "grid gap-4 lg:grid-cols-[minmax(17.5rem,22rem)_minmax(0,1fr)] lg:items-start"
+              : undefined,
+          )}
+        >
+          {!composeEnabled && id ? (
+            <aside className="order-2 lg:order-1 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-0.5">
+              <ClipCoachPanel
+                id={id}
+                context={prompt}
+                onContext={setPrompt}
+                duration={DURATION}
+                layout="sidebar"
+                captionFontId={captionFontId}
+                onCaptionFontId={setCaptionFontId}
+                captionStyle={
+                  memeCaptionStyle === "kinetic_hormozi"
+                    ? "kinetic_hormozi"
+                    : "clean_subtitle"
+                }
+                onCaptionStyle={(style) => setMemeCaptionStyle(style)}
+                save={async () => contentApi.saveClipEdit(id, buildClipEditSpec())}
+                onBeats={(m) => {
+                  setMarkers(m);
+                }}
+                onUnderstanding={(r) => {
+                  setCoachAdvice({
+                    context: r.creativeBrief.creatorContext,
+                    advice:
+                      r.creativeBrief.recommendations.slice(0, 2).join(" ") ||
+                      r.creativeBrief.summary,
+                  });
+                  setCoachMeta({
+                    mode: r.creativeBrief.mode,
+                    contentType: r.creativeBrief.contentType,
+                  });
+                  const pack = resolveCoachImpactPack(
+                    r.creativeBrief.mode,
+                    r.creativeBrief.contentType,
+                  );
+                  // Preview impact immediately: mode BGM + junction transitions (not text-only).
+                  setSelectedTrackId(pack.bgmTrackId);
+                  const enhance = enhanceDefaultsFromBrief(
+                    r.creativeBrief.contentType,
+                    r.editPlan.captionStyle,
+                    [
+                      ...r.creativeBrief.recommendations,
+                      ...r.editPlan.recommendations,
+                    ],
+                  );
+                  setIsNoiseReduced(enhance.noiseReduced);
+                  if (enhance.colorCorrection > 0) {
+                    setColorCorrection(enhance.colorCorrection);
+                    setIsAutoColorEnabled(true);
+                  }
+                  setCropMode(enhance.cropMode);
+                  setMemeCaptionStyle(enhance.captionStyle);
+                  const fromSegs = transitionsFromCoachSegments(r.editPlan.segments, pack);
+                  const fromBeats = transitionsFromCoachBeats(
+                    r.creativeBrief.moments,
+                    trimStart,
+                    trimEnd,
+                  );
+                  const suggestions = fromSegs.length ? fromSegs : fromBeats;
+                  if (suggestions.length) {
+                    setTransitionSuggestions(suggestions);
+                    setAppliedTransitions(suggestions);
+                  }
+                }}
+                onPreview={(payload: CoachPreviewPayload | null) => {
+                  if (!payload) {
+                    return;
+                  }
+                  const style =
+                    payload.captionStyle === "kinetic_hormozi"
+                      ? "kinetic_hormozi"
+                      : "clean_subtitle";
+                  setMemeCaptionStyle(style);
+                  if (payload.hookText.trim()) {
+                    setTopText(payload.hookText.trim().slice(0, 50));
+                    setHooks([
+                      {
+                        text: payload.hookText.trim().slice(0, 80),
+                        startMs: Math.round((payload.segments[0]?.start ?? 0) * 1000),
+                        durationMs: 2800,
+                        styleId: style,
+                      },
+                    ]);
+                  } else {
+                    setTopText("");
+                  }
+                  if (payload.contextText?.trim()) {
+                    setBottomText(payload.contextText.trim().slice(0, 50));
+                  } else {
+                    setBottomText("");
+                  }
+                }}
+                onApplied={(plan) => {
+                  const segs = plan.segments;
+                  if (segs.length > 0) {
+                    const start = Math.min(...segs.map((s) => s.start));
+                    const end = Math.max(...segs.map((s) => s.end));
+                    if (Number.isFinite(start) && Number.isFinite(end) && end > start) {
+                      setTrimStart(Math.max(0, start));
+                      setTrimEnd(Math.min(DURATION, end));
+                      seekVideo(start);
+                    }
+                  }
+                  const style =
+                    plan.captionStyle === "kinetic_hormozi"
+                      ? "kinetic_hormozi"
+                      : "clean_subtitle";
+                  setMemeCaptionStyle(style);
+                  if (plan.hookOverlay?.trim()) {
+                    setTopText(plan.hookOverlay.trim().slice(0, 50));
+                    setHooks([
+                      {
+                        text: plan.hookOverlay.trim().slice(0, 80),
+                        startMs: Math.round((segs[0]?.start ?? 0) * 1000),
+                        durationMs: 2800,
+                        styleId: style,
+                      },
+                    ]);
+                  }
+                  if (plan.contextOverlay?.trim()) {
+                    setBottomText(plan.contextOverlay.trim().slice(0, 50));
+                  }
+                  const appliedPack = resolveCoachImpactPack(
+                    coachMeta?.mode,
+                    coachMeta?.contentType,
+                  );
+                  setSelectedTrackId(appliedPack.bgmTrackId);
+                  const junctionFx = transitionsFromCoachSegments(segs, appliedPack);
+                  if (junctionFx.length) {
+                    setTransitionSuggestions(junctionFx);
+                    setAppliedTransitions(junctionFx);
+                  }
+                  const trackTitle =
+                    TRACKS.find((t) => t.id === appliedPack.bgmTrackId)?.title || "BGM";
+                  toast.message("Viral edit locked", {
+                    description:
+                      segs.length > 1
+                        ? `${segs.length} moments + ${appliedPack.label} (${trackTitle}, ${appliedPack.junctionType} + SFX) stitch on Render.`
+                        : `${appliedPack.label}: ${trackTitle} applied. Render burns trim, text, BGM into the MP4.`,
+                  });
+                }}
+                seek={seekVideo}
+              />
+            </aside>
+          ) : null}
+
+          <div className={cn("min-w-0", !composeEnabled && id && "order-1 lg:order-2")}>
         {step === "trim" && (
           <div className="space-y-8">
             {/* Video Player Area */}
-            <div className="aspect-video bg-background rounded-xl overflow-hidden relative group shadow-soft-xl border border-border">
+            <div
+              ref={trimPreviewRef}
+              className="aspect-video bg-background rounded-xl overflow-hidden relative group shadow-soft-xl border border-border"
+            >
               {videoSrc ? (
                 <video
                   ref={videoRef}
@@ -2048,32 +2318,28 @@ export default function ClipEditor() {
                 </div>
               )}
 
-              {/* AI Coach / caption live preview on trim stage */}
-              {(topText || hooks[0]?.text) && (
-                <div
-                  className="absolute z-20 left-1/2 top-[14%] max-w-[88%] -translate-x-1/2 -translate-y-1/2 px-2 text-center pointer-events-none"
-                  style={{
-                    fontFamily: clipCaptionFontCss(captionFontId),
-                    fontWeight: 900,
-                  }}
-                >
-                  <span className="block text-white text-base sm:text-xl uppercase leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-                    {topText || hooks[0]?.text}
-                  </span>
-                </div>
-              )}
+              {/* AI Coach / caption live preview — drag to reposition (same as Polish) */}
+              {topText || hooks[0]?.text ? (
+                <DraggableCaptionOverlay
+                  text={topText || hooks[0]?.text || ""}
+                  xPct={topOverlay.x}
+                  yPct={topOverlay.y}
+                  onChange={(x, y) => setTopOverlay({ x, y })}
+                  fontFamily={clipCaptionFontCss(captionFontId)}
+                  stageRef={trimPreviewRef}
+                  label="Hook text on clip"
+                />
+              ) : null}
               {bottomText ? (
-                <div
-                  className="absolute z-20 left-1/2 top-[86%] max-w-[88%] -translate-x-1/2 -translate-y-1/2 px-2 text-center pointer-events-none"
-                  style={{
-                    fontFamily: clipCaptionFontCss(captionFontId),
-                    fontWeight: 900,
-                  }}
-                >
-                  <span className="block text-white text-sm sm:text-lg uppercase leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-                    {bottomText}
-                  </span>
-                </div>
+                <DraggableCaptionOverlay
+                  text={bottomText}
+                  xPct={bottomOverlay.x}
+                  yPct={bottomOverlay.y}
+                  onChange={(x, y) => setBottomOverlay({ x, y })}
+                  fontFamily={clipCaptionFontCss(captionFontId)}
+                  stageRef={trimPreviewRef}
+                  label="Context text on clip"
+                />
               ) : null}
               
               {/* Auto-play indicator */}
@@ -2103,14 +2369,14 @@ export default function ClipEditor() {
                 </motion.div>
               </div>
               
-              {/* Tap to Play overlay for mobile */}
+              {/* Tap to Play — under caption overlays so text stays draggable */}
               <div 
-                className="absolute inset-0 cursor-pointer"
+                className="absolute inset-0 z-10 cursor-pointer"
                 onClick={() => void togglePlayback()}
               />
               
               {/* Controls Overlay */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black/95 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+              <div className="absolute bottom-0 left-0 right-0 z-30 p-4 md:p-6 bg-gradient-to-t from-black/95 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                 <div className="space-y-4 pointer-events-auto">
                   {/* Miniature Progress Bar */}
                   <div className="h-1 w-full bg-foreground/20 rounded-full overflow-hidden">
@@ -2649,7 +2915,7 @@ export default function ClipEditor() {
               ) : (
                 <p className="mt-2 text-[10px] text-muted-foreground">
                   {t("clip_editor.trim.scan_empty", {
-                    defaultValue: "AI Scan marks hook, peak, and close so you know what to keep — it does not cut the clip by itself.",
+                    defaultValue: "Optional if you skip Coach: marks hook/peak/close on the timeline only. Prefer AI Coach Analyze for cuts + BGM + transitions.",
                   })}
                 </p>
               )}
@@ -2845,23 +3111,10 @@ export default function ClipEditor() {
                   </div>
                 </div>
                 
-                {/* Caption / hook overlays — same theme as Clip Studio caption fonts */}
-                {hooks[0]?.text && !topText ? (
-                  <div
-                    className="absolute z-20 left-1/2 top-[14%] max-w-[88%] -translate-x-1/2 -translate-y-1/2 px-2 text-center pointer-events-none"
-                    style={{
-                      fontFamily: clipCaptionFontCss(captionFontId),
-                      fontWeight: 900,
-                    }}
-                  >
-                    <span className="block text-white text-lg sm:text-xl uppercase leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-                      {hooks[0].text}
-                    </span>
-                  </div>
-                ) : null}
-                {topText ? (
+                {/* Caption / hook overlays — drag to reposition; fonts in Captions tab */}
+                {topText || hooks[0]?.text ? (
                   <DraggableCaptionOverlay
-                    text={topText}
+                    text={topText || hooks[0]?.text || ""}
                     xPct={topOverlay.x}
                     yPct={topOverlay.y}
                     onChange={(x, y) => setTopOverlay({ x, y })}
@@ -3132,8 +3385,16 @@ export default function ClipEditor() {
                                 try {
                                   await saveClipEditToServer();
                                   const res = await contentApi.generateClipHooks(id);
-                                  setHooks(res.hooks || []);
-                                  toast.success(`Generated ${res.hooks?.length ?? 0} hooks`);
+                                  const next = res.hooks || [];
+                                  setHookOptions(next);
+                                  setSelectedHookOptionIndex(null);
+                                  toast.success(
+                                    t("clip_editor.polish.details.hooks_ready", {
+                                      defaultValue:
+                                        "{{count}} hooks ready — tap one to replace the on-clip hook",
+                                      count: next.length,
+                                    }),
+                                  );
                                 } catch (err) {
                                   toast.error("Hook generation failed", {
                                     description: formatClipApiError(err),
@@ -3144,26 +3405,111 @@ export default function ClipEditor() {
                               }}
                             >
                               {isGeneratingHooks ? <Loader2 className="animate-spin" size={14} /> : <Zap size={14} />}
-                              <span className="ml-1">{t('clip_editor.polish.details.generate_hooks', { defaultValue: 'Generate hooks' })}</span>
+                              <span className="ml-1">
+                                {hookOptions.length
+                                  ? t("clip_editor.polish.details.refresh_hooks", {
+                                      defaultValue: "Refresh hooks",
+                                    })
+                                  : t("clip_editor.polish.details.generate_hooks", {
+                                      defaultValue: "Generate hooks",
+                                    })}
+                              </span>
                             </Button>
                           </div>
-                          {hooks.length > 0 ? (
-                            <div className="space-y-2" id="clip-hooks-editor">
+                          <div className="space-y-2" id="clip-hooks-editor">
+                            <label className="text-[10px] font-bold text-muted-foreground">
+                              {t("clip_editor.polish.details.active_hook", {
+                                defaultValue: "Active hook (on-clip)",
+                              })}
+                            </label>
+                            <Input
+                              value={topText}
+                              onChange={(e) => {
+                                const text = e.target.value.slice(0, 50);
+                                setTopText(text);
+                                setSelectedHookOptionIndex(null);
+                                if (hooks.length) {
+                                  const next = [...hooks];
+                                  next[0] = { ...next[0]!, text: text.slice(0, 80) };
+                                  setHooks(next);
+                                } else if (text.trim()) {
+                                  setHooks([
+                                    {
+                                      text: text.slice(0, 80),
+                                      startMs: Math.round((finalTrim?.start ?? trimStart) * 1000),
+                                      durationMs: 2800,
+                                      styleId: memeCaptionStyle,
+                                    },
+                                  ]);
+                                }
+                              }}
+                              placeholder={t("clip_editor.polish.details.active_hook_placeholder", {
+                                defaultValue: "Hook shown on the clip",
+                              })}
+                              className="h-9 text-xs"
+                            />
+                          </div>
+                          {hookOptions.length > 0 ? (
+                            <div className="space-y-2">
                               <label className="text-[10px] font-bold text-muted-foreground">
-                                {t('clip_editor.polish.details.viral_hooks', { defaultValue: 'Viral hooks' })}
+                                {t("clip_editor.polish.details.pick_hook", {
+                                  defaultValue: "Pick a hook (replaces Coach / active)",
+                                })}
                               </label>
-                              {hooks.map((h, idx) => (
-                                <Input
-                                  key={`${h.startMs}-${idx}`}
-                                  value={h.text}
-                                  onChange={(e) => {
-                                    const next = [...hooks];
-                                    next[idx] = { ...h, text: e.target.value.slice(0, 80) };
-                                    setHooks(next);
-                                  }}
-                                  className="h-9 text-xs"
-                                />
-                              ))}
+                              <div className="space-y-1.5">
+                                {hookOptions.map((h, idx) => {
+                                  const active =
+                                    selectedHookOptionIndex === idx ||
+                                    (selectedHookOptionIndex == null &&
+                                      topText.trim().toLowerCase() === h.text.trim().toLowerCase());
+                                  return (
+                                    <button
+                                      key={`${h.text}-${idx}`}
+                                      type="button"
+                                      onClick={() => {
+                                        const text = h.text.trim().slice(0, 80);
+                                        setSelectedHookOptionIndex(idx);
+                                        setTopText(text.slice(0, 50));
+                                        setHooks([
+                                          {
+                                            ...h,
+                                            text,
+                                            styleId: h.styleId || memeCaptionStyle,
+                                          },
+                                        ]);
+                                        toast.message(
+                                          t("clip_editor.polish.details.hook_applied", {
+                                            defaultValue: "Hook updated on the clip",
+                                          }),
+                                        );
+                                      }}
+                                      className={cn(
+                                        "w-full text-left rounded-lg border px-3 py-2 text-xs transition-colors",
+                                        active
+                                          ? "border-primary bg-primary/10 text-foreground"
+                                          : "border-border/60 bg-muted/20 text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                                      )}
+                                    >
+                                      <span className="flex items-center justify-between gap-2">
+                                        <span className="font-medium leading-snug">{h.text}</span>
+                                        {active ? (
+                                          <span className="shrink-0 text-[10px] font-bold uppercase text-primary">
+                                            {t("clip_editor.polish.details.hook_selected", {
+                                              defaultValue: "Active",
+                                            })}
+                                          </span>
+                                        ) : (
+                                          <span className="shrink-0 text-[10px] font-bold uppercase opacity-70">
+                                            {t("clip_editor.polish.details.use_hook", {
+                                              defaultValue: "Use",
+                                            })}
+                                          </span>
+                                        )}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
                           ) : null}
                           <label className="flex items-center justify-between gap-3 text-xs font-medium border border-border/40 rounded-lg px-3 py-2">
@@ -3207,7 +3553,24 @@ export default function ClipEditor() {
                             <Input 
                               placeholder={t('clip_editor.polish.meme.top_placeholder')} 
                               value={topText}
-                              onChange={(e) => setTopText(e.target.value.slice(0, 50))}
+                              onChange={(e) => {
+                                const text = e.target.value.slice(0, 50);
+                                setTopText(text);
+                                if (hooks.length) {
+                                  const next = [...hooks];
+                                  next[0] = { ...next[0]!, text: text.slice(0, 80) };
+                                  setHooks(next);
+                                } else if (text.trim()) {
+                                  setHooks([
+                                    {
+                                      text: text.slice(0, 80),
+                                      startMs: Math.round((finalTrim?.start ?? trimStart) * 1000),
+                                      durationMs: 2800,
+                                      styleId: memeCaptionStyle,
+                                    },
+                                  ]);
+                                }
+                              }}
                               className="h-10 text-xs bg-muted/30 border-border/50 rounded-lg focus:border-primary/50"
                             />
                           </div>
@@ -3818,11 +4181,31 @@ export default function ClipEditor() {
                               ))}
                             </div>
                           ) : (
-                            <div className="p-8 border border-dashed border-border rounded-xl text-center space-y-3">
+                            <div className="p-6 border border-dashed border-border rounded-xl text-center space-y-3">
                               <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto text-muted-foreground">
                                 <Layout size={20} />
                               </div>
-                              <p className="text-xs text-muted-foreground font-medium">{t('clip_editor.polish.enhance.no_transitions')}</p>
+                              <p className="text-xs text-muted-foreground font-medium">
+                                {t('clip_editor.polish.enhance.no_transitions')}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground px-2">
+                                Suggestions load automatically on Polish. If empty, run AI Coach
+                                analyze first, then tap Analyze Clip here.
+                              </p>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-[10px] font-bold"
+                                disabled={isGeneratingTransitions}
+                                onClick={() => void generateTransitionSuggestions()}
+                              >
+                                {isGeneratingTransitions ? (
+                                  <Loader2 size={12} className="animate-spin mr-1.5" />
+                                ) : (
+                                  <Sparkles size={12} className="mr-1.5" />
+                                )}
+                                {t('clip_editor.polish.enhance.analyze_clip')}
+                              </Button>
                             </div>
                           )}
                         </div>
@@ -3973,6 +4356,8 @@ export default function ClipEditor() {
           </div>
         </motion.div>
       )}
+          </div>
+        </div>
 
         {/* Polishing Overlay */}
         <AnimatePresence>

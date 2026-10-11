@@ -60,7 +60,7 @@ export function DraggableCaptionOverlay({
       aria-valuemax={100}
       aria-valuenow={Math.round(yPct)}
       className={cn(
-        "absolute z-20 max-w-[88%] px-2 text-center cursor-grab active:cursor-grabbing",
+        "absolute z-20 w-[min(88%,20rem)] max-w-[88%] px-2 text-center cursor-grab active:cursor-grabbing",
         "select-none touch-none rounded-md",
         "hover:ring-2 hover:ring-primary/50 focus-visible:ring-2 focus-visible:ring-primary",
       )}
@@ -93,7 +93,7 @@ export function DraggableCaptionOverlay({
         draggingRef.current = false;
       }}
     >
-      <span className="block text-white text-lg sm:text-xl uppercase leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] pointer-events-none">
+      <span className="block text-white text-sm sm:text-base uppercase leading-snug break-words text-balance line-clamp-3 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] pointer-events-none">
         {text}
       </span>
     </div>
