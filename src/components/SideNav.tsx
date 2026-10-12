@@ -149,14 +149,26 @@ export default function SideNav({ isCollapsed, setIsCollapsed }: SideNavProps) {
         i18n.language === 'ar' ? "right-0 border-l border-r-0" : "left-0"
       )}
     >
-      {/* Logo + always-visible collapse */}
-      <div className="h-14 shrink-0 flex items-center gap-1 px-3 border-b border-border">
+      {/* Logo always visible; collapse control sits beside it when expanded, under it when collapsed */}
+      <div
+        className={cn(
+          "shrink-0 border-b border-border",
+          isCollapsed
+            ? "flex flex-col items-center gap-0.5 px-1.5 pt-2.5 pb-1.5"
+            : "h-14 flex items-center gap-1 px-3",
+        )}
+      >
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex items-center gap-2 overflow-hidden min-w-0 flex-1">
-              <Logo 
-                showText={!isCollapsed} 
-                iconSize="w-9 h-9" 
+            <div
+              className={cn(
+                "flex items-center overflow-hidden min-w-0",
+                isCollapsed ? "justify-center w-full" : "gap-2 flex-1",
+              )}
+            >
+              <Logo
+                showText={!isCollapsed}
+                iconSize="w-9 h-9"
                 textSize="text-base"
                 className="hover:scale-100 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ring-offset-card rounded-md"
               />
