@@ -1748,11 +1748,11 @@ const resources = {
         },
         "overlays": {
           "review_title": "Reviewing Selection",
-          "review_desc": "Playing your {{duration}} keep range once, then we transcribe and write captions for real.",
+          "review_desc": "Playing your {{duration}} keep range with current music once, then we prep captions silently.",
           "cancel": "Cancel",
           "skip_polish": "Continue to AI polish",
           "polishing_title": "Polishing Your Clip",
-          "polishing_desc": "Saving the trim, then running transcription, captions, and effects on this clip.",
+          "polishing_desc": "Saving the trim, then preparing transcript and captions in the background — playback stays paused.",
           "steps": {
             "transcribing": "Transcribing audio (Whisper)",
             "transcribing_sub": "Sending the clip to speech-to-text…",

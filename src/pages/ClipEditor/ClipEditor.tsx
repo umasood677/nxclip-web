@@ -295,9 +295,12 @@ export default function ClipEditor() {
   const [coachStitchJoins, setCoachStitchJoins] = useState<
     Array<"cut" | "crossfade" | "flash" | "none">
   >([]);
+  /** True after Apply to clip — keep multi-cut order through Polish / Download. */
+  const [coachViralApplied, setCoachViralApplied] = useState(false);
   const coachStitchIndexRef = useRef(0);
   /** True while playing the full Coach moment playlist (not a single Preview cut). */
   const coachStitchPlayRef = useRef(false);
+  const isReviewingTrimRef = useRef(false);
   const [cropMode, setCropMode] = useState<"face" | "center">("face");
   
   // Enhancement States
@@ -496,6 +499,44 @@ export default function ClipEditor() {
             }
           }
           const extras = (spec as { extras?: Record<string, unknown> }).extras;
+          const viralOn = extras?.viralEditApplied === true;
+          setCoachViralApplied(viralOn);
+          if (viralOn) {
+            const coach = extras?.clipCoach as
+              | {
+                  editPlan?: {
+                    segments?: Array<{ start: number; end: number; purpose?: string }>;
+                  };
+                }
+              | undefined;
+            const segs = coach?.editPlan?.segments || [];
+            const textFlags = Array.isArray(extras?.coachCutText)
+              ? (extras.coachCutText as boolean[])
+              : segs.map(() => true);
+            if (segs.length) {
+              setCoachTextCuts(
+                segs.map((s, i) => ({
+                  start: s.start,
+                  end: s.end,
+                  show: textFlags[i] !== false,
+                })),
+              );
+              const joinsRaw = Array.isArray(extras?.coachCutTransitions)
+                ? (extras.coachCutTransitions as Array<{ type?: string }>)
+                : [];
+              setCoachStitchJoins(
+                segs.slice(0, -1).map((_, i) => {
+                  const t = String(joinsRaw[i]?.type || "flash").toLowerCase();
+                  return t === "none" || t === "crossfade" || t === "cut" || t === "flash"
+                    ? t
+                    : "flash";
+                }),
+              );
+            }
+          } else {
+            setCoachTextCuts(null);
+            setCoachStitchJoins([]);
+          }
           const extrasHashtags = extras?.hashtags;
           if (Array.isArray(extrasHashtags)) {
             setHashtags(
@@ -1172,8 +1213,17 @@ export default function ClipEditor() {
       clearInterval(reviewIntervalRef.current);
       reviewIntervalRef.current = null;
     }
+    // Prep (Whisper / captions / hooks) is not a preview — stop source + BGM under the overlay.
+    const el = videoRef.current;
+    if (el) {
+      el.pause();
+      el.muted = true;
+    }
+    mixBgmRef.current?.pause();
+    setIsPlaying(false);
     const runId = ++polishRunIdRef.current;
     const still = () => polishRunIdRef.current === runId;
+    isReviewingTrimRef.current = false;
     setIsReviewingTrim(false);
     setIsPolishing(true);
     setPolishStep(0);
@@ -1311,10 +1361,13 @@ export default function ClipEditor() {
           /* hooks stay empty — user can retry on polish */
         }
         if (!still()) return;
-        try {
-          await generateTransitionSuggestions();
-        } catch {
-          /* transitions optional */
+        // Do not replace Coach cut joins with Enhance timeline suggestions after Viral Apply.
+        if (!coachViralApplied) {
+          try {
+            await generateTransitionSuggestions();
+          } catch {
+            /* transitions optional */
+          }
         }
       }
       await waitAtLeast(effectsStarted, 700);
@@ -1332,8 +1385,11 @@ export default function ClipEditor() {
       mergeSearchParams({ step: "polish" });
     } finally {
       if (still()) {
-          setIsPolishing(false);
+        setIsPolishing(false);
         polishBusyRef.current = false;
+        // Restore mute so Polish play uses normal mix (clip + BGM).
+        if (videoRef.current) videoRef.current.muted = false;
+        applyPreviewMix();
       }
     }
   };
@@ -1341,17 +1397,43 @@ export default function ClipEditor() {
   const handleApplyTrim = () => {
     setFinalTrim({ start: trimStart, end: trimEnd });
     reviewAdvanceLockRef.current = false;
+    isReviewingTrimRef.current = true;
     setIsReviewingTrim(true);
     setReviewProgress(0);
     if (reviewIntervalRef.current) {
       clearInterval(reviewIntervalRef.current);
       reviewIntervalRef.current = null;
     }
+    // Coach Apply locked a multi-cut order — review that stitch, not a continuous min→max window.
+    if (coachViralApplied && coachTextCuts && coachTextCuts.length > 0) {
+      previewCoachStitch();
+      return;
+    }
     seekVideo(trimStart);
     const el = videoRef.current;
     if (el) {
       el.currentTime = trimStart;
-      void el.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+      el.muted = false;
+      applyPreviewMix();
+      void el
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+          const bgm = mixBgmRef.current;
+          const track = TRACKS.find((t) => t.id === selectedTrackId);
+          if (bgm && track && selectedTrackId) {
+            if (mixBgmTrackIdRef.current !== selectedTrackId) {
+              bgm.src = track.url;
+              mixBgmTrackIdRef.current = selectedTrackId;
+              bgm.currentTime = 0;
+            }
+            applyPreviewMix();
+            void bgm.play().catch(() => {});
+          } else {
+            mixBgmRef.current?.pause();
+          }
+        })
+        .catch(() => setIsPlaying(false));
     } else {
       setIsPlaying(true);
     }
@@ -2077,10 +2159,10 @@ export default function ClipEditor() {
     }
   }, [DURATION, finalTrim, id, markers, trimEnd, trimStart]);
 
-  // Auto-suggest transitions when entering Polish / Enhance (AI Coach analyze alone does not fill this list).
+  // Auto-suggest transitions when entering Polish / Enhance — skip when Coach viral stitch is locked.
   const transitionsAutoForIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (step !== "polish" || !id) return;
+    if (step !== "polish" || !id || coachViralApplied) return;
     if (transitionSuggestions.length > 0 || isGeneratingTransitions) return;
     if (transitionsAutoForIdRef.current === id) return;
     transitionsAutoForIdRef.current = id;
@@ -2088,18 +2170,20 @@ export default function ClipEditor() {
   }, [
     step,
     id,
+    coachViralApplied,
     transitionSuggestions.length,
     isGeneratingTransitions,
     generateTransitionSuggestions,
   ]);
 
   useEffect(() => {
-    if (step !== "polish" || activePolishTab !== "enhance") return;
+    if (step !== "polish" || activePolishTab !== "enhance" || coachViralApplied) return;
     if (transitionSuggestions.length > 0 || isGeneratingTransitions) return;
     void generateTransitionSuggestions({ silent: true });
   }, [
     activePolishTab,
     step,
+    coachViralApplied,
     transitionSuggestions.length,
     isGeneratingTransitions,
     generateTransitionSuggestions,
@@ -2211,6 +2295,9 @@ export default function ClipEditor() {
           coachStitchIndexRef.current = idx + 1;
           el.currentTime = next.start;
           setCurrentTime(next.start);
+        } else if (isReviewingTrimRef.current) {
+          // Review handler advances to polish — do not loop the stitch.
+          return true;
         } else {
           el.pause();
           setIsPlaying(false);
@@ -2557,6 +2644,8 @@ export default function ClipEditor() {
                   if (!payload) {
                     setCoachTextCuts(null);
                     setCoachStitchJoins([]);
+                    setCoachViralApplied(false);
+                    coachStitchPlayRef.current = false;
                     coachStitchIndexRef.current = 0;
                     return;
                   }
@@ -2591,14 +2680,28 @@ export default function ClipEditor() {
                 }}
                 onApplied={(plan) => {
                   const segs = plan.segments;
+                  setCoachViralApplied(true);
+                  // textCuts/joins already set by onPreview from Apply — keep that order.
+                  setCoachTextCuts((prev) =>
+                    prev?.length === segs.length
+                      ? prev
+                      : segs.map((s) => ({
+                          start: s.start,
+                          end: s.end,
+                          show: true,
+                        })),
+                  );
                   if (segs.length > 0) {
+                    const first = segs[0]!;
+                    // Bounding window for UI only — playback uses coachTextCuts order.
                     const start = Math.min(...segs.map((s) => s.start));
                     const end = Math.max(...segs.map((s) => s.end));
                     if (Number.isFinite(start) && Number.isFinite(end) && end > start) {
                       setTrimStart(Math.max(0, start));
                       setTrimEnd(Math.min(DURATION, end));
-                      seekVideo(start);
                     }
+                    seekVideo(first.start);
+                    coachStitchIndexRef.current = 0;
                   }
                   const style =
                     plan.captionStyle === "kinetic_hormozi"
@@ -2630,11 +2733,12 @@ export default function ClipEditor() {
                     coachMeta?.contentType,
                   );
                   setSelectedTrackId(appliedPack.bgmTrackId);
+                  // Preview flashes only at real keep-range junctions (not gap filler).
                   const junctionFx = transitionsFromCoachSegments(
                     segs,
                     appliedPack,
-                    Math.min(...segs.map((s) => s.start)),
-                    Math.max(...segs.map((s) => s.end)),
+                    segs[0]?.start ?? trimStart,
+                    segs[segs.length - 1]?.end ?? trimEnd,
                   );
                   if (junctionFx.length) {
                     setTransitionSuggestions(junctionFx);
@@ -2645,7 +2749,7 @@ export default function ClipEditor() {
                   toast.message("Viral edit locked", {
                     description:
                       segs.length > 1
-                        ? `${segs.length} moments + ${appliedPack.label} (${trackTitle}, ${appliedPack.junctionType} + SFX) stitch on Render.`
+                        ? `${segs.length} moments kept in your order + ${appliedPack.label} (${trackTitle}). Play or Preview final edit to hear the stitch; Download burns it.`
                         : `${appliedPack.label}: ${trackTitle} applied. Render burns trim, text, BGM into the MP4.`,
                   });
                 }}
@@ -2699,6 +2803,32 @@ export default function ClipEditor() {
                     const t = e.currentTarget.currentTime;
                     setCurrentTime(t);
                     if (isReviewingTrim) {
+                      if (coachViralApplied && coachTextCuts && coachTextCuts.length > 0) {
+                        // Stitch review: advance cuts, then start polish after the last moment.
+                        const cuts = coachTextCuts;
+                        const idx = Math.max(0, coachStitchIndexRef.current);
+                        const total = cuts.reduce((n, c) => n + Math.max(0, c.end - c.start), 0);
+                        let played = 0;
+                        for (let i = 0; i < idx; i++) played += Math.max(0, cuts[i]!.end - cuts[i]!.start);
+                        const cur = cuts[idx];
+                        if (cur) played += Math.max(0, Math.min(cur.end, t) - cur.start);
+                        setReviewProgress(
+                          Math.min(100, Math.max(0, (played / Math.max(0.4, total)) * 100)),
+                        );
+                        coachStitchPlayRef.current = true;
+                        const atLast =
+                          idx >= cuts.length - 1 && cur && t >= cur.end - 0.08;
+                        if (atLast && !reviewAdvanceLockRef.current) {
+                          reviewAdvanceLockRef.current = true;
+                          e.currentTarget.pause();
+                          mixBgmRef.current?.pause();
+                          setIsPlaying(false);
+                          void startPolishing();
+                          return;
+                        }
+                        tickCoachStitch(e.currentTarget, t);
+                        return;
+                      }
                       const span = Math.max(0.4, trimEnd - trimStart);
                       setReviewProgress(Math.min(100, Math.max(0, ((t - trimStart) / span) * 100)));
                       if (t >= trimEnd - 0.08 && !reviewAdvanceLockRef.current) {
@@ -4850,11 +4980,15 @@ export default function ClipEditor() {
                     <button 
                       onClick={() => {
                         reviewAdvanceLockRef.current = true;
+                        isReviewingTrimRef.current = false;
                         setIsReviewingTrim(false);
                         if (reviewIntervalRef.current) {
                           clearInterval(reviewIntervalRef.current);
                           reviewIntervalRef.current = null;
                         }
+                        videoRef.current?.pause();
+                        mixBgmRef.current?.pause();
+                        setIsPlaying(false);
                       }}
                       className="text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
                     >
