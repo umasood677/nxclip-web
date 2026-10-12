@@ -57,7 +57,8 @@ export function resolveCoachImpactPack(
   const m = String(mode || "auto").toLowerCase();
   const c = String(contentType || "other").toLowerCase();
 
-  if (m === "high_energy" || c === "gameplay" || c === "reaction") {
+  // Explicit mode wins. Content type is only the Auto fallback.
+  if (m === "high_energy") {
     return {
       bgmTrackId: "6",
       duckBgm: true,
@@ -67,7 +68,7 @@ export function resolveCoachImpactPack(
       enhanceTypes: ["Flash", "Zoom Blur", "Whip Pan"],
     };
   }
-  if (m === "viral_short" || c === "product-demo" || c === "event-demo") {
+  if (m === "viral_short") {
     return {
       bgmTrackId: "9",
       duckBgm: true,
@@ -87,7 +88,47 @@ export function resolveCoachImpactPack(
       enhanceTypes: ["Cut", "Flash", "Whip Pan"],
     };
   }
-  if (m === "documentary" || c === "cinematic" || c === "behind-the-scenes") {
+  if (m === "documentary") {
+    return {
+      bgmTrackId: "8",
+      duckBgm: true,
+      junctionType: "crossfade",
+      junctionSfx: "Whoosh Soft",
+      label: "Cinematic story",
+      enhanceTypes: ["Cut", "Zoom Blur", "Flash"],
+    };
+  }
+  if (m === "professional") {
+    return {
+      bgmTrackId: "2",
+      duckBgm: true,
+      junctionType: "crossfade",
+      junctionSfx: "Whoosh Soft",
+      label: "Clean professional",
+      enhanceTypes: ["Cut", "Zoom Blur", "Flash"],
+    };
+  }
+  if (c === "gameplay" || c === "reaction") {
+    return {
+      bgmTrackId: "6",
+      duckBgm: true,
+      junctionType: "flash",
+      junctionSfx: "Impact Hit",
+      label: "High-energy impact",
+      enhanceTypes: ["Flash", "Zoom Blur", "Whip Pan"],
+    };
+  }
+  if (c === "product-demo" || c === "event-demo") {
+    return {
+      bgmTrackId: "9",
+      duckBgm: true,
+      junctionType: "flash",
+      junctionSfx: "Flash Pop",
+      label: "Viral punch",
+      enhanceTypes: ["Flash", "Cut", "Zoom Blur"],
+    };
+  }
+  if (c === "cinematic" || c === "behind-the-scenes") {
     return {
       bgmTrackId: "8",
       duckBgm: true,
@@ -98,7 +139,6 @@ export function resolveCoachImpactPack(
     };
   }
   if (
-    m === "professional" ||
     c === "interview" ||
     c === "conversation" ||
     c === "testimonial" ||

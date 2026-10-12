@@ -1560,10 +1560,10 @@ const resources = {
           "scan_found": "Marked {{count}} highlight beats on the timeline",
           "scan_found_hint": "Hook = start, peak = keep, close = end. Handles snap to these marks.",
           "scan_fallback": "Placed generic beats on this clip so you can still trim.",
-          "scan_results": "Highlight beats",
-          "scan_help": "These marks are the story of the clip: open on the hook, keep the peak, cut after the close. Click a beat to jump there. Drag handles snap to them.",
-          "scan_empty": "AI Scan marks hook, peak, and close so you know what to keep — it does not cut the clip by itself.",
-          "trim_to_beats": "Trim to these beats",
+          "scan_results": "Highlight beats (optional)",
+          "scan_help": "Optional timeline pins only — not the Coach cut list. Click a beat to jump there; drag handles snap to them. Coach Analyze still builds the multi-cut plan + BGM.",
+          "scan_empty": "Optional. AI Scan only marks moments on the timeline for trimming. Prefer AI Coach Analyze when you want cuts, BGM, and transitions.",
+          "trim_to_beats": "Set keep range from first → last beat",
           "trim_to_beats_done": "Keep range set from opening beat to close",
           "marker_roles": {
             "hook": "Open here — first beat that stops the scroll",
@@ -1591,7 +1591,7 @@ const resources = {
           "ai_smart_trim_tooltip": "Automatically suggests the perfect start and end points based on peak engagement metrics and visual cues.",
           "precision_trim": "Precision Trim",
           "zoom": "Zoom",
-          "apply_continue": "Apply Trim & Continue",
+          "apply_continue": "Next: Polish",
           "markers": {
             "action_start": "Hook",
             "kill": "Peak",
@@ -3671,7 +3671,7 @@ const resources = {
           "ai_smart_trim_tooltip": "يقترح تلقائياً نقاط البداية والنهاية المثالية بناءً على مقاييس التفاعل القصوى والإشارات البصرية.",
           "precision_trim": "قص دقيق",
           "zoom": "تكبير",
-          "apply_continue": "تطبيق القص والمتابعة",
+          "apply_continue": "التالي: التلميع",
           "markers": {
             "action_start": "افتتاح",
             "kill": "ذروة",

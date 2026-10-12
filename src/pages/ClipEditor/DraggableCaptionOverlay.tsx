@@ -93,7 +93,7 @@ export function DraggableCaptionOverlay({
         draggingRef.current = false;
       }}
     >
-      <span className="block text-white text-sm sm:text-base uppercase leading-snug break-words text-balance line-clamp-3 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] pointer-events-none">
+      <span className="block text-white text-sm sm:text-base uppercase leading-snug break-words text-balance drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] pointer-events-none">
         {text}
       </span>
     </div>

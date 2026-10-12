@@ -8,6 +8,7 @@ import {
   Loader2,
   Play,
   Sparkles,
+  Type,
   Volume2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -74,6 +75,27 @@ export type CoachPreviewPayload = {
   contextText?: string;
   captionStyle: string;
   segments: Array<{ start: number; end: number; purpose: string }>;
+  /** When set, hook/context show only while playback is inside a cut marked show. */
+  textCuts?: Array<{ start: number; end: number; show: boolean }>;
+};
+
+export type CoachModeImpact = {
+  mode: CoachMode;
+  bgmTrackId: string;
+  label: string;
+  captionStyle?: "clean_subtitle" | "kinetic_hormozi";
+  segments?: Array<{ start: number; end: number; purpose: string }>;
+};
+
+type CutJoin = "cut" | "crossfade" | "flash" | "none";
+
+const MODE_EFFECT: Record<CoachMode, string> = {
+  auto: "Auto picks music from the footage type (event clips often share Future Bass). Pick another mode to force a different track.",
+  viral_short: "Viral Short → Future Bass + flash joins. Play the clip to hear it. Re-analyze to rebuild moments.",
+  professional: "Clean Professional → Lo-Fi Gaming + soft fades. Play the clip to hear it. Re-analyze to rebuild moments.",
+  event_highlight: "Event Highlight → Epic Victory + hard cuts. Play the clip to hear it. Re-analyze to rebuild moments.",
+  documentary: "Story → Dark Souls + crossfades. Play the clip to hear it. Re-analyze to rebuild moments.",
+  high_energy: "High Energy → Aggressive Phonk + flashes. Play the clip to hear it. Re-analyze to rebuild moments.",
 };
 
 const modes: Array<[CoachMode, string]> = [
@@ -84,6 +106,15 @@ const modes: Array<[CoachMode, string]> = [
   ["documentary", "Story / Documentary"],
   ["high_energy", "High Energy"],
 ];
+
+function formatKeepLabel(purpose: string | undefined, index: number): string {
+  const cleaned = (purpose || `Moment ${index + 1}`)
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned) return `Moment ${index + 1}`;
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
 
 const ANALYZE_STEPS = [
   "Saving your draft…",
@@ -101,6 +132,7 @@ export function ClipCoachPanel({
   onBeats,
   onUnderstanding,
   onPreview,
+  onModeImpact,
   onApplied,
   seek,
   previewSegment,
@@ -120,6 +152,8 @@ export function ClipCoachPanel({
   onUnderstanding: (result: ClipCoachResult) => void;
   /** Push hook/context onto the video preview using Clip Studio caption theme. */
   onPreview?: (payload: CoachPreviewPayload | null) => void;
+  /** Dropdown change: switch music and caption style immediately. Cuts still need Re-analyze. */
+  onModeImpact?: (impact: CoachModeImpact) => void;
   /** After Apply — parent should sync trim + overlays on the player. */
   onApplied?: (plan: ClipCoachResult["editPlan"]) => void;
   seek: (time: number) => void;
@@ -147,6 +181,8 @@ export function ClipCoachPanel({
   const [reviewed, setReviewed] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [cutTransitions, setCutTransitions] = useState<CutJoin[]>([]);
+  const [textOnCut, setTextOnCut] = useState<boolean[]>([]);
   const latest = useRef({ id, context, mode });
   latest.current = { id, context, mode };
 
@@ -173,9 +209,26 @@ export function ClipCoachPanel({
           setMode(stored.creativeBrief.mode || "auto");
           setApplied(extras?.viralEditApplied === true);
           setChecked(defaultChecks(stored.editPlan));
+          const storedText = Array.isArray(extras?.coachCutText)
+            ? (extras.coachCutText as boolean[])
+            : undefined;
+          const flags = stored.editPlan.segments.map((_, i) => storedText?.[i] !== false);
+          setTextOnCut(flags);
+          const storedJoins = Array.isArray(extras?.coachCutTransitions)
+            ? (extras.coachCutTransitions as Array<{ type?: string }>)
+            : [];
+          if (storedJoins.length) {
+            setCutTransitions(
+              storedJoins.map((t) =>
+                t.type === "none" || t.type === "flash" || t.type === "crossfade" || t.type === "cut"
+                  ? t.type
+                  : "cut",
+              ),
+            );
+          }
           onUnderstanding(stored);
           if (extras?.viralEditApplied === true) {
-            pushPreview(stored.editPlan);
+            pushPreview(stored.editPlan, flags);
           }
         }
       })
@@ -218,16 +271,51 @@ export function ClipCoachPanel({
     });
     if (p.hookOverlay?.trim()) next.hook = true;
     if (p.contextOverlay?.trim()) next.context = true;
-    if (p.duckBgm) next.duck = true;
+    next.duck = p.duckBgm !== false;
     return next;
   }
 
-  function pushPreview(p: ClipCoachResult["editPlan"]) {
+  function textFlagsFor(p: ClipCoachResult["editPlan"], flags?: boolean[]) {
+    const source = flags ?? textOnCut;
+    return p.segments.map((_, i) => source[i] !== false);
+  }
+
+  function pushPreview(p: ClipCoachResult["editPlan"], flags?: boolean[]) {
+    const show = textFlagsFor(p, flags);
     onPreview?.({
       hookText: p.hookOverlay || "",
       contextText: p.contextOverlay || undefined,
       captionStyle: p.captionStyle || "clean_subtitle",
       segments: p.segments,
+      textCuts: p.segments.map((s, i) => ({
+        start: s.start,
+        end: s.end,
+        show: show[i] !== false,
+      })),
+    });
+  }
+
+  function applyMode(nextMode: CoachMode) {
+    setMode(nextMode);
+    const pack = resolveCoachImpactPack(nextMode, result?.creativeBrief.contentType);
+    if (plan) {
+      setCutTransitions(
+        Array.from({ length: Math.max(0, plan.segments.length - 1) }, () => pack.junctionType),
+      );
+    }
+    const captionStyle =
+      nextMode === "viral_short" || nextMode === "high_energy"
+        ? "kinetic_hormozi"
+        : nextMode === "auto"
+          ? undefined
+          : "clean_subtitle";
+    if (captionStyle) onCaptionStyle?.(captionStyle);
+    onModeImpact?.({
+      mode: nextMode,
+      bgmTrackId: pack.bgmTrackId,
+      label: pack.label,
+      captionStyle,
+      segments: plan?.segments,
     });
   }
 
@@ -245,7 +333,15 @@ export function ClipCoachPanel({
     const tmp = segments[index]!;
     segments[index] = segments[target]!;
     segments[target] = tmp;
-    updateDraftPlan({ ...plan, segments });
+    const flags = textFlagsFor(plan);
+    const flag = flags[index]!;
+    flags[index] = flags[target]!;
+    flags[target] = flag;
+    setTextOnCut(flags);
+    const next = { ...plan, segments };
+    setDraftPlan(next);
+    setChecked(defaultChecks(next));
+    pushPreview(next, flags);
   }
 
   function updateSegmentTime(
@@ -309,10 +405,18 @@ export function ClipCoachPanel({
       setResult(next);
       setDraftPlan(next.editPlan);
       setChecked(defaultChecks(next.editPlan));
+      const flags = next.editPlan.segments.map(() => true);
+      setTextOnCut(flags);
+      setCutTransitions(
+        Array.from({ length: Math.max(0, next.editPlan.segments.length - 1) }, () => {
+          const pack = resolveCoachImpactPack(next.creativeBrief.mode, next.creativeBrief.contentType);
+          return pack.junctionType;
+        }),
+      );
       setApplied(false);
       onBeats(next.creativeBrief.moments);
       onUnderstanding(next);
-      pushPreview(next.editPlan);
+      pushPreview(next.editPlan, flags);
       const first = next.editPlan.segments[0];
       if (first && Number.isFinite(first.start)) seek(first.start);
       toast.success("Edit checklist ready — preview is on your clip");
@@ -346,7 +450,7 @@ export function ClipCoachPanel({
         segments: filteredSegments,
         hookOverlay: checked.hook === false ? "" : plan.hookOverlay,
         contextOverlay: checked.context === false ? undefined : plan.contextOverlay,
-        duckBgm: checked.duck === false ? false : plan.duckBgm,
+        duckBgm: checked.duck !== false,
       };
       const item = await contentApi.applyClipCoach(
         id,
@@ -357,6 +461,22 @@ export function ClipCoachPanel({
               plan: customizedPlan,
               expectedContext: result.creativeBrief.creatorContext,
               expectedMode: result.creativeBrief.mode,
+              cutTransitions: plan.segments
+                .map((_, i) => i)
+                .filter((i) => checked[`seg-${i}`] !== false)
+                .slice(0, -1)
+                .map((i) => ({
+                  type:
+                    cutTransitions[i] ||
+                    resolveCoachImpactPack(
+                      result.creativeBrief.mode,
+                      result.creativeBrief.contentType,
+                    ).junctionType,
+                })),
+              cutText: plan.segments
+                .map((_, i) => i)
+                .filter((i) => checked[`seg-${i}`] !== false)
+                .map((i) => textOnCut[i] !== false),
             }
           : undefined,
       );
@@ -370,7 +490,11 @@ export function ClipCoachPanel({
       }
       setApplied(value);
       if (value) {
-        pushPreview(customizedPlan);
+        const keptFlags = plan.segments
+          .map((_, i) => i)
+          .filter((i) => checked[`seg-${i}`] !== false)
+          .map((i) => textOnCut[i] !== false);
+        pushPreview(customizedPlan, keptFlags);
         const first = customizedPlan.segments[0];
         if (first) seek(first.start);
         onApplied?.(customizedPlan);
@@ -435,7 +559,7 @@ export function ClipCoachPanel({
           className="rounded-md border border-border bg-background px-2 py-1.5 text-[11px] shrink-0 max-w-[9.5rem]"
           value={mode}
           disabled={busy}
-          onChange={(e) => setMode(e.target.value as CoachMode)}
+          onChange={(e) => applyMode(e.target.value as CoachMode)}
         >
           {modes.map(([v, label]) => (
             <option key={v} value={v}>
@@ -444,6 +568,7 @@ export function ClipCoachPanel({
           ))}
         </select>
       </div>
+      <p className="text-[10px] leading-snug text-muted-foreground">{MODE_EFFECT[mode]}</p>
 
       <div className="space-y-1.5">
         <label htmlFor="creator-context" className="text-[11px] font-medium text-muted-foreground">
@@ -455,9 +580,10 @@ export function ClipCoachPanel({
           value={context}
           maxLength={500}
           disabled={busy}
-          onChange={(e) => onContext(sanitizeCreatorContext(e.target.value).slice(0, 500))}
+          onChange={(e) => onContext(e.target.value.slice(0, 500))}
+          onBlur={() => onContext(sanitizeCreatorContext(context))}
           className={cn("text-sm", sidebar ? "min-h-[3.25rem]" : "min-h-[4.5rem]")}
-          placeholder="e.g. AWS Summit cloud gaming demo — focus on her reaction"
+          placeholder="e.g. Product launch booth demo — focus on the crowd reaction"
         />
       </div>
 
@@ -516,7 +642,7 @@ export function ClipCoachPanel({
             </p>
             {(() => {
               const impact = resolveCoachImpactPack(
-                result.creativeBrief.mode,
+                mode,
                 result.creativeBrief.contentType,
               );
               const bgmName = coachBgmTitle(impact.bgmTrackId);
@@ -529,8 +655,8 @@ export function ClipCoachPanel({
                     <li>
                       <span className="font-medium text-foreground/80">BGM</span>
                       {" — "}
-                      background music: {bgmName}
-                      {" (plays with the clip now; change later in Polish → Audio)"}
+                      <span className="font-semibold text-foreground">{bgmName}</span>
+                      {" from the mode above. Play the clip or tap Preview BGM to hear it. Change mode to switch tracks."}
                     </li>
                     <li>
                       <span className="font-medium text-foreground/80">SFX</span>
@@ -543,7 +669,9 @@ export function ClipCoachPanel({
                       <span className="font-medium text-foreground/80">Transition</span>
                       {" — "}
                       {impact.junctionType} between cuts on Render
-                      {impact.duckBgm ? " · music ducks under speech" : ""}
+                      {impact.duckBgm
+                        ? " · Music ducking is the green row below (music drops while people speak)"
+                        : ""}
                     </li>
                   </ul>
                   {previewBgm ? (
@@ -604,6 +732,11 @@ export function ClipCoachPanel({
           {(result.creativeBrief.storyOptions?.length ?? 0) > 1 ? (
             <div className="space-y-1.5">
               <p className="text-[11px] font-semibold">Pick a story focus</p>
+              <p className="text-[10px] text-muted-foreground leading-snug">
+                This steers the next Analyze toward a different truthful angle
+                (which moments to keep). It does not change BGM by itself — use
+                the mode dropdown for music, then Re-analyze.
+              </p>
               <div className="flex flex-col gap-1.5">
                 {result.creativeBrief.storyOptions!.slice(0, 3).map((opt, index) => {
                   const selected =
@@ -631,7 +764,10 @@ export function ClipCoachPanel({
                               `${base}${base ? ". " : ""}Focus: ${opt.title}`,
                             ),
                           );
-                          toast.message("Focus updated — tap Re-analyze");
+                          toast.message("Focus updated — tap Re-analyze", {
+                            description:
+                              "Coach will rebuild keep moments for this angle. BGM still follows the mode dropdown.",
+                          });
                         } else {
                           onContext(
                             sanitizeCreatorContext(context).replace(
@@ -652,6 +788,11 @@ export function ClipCoachPanel({
                         {index === 0 ? "Best · " : ""}
                         {opt.title}
                       </span>
+                      {opt.rationale ? (
+                        <span className="mt-0.5 block text-[10px] font-normal text-muted-foreground leading-snug">
+                          {opt.rationale}
+                        </span>
+                      ) : null}
                     </button>
                   );
                 })}
@@ -666,11 +807,62 @@ export function ClipCoachPanel({
           ) : null}
 
           <div className="space-y-1">
-            <p className="text-[11px] font-semibold">Edit checklist</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[11px] font-semibold">Moments in the final clip</p>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
+                      aria-label="What the keep list does"
+                    >
+                      <Info size={13} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[260px] text-[11px] leading-relaxed py-2.5">
+                    Not a fixed count of 3. Coach adds one row per moment it wants to keep, up to 12.
+                    Uncheck a row to leave that moment out of the download. Checked rows play in
+                    this order after Apply to clip, then Download.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              {(() => {
+                const tips = [
+                  ...result.creativeBrief.recommendations,
+                  ...result.editPlan.recommendations,
+                ].filter(Boolean);
+                if (!tips.length) return null;
+                return (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
+                          aria-label="Coach tips"
+                        >
+                          <Sparkles size={13} />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-[280px] text-[11px] leading-relaxed py-2.5">
+                        <p className="font-semibold mb-1">Tips only — not applied automatically</p>
+                        <ul className="list-disc pl-3.5 space-y-1">
+                          {tips.slice(0, 4).map((tip, i) => (
+                            <li key={`tip-${i}`}>{tip}</li>
+                          ))}
+                        </ul>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                );
+              })()}
+            </div>
             <p className="text-[10px] text-muted-foreground mb-1">
-              These ranges are kept and stitched on Render (order shown). Uncheck to skip.
-              Use <span className="font-medium text-foreground/80">Preview cut</span> to play
-              just that moment on the player.
+              {plan.segments.length} moment{plan.segments.length === 1 ? "" : "s"} suggested
+              (can be 1–12, not always 3). Uncheck one to drop it from the download.
+              The T icon hides hook and context on that cut only. Off / Flash / Fade / Cut
+              is the join into the next moment.
             </p>
             <ul className="space-y-1.5">
               {plan.segments.map((s, i) => (
@@ -678,13 +870,13 @@ export function ClipCoachPanel({
                   key={`seg-${i}-${s.start}-${s.end}`}
                   className="flex flex-col gap-1.5 rounded-md border border-border bg-background/70 px-2 py-1.5"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-start gap-2">
                     <button
                       type="button"
                       aria-pressed={checked[`seg-${i}`] !== false}
                       onClick={() => toggleCheck(`seg-${i}`)}
                       className={cn(
-                        "flex h-5 w-5 shrink-0 items-center justify-center rounded border",
+                        "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border",
                         checked[`seg-${i}`] !== false
                           ? "border-primary bg-primary text-primary-foreground"
                           : "border-border",
@@ -695,15 +887,44 @@ export function ClipCoachPanel({
                       ) : null}
                     </button>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium truncate capitalize">
-                        {i === 0 ? "Hook-first · " : ""}
-                        Keep: {s.purpose || `Moment ${i + 1}`}
+                      <p className="text-xs font-medium leading-snug break-words">
+                        {formatKeepLabel(s.purpose, i)}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
-                        Output order {i + 1} · stitched on Render
+                        Part {i + 1}
+                        {i === 0 ? " · opens the clip" : ""}
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-0.5">
+                      <button
+                        type="button"
+                        aria-pressed={textOnCut[i] !== false}
+                        aria-label={
+                          textOnCut[i] !== false
+                            ? "Hide hook and context text on this cut"
+                            : "Show hook and context text on this cut"
+                        }
+                        title={
+                          textOnCut[i] !== false
+                            ? "Text is on for this cut"
+                            : "Text is hidden on this cut"
+                        }
+                        disabled={busy}
+                        onClick={() => {
+                          const flags = textFlagsFor(plan);
+                          flags[i] = flags[i] === false;
+                          setTextOnCut(flags);
+                          pushPreview(plan, flags);
+                        }}
+                        className={cn(
+                          "inline-flex h-7 w-7 items-center justify-center rounded-md border",
+                          textOnCut[i] !== false
+                            ? "border-amber-500/50 bg-amber-500/15 text-amber-700 dark:text-amber-300"
+                            : "border-border text-muted-foreground opacity-50",
+                        )}
+                      >
+                        <Type size={13} />
+                      </button>
                       <Button
                         type="button"
                         size="sm"
@@ -746,6 +967,49 @@ export function ClipCoachPanel({
                       </Button>
                     </div>
                   </div>
+                  {i < plan.segments.length - 1 ? (
+                    <div className="flex flex-wrap items-center gap-1 pl-7">
+                      <span className="mr-0.5 text-[10px] text-muted-foreground">
+                        Into next cut
+                      </span>
+                      {(
+                        [
+                          ["none", "Off"],
+                          ["flash", "Flash"],
+                          ["crossfade", "Fade"],
+                          ["cut", "Cut"],
+                        ] as const
+                      ).map(([type, label]) => {
+                        const selected =
+                          (cutTransitions[i] ||
+                            resolveCoachImpactPack(mode, result.creativeBrief.contentType)
+                              .junctionType) === type;
+                        return (
+                          <button
+                            key={type}
+                            type="button"
+                            disabled={busy}
+                            aria-pressed={selected}
+                            onClick={() => {
+                              setCutTransitions((prev) => {
+                                const next = [...prev];
+                                next[i] = type;
+                                return next;
+                              });
+                            }}
+                            className={cn(
+                              "h-6 rounded-full border px-2 text-[10px] font-medium",
+                              selected
+                                ? "border-primary bg-primary/15 text-foreground"
+                                : "border-border text-muted-foreground hover:text-foreground",
+                            )}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
                   <div className="flex items-center gap-2 pl-7">
                     <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
                       Start
@@ -778,7 +1042,7 @@ export function ClipCoachPanel({
               ))}
 
               {plan.hookOverlay?.trim() ? (
-                <li className="flex items-start gap-2 rounded-md border border-border bg-background/70 px-2 py-1.5">
+                <li className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5">
                   <button
                     type="button"
                     aria-pressed={checked.hook !== false}
@@ -802,8 +1066,8 @@ export function ClipCoachPanel({
                     ) : null}
                   </button>
                   <div className="min-w-0 flex-1 space-y-1">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                      Hook — top text on clip
+                    <p className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">
+                      Hook text — top of the clip
                     </p>
                     <input
                       className="w-full rounded border border-border bg-background px-2 py-1 text-xs font-medium"
@@ -821,7 +1085,7 @@ export function ClipCoachPanel({
               ) : null}
 
               {plan.contextOverlay?.trim() ? (
-                <li className="flex items-start gap-2 rounded-md border border-border bg-background/70 px-2 py-1.5">
+                <li className="flex items-start gap-2 rounded-md border border-sky-500/40 bg-sky-500/10 px-2 py-1.5">
                   <button
                     type="button"
                     aria-pressed={checked.context !== false}
@@ -845,8 +1109,8 @@ export function ClipCoachPanel({
                     ) : null}
                   </button>
                   <div className="min-w-0 flex-1 space-y-1">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                      Context — bottom text on clip
+                    <p className="text-[10px] font-semibold text-sky-700 dark:text-sky-300 uppercase tracking-wide">
+                      Context text — bottom of the clip
                     </p>
                     <input
                       className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
@@ -863,26 +1127,31 @@ export function ClipCoachPanel({
                 </li>
               ) : null}
 
-              {plan.duckBgm ? (
-                <li className="flex items-center gap-2 rounded-md border border-border bg-background/70 px-2 py-1.5">
-                  <button
-                    type="button"
-                    aria-pressed={checked.duck !== false}
-                    onClick={() => toggleCheck("duck")}
-                    className={cn(
-                      "flex h-5 w-5 shrink-0 items-center justify-center rounded border",
-                      checked.duck !== false
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border",
-                    )}
-                  >
-                    {checked.duck !== false ? (
-                      <Check size={12} strokeWidth={3} />
-                    ) : null}
-                  </button>
-                  <p className="text-xs">Lower music while people speak</p>
-                </li>
-              ) : null}
+              <li className="flex items-start gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-1.5">
+                <button
+                  type="button"
+                  aria-pressed={checked.duck !== false}
+                  onClick={() => toggleCheck("duck")}
+                  className={cn(
+                    "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border",
+                    checked.duck !== false
+                      ? "border-emerald-600 bg-emerald-600 text-white"
+                      : "border-emerald-600/40",
+                  )}
+                >
+                  {checked.duck !== false ? (
+                    <Check size={12} strokeWidth={3} />
+                  ) : null}
+                </button>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">
+                    Music ducking
+                  </p>
+                  <p className="text-xs leading-snug">
+                    Lower background music while people speak. Uncheck to keep the music at full volume.
+                  </p>
+                </div>
+              </li>
             </ul>
           </div>
 
@@ -946,25 +1215,6 @@ export function ClipCoachPanel({
                 Drag Hook/Context on the player to reposition. More caption tools: Polish → Captions.
                 Enhance is color/noise only.
               </p>
-              {(() => {
-                const tips = [
-                  ...result.creativeBrief.recommendations,
-                  ...result.editPlan.recommendations,
-                ].filter(Boolean);
-                if (!tips.length) return null;
-                return (
-                  <div className="pt-1">
-                    <p className="font-medium text-foreground mb-1">
-                      Coach tips (ideas — not auto-applied)
-                    </p>
-                    <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
-                      {tips.slice(0, 4).map((r, i) => (
-                        <li key={`tip-${i}`}>{r}</li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })()}
             </div>
           ) : null}
         </div>

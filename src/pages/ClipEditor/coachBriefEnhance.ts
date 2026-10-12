@@ -14,8 +14,10 @@ export function enhanceDefaultsFromBrief(
   contentType?: string | null,
   captionStyle?: string | null,
   recommendations?: string[] | null,
+  mode?: string | null,
 ): BriefEnhanceDefaults {
   const c = String(contentType || "other").toLowerCase();
+  const m = String(mode || "auto").toLowerCase();
   const rec = (recommendations || []).join(" ").toLowerCase();
   const wantsNoise =
     rec.includes("noise") ||
@@ -37,16 +39,26 @@ export function enhanceDefaultsFromBrief(
     rec.includes("face") ||
     rec.includes("speaker");
   const style =
-    captionStyle === "kinetic_hormozi" ||
-    c === "gameplay" ||
-    c === "reaction" ||
-    c === "high_energy"
-      ? "kinetic_hormozi"
-      : "clean_subtitle";
+    m === "professional" || m === "documentary" || m === "event_highlight"
+      ? "clean_subtitle"
+      : m === "viral_short" || m === "high_energy"
+        ? "kinetic_hormozi"
+        : captionStyle === "kinetic_hormozi" ||
+            c === "gameplay" ||
+            c === "reaction"
+          ? "kinetic_hormozi"
+          : "clean_subtitle";
 
   return {
-    noiseReduced: wantsNoise,
-    colorCorrection: wantsColor ? 35 : c === "professional" || c === "tutorial" ? 15 : 0,
+    noiseReduced: wantsNoise || m === "professional" || m === "documentary",
+    colorCorrection:
+      m === "professional" || m === "documentary"
+        ? 12
+        : wantsColor
+          ? 35
+          : c === "tutorial"
+            ? 15
+            : 0,
     cropMode: faceCrop ? "face" : "center",
     captionStyle: style,
   };
