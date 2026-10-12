@@ -44,6 +44,7 @@ import { setMixPreviewGains } from "./useMixAnalyser";
 import { composeSocialCaption } from "./composeSocialCaption";
 import { ComposeTimelinePanel } from "./ComposeTimelinePanel";
 import { ClipCoachPanel, type CoachPreviewPayload } from './ClipCoachPanel';
+import { SoundDesignPanel } from './SoundDesignPanel';
 import { TransitionPreviewOverlay } from "./TransitionPreviewOverlay";
 import { ClipPublishPreview } from "./ClipPublishPreview";
 import {
@@ -52,7 +53,11 @@ import {
   toClipRelativeTime,
   transitionsFromCoachBeats,
 } from "./clipEnhanceCoach";
-import { resolveCoachImpactPack, transitionsFromCoachSegments } from "./coachImpactPlan";
+import {
+  resolveCoachImpactPack,
+  sanitizeCreatorContext,
+  transitionsFromCoachSegments,
+} from "./coachImpactPlan";
 import { enhanceDefaultsFromBrief } from "./coachBriefEnhance";
 import {
   beatPurpose,
@@ -282,15 +287,22 @@ export default function ClipEditor() {
   const [enhanceShowOriginal, setEnhanceShowOriginal] = useState(false);
   const [transitionSuggestions, setTransitionSuggestions] = useState<{ time: number; type: string; caption?: string; sfx?: string }[]>([]);
   const [appliedTransitions, setAppliedTransitions] = useState<{ time: number; type: string; caption?: string; sfx?: string }[]>([]);
-  const [transitionPreviewType, setTransitionPreviewType] = useState<string | null>(null);
+  const [transitionPreview, setTransitionPreview] = useState<{
+    type: string;
+    caption?: string;
+    sfx?: string;
+  } | null>(null);
   const [isGeneratingTransitions, setIsGeneratingTransitions] = useState(false);
   const [publishPreviewOpen, setPublishPreviewOpen] = useState(false);
   const transitionPreviewTimerRef = useRef<number | null>(null);
+  const transitionFiredKeysRef = useRef<Set<string>>(new Set());
+  const transitionPreviewActiveRef = useRef(false);
   useEffect(() => {
     return () => {
       if (transitionPreviewTimerRef.current) {
         window.clearTimeout(transitionPreviewTimerRef.current);
       }
+      transitionFiredKeysRef.current.clear();
     };
   }, []);
 
@@ -460,7 +472,7 @@ export default function ClipEditor() {
             if (userUpload && weekPlanBrief) {
               setPrompt("");
             } else if (storedContext) {
-              setPrompt(storedContext);
+              setPrompt(sanitizeCreatorContext(storedContext));
             }
           }
           const extras = (spec as { extras?: Record<string, unknown> }).extras;
@@ -789,7 +801,8 @@ export default function ClipEditor() {
     const master = isMasterMuted ? 0 : masterVolume;
     const clip = isClipMuted ? 0 : clipVolume;
     const music = isMusicMuted ? 0 : musicVolume;
-    const musicOn = Boolean(selectedTrackId) && step === "polish";
+    // Allow Coach BGM on Trim as well as Polish so Analyze preview is audible.
+    const musicOn = Boolean(selectedTrackId);
     const usedGraph = setMixPreviewGains({ master, clip, music, musicOn });
     const el = videoRef.current;
     const bgm = mixBgmRef.current;
@@ -816,8 +829,74 @@ export default function ClipEditor() {
     musicVolume,
     isMusicMuted,
     selectedTrackId,
-    step,
   ]);
+
+  /** Coach: play one keep-range so the user can audition that cut. */
+  const previewCoachSegment = useCallback(
+    (startSec: number, endSec: number) => {
+      const el = videoRef.current;
+      if (!el) return;
+      const start = Math.max(0, Math.min(DURATION, startSec));
+      const end = Math.max(start + 0.35, Math.min(DURATION, endSec));
+      el.currentTime = start;
+      setCurrentTime(start);
+      const onTime = () => {
+        if (el.currentTime >= end - 0.05) {
+          el.pause();
+          setIsPlaying(false);
+          mixBgmRef.current?.pause();
+          el.removeEventListener("timeupdate", onTime);
+        }
+      };
+      el.removeEventListener("timeupdate", onTime);
+      el.addEventListener("timeupdate", onTime);
+      applyPreviewMix();
+      void el
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+          const bgm = mixBgmRef.current;
+          const track = TRACKS.find((t) => t.id === selectedTrackId);
+          if (bgm && track && selectedTrackId) {
+            if (mixBgmTrackIdRef.current !== selectedTrackId) {
+              bgm.src = track.url;
+              mixBgmTrackIdRef.current = selectedTrackId;
+              bgm.currentTime = 0;
+            }
+            void bgm.play().catch(() => {});
+          }
+        })
+        .catch(() => setIsPlaying(false));
+    },
+    [DURATION, applyPreviewMix, selectedTrackId],
+  );
+
+  /** Coach: audition selected BGM under the current clip window. */
+  const previewCoachBgm = useCallback(() => {
+    const track = TRACKS.find((t) => t.id === selectedTrackId);
+    const bgm = mixBgmRef.current;
+    if (!selectedTrackId || !track || !bgm) {
+      toast.message("No BGM selected yet — run Analyze first");
+      return;
+    }
+    if (mixBgmTrackIdRef.current !== selectedTrackId) {
+      bgm.src = track.url;
+      mixBgmTrackIdRef.current = selectedTrackId;
+      bgm.currentTime = 0;
+    }
+    applyPreviewMix();
+    void bgm.play().catch(() => {});
+    const el = videoRef.current;
+    if (el && el.paused) {
+      void el
+        .play()
+        .then(() => setIsPlaying(true))
+        .catch(() => {});
+    }
+    toast.message(`Playing ${track.title}`, {
+      description: "BGM under your clip. Cut SFX only appear after Render.",
+    });
+  }, [selectedTrackId, applyPreviewMix]);
 
   const togglePlayback = useCallback(async () => {
     const el = videoRef.current;
@@ -847,7 +926,7 @@ export default function ClipEditor() {
         setIsPlaying(true);
         const bgm = mixBgmRef.current;
         const track = TRACKS.find((t) => t.id === selectedTrackId);
-        if (bgm && track && step === "polish" && selectedTrackId) {
+        if (bgm && track && selectedTrackId) {
           if (mixBgmTrackIdRef.current !== selectedTrackId) {
             bgm.src = track.url;
             mixBgmTrackIdRef.current = selectedTrackId;
@@ -879,7 +958,6 @@ export default function ClipEditor() {
     trimEnd,
     finalTrim,
     selectedTrackId,
-    step,
     isMasterMuted,
     isClipMuted,
     isMusicMuted,
@@ -1279,12 +1357,6 @@ export default function ClipEditor() {
   };
 
   useEffect(() => {
-    if (step !== "polish") {
-      mixBgmRef.current?.pause();
-    }
-  }, [step]);
-
-  useEffect(() => {
     const bgm = mixBgmRef.current;
     const track = TRACKS.find((t) => t.id === selectedTrackId);
     if (!selectedTrackId || !track) {
@@ -1300,10 +1372,10 @@ export default function ClipEditor() {
     }
     applyPreviewMix();
     const video = videoRef.current;
-    if (video && !video.paused && step === "polish") {
+    if (video && !video.paused) {
       void bgm.play().catch(() => {});
     }
-  }, [selectedTrackId, clearMixBgm, applyPreviewMix, step]);
+  }, [selectedTrackId, clearMixBgm, applyPreviewMix]);
 
   const generateAITitle = async () => {
     setIsGeneratingTitle(true);
@@ -1994,24 +2066,70 @@ export default function ClipEditor() {
   const enhanceClipWindow = polishWindow(finalTrim, trimStart, trimEnd);
   const coachBeat = pickCoachTransition(transitionSuggestions);
 
+  const showTransitionFlash = useCallback(
+    (s: { type: string; caption?: string; sfx?: string }, holdMs = 1100) => {
+      transitionPreviewActiveRef.current = true;
+      setTransitionPreview({
+        type: s.type,
+        caption: s.caption,
+        sfx: s.sfx,
+      });
+      if (transitionPreviewTimerRef.current) {
+        window.clearTimeout(transitionPreviewTimerRef.current);
+      }
+      transitionPreviewTimerRef.current = window.setTimeout(() => {
+        setTransitionPreview(null);
+        transitionPreviewActiveRef.current = false;
+        transitionPreviewTimerRef.current = null;
+      }, holdMs);
+    },
+    [],
+  );
+
   const applyTransitionPreview = (s: { time: number; type: string; caption?: string; sfx?: string }) => {
-    const abs = Math.min(enhanceClipWindow.end - 0.05, enhanceClipWindow.start + Math.max(0, s.time));
-    seekVideo(abs);
-    setTransitionPreviewType(s.type);
+    const abs = Math.min(
+      enhanceClipWindow.end - 0.05,
+      enhanceClipWindow.start + Math.max(0, s.time),
+    );
     setAppliedTransitions((prev) => {
-      const next = prev.filter((p) => !(p.time === s.time && p.type === s.type));
+      const next = prev.filter((p) => !(Math.abs(p.time - s.time) < 0.05 && p.type === s.type));
       return [...next, s];
     });
-    if (transitionPreviewTimerRef.current) {
-      window.clearTimeout(transitionPreviewTimerRef.current);
-    }
-    transitionPreviewTimerRef.current = window.setTimeout(() => {
-      setTransitionPreviewType(null);
-      transitionPreviewTimerRef.current = null;
-    }, 850);
     const el = videoRef.current;
-    if (el?.paused) {
-      void togglePlayback();
+    let flashed = false;
+    const runFlash = () => {
+      if (flashed) return;
+      flashed = true;
+      showTransitionFlash(s, 1200);
+      if (el?.paused) {
+        void el.play().then(() => setIsPlaying(true)).catch(() => {});
+        const bgm = mixBgmRef.current;
+        const track = TRACKS.find((t) => t.id === selectedTrackId);
+        if (bgm && track && selectedTrackId) {
+          if (mixBgmTrackIdRef.current !== selectedTrackId) {
+            bgm.src = track.url;
+            mixBgmTrackIdRef.current = selectedTrackId;
+          }
+          applyPreviewMix();
+          void bgm.play().catch(() => {});
+        }
+      }
+    };
+    if (el) {
+      const onSeeked = () => {
+        el.removeEventListener("seeked", onSeeked);
+        runFlash();
+      };
+      el.addEventListener("seeked", onSeeked);
+      el.currentTime = abs;
+      setCurrentTime(abs);
+      window.setTimeout(() => {
+        el.removeEventListener("seeked", onSeeked);
+        runFlash();
+      }, 200);
+    } else {
+      seekVideo(abs);
+      runFlash();
     }
     toast.success(
       t("clip_editor.polish.enhance.transition_preview", {
@@ -2021,7 +2139,8 @@ export default function ClipEditor() {
       }),
       {
         description: t("clip_editor.polish.enhance.transition_preview_note", {
-          defaultValue: "Preview is live on the 9:16 player. Burn-in in the export is coming next.",
+          defaultValue:
+            "Flash on the 9:16 player now. Cut SFX/transitions burn into the MP4 on Render.",
         }),
       },
     );
@@ -2113,7 +2232,7 @@ export default function ClipEditor() {
               <ClipCoachPanel
                 id={id}
                 context={prompt}
-                onContext={setPrompt}
+                onContext={(v) => setPrompt(sanitizeCreatorContext(v))}
                 duration={DURATION}
                 layout="sidebar"
                 captionFontId={captionFontId}
@@ -2160,7 +2279,12 @@ export default function ClipEditor() {
                   }
                   setCropMode(enhance.cropMode);
                   setMemeCaptionStyle(enhance.captionStyle);
-                  const fromSegs = transitionsFromCoachSegments(r.editPlan.segments, pack);
+                  const fromSegs = transitionsFromCoachSegments(
+                    r.editPlan.segments,
+                    pack,
+                    trimStart,
+                    trimEnd,
+                  );
                   const fromBeats = transitionsFromCoachBeats(
                     r.creativeBrief.moments,
                     trimStart,
@@ -2235,7 +2359,12 @@ export default function ClipEditor() {
                     coachMeta?.contentType,
                   );
                   setSelectedTrackId(appliedPack.bgmTrackId);
-                  const junctionFx = transitionsFromCoachSegments(segs, appliedPack);
+                  const junctionFx = transitionsFromCoachSegments(
+                    segs,
+                    appliedPack,
+                    Math.min(...segs.map((s) => s.start)),
+                    Math.max(...segs.map((s) => s.end)),
+                  );
                   if (junctionFx.length) {
                     setTransitionSuggestions(junctionFx);
                     setAppliedTransitions(junctionFx);
@@ -2250,7 +2379,16 @@ export default function ClipEditor() {
                   });
                 }}
                 seek={seekVideo}
+                previewSegment={previewCoachSegment}
+                previewBgm={previewCoachBgm}
               />
+              <div className="mt-4">
+                <SoundDesignPanel
+                  contentId={id}
+                  durationSec={DURATION}
+                  creatorContext={prompt}
+                />
+              </div>
             </aside>
           ) : null}
 
@@ -3004,6 +3142,17 @@ export default function ClipEditor() {
               />
             )}
 
+            {composeEnabled && id ? (
+              <div className="mt-2">
+                <SoundDesignPanel
+                  contentId={id}
+                  durationSec={DURATION}
+                  creatorContext={prompt}
+                  storyEngine
+                />
+              </div>
+            ) : null}
+
             <div className="grid lg:grid-cols-3 gap-6 lg:gap-8 pb-32 md:pb-0">
               {/* Preview Column */}
               <div className="lg:col-span-2 space-y-4 md:space-y-6">
@@ -3033,15 +3182,30 @@ export default function ClipEditor() {
                       const end = finalTrim?.end ?? trimEnd;
                       const tNow = e.currentTarget.currentTime;
                       setCurrentTime(tNow);
+                      // Fire applied Enhance transitions when the playhead crosses them.
+                      if (!transitionPreviewActiveRef.current && appliedTransitions.length) {
+                        const rel = tNow - start;
+                        for (const tr of appliedTransitions) {
+                          const key = `${tr.type}@${tr.time.toFixed(2)}`;
+                          if (transitionFiredKeysRef.current.has(key)) continue;
+                          if (Math.abs(rel - tr.time) <= 0.18) {
+                            transitionFiredKeysRef.current.add(key);
+                            showTransitionFlash(tr, 900);
+                            break;
+                          }
+                        }
+                      }
                       if (tNow >= end - 0.05) {
                         e.currentTarget.currentTime = start;
                         setCurrentTime(start);
+                        transitionFiredKeysRef.current.clear();
                         if (mixBgmRef.current) mixBgmRef.current.currentTime = 0;
                       }
                     }}
                     onPlay={() => {
                       setIsPlaying(true);
                       setPreviewingTrackId(null);
+                      transitionFiredKeysRef.current.clear();
                     }}
                     onPause={() => {
                       setIsPlaying(false);
@@ -3055,7 +3219,11 @@ export default function ClipEditor() {
                   </div>
                 )}
 
-                <TransitionPreviewOverlay type={transitionPreviewType} />
+                <TransitionPreviewOverlay
+                  type={transitionPreview?.type ?? null}
+                  caption={transitionPreview?.caption}
+                  sfx={transitionPreview?.sfx}
+                />
 
                 <div
                   className="absolute inset-0 z-10 cursor-pointer"
@@ -4173,9 +4341,15 @@ export default function ClipEditor() {
                                     className="px-2 text-[9px] font-bold text-primary hover:bg-primary/10"
                                     onClick={() => applyTransitionPreview(s)}
                                   >
-                                    {appliedTransitions.some((p) => p.time === s.time && p.type === s.type)
-                                      ? t("clip_editor.polish.enhance.applied_btn", { defaultValue: "Replay" })
-                                      : t("clip_editor.polish.enhance.apply_btn")}
+                                    {appliedTransitions.some(
+                                      (p) => Math.abs(p.time - s.time) < 0.05 && p.type === s.type,
+                                    )
+                                      ? t("clip_editor.polish.enhance.applied_btn", {
+                                          defaultValue: "Replay on clip",
+                                        })
+                                      : t("clip_editor.polish.enhance.apply_btn", {
+                                          defaultValue: "Preview on clip",
+                                        })}
                                   </Button>
                                 </div>
                               ))}

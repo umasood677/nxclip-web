@@ -1526,6 +1526,127 @@ export const contentApi = {
   analyzeClipCoach: async (id: string, body: { creatorContext?: string; mode?: CoachMode; durationSec: number }): Promise<ClipCoachResult> => performApiRequest(`/content/${id}/clip-coach`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), suppressErrorLog: true }),
   applyClipCoach: async (id: string, apply: boolean, captionsReviewed = false, options?: { plan: Pick<ClipCoachResult['editPlan'], 'segments' | 'hookOverlay' | 'captionStyle' | 'duckBgm' | 'contextOverlay' | 'captionEmphasis'>; expectedContext: string; expectedMode: CoachMode }): Promise<ContentDto> => performApiRequest(`/content/${id}/clip-coach/${apply ? 'apply' : 'original'}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ captionsReviewed, ...options, ...(options ? { plan: { segments: options.plan.segments, hookOverlay: options.plan.hookOverlay, captionStyle: options.plan.captionStyle, duckBgm: options.plan.duckBgm, contextOverlay: options.plan.contextOverlay, captionEmphasis: options.plan.captionEmphasis } } : {}) }) }),
 
+  analyzeSoundDesign: async (
+    id: string,
+    body: {
+      creatorContext?: string;
+      mode?: string;
+      durationSec: number;
+    },
+  ): Promise<{
+    provider: string;
+    recommendation?: {
+      summary: string;
+      bullets: string[];
+      suggestedMode?: string;
+      commentaryRecommended?: boolean;
+      lightTouchOnly?: boolean;
+    };
+    visualEvents?: unknown[];
+    soundDesign?: unknown;
+  }> =>
+    performApiRequest(`/content/${id}/sound-design/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      suppressErrorLog: true,
+    }),
+
+  planSoundDesign: async (
+    id: string,
+    body: {
+      creatorContext?: string;
+      mode?: string;
+      components?: Record<string, boolean>;
+      durationSec: number;
+    },
+  ): Promise<{
+    provider: string;
+    audioStoryPlan?: {
+      foleyEvents?: Array<{ enabled?: boolean }>;
+      commentary?: { segments?: unknown[] };
+    };
+    audioEdl?: unknown[];
+    soundDesign?: unknown;
+  }> =>
+    performApiRequest(`/content/${id}/sound-design/plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      suppressErrorLog: true,
+    }),
+
+  applySoundDesign: async (
+    id: string,
+    body: {
+      mode?: string;
+      components?: Record<string, boolean>;
+      audioStoryPlan?: unknown;
+      audioEdl?: unknown[];
+    },
+  ): Promise<{ soundDesign?: unknown }> =>
+    performApiRequest(`/content/${id}/sound-design/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+
+  patchSoundDesignEdl: async (
+    id: string,
+    body: { audioEdl: unknown[]; durationMs: number },
+  ): Promise<{ soundDesign?: unknown }> =>
+    performApiRequest(`/content/${id}/sound-design/edl`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+
+  synthesizeSoundDesign: async (
+    id: string,
+    body?: { segmentIds?: string[]; durationSec?: number },
+  ): Promise<{
+    provider: string;
+    synthesized: number;
+    failed: number;
+    audioEdl?: unknown[];
+    soundDesign?: unknown;
+  }> =>
+    performApiRequest(`/content/${id}/sound-design/synthesize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body ?? {}),
+      suppressErrorLog: true,
+    }),
+
+  reimagineSoundDesign: async (
+    id: string,
+    body: { presetId: string; durationSec: number; creatorContext?: string },
+  ): Promise<{
+    preset?: { id: string; name: string };
+    provider?: string;
+    audioStoryPlan?: {
+      foleyEvents?: Array<{ enabled?: boolean }>;
+      commentary?: { segments?: Array<{ text?: string }> };
+    };
+    audioEdl?: Array<{
+      id: string;
+      type: string;
+      startMs: number;
+      endMs?: number;
+      gainDb?: number;
+      enabled?: boolean;
+      metadata?: { text?: string };
+    }>;
+    soundDesign?: unknown;
+    synthesize?: { provider?: string; synthesized?: number; failed?: number };
+  }> =>
+    performApiRequest(`/content/${id}/sound-design/reimagine`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      suppressErrorLog: true,
+    }),
+
   animateAsClip: async (
     id: string,
     body?: {

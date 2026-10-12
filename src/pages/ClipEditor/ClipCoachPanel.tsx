@@ -4,22 +4,33 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Info,
   Loader2,
   Play,
   Sparkles,
+  Volume2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { contentApi } from "../../services/apiClient";
 import { Button } from "../../components/ui/button";
 import { Textarea } from "../../components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../../components/ui/tooltip";
 import { cn } from "../../lib/utils";
 import {
   CLIP_CAPTION_FONTS,
   type ClipCaptionFontId,
 } from "../../lib/clipCaptionFonts";
 import { waitForClipTranscript } from "./clipPolishPrep";
-import { resolveCoachImpactPack } from "./coachImpactPlan";
-import { partitionRecommendations } from "./coachBriefEnhance";
+import {
+  coachBgmTitle,
+  resolveCoachImpactPack,
+  sanitizeCreatorContext,
+} from "./coachImpactPlan";
 
 export type CoachMode =
   | "auto"
@@ -92,6 +103,8 @@ export function ClipCoachPanel({
   onPreview,
   onApplied,
   seek,
+  previewSegment,
+  previewBgm,
   layout = "stack",
   captionFontId,
   onCaptionFontId,
@@ -110,6 +123,10 @@ export function ClipCoachPanel({
   /** After Apply — parent should sync trim + overlays on the player. */
   onApplied?: (plan: ClipCoachResult["editPlan"]) => void;
   seek: (time: number) => void;
+  /** Play only this keep-range on the player so the user can hear/see that cut. */
+  previewSegment?: (startSec: number, endSec: number) => void;
+  /** Audition the Coach-selected BGM under the current clip. */
+  previewBgm?: () => void;
   /** sidebar = sits beside the clip player (sticky pane). */
   layout?: "stack" | "sidebar";
   captionFontId?: ClipCaptionFontId;
@@ -385,9 +402,31 @@ export function ClipCoachPanel({
             <BrainCircuit size={16} />
           </div>
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold leading-tight">AI Coach</h2>
+            <div className="flex items-center gap-1.5">
+              <h2 className="text-sm font-semibold leading-tight">AI Coach</h2>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
+                      aria-label="How AI Coach works"
+                    >
+                      <Info size={13} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[260px] text-[11px] leading-relaxed py-2.5">
+                    Analyze picks keep-ranges (the story), background music (BGM),
+                    cut sound effects (SFX), caption style, and Hook/Context text.
+                    Preview shows text + plays BGM with the clip. Apply locks the
+                    plan; Render stitches cuts with transitions/SFX into the MP4.
+                    Your original file stays untouched until Render.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <p className="text-[11px] text-muted-foreground leading-snug">
-              Cuts, BGM, transitions, captions
+              Cuts, music, transitions, captions
             </p>
           </div>
         </div>
@@ -416,25 +455,11 @@ export function ClipCoachPanel({
           value={context}
           maxLength={500}
           disabled={busy}
-          onChange={(e) => onContext(e.target.value.slice(0, 500))}
+          onChange={(e) => onContext(sanitizeCreatorContext(e.target.value).slice(0, 500))}
           className={cn("text-sm", sidebar ? "min-h-[3.25rem]" : "min-h-[4.5rem]")}
           placeholder="e.g. AWS Summit cloud gaming demo — focus on her reaction"
         />
-        <p className="text-[10px] text-muted-foreground">
-          Optional. Shared with Scan, Smart Trim, hooks, hashtags, and transitions.
-        </p>
       </div>
-
-      <p className="text-[10px] text-muted-foreground leading-relaxed rounded-md bg-muted/30 px-2.5 py-2">
-        <span className="font-semibold text-foreground">How it works: </span>
-        Analyze picks the <span className="font-medium text-foreground">strongest keep-ranges</span>{" "}
-        (the “story”), a mode-based <span className="font-medium text-foreground">BGM + ducking</span>,{" "}
-        <span className="font-medium text-foreground">junction transitions / SFX</span>, caption style,
-        and Hook/Context text. Preview applies BGM + text immediately.{" "}
-        <span className="font-medium text-foreground">Apply</span> locks the cut plan;{" "}
-        <span className="font-medium text-foreground">Render</span> stitches moments with impact
-        transitions and burns audio/text into the MP4. The raw file stays untouched until Render.
-      </p>
 
       <Button
         className="w-full font-bold gap-2"
@@ -487,22 +512,53 @@ export function ClipCoachPanel({
             </p>
             <p className="text-[11px] text-muted-foreground">
               {duration.toFixed(0)}s source → ~{proposedSec.toFixed(0)}s after Render
-              {applied ? " · plan locked" : " · BGM + text preview on the clip"}
+              {applied ? " · plan locked" : " · preview on the player"}
             </p>
             {(() => {
               const impact = resolveCoachImpactPack(
                 result.creativeBrief.mode,
                 result.creativeBrief.contentType,
               );
+              const bgmName = coachBgmTitle(impact.bgmTrackId);
               return (
-                <p className="text-[11px] text-foreground/80 pt-0.5">
-                  Impact pack: <span className="font-semibold">{impact.label}</span>
-                  {" · "}
-                  {impact.junctionType} + SFX
-                  {" · "}
-                  BGM track {impact.bgmTrackId}
-                  {impact.duckBgm ? " · duck under speech" : ""}
-                </p>
+                <div className="pt-1.5 space-y-1.5">
+                  <p className="text-[11px] font-semibold text-foreground">
+                    {impact.label}
+                  </p>
+                  <ul className="text-[10px] text-muted-foreground space-y-0.5">
+                    <li>
+                      <span className="font-medium text-foreground/80">BGM</span>
+                      {" — "}
+                      background music: {bgmName}
+                      {" (plays with the clip now; change later in Polish → Audio)"}
+                    </li>
+                    <li>
+                      <span className="font-medium text-foreground/80">SFX</span>
+                      {" — "}
+                      short cut sound ({impact.junctionSfx}) between keep-ranges on{" "}
+                      <span className="font-medium text-foreground/80">Render</span>
+                      {" — not in live preview"}
+                    </li>
+                    <li>
+                      <span className="font-medium text-foreground/80">Transition</span>
+                      {" — "}
+                      {impact.junctionType} between cuts on Render
+                      {impact.duckBgm ? " · music ducks under speech" : ""}
+                    </li>
+                  </ul>
+                  {previewBgm ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-[10px] gap-1 mt-1"
+                      onClick={() => previewBgm()}
+                    >
+                      <Volume2 size={12} />
+                      Preview BGM ({bgmName})
+                    </Button>
+                  ) : null}
+                </div>
               );
             })()}
           </div>
@@ -566,13 +622,23 @@ export function ClipCoachPanel({
                           },
                         });
                         if (index > 0) {
+                          const base = sanitizeCreatorContext(context).replace(
+                            /\.\s*Focus:\s*[^.]*$/i,
+                            "",
+                          );
                           onContext(
-                            [context.trim(), `Focus: ${opt.title}`]
-                              .filter(Boolean)
-                              .join(". ")
-                              .slice(0, 500),
+                            sanitizeCreatorContext(
+                              `${base}${base ? ". " : ""}Focus: ${opt.title}`,
+                            ),
                           );
                           toast.message("Focus updated — tap Re-analyze");
+                        } else {
+                          onContext(
+                            sanitizeCreatorContext(context).replace(
+                              /\.\s*Focus:\s*[^.]*$/i,
+                              "",
+                            ),
+                          );
                         }
                       }}
                       className={cn(
@@ -600,9 +666,11 @@ export function ClipCoachPanel({
           ) : null}
 
           <div className="space-y-1">
-            <p className="text-[11px] font-semibold">What will change</p>
+            <p className="text-[11px] font-semibold">Edit checklist</p>
             <p className="text-[10px] text-muted-foreground mb-1">
-              Uncheck items to skip. Preview jumps the player to that moment; text shows on the clip.
+              These ranges are kept and stitched on Render (order shown). Uncheck to skip.
+              Use <span className="font-medium text-foreground/80">Preview cut</span> to play
+              just that moment on the player.
             </p>
             <ul className="space-y-1.5">
               {plan.segments.map((s, i) => (
@@ -663,13 +731,18 @@ export function ClipCoachPanel({
                         size="sm"
                         variant="ghost"
                         className="h-7 px-2 text-[10px] gap-1"
+                        title="Play only this keep-range on the player"
                         onClick={() => {
-                          seek(s.start);
                           pushPreview(plan);
+                          if (previewSegment) {
+                            previewSegment(s.start, s.end);
+                          } else {
+                            seek(s.start);
+                          }
                         }}
                       >
                         <Play size={12} />
-                        Jump
+                        Preview cut
                       </Button>
                     </div>
                   </div>
@@ -728,13 +801,21 @@ export function ClipCoachPanel({
                       <Check size={12} strokeWidth={3} />
                     ) : null}
                   </button>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 space-y-1">
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
                       Hook — top text on clip
                     </p>
-                    <p className="text-xs font-medium leading-snug break-words">
-                      {plan.hookOverlay}
-                    </p>
+                    <input
+                      className="w-full rounded border border-border bg-background px-2 py-1 text-xs font-medium"
+                      maxLength={120}
+                      value={plan.hookOverlay}
+                      disabled={busy || checked.hook === false}
+                      onChange={(e) => {
+                        const next = { ...plan, hookOverlay: e.target.value };
+                        setDraftPlan(next);
+                        pushPreview(next);
+                      }}
+                    />
                   </div>
                 </li>
               ) : null}
@@ -763,11 +844,21 @@ export function ClipCoachPanel({
                       <Check size={12} strokeWidth={3} />
                     ) : null}
                   </button>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 space-y-1">
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
                       Context — bottom text on clip
                     </p>
-                    <p className="text-xs leading-snug break-words">{plan.contextOverlay}</p>
+                    <input
+                      className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
+                      maxLength={120}
+                      value={plan.contextOverlay || ""}
+                      disabled={busy || checked.context === false}
+                      onChange={(e) => {
+                        const next = { ...plan, contextOverlay: e.target.value };
+                        setDraftPlan(next);
+                        pushPreview(next);
+                      }}
+                    />
                   </div>
                 </li>
               ) : null}
@@ -851,69 +942,26 @@ export function ClipCoachPanel({
 
           {showAdvanced ? (
             <div className="space-y-2 rounded-md border border-border p-3 text-xs">
-              <label className="block space-y-1">
-                <span className="text-muted-foreground">Hook text (top of clip)</span>
-                <input
-                  className="w-full rounded border border-border bg-background p-2"
-                  maxLength={120}
-                  value={plan.hookOverlay}
-                  onChange={(e) => {
-                    const next = { ...plan, hookOverlay: e.target.value };
-                    setDraftPlan(next);
-                    pushPreview(next);
-                  }}
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-muted-foreground">Context line (bottom of clip)</span>
-                <input
-                  className="w-full rounded border border-border bg-background p-2"
-                  maxLength={120}
-                  value={plan.contextOverlay || ""}
-                  onChange={(e) => {
-                    const next = { ...plan, contextOverlay: e.target.value };
-                    setDraftPlan(next);
-                    pushPreview(next);
-                  }}
-                />
-              </label>
-              <p className="text-[10px] text-muted-foreground">
-                Drag text on the player to move it. Full caption tools also live under Polish → Captions
-                (Enhance is color/noise — not text).
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Drag Hook/Context on the player to reposition. More caption tools: Polish → Captions.
+                Enhance is color/noise only.
               </p>
               {(() => {
-                const all = [
+                const tips = [
                   ...result.creativeBrief.recommendations,
                   ...result.editPlan.recommendations,
-                ];
-                if (!all.length) return null;
-                const { appliedHints, suggestionOnly } = partitionRecommendations(all);
+                ].filter(Boolean);
+                if (!tips.length) return null;
                 return (
-                  <div className="pt-1 space-y-2">
-                    {appliedHints.length ? (
-                      <div>
-                        <p className="text-muted-foreground mb-1">
-                          Applied from brief (BGM, duck, noise/color, crop, captions)
-                        </p>
-                        <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
-                          {appliedHints.slice(0, 3).map((r, i) => (
-                            <li key={`a-${i}`}>{r}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
-                    {suggestionOnly.length ? (
-                      <div>
-                        <p className="text-muted-foreground mb-1">
-                          Suggestions only (punch-ins / tracked reframe not auto-applied)
-                        </p>
-                        <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
-                          {suggestionOnly.slice(0, 3).map((r, i) => (
-                            <li key={`s-${i}`}>{r}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
+                  <div className="pt-1">
+                    <p className="font-medium text-foreground mb-1">
+                      Coach tips (ideas — not auto-applied)
+                    </p>
+                    <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                      {tips.slice(0, 4).map((r, i) => (
+                        <li key={`tip-${i}`}>{r}</li>
+                      ))}
+                    </ul>
                   </div>
                 );
               })()}

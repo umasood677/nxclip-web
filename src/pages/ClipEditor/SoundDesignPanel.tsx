@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { contentApi } from "../../services/apiClient";
 import { Button } from "../../components/ui/button";
 import { cn } from "../../lib/utils";
+import { ReimaginePresets } from "./ReimaginePresets";
+import { AudioTimelineEditor, type TimelineEdlItem } from "./AudioTimelineEditor";
 
 export type SoundDesignMode =
   | "auto"
@@ -44,11 +46,52 @@ const DEFAULT_COMPONENTS: SoundDesignComponents = {
   preserveImportantOriginalAudio: true,
 };
 
+/** Production credit estimates (mirrors ai-service SOUND_DESIGN metering). */
+function estimateCredits(opts: {
+  analyze: boolean;
+  plan: boolean;
+  commentaryOn: boolean;
+  durationSec: number;
+  premiumVoice?: boolean;
+}): { label: string; credits: number } {
+  let credits = 0;
+  if (opts.analyze) credits += 1;
+  if (opts.plan) credits += 2;
+  if (opts.commentaryOn) {
+    const chars = Math.min(1200, Math.round(opts.durationSec * 12));
+    credits += Math.max(1, Math.ceil(chars / 400)) * (opts.premiumVoice ? 3 : 1);
+  }
+  return {
+    credits,
+    label: opts.premiumVoice ? "Premium voice (ElevenLabs)" : "Standard voice (Google TTS)",
+  };
+}
+
+function toTimelineItems(edl: unknown[]): TimelineEdlItem[] {
+  return (edl || [])
+    .map((raw) => {
+      const it = raw as Partial<TimelineEdlItem>;
+      if (!it?.id || !it.type || typeof it.startMs !== "number") return null;
+      return {
+        id: String(it.id),
+        type: it.type as TimelineEdlItem["type"],
+        startMs: it.startMs,
+        endMs: typeof it.endMs === "number" ? it.endMs : undefined,
+        gainDb: typeof it.gainDb === "number" ? it.gainDb : 0,
+        enabled: it.enabled !== false,
+        metadata: it.metadata,
+      };
+    })
+    .filter(Boolean) as TimelineEdlItem[];
+}
+
 type Props = {
   contentId: string | null;
   durationSec: number;
   creatorContext: string;
   disabled?: boolean;
+  /** Story Engine compose drafts share the same Sound Engine. */
+  storyEngine?: boolean;
   onApplied?: () => void;
 };
 
@@ -57,11 +100,14 @@ export function SoundDesignPanel({
   durationSec,
   creatorContext,
   disabled,
+  storyEngine,
   onApplied,
 }: Props) {
   const [mode, setMode] = useState<SoundDesignMode>("auto");
   const [components, setComponents] = useState<SoundDesignComponents>(DEFAULT_COMPONENTS);
-  const [busy, setBusy] = useState<"analyze" | "plan" | null>(null);
+  const [busy, setBusy] = useState<"analyze" | "plan" | "tts" | "reimagine" | "edl" | null>(null);
+  const [ttsInfo, setTtsInfo] = useState<string | null>(null);
+  const [premiumVoice, setPremiumVoice] = useState(false);
   const [recommendation, setRecommendation] = useState<{
     summary: string;
     bullets: string[];
@@ -69,7 +115,8 @@ export function SoundDesignPanel({
     lightTouchOnly?: boolean;
   } | null>(null);
   const [planSummary, setPlanSummary] = useState<string | null>(null);
-  const [edlCount, setEdlCount] = useState(0);
+  const [timeline, setTimeline] = useState<TimelineEdlItem[]>([]);
+  const [lastPreset, setLastPreset] = useState<string | null>(null);
 
   const layers = useMemo(() => {
     const rows: Array<{ id: string; label: string; on: boolean }> = [
@@ -81,6 +128,18 @@ export function SoundDesignPanel({
     ];
     return rows;
   }, [components]);
+
+  const creditPreview = useMemo(
+    () =>
+      estimateCredits({
+        analyze: true,
+        plan: true,
+        commentaryOn: components.aiCommentary,
+        durationSec: Math.max(0.5, durationSec),
+        premiumVoice,
+      }),
+    [components.aiCommentary, durationSec, premiumVoice],
+  );
 
   const toggle = (key: keyof SoundDesignComponents) => {
     setComponents((c) => ({ ...c, [key]: !c[key] }));
@@ -110,6 +169,22 @@ export function SoundDesignPanel({
     }
   };
 
+  const applyEdlLocal = async (items: TimelineEdlItem[]) => {
+    setTimeline(items);
+    if (!contentId) return;
+    setBusy("edl");
+    try {
+      await contentApi.patchSoundDesignEdl(contentId, {
+        audioEdl: items,
+        durationMs: Math.max(1000, Math.round(durationSec * 1000)),
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save timeline edits");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const planAndApply = async () => {
     if (!contentId) return;
     setBusy("plan");
@@ -122,9 +197,36 @@ export function SoundDesignPanel({
       });
       const foley = res.audioStoryPlan?.foleyEvents?.filter((f) => f.enabled).length ?? 0;
       const voice = res.audioStoryPlan?.commentary?.segments?.length ?? 0;
-      setEdlCount(res.audioEdl?.length ?? 0);
+      let edl = (res.audioEdl as unknown[]) || [];
+      const synth = (res as { synthesize?: { provider?: string; synthesized?: number; failed?: number } })
+        .synthesize;
+      if (synth) {
+        setTtsInfo(
+          `TTS ${synth.provider || "voice"}: ${synth.synthesized ?? 0} segments${
+            synth.failed ? `, ${synth.failed} skipped` : ""
+          }`,
+        );
+      } else if (components.aiCommentary && voice > 0) {
+        setBusy("tts");
+        try {
+          const tts = await contentApi.synthesizeSoundDesign(contentId, {
+            durationSec: Math.max(0.5, durationSec),
+          });
+          edl = (tts.audioEdl as unknown[]) || edl;
+          setTtsInfo(
+            `TTS ${tts.provider}: ${tts.synthesized} segments${
+              tts.failed ? `, ${tts.failed} skipped` : ""
+            }`,
+          );
+        } catch {
+          setTtsInfo("TTS deferred — Foley/ambience still available");
+        }
+      } else {
+        setTtsInfo(null);
+      }
+      setTimeline(toTimelineItems(edl));
       setPlanSummary(
-        `${voice} commentary · ${foley} Foley · ${res.audioEdl?.length ?? 0} EDL decisions`,
+        `${voice} commentary · ${foley} Foley · ${edl.length} EDL decisions`,
       );
       toast.success("Sound Design plan applied — ready to render");
       onApplied?.();
@@ -135,15 +237,65 @@ export function SoundDesignPanel({
     }
   };
 
+  const reimagine = async (presetId: string) => {
+    if (!contentId) return;
+    setBusy("reimagine");
+    setLastPreset(presetId);
+    try {
+      const res = await contentApi.reimagineSoundDesign(contentId, {
+        presetId,
+        durationSec: Math.max(0.5, durationSec),
+        creatorContext: creatorContext || undefined,
+      });
+      const foley = res.audioStoryPlan?.foleyEvents?.filter((f) => f.enabled).length ?? 0;
+      const voice = res.audioStoryPlan?.commentary?.segments?.length ?? 0;
+      const edl = (res.audioEdl as unknown[]) || [];
+      setTimeline(toTimelineItems(edl));
+      setPlanSummary(
+        `${res.preset?.name || presetId}: ${voice} commentary · ${foley} Foley · ${edl.length} EDL`,
+      );
+      if (res.synthesize) {
+        setTtsInfo(
+          `TTS ${res.synthesize.provider || "voice"}: ${res.synthesize.synthesized ?? 0} segments`,
+        );
+      }
+      if (res.audioStoryPlan) {
+        setComponents((c) => ({
+          ...c,
+          aiCommentary: voice > 0 || c.aiCommentary,
+          aiFoley: foley > 0 || c.aiFoley,
+        }));
+      }
+      toast.success(`Reimagined as ${res.preset?.name || presetId}`);
+      onApplied?.();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Reimagine failed");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="space-y-3 rounded-xl border border-white/10 bg-black/20 p-3">
       <div className="flex items-center gap-2 text-sm font-medium text-white">
         <Headphones className="h-4 w-4 text-emerald-400" />
         AI Sound Design
+        {storyEngine ? (
+          <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] text-emerald-200">
+            Story Engine
+          </span>
+        ) : null}
       </div>
       <p className="text-xs text-white/60">
-        Understand the clip first, then design commentary, Foley, ambience, and mix — non-destructive until you render.
+        {storyEngine
+          ? "Shared Sound Engine for your multi-clip story — commentary, Foley, ambience, and mix. Seeded from act audio notes after Analyse."
+          : "Understand the clip first, then design commentary, Foley, ambience, and mix — non-destructive until you render."}
       </p>
+
+      <ReimaginePresets disabled={disabled} busy={Boolean(busy)} onSelect={(id) => void reimagine(id)} />
+      {lastPreset && (
+        <p className="text-[11px] text-white/50">Last Reimagine: {lastPreset}</p>
+      )}
 
       <div className="flex flex-wrap gap-1.5">
         {MODES.map(([id, label]) => (
@@ -184,6 +336,22 @@ export function SoundDesignPanel({
             {label}
           </label>
         ))}
+        <label className="flex items-center gap-2 text-white/55">
+          <input
+            type="checkbox"
+            checked={premiumVoice}
+            disabled={disabled || Boolean(busy)}
+            onChange={() => setPremiumVoice((v) => !v)}
+          />
+          Estimate Premium TTS credits (ElevenLabs)
+        </label>
+      </div>
+
+      <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-2 py-1.5 text-[11px] text-amber-100/90">
+        Est. ~{creditPreview.credits} sound credits · {creditPreview.label}
+        <span className="block text-white/45">
+          Metered server-side on analyze / plan / TTS (ai_jobs · sound_design).
+        </span>
       </div>
 
       <div className="space-y-1 rounded-lg bg-black/30 p-2">
@@ -194,13 +362,20 @@ export function SoundDesignPanel({
           <div key={l.id} className="flex items-center gap-2 text-[11px] text-white/70">
             <span className="w-16 shrink-0 font-mono text-white/40">{l.label}</span>
             <div className="h-2 flex-1 overflow-hidden rounded bg-white/10">
-              <div
-                className={cn("h-full", l.on ? "w-full bg-emerald-500/50" : "w-0")}
-              />
+              <div className={cn("h-full", l.on ? "w-full bg-emerald-500/50" : "w-0")} />
             </div>
           </div>
         ))}
       </div>
+
+      {timeline.length > 0 && (
+        <AudioTimelineEditor
+          durationMs={Math.max(1000, Math.round(durationSec * 1000))}
+          items={timeline}
+          disabled={disabled || Boolean(busy)}
+          onChange={(items) => void applyEdlLocal(items)}
+        />
+      )}
 
       {recommendation && (
         <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2 text-xs text-white/80">
@@ -220,9 +395,9 @@ export function SoundDesignPanel({
       {planSummary && (
         <p className="text-xs text-emerald-300/90">
           Plan ready: {planSummary}
-          {edlCount > 0 ? ` (${edlCount} editable decisions)` : ""}
         </p>
       )}
+      {ttsInfo && <p className="text-xs text-white/55">{ttsInfo}</p>}
 
       <div className="flex flex-wrap gap-2">
         <Button
@@ -245,7 +420,7 @@ export function SoundDesignPanel({
           disabled={!contentId || disabled || Boolean(busy)}
           onClick={() => void planAndApply()}
         >
-          {busy === "plan" ? (
+          {busy === "plan" || busy === "tts" ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
             <Headphones className="h-3.5 w-3.5" />

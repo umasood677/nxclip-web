@@ -332,6 +332,29 @@ export default function EventHighlight() {
           )}
         </section>
 
+        <section className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-4 space-y-2">
+          <h2 className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+            AI Sound Design
+          </h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Analyse seeds the shared Sound Engine from your story context and act audio notes.
+            After <span className="font-medium text-foreground">Produce</span>, open Clip Studio
+            polish to Reimagine, edit the audio timeline, synthesize commentary, and meter credits —
+            same AudioStoryPlan / EDL path as single-clip Sound Design (not a separate pipeline).
+          </p>
+          {acts.some((a: any) => a.audioNote) ? (
+            <p className="text-xs text-emerald-700/90 dark:text-emerald-300/80">
+              {acts.filter((a: any) => a.audioNote).length} act audio note
+              {acts.filter((a: any) => a.audioNote).length === 1 ? "" : "s"} will guide Foley /
+              ambience / commentary.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              No act audio notes yet — Sound Design can still Analyse from story context in polish.
+            </p>
+          )}
+        </section>
+
         {unused.length > 0 && (
           <details className="rounded-lg border p-3 text-sm">
             <summary className="cursor-pointer font-medium">
