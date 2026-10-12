@@ -1629,23 +1629,23 @@ export default function ClipEditor() {
         if (cancelled) return;
         const res = await contentApi.generateClipHooks(id);
         if (cancelled) return;
-        const next = res.hooks || [];
-        setHookOptions(next);
-        if (!topText.trim() && next[0]?.text?.trim()) {
-          setTopText(next[0].text.trim().slice(0, 50));
-          setHooks([next[0]]);
+        const generatedHooks = res.hooks || [];
+        setHookOptions(generatedHooks);
+        if (!topText.trim() && generatedHooks[0]?.text?.trim()) {
+          setTopText(generatedHooks[0].text.trim().slice(0, 50));
+          setHooks([generatedHooks[0]]);
           setSelectedHookOptionIndex(0);
         }
         toast.success(
           t("clip_editor.polish.details.hooks_ready", {
             defaultValue: "{{count}} hooks ready — tap one to replace the on-clip hook",
-            count: next.length,
+            count: generatedHooks.length,
           }),
         );
-        const next = new URLSearchParams(searchParams);
-        next.delete("action");
-        if (!next.get("step")) next.set("step", "polish");
-        setSearchParams(next, { replace: true });
+        const params = new URLSearchParams(searchParams);
+        params.delete("action");
+        if (!params.get("step")) params.set("step", "polish");
+        setSearchParams(params, { replace: true });
       } catch (err) {
         autoHooksRanRef.current = false;
         toast.error("Hook generation failed", {
