@@ -27,25 +27,27 @@ export function coachBgmTitle(trackId: string): string {
   return COACH_BGM_TITLES[trackId] || `Track ${trackId}`;
 }
 
-/** Collapse duplicated "Focus: …" lines appended by story-option picks. */
+/**
+ * Dedupe repeated "Focus: …" suffixes from story picks.
+ * Do not rewrite sentence punctuation — that used to change Creator Context
+ * between Analyze and Apply and blocked Apply with a 400.
+ */
 export function sanitizeCreatorContext(text: string): string {
-  const raw = String(text || "").trim();
+  const raw = String(text || "").trim().replace(/\s+/g, " ");
   if (!raw) return "";
-  const parts = raw
-    .split(/\.\s+/)
-    .map((p) => p.trim().replace(/\.$/, ""))
-    .filter(Boolean);
-  const body: string[] = [];
-  let lastFocus = "";
-  for (const part of parts) {
-    const m = /^Focus:\s*(.+)$/i.exec(part);
-    if (m) {
-      lastFocus = m[1]!.trim();
-      continue;
-    }
-    if (!body.includes(part)) body.push(part);
-  }
-  const out = [...body, ...(lastFocus ? [`Focus: ${lastFocus}`] : [])].join(". ");
+  // Keep the last Focus: clause; drop earlier duplicates (story-option re-picks).
+  const focusMatches = [...raw.matchAll(/(?:^|[.!?]\s+|—\s*)Focus:\s*([^—]+?)(?=\s*—\s*|$)/gi)];
+  if (focusMatches.length <= 1) return raw.slice(0, 500);
+  const lastFocus = focusMatches[focusMatches.length - 1]![1]!.trim();
+  const withoutFocus = raw
+    .replace(/(?:^|[.!?]\s+|—\s*)Focus:\s*[^—]+?(?=\s*—\s*|$)/gi, "")
+    .replace(/\s*—\s*—/g, " — ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s*—\s*$/g, "")
+    .trim();
+  const out = withoutFocus
+    ? `${withoutFocus} — Focus: ${lastFocus}`
+    : `Focus: ${lastFocus}`;
   return out.slice(0, 500);
 }
 

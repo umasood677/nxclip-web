@@ -150,7 +150,7 @@ export function ClipCoachPanel({
   context: string;
   onContext: (v: string) => void;
   duration: number;
-  save: () => Promise<unknown>;
+  save: (opts?: { creatorContext?: string }) => Promise<unknown>;
   onBeats: (m: Array<{ time: number; label: string }>) => void;
   onUnderstanding: (result: ClipCoachResult) => void;
   /** Push hook/context onto the video preview using Clip Studio caption theme. */
@@ -248,7 +248,8 @@ export function ClipCoachPanel({
 
   const current = Boolean(
     result &&
-      result.creativeBrief.creatorContext === context &&
+      sanitizeCreatorContext(result.creativeBrief.creatorContext) ===
+        sanitizeCreatorContext(context) &&
       result.creativeBrief.mode === mode,
   );
   const plan = draftPlan || result?.editPlan;
@@ -424,13 +425,19 @@ export function ClipCoachPanel({
       );
       setReviewed(false);
       setAnalyzeStep(2);
+      const contextForAnalyze = sanitizeCreatorContext(context);
+      if (contextForAnalyze !== context) onContext(contextForAnalyze);
       const next = await contentApi.analyzeClipCoach(id, {
-        creatorContext: context,
+        creatorContext: contextForAnalyze,
         mode,
         durationSec: duration,
       });
       setAnalyzeStep(3);
-      if (JSON.stringify(snapshot) !== JSON.stringify(latest.current)) {
+      if (
+        latest.current.id !== id ||
+        latest.current.mode !== mode ||
+        sanitizeCreatorContext(latest.current.context) !== contextForAnalyze
+      ) {
         toast.message("Context changed. Analyze again.");
         return;
       }
@@ -468,7 +475,10 @@ export function ClipCoachPanel({
     if (!plan || !result) return;
     setBusy(true);
     try {
-      await save();
+      // Persist the exact analyzed context so save cannot drift from the Coach brief.
+      const analyzedContext = result.creativeBrief.creatorContext || context;
+      if (analyzedContext !== context) onContext(analyzedContext);
+      await save({ creatorContext: analyzedContext });
       // Only include checked segments / overlays.
       const filteredSegments = plan.segments.filter(
         (_, i) => checked[`seg-${i}`] !== false,

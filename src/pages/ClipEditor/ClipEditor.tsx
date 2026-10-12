@@ -2459,7 +2459,16 @@ export default function ClipEditor() {
                     : "clean_subtitle"
                 }
                 onCaptionStyle={(style) => setMemeCaptionStyle(style)}
-                save={async () => contentApi.saveClipEdit(id, buildClipEditSpec())}
+                save={async (opts) => {
+                  const spec = buildClipEditSpec();
+                  if (opts?.creatorContext != null) {
+                    const ctx = opts.creatorContext.slice(0, 500);
+                    spec.creatorContext = ctx;
+                    spec.polishPrompt = ctx.slice(0, 200);
+                    setPrompt(ctx);
+                  }
+                  return contentApi.saveClipEdit(id, spec);
+                }}
                 onBeats={(m) => {
                   setMarkers(m);
                 }}

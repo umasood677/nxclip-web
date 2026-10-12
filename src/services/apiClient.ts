@@ -1411,6 +1411,8 @@ export const contentApi = {
       silence?: { enabled?: boolean; minSilenceMs?: number };
       crop?: { mode?: "face" | "center"; focusX?: number; focusY?: number };
       fxPackId?: string;
+      /** Authoritative Coach context (up to 500). Prefer this over polishPrompt. */
+      creatorContext?: string;
       polishPrompt?: string;
       voiceVolume?: number;
       bgmVolume?: number;
