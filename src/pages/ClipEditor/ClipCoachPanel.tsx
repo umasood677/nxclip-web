@@ -75,8 +75,10 @@ export type CoachPreviewPayload = {
   contextText?: string;
   captionStyle: string;
   segments: Array<{ start: number; end: number; purpose: string }>;
-  /** When set, hook/context show only while playback is inside a cut marked show. */
+  /** Checked moments in order — player stitches these when you play the whole clip. */
   textCuts?: Array<{ start: number; end: number; show: boolean }>;
+  /** Join after each cut (length = textCuts.length - 1). */
+  joins?: Array<"cut" | "crossfade" | "flash" | "none">;
 };
 
 export type CoachModeImpact = {
@@ -136,6 +138,7 @@ export function ClipCoachPanel({
   onApplied,
   seek,
   previewSegment,
+  previewStitch,
   previewBgm,
   layout = "stack",
   captionFontId,
@@ -159,6 +162,8 @@ export function ClipCoachPanel({
   seek: (time: number) => void;
   /** Play only this keep-range on the player so the user can hear/see that cut. */
   previewSegment?: (startSec: number, endSec: number) => void;
+  /** Play all checked moments in order (skips gaps) before Download. */
+  previewStitch?: () => void;
   /** Audition the Coach-selected BGM under the current clip. */
   previewBgm?: () => void;
   /** sidebar = sits beside the clip player (sticky pane). */
@@ -280,18 +285,36 @@ export function ClipCoachPanel({
     return p.segments.map((_, i) => source[i] !== false);
   }
 
-  function pushPreview(p: ClipCoachResult["editPlan"], flags?: boolean[]) {
+  function pushPreview(
+    p: ClipCoachResult["editPlan"],
+    flags?: boolean[],
+    checks?: Record<string, boolean>,
+    joinsOverride?: CutJoin[],
+  ) {
     const show = textFlagsFor(p, flags);
+    const checkMap = checks ?? checked;
+    const joinsSrc = joinsOverride ?? cutTransitions;
+    const keptIdx = p.segments
+      .map((_, i) => i)
+      .filter((i) => checkMap[`seg-${i}`] !== false);
+    const pack = result
+      ? resolveCoachImpactPack(mode, result.creativeBrief.contentType)
+      : resolveCoachImpactPack(mode);
+    const hookOn = (checkMap.hook ?? checked.hook) !== false;
+    const contextOn = (checkMap.context ?? checked.context) !== false;
     onPreview?.({
-      hookText: p.hookOverlay || "",
-      contextText: p.contextOverlay || undefined,
+      hookText: hookOn ? p.hookOverlay || "" : "",
+      contextText: contextOn ? p.contextOverlay || undefined : undefined,
       captionStyle: p.captionStyle || "clean_subtitle",
-      segments: p.segments,
-      textCuts: p.segments.map((s, i) => ({
-        start: s.start,
-        end: s.end,
+      segments: keptIdx.map((i) => p.segments[i]!),
+      textCuts: keptIdx.map((i) => ({
+        start: p.segments[i]!.start,
+        end: p.segments[i]!.end,
         show: show[i] !== false,
       })),
+      joins: keptIdx.slice(0, -1).map(
+        (i) => joinsSrc[i] || pack.junctionType,
+      ),
     });
   }
 
@@ -364,8 +387,17 @@ export function ClipCoachPanel({
     updateDraftPlan({ ...plan, segments });
   }
 
-  const toggleCheck = (key: string) =>
-    setChecked((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleCheck = (key: string) => {
+    if (!plan) {
+      setChecked((prev) => ({ ...prev, [key]: !prev[key] }));
+      return;
+    }
+    setChecked((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      pushPreview(plan, undefined, next);
+      return next;
+    });
+  };
 
   const analyze = async () => {
     const snapshot = { id, context, mode };
@@ -734,8 +766,7 @@ export function ClipCoachPanel({
               <p className="text-[11px] font-semibold">Pick a story focus</p>
               <p className="text-[10px] text-muted-foreground leading-snug">
                 This steers the next Analyze toward a different truthful angle
-                (which moments to keep). It does not change BGM by itself — use
-                the mode dropdown for music, then Re-analyze.
+                (which moments to keep).
               </p>
               <div className="flex flex-col gap-1.5">
                 {result.creativeBrief.storyOptions!.slice(0, 3).map((opt, index) => {
@@ -858,12 +889,28 @@ export function ClipCoachPanel({
                 );
               })()}
             </div>
-            <p className="text-[10px] text-muted-foreground mb-1">
-              {plan.segments.length} moment{plan.segments.length === 1 ? "" : "s"} suggested
-              (can be 1–12, not always 3). Uncheck one to drop it from the download.
-              The T icon hides hook and context on that cut only. Off / Flash / Fade / Cut
-              is the join into the next moment.
-            </p>
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[10px] text-muted-foreground">
+                The T icon hides hook and context on that cut only. Off / Flash / Fade / Cut
+                is the join into the next moment.
+              </p>
+              {previewStitch && plan.segments.length > 0 ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 shrink-0 gap-1 text-[10px]"
+                  disabled={busy}
+                  onClick={() => {
+                    pushPreview(plan);
+                    previewStitch();
+                  }}
+                >
+                  <Play size={12} />
+                  Preview final edit
+                </Button>
+              ) : null}
+            </div>
             <ul className="space-y-1.5">
               {plan.segments.map((s, i) => (
                 <li
@@ -991,11 +1038,10 @@ export function ClipCoachPanel({
                             disabled={busy}
                             aria-pressed={selected}
                             onClick={() => {
-                              setCutTransitions((prev) => {
-                                const next = [...prev];
-                                next[i] = type;
-                                return next;
-                              });
+                              const next = [...cutTransitions];
+                              next[i] = type;
+                              setCutTransitions(next);
+                              pushPreview(plan, undefined, undefined, next);
                             }}
                             className={cn(
                               "h-6 rounded-full border px-2 text-[10px] font-medium",

@@ -25,6 +25,7 @@ import {
   Settings,
   Layout,
   Download,
+  Film,
 } from "lucide-react";
 import { SocialPlatformIcon } from "../../components/social/SocialPlatformIcon";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -291,6 +292,12 @@ export default function ClipEditor() {
   const [coachTextCuts, setCoachTextCuts] = useState<
     Array<{ start: number; end: number; show: boolean }> | null
   >(null);
+  const [coachStitchJoins, setCoachStitchJoins] = useState<
+    Array<"cut" | "crossfade" | "flash" | "none">
+  >([]);
+  const coachStitchIndexRef = useRef(0);
+  /** True while playing the full Coach moment playlist (not a single Preview cut). */
+  const coachStitchPlayRef = useRef(false);
   const [cropMode, setCropMode] = useState<"face" | "center">("face");
   
   // Enhancement States
@@ -613,16 +620,10 @@ export default function ClipEditor() {
     };
   }, [id]);
 
-  // Seed Coach calendar brief only for nxClip-generated / I2V clips — never for raw uploads.
+  // Auto-seed the day brief only for nxClip-generated / I2V clips.
+  // Raw uploads stay empty until the user taps "Use brief" (load already strips inherited briefs).
   useEffect(() => {
-    if (isUserUploadClip) {
-      const dueBrief = applyDuePrompt();
-      const looksLikeCalendar =
-        Boolean(dueBrief && prompt.trim() === dueBrief.trim()) ||
-        (/—\s*Niche:/i.test(prompt) && /—\s*Focus:/i.test(prompt));
-      if (looksLikeCalendar) setPrompt("");
-      return;
-    }
+    if (isUserUploadClip) return;
     if (!prompt && dueToday) {
       setPrompt(applyDuePrompt());
     }
@@ -868,6 +869,14 @@ export default function ClipEditor() {
     }
   }, [selectedTrackId, applyPreviewMix, clearMixBgm]);
 
+  const joinToFlash = useCallback((join?: string) => {
+    const j = String(join || "flash").toLowerCase();
+    if (j === "none") return null;
+    if (j === "crossfade") return { type: "crossfade", caption: "Fade", sfx: "Whoosh Soft" };
+    if (j === "cut") return { type: "cut", caption: "Cut", sfx: "Impact Hit" };
+    return { type: "flash", caption: "Flash", sfx: "Flash Pop" };
+  }, []);
+
   /** Coach: play one keep-range so the user can audition that cut. */
   const previewCoachSegment = useCallback(
     (startSec: number, endSec: number) => {
@@ -875,6 +884,7 @@ export default function ClipEditor() {
       if (!el) return;
       const start = Math.max(0, Math.min(DURATION, startSec));
       const end = Math.max(start + 0.35, Math.min(DURATION, endSec));
+      coachStitchPlayRef.current = false;
       el.currentTime = start;
       setCurrentTime(start);
       const onTime = () => {
@@ -907,6 +917,43 @@ export default function ClipEditor() {
     },
     [DURATION, applyPreviewMix, selectedTrackId],
   );
+
+  /** Coach: play checked moments in order (skip gaps) — preview before Download. */
+  const previewCoachStitch = useCallback(() => {
+    const el = videoRef.current;
+    const cuts = coachTextCuts;
+    if (!el || !cuts?.length) {
+      toast.message("Analyze first", {
+        description: "Moments appear here after AI Coach Analyze.",
+      });
+      return;
+    }
+    coachStitchPlayRef.current = true;
+    coachStitchIndexRef.current = 0;
+    const first = cuts[0]!;
+    el.currentTime = first.start;
+    setCurrentTime(first.start);
+    applyPreviewMix();
+    void el
+      .play()
+      .then(() => {
+        setIsPlaying(true);
+        const bgm = mixBgmRef.current;
+        const track = TRACKS.find((t) => t.id === selectedTrackId);
+        if (bgm && track && selectedTrackId) {
+          if (mixBgmTrackIdRef.current !== selectedTrackId) {
+            bgm.src = track.url;
+            mixBgmTrackIdRef.current = selectedTrackId;
+            bgm.currentTime = 0;
+          }
+          void bgm.play().catch(() => {});
+        }
+        toast.message("Previewing final edit", {
+          description: `${cuts.length} moment${cuts.length === 1 ? "" : "s"} in order — gaps are skipped.`,
+        });
+      })
+      .catch(() => setIsPlaying(false));
+  }, [coachTextCuts, applyPreviewMix, selectedTrackId]);
 
   /** Coach: audition selected BGM under the current clip window. */
   const previewCoachBgm = useCallback(() => {
@@ -954,9 +1001,23 @@ export default function ClipEditor() {
         }
         setPreviewingTrackId(null);
         setPreviewProgress(0);
-        if (el.currentTime < start || el.currentTime >= end) {
-          el.currentTime = start;
-          setCurrentTime(start);
+        if (coachTextCuts?.length) {
+          coachStitchPlayRef.current = true;
+          const t = el.currentTime;
+          let idx = coachTextCuts.findIndex((c) => t >= c.start - 0.05 && t < c.end - 0.05);
+          if (idx < 0) idx = 0;
+          coachStitchIndexRef.current = idx;
+          const cut = coachTextCuts[idx]!;
+          if (t < cut.start || t >= cut.end) {
+            el.currentTime = cut.start;
+            setCurrentTime(cut.start);
+          }
+        } else {
+          coachStitchPlayRef.current = false;
+          if (el.currentTime < start || el.currentTime >= end) {
+            el.currentTime = start;
+            setCurrentTime(start);
+          }
         }
         applyPreviewMix();
         await el.play();
@@ -994,6 +1055,7 @@ export default function ClipEditor() {
     trimStart,
     trimEnd,
     finalTrim,
+    coachTextCuts,
     selectedTrackId,
     isMasterMuted,
     isClipMuted,
@@ -2125,6 +2187,45 @@ export default function ClipEditor() {
     [],
   );
 
+  /** Advance source playhead through Coach keep-ranges; returns true if stitch handled the tick. */
+  const tickCoachStitch = useCallback(
+    (el: HTMLVideoElement, t: number) => {
+      const cuts = coachTextCuts;
+      if (!coachStitchPlayRef.current || !cuts?.length) return false;
+      let idx = coachStitchIndexRef.current;
+      if (idx < 0 || idx >= cuts.length) {
+        idx = 0;
+        coachStitchIndexRef.current = 0;
+      }
+      const cur = cuts[idx]!;
+      if (t < cur.start - 0.12) {
+        el.currentTime = cur.start;
+        setCurrentTime(cur.start);
+        return true;
+      }
+      if (t >= cur.end - 0.05) {
+        if (idx < cuts.length - 1) {
+          const flash = joinToFlash(coachStitchJoins[idx]);
+          if (flash) showTransitionFlash(flash, 700);
+          const next = cuts[idx + 1]!;
+          coachStitchIndexRef.current = idx + 1;
+          el.currentTime = next.start;
+          setCurrentTime(next.start);
+        } else {
+          el.pause();
+          setIsPlaying(false);
+          mixBgmRef.current?.pause();
+          coachStitchIndexRef.current = 0;
+          el.currentTime = cuts[0]!.start;
+          setCurrentTime(cuts[0]!.start);
+        }
+        return true;
+      }
+      return true;
+    },
+    [coachTextCuts, coachStitchJoins, joinToFlash, showTransitionFlash],
+  );
+
   const applyTransitionPreview = (s: { time: number; type: string; caption?: string; sfx?: string }) => {
     const abs = Math.min(
       enhanceClipWindow.end - 0.05,
@@ -2201,7 +2302,7 @@ export default function ClipEditor() {
       ) : null}
       <SEO 
         title="Advanced AI Video Clip Studio | NexaClip.ai"
-        description="Trim, polish, and enhance your clips with AI. Captions, transitions, and niche-aligned polish from your onboarding plan."
+        description="AI Coach cuts, sound design, captions, and polish for short-form clips — then publish."
       />
       <StudioPlanBanner
         toolLabel="Clip Studio"
@@ -2210,53 +2311,129 @@ export default function ClipEditor() {
         hasWeekPlan={hasWeekPlan}
         dueToday={dueToday}
         onApplyDue={() => {
-          const brief = applyDuePrompt();
-          if (brief) {
-            setPrompt(brief);
-            toast.success(
-              isUserUploadClip
-                ? "Today’s coach brief added — edit Creator Context if it doesn’t match this footage"
-                : "Today’s coach brief applied to polish",
-            );
+          const brief = applyDuePrompt()?.trim();
+          if (!brief) {
+            toast.message("No day brief available", {
+              description: "Create or open a Creator Coach week plan first.",
+            });
+            return;
           }
+          // Optional: user opted in — put today’s plan into AI Coach Creator Context.
+          setPrompt(brief.slice(0, 500));
+          toast.success("Day brief applied to Creator Context", {
+            description: isUserUploadClip
+              ? "Edit the context if it doesn’t match this footage, then Analyze again."
+              : "Analyze again so Coach uses this brief for cuts and music.",
+          });
         }}
         onRequestNicheChange={() => setNicheDialogOpen(true)}
         nicheDialogOpen={nicheDialogOpen}
         onNicheDialogOpenChange={setNicheDialogOpen}
         onConfirmNicheChange={confirmNicheChange}
       />
-        {/* Step Indicator */}
-        <div className="flex items-center justify-center gap-2 sm:gap-6 md:gap-12 mb-8 md:mb-12 overflow-x-auto py-2 no-scrollbar">
-          {[
-            { id: "upload", label: t('clip_editor.steps.upload'), icon: CheckCircle2, active: true, done: true, clickable: false },
-            { id: "trim", label: t('clip_editor.steps.trim'), icon: Scissors, active: step === "trim", done: step !== "trim", clickable: true },
-            { id: "polish", label: t('clip_editor.steps.polish'), icon: Sparkles, active: step === "polish", done: false, clickable: true },
-          ].map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              disabled={!s.clickable}
-              onClick={() => {
-                if (!s.clickable) return;
-                mergeSearchParams({ step: s.id });
-              }}
-              className={cn(
-                "flex items-center gap-2 sm:gap-3 shrink-0",
-                s.clickable ? "cursor-pointer hover:opacity-90" : "cursor-default",
-              )}
-            >
-              <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center border-2 transition-all shrink-0 ${
-                s.active ? "bg-primary border-primary text-primary-foreground shadow-lg" : 
-                s.done ? "bg-muted border-border text-primary" : "bg-background border-border text-muted-foreground"
-              }`}>
-                <s.icon size={16} className="md:w-[18px] md:h-[18px]" />
-              </div>
-              <span className={`text-[10px] md:text-sm font-bold whitespace-nowrap ${s.active ? "text-foreground" : "text-muted-foreground"}`}>
-                {s.label}
-              </span>
-              {i < 2 && <div className="w-4 sm:w-8 md:w-12 h-0.5 bg-border ml-2 sm:ml-4 md:ml-6" />}
-            </button>
-          ))}
+        {/* Step Indicator — progress for Clip Studio: source → Coach/Edit → Polish/Publish */}
+        <div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-8 mb-8 md:mb-12 overflow-x-auto py-2 no-scrollbar">
+          {(() => {
+            const sourceDone = Boolean(id);
+            const coachDone = step === "polish" || Boolean(finalTrim);
+            const polishDone = isAlreadyPublished;
+            const studioSteps: Array<{
+              id: string;
+              label: string;
+              hint: string;
+              icon: typeof Film;
+              active: boolean;
+              done: boolean;
+              clickable: boolean;
+            }> = [
+              {
+                id: "upload",
+                label: t("clip_editor.steps.upload", { defaultValue: "Clip ready" }),
+                hint: t("clip_editor.steps.upload_hint", { defaultValue: "Source loaded" }),
+                icon: Film,
+                active: false,
+                done: sourceDone,
+                clickable: false,
+              },
+              {
+                id: "trim",
+                label: t("clip_editor.steps.trim", { defaultValue: "Coach & Edit" }),
+                hint: t("clip_editor.steps.trim_hint", {
+                  defaultValue: "Cuts, BGM, sound design",
+                }),
+                icon: BrainCircuit,
+                active: step === "trim",
+                done: coachDone,
+                clickable: Boolean(id),
+              },
+              {
+                id: "polish",
+                label: t("clip_editor.steps.polish", { defaultValue: "Polish & Publish" }),
+                hint: t("clip_editor.steps.polish_hint", {
+                  defaultValue: "Captions, enhance, share",
+                }),
+                icon: Sparkles,
+                active: step === "polish",
+                done: polishDone,
+                clickable: Boolean(id),
+              },
+            ];
+            return studioSteps.map((s, i) => {
+              const Icon = s.done && !s.active ? CheckCircle2 : s.icon;
+              const prevDone = i === 0 ? true : studioSteps[i - 1]!.done;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  disabled={!s.clickable}
+                  aria-current={s.active ? "step" : undefined}
+                  aria-label={`${s.label}${s.done ? " (done)" : s.active ? " (current)" : ""}`}
+                  onClick={() => {
+                    if (!s.clickable) return;
+                    mergeSearchParams({ step: s.id });
+                  }}
+                  className={cn(
+                    "flex items-center gap-2 sm:gap-3 shrink-0",
+                    s.clickable ? "cursor-pointer hover:opacity-90" : "cursor-default",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center border-2 transition-all shrink-0",
+                      s.active
+                        ? "bg-primary border-primary text-primary-foreground shadow-lg"
+                        : s.done
+                          ? "bg-primary/10 border-primary/40 text-primary"
+                          : "bg-background border-border text-muted-foreground",
+                    )}
+                  >
+                    <Icon size={16} className="md:w-[18px] md:h-[18px]" />
+                  </div>
+                  <div className="min-w-0 text-left">
+                    <span
+                      className={cn(
+                        "block text-[10px] md:text-sm font-bold whitespace-nowrap",
+                        s.active ? "text-foreground" : s.done ? "text-foreground/80" : "text-muted-foreground",
+                      )}
+                    >
+                      {s.label}
+                    </span>
+                    <span className="hidden sm:block text-[9px] md:text-[10px] text-muted-foreground leading-tight whitespace-nowrap">
+                      {s.hint}
+                    </span>
+                  </div>
+                  {i < studioSteps.length - 1 ? (
+                    <div
+                      className={cn(
+                        "w-4 sm:w-8 md:w-12 h-0.5 ml-2 sm:ml-3 md:ml-4 shrink-0 transition-colors",
+                        prevDone && s.done ? "bg-primary/50" : "bg-border",
+                      )}
+                    />
+                  ) : null}
+                </button>
+              );
+            });
+          })()}
         </div>
 
         <div
@@ -2370,9 +2547,13 @@ export default function ClipEditor() {
                 onPreview={(payload: CoachPreviewPayload | null) => {
                   if (!payload) {
                     setCoachTextCuts(null);
+                    setCoachStitchJoins([]);
+                    coachStitchIndexRef.current = 0;
                     return;
                   }
                   setCoachTextCuts(payload.textCuts ?? null);
+                  setCoachStitchJoins(payload.joins ?? []);
+                  coachStitchIndexRef.current = 0;
                   const style =
                     payload.captionStyle === "kinetic_hormozi"
                       ? "kinetic_hormozi"
@@ -2461,6 +2642,7 @@ export default function ClipEditor() {
                 }}
                 seek={seekVideo}
                 previewSegment={previewCoachSegment}
+                previewStitch={previewCoachStitch}
                 previewBgm={previewCoachBgm}
               />
               <div className="mt-4">
@@ -2517,6 +2699,7 @@ export default function ClipEditor() {
                       }
                       return;
                     }
+                    if (tickCoachStitch(e.currentTarget, t)) return;
                     if (t >= trimEnd - 0.05) {
                       e.currentTarget.currentTime = trimStart;
                       setCurrentTime(trimStart);
@@ -2536,6 +2719,12 @@ export default function ClipEditor() {
                   )}
                 </div>
               )}
+
+              <TransitionPreviewOverlay
+                type={transitionPreview?.type ?? null}
+                caption={transitionPreview?.caption}
+                sfx={transitionPreview?.sfx}
+              />
 
               {/* AI Coach / caption live preview — drag to reposition (same as Polish) */}
               {(topText || hooks[0]?.text) && coachOverlayOnCut(currentTime, coachTextCuts) ? (
@@ -3268,6 +3457,7 @@ export default function ClipEditor() {
                       const end = finalTrim?.end ?? trimEnd;
                       const tNow = e.currentTarget.currentTime;
                       setCurrentTime(tNow);
+                      if (tickCoachStitch(e.currentTarget, tNow)) return;
                       // Fire applied Enhance transitions when the playhead crosses them.
                       if (!transitionPreviewActiveRef.current && appliedTransitions.length) {
                         const rel = tNow - start;

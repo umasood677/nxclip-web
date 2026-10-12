@@ -1529,12 +1529,15 @@ const resources = {
       },
       "clip_editor": {
         "header": {
-          "subtitle": "Upload and edit short-form clips."
+          "subtitle": "AI Coach, sound design, polish, and publish for short-form clips."
         },
         "steps": {
-          "upload": "Upload",
-          "trim": "Trim",
-          "polish": "Polish & Publish"
+          "upload": "Clip ready",
+          "upload_hint": "Source loaded",
+          "trim": "Coach & Edit",
+          "trim_hint": "Cuts, BGM, sound design",
+          "polish": "Polish & Publish",
+          "polish_hint": "Captions, enhance, share"
         },
         "player": {
           "live_preview": "Live Preview",
@@ -3609,12 +3612,15 @@ const resources = {
       },
       "clip_editor": {
         "header": {
-          "subtitle": "قم بتحميل وتحرير المقاطع القصيرة."
+          "subtitle": "مدرب الذكاء، تصميم الصوت، التلميع، والنشر للمقاطع القصيرة."
         },
         "steps": {
-          "upload": "رفع",
-          "trim": "قص",
-          "polish": "تحسين ونشر"
+          "upload": "المقطع جاهز",
+          "upload_hint": "المصدر محمّل",
+          "trim": "المدرب والتحرير",
+          "trim_hint": "قصات، موسيقى، صوت",
+          "polish": "تلميع ونشر",
+          "polish_hint": "نصوص، تحسين، مشاركة"
         },
         "player": {
           "live_preview": "معاينة مباشرة",
