@@ -238,7 +238,6 @@ export function ClipCoachPanel({
     let alive = true;
     setResult(null);
     setDraftPlan(null);
-    setApplied(false);
     setChecked({});
     onPreview?.(null);
     void contentApi
@@ -251,11 +250,12 @@ export function ClipCoachPanel({
         setTranscript(item.clipEditSpec?.transcript || "");
         setReviewed(extras?.clipCoachCaptionsReviewed === true);
         const stored = extras?.clipCoach as ClipCoachResult | undefined;
+        const viralOn = extras?.viralEditApplied === true;
+        setApplied(viralOn);
         if (stored?.creativeBrief && stored?.editPlan) {
           setResult(stored);
           setDraftPlan(stored.editPlan);
           setMode(stored.creativeBrief.mode || "auto");
-          setApplied(extras?.viralEditApplied === true);
           setChecked(defaultChecks(stored.editPlan));
           const storedText = Array.isArray(extras?.coachCutText)
             ? (extras.coachCutText as boolean[])
@@ -273,14 +273,19 @@ export function ClipCoachPanel({
               }),
             );
           }
+          // Keep Creator Context pinned to the brief so refresh → Apply/Render stay in sync.
+          const briefCtx = String(stored.creativeBrief.creatorContext || "").trim();
+          if (briefCtx) onContext(briefCtx);
           onUnderstanding(stored);
-          if (extras?.viralEditApplied === true) {
+          if (viralOn) {
             pushPreview(stored.editPlan, flags);
           }
+        } else {
+          setApplied(false);
         }
       })
       .catch(() => {
-        /* Existing editor handles load errors. */
+        if (alive) setApplied(false);
       });
     return () => {
       alive = false;
@@ -540,10 +545,12 @@ export function ClipCoachPanel({
     }
     setBusy(true);
     try {
-      // Persist the exact analyzed context so save cannot drift from the Coach brief.
-      const analyzedContext = result.creativeBrief.creatorContext || context;
-      if (analyzedContext !== context) onContext(analyzedContext);
-      await save({ creatorContext: analyzedContext });
+      // Always pin Creator Context to the brief (even if UI text looks identical after sanitize).
+      const analyzedContext = String(
+        result.creativeBrief.creatorContext || context || "",
+      ).trim();
+      if (analyzedContext) onContext(analyzedContext);
+      await save({ creatorContext: analyzedContext || context });
       // Only include checked segments / overlays.
       const filteredSegments = plan.segments.filter(
         (_, i) => checked[`seg-${i}`] !== false,

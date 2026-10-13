@@ -546,14 +546,22 @@ export default function ClipEditor() {
           const extras = (spec as { extras?: Record<string, unknown> }).extras;
           const viralOn = extras?.viralEditApplied === true;
           setCoachViralApplied(viralOn);
+          const coach = extras?.clipCoach as
+            | {
+                creativeBrief?: {
+                  creatorContext?: string;
+                  mode?: string;
+                  contentType?: string;
+                };
+                editPlan?: {
+                  segments?: Array<{ start: number; end: number; purpose?: string }>;
+                  hookOverlay?: string;
+                  contextOverlay?: string;
+                  captionStyle?: string;
+                };
+              }
+            | undefined;
           if (viralOn) {
-            const coach = extras?.clipCoach as
-              | {
-                  editPlan?: {
-                    segments?: Array<{ start: number; end: number; purpose?: string }>;
-                  };
-                }
-              | undefined;
             const segs = coach?.editPlan?.segments || [];
             const textFlags = Array.isArray(extras?.coachCutText)
               ? (extras.coachCutText as boolean[])
@@ -589,6 +597,28 @@ export default function ClipEditor() {
                   return (allowed.has(t) ? t : "flash") as (typeof coachStitchJoins)[number];
                 }),
               );
+            }
+            // Restore overlays + context from the applied Coach plan after refresh.
+            const briefCtx = String(coach?.creativeBrief?.creatorContext || "").trim();
+            if (briefCtx) setPrompt(sanitizeCreatorContext(briefCtx));
+            if (coach?.editPlan?.hookOverlay?.trim()) {
+              setTopText(coach.editPlan.hookOverlay.trim().slice(0, 120));
+            }
+            if (coach?.editPlan?.contextOverlay?.trim()) {
+              setBottomText(coach.editPlan.contextOverlay.trim().slice(0, 120));
+            }
+            if (coach?.editPlan?.captionStyle) {
+              setMemeCaptionStyle(
+                coach.editPlan.captionStyle === "kinetic_hormozi"
+                  ? "kinetic_hormozi"
+                  : "clean_subtitle",
+              );
+            }
+            if (coach?.creativeBrief?.mode || coach?.creativeBrief?.contentType) {
+              setCoachMeta({
+                mode: coach.creativeBrief.mode,
+                contentType: coach.creativeBrief.contentType,
+              });
             }
           } else {
             setCoachTextCuts(null);
@@ -1802,22 +1832,35 @@ export default function ClipEditor() {
       const toastId = opts?.toastId ?? "render-clip";
       toast.loading("Saving edit and applying polish (BGM, captions)…", { id: toastId });
       const spec = buildClipEditSpec();
-      await contentApi.saveClipEdit(id, spec);
-      const queued = await contentApi.renderClip(id, { clipEditSpec: spec });
-      setRenderStatus(queued.renderStatus || "queued");
+      try {
+        await contentApi.saveClipEdit(id, spec);
+        const queued = await contentApi.renderClip(id, { clipEditSpec: spec });
+        setRenderStatus(queued.renderStatus || "queued");
 
-      const started = Date.now();
-      let status = queued.renderStatus || "queued";
-      while (Date.now() - started < 120_000) {
-        await new Promise((r) => setTimeout(r, 1500));
-        const latest = await contentApi.getOwnedContentById(id, { suppressErrorLog: true });
-        status = latest.renderStatus || status;
-        setRenderStatus(status);
-        if (status === "completed" || status === "failed") break;
-      }
+        // Multi-cut viral stitch can exceed 2 minutes on cold workers.
+        const started = Date.now();
+        let status = queued.renderStatus || "queued";
+        while (Date.now() - started < 240_000) {
+          await new Promise((r) => setTimeout(r, 2000));
+          const latest = await contentApi.getOwnedContentById(id, { suppressErrorLog: true });
+          status = latest.renderStatus || status;
+          setRenderStatus(status);
+          if (status === "completed" || status === "failed") break;
+        }
 
-      if (status !== "completed") {
-        throw new Error(status === "failed" ? "Render failed on the server" : "Render timed out");
+        if (status !== "completed") {
+          throw new Error(
+            status === "failed"
+              ? "Render failed on the server. Open Clip Studio again — your Apply is saved; retry Publish."
+              : "Render timed out after 4 minutes. Your Apply is still saved — retry Publish.",
+          );
+        }
+      } catch (err) {
+        const detail = formatClipApiError(
+          err,
+          "Could not start or finish render. Your Apply is still saved.",
+        );
+        throw new Error(detail);
       }
 
       if (opts?.download) {
