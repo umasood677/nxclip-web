@@ -26,12 +26,39 @@ export type ComposeSourceRow = {
 
 export type ComposeTransitionRow = {
   afterIndex: number;
-  type: "cut" | "crossfade" | "flash";
+  type:
+    | "none"
+    | "cut"
+    | "crossfade"
+    | "fade_in"
+    | "fade_out"
+    | "flash"
+    | "dissolve"
+    | "split"
+    | "wipe"
+    | "slide"
+    | "zoom"
+    | "circle";
   durationMs?: number;
   sfxId?: string;
 };
 
+const TRANSITION_OPTIONS: Array<[ComposeTransitionRow["type"], string]> = [
+  ["cut", "Cut"],
+  ["crossfade", "Fade"],
+  ["fade_in", "Fade in"],
+  ["fade_out", "Fade out"],
+  ["flash", "Flash"],
+  ["dissolve", "Dissolve"],
+  ["split", "Split"],
+  ["wipe", "Wipe"],
+  ["slide", "Slide"],
+  ["zoom", "Zoom"],
+  ["circle", "Circle"],
+];
+
 const SFX_OPTIONS = [
+  "none",
   "whoosh_soft",
   "whoosh_hard",
   "impact_hit",
@@ -226,26 +253,31 @@ export function ComposeTimelinePanel({ contentId, sources, transitions, onUpdate
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="cut">Cut</SelectItem>
-                <SelectItem value="crossfade">Crossfade</SelectItem>
-                <SelectItem value="flash">Flash</SelectItem>
+                {TRANSITION_OPTIONS.map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select
-              value={t.sfxId || "whoosh_soft"}
+              value={t.sfxId || "none"}
               onValueChange={(v) => {
                 const next = [...xfades];
-                next[index] = { ...t, sfxId: v };
+                next[index] = {
+                  ...t,
+                  sfxId: v === "none" ? undefined : v,
+                };
                 setXfades(next);
               }}
             >
               <SelectTrigger className="h-8 w-36">
-                <SelectValue />
+                <SelectValue placeholder="No SFX" />
               </SelectTrigger>
               <SelectContent>
                 {SFX_OPTIONS.map((id) => (
                   <SelectItem key={id} value={id}>
-                    {id}
+                    {id === "none" ? "No SFX" : id}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -644,17 +644,22 @@ export const PostCard = memo(
                 {post.status === "draft" && (
                   <DropdownMenuItem
                     className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
-                    onClick={() =>
+                    onClick={() => {
+                      const draftId = post.contentId || post.id;
+                      if (post.contentType === "clip") {
+                        navigate(`/create/clip/${draftId}/edit?step=trim`);
+                        return;
+                      }
                       navigate("/create/image", {
                         state: {
-                          draftId: post.contentId || post.id,
+                          draftId,
                           title: post.content || "",
                           prompt: post.content || "",
                           imageUrl: post.image,
                           mode: post.contentType === "meme" ? "meme" : "image",
                         },
-                      })
-                    }
+                      });
+                    }}
                   >
                     <FileEdit size={15} strokeWidth={2} /> Edit Draft
                   </DropdownMenuItem>
@@ -667,7 +672,20 @@ export const PostCard = memo(
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="gap-2.5 cursor-pointer py-2 text-[13px] font-medium tracking-normal"
-                  onClick={() => navigate("/create/image")}
+                  onClick={() => {
+                    const remixId = post.contentId || post.id;
+                    if (post.contentType === "clip") {
+                      navigate(`/create/clip/${remixId}/edit?step=polish`);
+                      return;
+                    }
+                    navigate("/create/image", {
+                      state: {
+                        prompt: post.content || "",
+                        imageUrl: post.image,
+                        mode: post.contentType === "meme" ? "meme" : "image",
+                      },
+                    });
+                  }}
                 >
                   <Sparkles size={15} strokeWidth={2} /> {t("home.post.remix")}
                 </DropdownMenuItem>

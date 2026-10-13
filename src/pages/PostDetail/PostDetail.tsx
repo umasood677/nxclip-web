@@ -468,18 +468,28 @@ export default function PostDetail() {
   };
 
   const handleRemixInStudio = () => {
+    const contentId = postData?.id || id;
+    if (contentType === "CLIP") {
+      if (!contentId) {
+        toast.error("Clip id missing");
+        return;
+      }
+      navigate(`/create/clip/${contentId}/edit?step=polish`);
+      toast.success("Opened in Clip Studio");
+      return;
+    }
     const targetPrompt = prompt || "";
     navigate("/create/image", {
       state: {
-        draftId: status === "draft" ? (postData?.id || id) : undefined,
+        draftId: status === "draft" ? contentId : undefined,
         prompt: targetPrompt,
         style,
         aspectRatio,
         title,
         description,
         imageUrl: initialImageUrl,
-        mode: contentType.toLowerCase() === "meme" ? "meme" : "image"
-      }
+        mode: contentType.toLowerCase() === "meme" ? "meme" : "image",
+      },
     });
     toast.success("Loaded content into Image Studio!");
   };

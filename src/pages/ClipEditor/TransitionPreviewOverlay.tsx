@@ -5,7 +5,18 @@ export function transitionPreviewClass(type: string): string {
   const kind = type.toLowerCase();
   if (kind.includes("zoom")) return "bg-black/40 scale-[1.22] blur-[3px]";
   if (kind.includes("glitch")) return "bg-fuchsia-500/40 saturate-200 hue-rotate-15 skew-x-6";
-  if (kind.includes("fade") || kind.includes("dissolve") || kind.includes("crossfade")) {
+  if (kind.includes("split") || kind.includes("vert")) {
+    return "bg-gradient-to-r from-black via-transparent to-black";
+  }
+  if (kind.includes("circle") || kind.includes("radial")) {
+    return "bg-black/75 [mask-image:radial-gradient(circle,transparent_20%,black_70%)]";
+  }
+  if (
+    kind.includes("fade") ||
+    kind.includes("dissolve") ||
+    kind.includes("crossfade") ||
+    kind.includes("fadeblack")
+  ) {
     return "bg-black/80";
   }
   if (kind.includes("wipe") || kind.includes("slide") || kind.includes("whip")) {

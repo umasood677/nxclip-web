@@ -140,6 +140,18 @@ const CAPTION_STYLE_OPTIONS: Array<{ value: string; labelKey: string; fallback: 
   { value: "neon", labelKey: "clip_editor.polish.meme.styles.neon", fallback: "Neon Glow" },
 ];
 
+/** Overlay text colors burned into Download/Render (ASS PrimaryColour). */
+const CAPTION_TEXT_COLORS: Array<{ hex: string; label: string }> = [
+  { hex: "#FFFFFF", label: "White" },
+  { hex: "#FFE600", label: "Yellow" },
+  { hex: "#00E5FF", label: "Cyan" },
+  { hex: "#B8FF3C", label: "Lime" },
+  { hex: "#FF4D9E", label: "Pink" },
+  { hex: "#FF8A3D", label: "Orange" },
+  { hex: "#FF3B3B", label: "Red" },
+  { hex: "#111111", label: "Black" },
+];
+
 function formatClipApiError(err: unknown, fallback = "Something went wrong"): string {
   if (!err) return fallback;
   if (typeof err === "string") return err;
@@ -253,7 +265,19 @@ export default function ClipEditor() {
   const [composeTransitions, setComposeTransitions] = useState<
     Array<{
       afterIndex: number;
-      type: "cut" | "crossfade" | "flash";
+      type:
+        | "none"
+        | "cut"
+        | "crossfade"
+        | "fade_in"
+        | "fade_out"
+        | "flash"
+        | "dissolve"
+        | "split"
+        | "wipe"
+        | "slide"
+        | "zoom"
+        | "circle";
       durationMs?: number;
       sfxId?: string;
     }>
@@ -271,6 +295,8 @@ export default function ClipEditor() {
   const [bottomOverlay, setBottomOverlay] = useState(DEFAULT_BOTTOM_CAPTION_PCT);
   const [memeCaptionStyle, setMemeCaptionStyle] = useState("kinetic_hormozi");
   const [captionFontId, setCaptionFontId] = useState<ClipCaptionFontId>(CLIP_CAPTION_FONT_DEFAULT);
+  const [captionTextColor, setCaptionTextColor] = useState("#FFFFFF");
+  const previewPlaybackGenRef = useRef(0);
   const [hooks, setHooks] = useState<Array<{ text: string; startMs: number; durationMs: number; styleId?: string }>>([]);
   /** AI alternatives from Generate hooks — pick one to overwrite the active on-clip hook. */
   const [hookOptions, setHookOptions] = useState<
@@ -293,7 +319,20 @@ export default function ClipEditor() {
     Array<{ start: number; end: number; show: boolean }> | null
   >(null);
   const [coachStitchJoins, setCoachStitchJoins] = useState<
-    Array<"cut" | "crossfade" | "flash" | "none">
+    Array<
+      | "none"
+      | "cut"
+      | "crossfade"
+      | "fade_in"
+      | "fade_out"
+      | "flash"
+      | "dissolve"
+      | "split"
+      | "wipe"
+      | "slide"
+      | "zoom"
+      | "circle"
+    >
   >([]);
   /** True after Apply to clip — keep multi-cut order through Polish / Download. */
   const [coachViralApplied, setCoachViralApplied] = useState(false);
@@ -446,6 +485,12 @@ export default function ClipEditor() {
             const allowed = CLIP_CAPTION_FONTS.some((f) => f.id === spec.captions?.fontId);
             if (allowed) setCaptionFontId(spec.captions.fontId as ClipCaptionFontId);
           }
+          if (
+            typeof spec.captions?.textColor === "string" &&
+            /^#[0-9A-Fa-f]{6}$/.test(spec.captions.textColor.trim())
+          ) {
+            setCaptionTextColor(spec.captions.textColor.trim().toUpperCase());
+          }
           if (spec.hooks?.length) setHooks(spec.hooks);
           {
             const extras = spec.extras as Record<string, unknown> | undefined;
@@ -527,9 +572,21 @@ export default function ClipEditor() {
               setCoachStitchJoins(
                 segs.slice(0, -1).map((_, i) => {
                   const t = String(joinsRaw[i]?.type || "flash").toLowerCase();
-                  return t === "none" || t === "crossfade" || t === "cut" || t === "flash"
-                    ? t
-                    : "flash";
+                  const allowed = new Set([
+                    "none",
+                    "cut",
+                    "crossfade",
+                    "fade_in",
+                    "fade_out",
+                    "flash",
+                    "dissolve",
+                    "split",
+                    "wipe",
+                    "slide",
+                    "zoom",
+                    "circle",
+                  ]);
+                  return (allowed.has(t) ? t : "flash") as (typeof coachStitchJoins)[number];
                 }),
               );
             }
@@ -913,9 +970,18 @@ export default function ClipEditor() {
   const joinToFlash = useCallback((join?: string) => {
     const j = String(join || "flash").toLowerCase();
     if (j === "none") return null;
-    if (j === "crossfade") return { type: "crossfade", caption: "Fade", sfx: "Whoosh Soft" };
-    if (j === "cut") return { type: "cut", caption: "Cut", sfx: "Impact Hit" };
-    return { type: "flash", caption: "Flash", sfx: "Flash Pop" };
+    if (j === "cut") return { type: "cut", caption: "Cut" };
+    if (j === "crossfade" || j === "fade") return { type: "crossfade", caption: "Fade" };
+    if (j === "fade_in") return { type: "fade_in", caption: "Fade in" };
+    if (j === "fade_out") return { type: "fade_out", caption: "Fade out" };
+    if (j === "dissolve") return { type: "dissolve", caption: "Dissolve" };
+    if (j === "split") return { type: "split", caption: "Split" };
+    if (j === "wipe") return { type: "wipe", caption: "Wipe" };
+    if (j === "slide") return { type: "slide", caption: "Slide" };
+    if (j === "zoom") return { type: "zoom", caption: "Zoom" };
+    if (j === "circle") return { type: "circle", caption: "Circle" };
+    if (j === "flash") return { type: "flash", caption: "Flash" };
+    return { type: j, caption: j.replace(/_/g, " ") };
   }, []);
 
   /** Coach: play one keep-range so the user can audition that cut. */
@@ -1206,21 +1272,33 @@ export default function ClipEditor() {
     };
   }, [isDragging, trimStart, trimEnd, DURATION, markers, seekVideo]);
 
-  const startPolishing = async () => {
-    if (polishBusyRef.current) return;
-    polishBusyRef.current = true;
+  const stopAllPreviewPlayback = useCallback(() => {
+    previewPlaybackGenRef.current += 1;
+    reviewAdvanceLockRef.current = true;
+    isReviewingTrimRef.current = false;
+    coachStitchPlayRef.current = false;
     if (reviewIntervalRef.current) {
       clearInterval(reviewIntervalRef.current);
       reviewIntervalRef.current = null;
     }
-    // Prep (Whisper / captions / hooks) is not a preview — stop source + BGM under the overlay.
     const el = videoRef.current;
     if (el) {
       el.pause();
       el.muted = true;
     }
-    mixBgmRef.current?.pause();
+    const bgm = mixBgmRef.current;
+    if (bgm) {
+      bgm.pause();
+      bgm.currentTime = 0;
+    }
     setIsPlaying(false);
+    setIsReviewingTrim(false);
+  }, []);
+
+  const startPolishing = async () => {
+    if (polishBusyRef.current) return;
+    polishBusyRef.current = true;
+    stopAllPreviewPlayback();
     const runId = ++polishRunIdRef.current;
     const still = () => polishRunIdRef.current === runId;
     isReviewingTrimRef.current = false;
@@ -1394,49 +1472,11 @@ export default function ClipEditor() {
     }
   };
 
+  /** Next: Polish — silent handoff (no trim-review audio under the progress overlay). */
   const handleApplyTrim = () => {
     setFinalTrim({ start: trimStart, end: trimEnd });
-    reviewAdvanceLockRef.current = false;
-    isReviewingTrimRef.current = true;
-    setIsReviewingTrim(true);
-    setReviewProgress(0);
-    if (reviewIntervalRef.current) {
-      clearInterval(reviewIntervalRef.current);
-      reviewIntervalRef.current = null;
-    }
-    // Coach Apply locked a multi-cut order — review that stitch, not a continuous min→max window.
-    if (coachViralApplied && coachTextCuts && coachTextCuts.length > 0) {
-      previewCoachStitch();
-      return;
-    }
-    seekVideo(trimStart);
-    const el = videoRef.current;
-    if (el) {
-      el.currentTime = trimStart;
-      el.muted = false;
-      applyPreviewMix();
-      void el
-        .play()
-        .then(() => {
-          setIsPlaying(true);
-          const bgm = mixBgmRef.current;
-          const track = TRACKS.find((t) => t.id === selectedTrackId);
-          if (bgm && track && selectedTrackId) {
-            if (mixBgmTrackIdRef.current !== selectedTrackId) {
-              bgm.src = track.url;
-              mixBgmTrackIdRef.current = selectedTrackId;
-              bgm.currentTime = 0;
-            }
-            applyPreviewMix();
-            void bgm.play().catch(() => {});
-          } else {
-            mixBgmRef.current?.pause();
-          }
-        })
-        .catch(() => setIsPlaying(false));
-    } else {
-      setIsPlaying(true);
-    }
+    stopAllPreviewPlayback();
+    void startPolishing();
   };
 
   const stopAudio = useCallback(() => {
@@ -1656,6 +1696,7 @@ export default function ClipEditor() {
         bottomText: bottomText || undefined,
         styleId: memeCaptionStyle || undefined,
         fontId: captionFontId || undefined,
+        textColor: captionTextColor || undefined,
         burnWords: true,
         topX: topOverlay.x,
         topY: topOverlay.y,
@@ -1709,6 +1750,7 @@ export default function ClipEditor() {
     bottomOverlay,
     memeCaptionStyle,
     captionFontId,
+    captionTextColor,
     hooks,
     silenceEnabled,
     prompt,
@@ -1733,20 +1775,24 @@ export default function ClipEditor() {
 
   const polishNeedsBurnIn = useCallback(() => {
     return Boolean(
-      selectedTrackId ||
+      coachViralApplied ||
+        selectedTrackId ||
         topText.trim() ||
         bottomText.trim() ||
         hooks.some((h) => Boolean(h?.text?.trim())) ||
         silenceEnabled ||
-        appliedTransitions.length,
+        appliedTransitions.length ||
+        (captionTextColor && captionTextColor.toUpperCase() !== "#FFFFFF"),
     );
   }, [
+    coachViralApplied,
     selectedTrackId,
     topText,
     bottomText,
     hooks,
     silenceEnabled,
     appliedTransitions.length,
+    captionTextColor,
   ]);
 
   /** Persist clipEditSpec and wait for media-worker polish (BGM, captions, hooks, trim). */
@@ -1809,11 +1855,21 @@ export default function ClipEditor() {
       });
       return;
     }
+    if (coachTextCuts && coachTextCuts.length > 1 && !coachViralApplied) {
+      toast.error("Apply the Coach edit first", {
+        description:
+          "Stitch order, joins, and hide-text only burn in after Apply to clip.",
+      });
+      return;
+    }
     setIsPublishing(true);
     triggerHaptic("medium");
     try {
       const needsRender =
-        polishNeedsBurnIn() || isDirty || String(renderStatus || "").toLowerCase() !== "completed";
+        coachViralApplied ||
+        polishNeedsBurnIn() ||
+        isDirty ||
+        String(renderStatus || "").toLowerCase() !== "completed";
       if (needsRender) {
         setIsRendering(true);
         toast.loading("Applying polish before publish…", { id: "publish-clip" });
@@ -2079,14 +2135,14 @@ export default function ClipEditor() {
       void saveClipEditToServer();
     }, 1200);
     return () => clearTimeout(timer);
-  }, [trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, title, description, prompt, hooks, silenceEnabled, hashtags, isNoiseReduced, colorCorrection, clipVolume, musicVolume, masterVolume, appliedTransitions, id, saveClipEditToServer]);
+  }, [trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, captionTextColor, title, description, prompt, hooks, silenceEnabled, hashtags, isNoiseReduced, colorCorrection, clipVolume, musicVolume, masterVolume, appliedTransitions, id, saveClipEditToServer]);
 
   // Track if any changes have been made (making the editor "dirty")
   useEffect(() => {
     if (isLoaded.current) {
       setIsDirty(true);
     }
-  }, [trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, title, description, hooks, silenceEnabled, hashtags, colorCorrection, isNoiseReduced, clipVolume, musicVolume, masterVolume]);
+  }, [trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, captionTextColor, title, description, hooks, silenceEnabled, hashtags, colorCorrection, isNoiseReduced, clipVolume, musicVolume, masterVolume, coachViralApplied, coachTextCuts, coachStitchJoins]);
 
   // Tab/window close warning. In-app leave confirm needs a data router (useBlocker);
   // App uses BrowserRouter, so we only guard hard navigations here.
@@ -2681,6 +2737,9 @@ export default function ClipEditor() {
                 onApplied={(plan) => {
                   const segs = plan.segments;
                   setCoachViralApplied(true);
+                  // Force a Coach-aware re-render on Download/Publish (invalidate stale polish).
+                  setRenderStatus("idle");
+                  setIsDirty(true);
                   // textCuts/joins already set by onPreview from Apply — keep that order.
                   setCoachTextCuts((prev) =>
                     prev?.length === segs.length
@@ -2875,6 +2934,7 @@ export default function ClipEditor() {
                   fontFamily={clipCaptionFontCss(captionFontId)}
                   stageRef={trimPreviewRef}
                   label="Hook text on clip"
+                  color={captionTextColor}
                 />
               ) : null}
               {bottomText && coachOverlayOnCut(currentTime, coachTextCuts) ? (
@@ -2886,6 +2946,7 @@ export default function ClipEditor() {
                   fontFamily={clipCaptionFontCss(captionFontId)}
                   stageRef={trimPreviewRef}
                   label="Context text on clip"
+                  color={captionTextColor}
                 />
               ) : null}
               
@@ -3704,6 +3765,7 @@ export default function ClipEditor() {
                     fontFamily={clipCaptionFontCss(captionFontId)}
                     stageRef={polishPreviewRef}
                     label={t("clip_editor.polish.meme.top_text")}
+                    color={captionTextColor}
                   />
                 ) : null}
                 {bottomText && coachOverlayOnCut(currentTime, coachTextCuts) ? (
@@ -3715,6 +3777,7 @@ export default function ClipEditor() {
                     fontFamily={clipCaptionFontCss(captionFontId)}
                     stageRef={polishPreviewRef}
                     label={t("clip_editor.polish.meme.bottom_text")}
+                    color={captionTextColor}
                   />
                 ) : null}
                   </div>
@@ -4242,6 +4305,37 @@ export default function ClipEditor() {
                               Burned into Download/Render via media-worker (OFL pack).
                             </p>
                         </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-muted-foreground ml-1">
+                              {t("clip_editor.polish.meme.text_color", {
+                                defaultValue: "Text color",
+                              })}
+                            </label>
+                            <div className="flex flex-wrap gap-2 px-1">
+                              {CAPTION_TEXT_COLORS.map((swatch) => {
+                                const selected =
+                                  captionTextColor.toUpperCase() === swatch.hex.toUpperCase();
+                                return (
+                                  <button
+                                    key={swatch.hex}
+                                    type="button"
+                                    title={swatch.label}
+                                    aria-label={swatch.label}
+                                    aria-pressed={selected}
+                                    onClick={() => setCaptionTextColor(swatch.hex)}
+                                    className={cn(
+                                      "h-7 w-7 rounded-full border-2 shadow-sm transition-transform",
+                                      selected
+                                        ? "border-primary scale-110"
+                                        : "border-border hover:scale-105",
+                                    )}
+                                    style={{ backgroundColor: swatch.hex }}
+                                  />
+                                );
+                              })}
+                            </div>
+                          </div>
 
                           <div className="flex flex-wrap gap-2">
                             <Button

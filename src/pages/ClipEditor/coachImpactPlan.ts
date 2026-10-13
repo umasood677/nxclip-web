@@ -191,7 +191,7 @@ export function transitionsFromCoachSegments(
       time: rel,
       type: pack.enhanceTypes[i % pack.enhanceTypes.length]!,
       caption: next?.purpose || seg.purpose || `Beat ${i + 2}`,
-      sfx: pack.junctionSfx,
+      // Visual join preview only — no transition beep/SFX.
     });
   }
   return out;

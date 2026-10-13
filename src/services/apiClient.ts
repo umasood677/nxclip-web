@@ -1237,7 +1237,7 @@ export interface ContentDto {
     title?: string;
     description?: string;
     bgmTrackId?: string;
-    captions?: { topText?: string; bottomText?: string; styleId?: string; fontId?: string; burnWords?: boolean; topX?: number; topY?: number; bottomX?: number; bottomY?: number };
+    captions?: { topText?: string; bottomText?: string; styleId?: string; fontId?: string; textColor?: string; burnWords?: boolean; topX?: number; topY?: number; bottomX?: number; bottomY?: number };
     hooks?: Array<{ text: string; startMs: number; durationMs: number; styleId?: string }>;
     silence?: { enabled?: boolean; minSilenceMs?: number };
     crop?: { mode?: "face" | "center"; focusX?: number; focusY?: number };
@@ -1366,7 +1366,7 @@ export const contentApi = {
       }>;
       transitions?: Array<{
         afterIndex: number;
-        type: "cut" | "crossfade" | "flash";
+        type: string;
         durationMs?: number;
         sfxId?: string;
       }>;
@@ -1406,7 +1406,7 @@ export const contentApi = {
       title?: string;
       description?: string;
       bgmTrackId?: string;
-      captions?: { topText?: string; bottomText?: string; styleId?: string; fontId?: string; burnWords?: boolean; topX?: number; topY?: number; bottomX?: number; bottomY?: number };
+      captions?: { topText?: string; bottomText?: string; styleId?: string; fontId?: string; textColor?: string; burnWords?: boolean; topX?: number; topY?: number; bottomX?: number; bottomY?: number };
       hooks?: Array<{ text: string; startMs: number; durationMs: number; styleId?: string }>;
       silence?: { enabled?: boolean; minSilenceMs?: number };
       crop?: { mode?: "face" | "center"; focusX?: number; focusY?: number };
@@ -1439,7 +1439,7 @@ export const contentApi = {
         title?: string;
         description?: string;
         bgmTrackId?: string;
-        captions?: { topText?: string; bottomText?: string; styleId?: string; fontId?: string; burnWords?: boolean; topX?: number; topY?: number; bottomX?: number; bottomY?: number };
+        captions?: { topText?: string; bottomText?: string; styleId?: string; fontId?: string; textColor?: string; burnWords?: boolean; topX?: number; topY?: number; bottomX?: number; bottomY?: number };
         hooks?: Array<{ text: string; startMs: number; durationMs: number; styleId?: string }>;
         silence?: { enabled?: boolean; minSilenceMs?: number };
         crop?: { mode?: "face" | "center"; focusX?: number; focusY?: number };
@@ -1526,7 +1526,7 @@ export const contentApi = {
   },
 
   analyzeClipCoach: async (id: string, body: { creatorContext?: string; mode?: CoachMode; durationSec: number }): Promise<ClipCoachResult> => performApiRequest(`/content/${id}/clip-coach`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), suppressErrorLog: true }),
-  applyClipCoach: async (id: string, apply: boolean, captionsReviewed = false, options?: { plan: Pick<ClipCoachResult['editPlan'], 'segments' | 'hookOverlay' | 'captionStyle' | 'duckBgm' | 'contextOverlay' | 'captionEmphasis'>; expectedContext: string; expectedMode: CoachMode; cutTransitions?: Array<{ type: 'cut' | 'crossfade' | 'flash' | 'none' }>; cutText?: boolean[] }): Promise<ContentDto> => performApiRequest(`/content/${id}/clip-coach/${apply ? 'apply' : 'original'}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ captionsReviewed, ...options, ...(options ? { plan: { segments: options.plan.segments, hookOverlay: options.plan.hookOverlay, captionStyle: options.plan.captionStyle, duckBgm: options.plan.duckBgm, contextOverlay: options.plan.contextOverlay, captionEmphasis: options.plan.captionEmphasis }, cutTransitions: options.cutTransitions, cutText: options.cutText } : {}) }) }),
+  applyClipCoach: async (id: string, apply: boolean, captionsReviewed = false, options?: { plan: Pick<ClipCoachResult['editPlan'], 'segments' | 'hookOverlay' | 'captionStyle' | 'duckBgm' | 'contextOverlay' | 'captionEmphasis'>; expectedContext: string; expectedMode: CoachMode; cutTransitions?: Array<{ type: string }>; cutText?: boolean[] }): Promise<ContentDto> => performApiRequest(`/content/${id}/clip-coach/${apply ? 'apply' : 'original'}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ captionsReviewed, ...options, ...(options ? { plan: { segments: options.plan.segments, hookOverlay: options.plan.hookOverlay, captionStyle: options.plan.captionStyle, duckBgm: options.plan.duckBgm, contextOverlay: options.plan.contextOverlay, captionEmphasis: options.plan.captionEmphasis }, cutTransitions: options.cutTransitions, cutText: options.cutText } : {}) }) }),
 
   analyzeSoundDesign: async (
     id: string,

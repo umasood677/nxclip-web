@@ -28,6 +28,8 @@ type DraggableCaptionOverlayProps = {
   fontFamily: string;
   stageRef: RefObject<HTMLDivElement | null>;
   label: string;
+  /** CSS color for overlay fill (default white). */
+  color?: string;
 };
 
 export function DraggableCaptionOverlay({
@@ -38,6 +40,7 @@ export function DraggableCaptionOverlay({
   fontFamily,
   stageRef,
   label,
+  color = "#FFFFFF",
 }: DraggableCaptionOverlayProps) {
   const draggingRef = useRef(false);
 
@@ -93,7 +96,10 @@ export function DraggableCaptionOverlay({
         draggingRef.current = false;
       }}
     >
-      <span className="block text-white text-sm sm:text-base uppercase leading-snug break-words text-balance drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] pointer-events-none">
+      <span
+        className="block text-sm sm:text-base uppercase leading-snug break-words text-balance drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] pointer-events-none"
+        style={{ color }}
+      >
         {text}
       </span>
     </div>

@@ -69,6 +69,39 @@ export interface ClipCoachResult {
   };
 }
 
+export type CutJoin =
+  | "none"
+  | "cut"
+  | "crossfade"
+  | "fade_in"
+  | "fade_out"
+  | "flash"
+  | "dissolve"
+  | "split"
+  | "wipe"
+  | "slide"
+  | "zoom"
+  | "circle";
+
+const CUT_JOIN_OPTIONS: Array<[CutJoin, string]> = [
+  ["none", "Off"],
+  ["cut", "Cut"],
+  ["crossfade", "Fade"],
+  ["fade_in", "Fade in"],
+  ["fade_out", "Fade out"],
+  ["flash", "Flash"],
+  ["dissolve", "Dissolve"],
+  ["split", "Split"],
+  ["wipe", "Wipe"],
+  ["slide", "Slide"],
+  ["zoom", "Zoom"],
+  ["circle", "Circle"],
+];
+
+function isCutJoin(value: string): value is CutJoin {
+  return CUT_JOIN_OPTIONS.some(([type]) => type === value);
+}
+
 /** Live preview payload pushed onto the Clip Studio canvas. */
 export type CoachPreviewPayload = {
   hookText: string;
@@ -78,7 +111,7 @@ export type CoachPreviewPayload = {
   /** Checked moments in order — player stitches these when you play the whole clip. */
   textCuts?: Array<{ start: number; end: number; show: boolean }>;
   /** Join after each cut (length = textCuts.length - 1). */
-  joins?: Array<"cut" | "crossfade" | "flash" | "none">;
+  joins?: Array<CutJoin>;
 };
 
 export type CoachModeImpact = {
@@ -89,15 +122,13 @@ export type CoachModeImpact = {
   segments?: Array<{ start: number; end: number; purpose: string }>;
 };
 
-type CutJoin = "cut" | "crossfade" | "flash" | "none";
-
 const MODE_EFFECT: Record<CoachMode, string> = {
   auto: "Auto picks music from the footage type (event clips often share Future Bass). Pick another mode to force a different track.",
-  viral_short: "Viral Short → Future Bass + flash joins. Play the clip to hear it. Re-analyze to rebuild moments.",
-  professional: "Clean Professional → Lo-Fi Gaming + soft fades. Play the clip to hear it. Re-analyze to rebuild moments.",
-  event_highlight: "Event Highlight → Epic Victory + hard cuts. Play the clip to hear it. Re-analyze to rebuild moments.",
-  documentary: "Story → Dark Souls + crossfades. Play the clip to hear it. Re-analyze to rebuild moments.",
-  high_energy: "High Energy → Aggressive Phonk + flashes. Play the clip to hear it. Re-analyze to rebuild moments.",
+  viral_short: "Viral Short → Future Bass + flash joins (visual only). Play the clip to hear the BGM. Re-analyze to rebuild moments.",
+  professional: "Clean Professional → Lo-Fi Gaming + soft fades (visual only). Play the clip to hear the BGM. Re-analyze to rebuild moments.",
+  event_highlight: "Event Highlight → Epic Victory + hard cuts. Play the clip to hear the BGM. Re-analyze to rebuild moments.",
+  documentary: "Story → Dark Souls + crossfades (visual only). Play the clip to hear the BGM. Re-analyze to rebuild moments.",
+  high_energy: "High Energy → Aggressive Phonk + flashes (visual only). Play the clip to hear the BGM. Re-analyze to rebuild moments.",
 };
 
 const modes: Array<[CoachMode, string]> = [
@@ -190,6 +221,18 @@ export function ClipCoachPanel({
   const [textOnCut, setTextOnCut] = useState<boolean[]>([]);
   const latest = useRef({ id, context, mode });
   latest.current = { id, context, mode };
+  const persistAppliedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const appliedRef = useRef(applied);
+  appliedRef.current = applied;
+
+  /** After Apply, checklist/join/text edits must re-hit the server or publish skips them. */
+  const queuePersistApplied = () => {
+    if (!appliedRef.current) return;
+    if (persistAppliedTimerRef.current) clearTimeout(persistAppliedTimerRef.current);
+    persistAppliedTimerRef.current = setTimeout(() => {
+      void apply(true);
+    }, 750);
+  };
 
   useEffect(() => {
     let alive = true;
@@ -224,11 +267,10 @@ export function ClipCoachPanel({
             : [];
           if (storedJoins.length) {
             setCutTransitions(
-              storedJoins.map((t) =>
-                t.type === "none" || t.type === "flash" || t.type === "crossfade" || t.type === "cut"
-                  ? t.type
-                  : "cut",
-              ),
+              storedJoins.map((t) => {
+                const raw = String(t.type || "").toLowerCase();
+                return isCutJoin(raw) ? raw : "cut";
+              }),
             );
           }
           onUnderstanding(stored);
@@ -362,10 +404,27 @@ export function ClipCoachPanel({
     flags[index] = flags[target]!;
     flags[target] = flag;
     setTextOnCut(flags);
+    // Keep join pills aligned with the reordered keep-ranges.
+    setCutTransitions((prev) => {
+      const n = Math.max(0, segments.length - 1);
+      const nextJoins = Array.from(
+        { length: n },
+        (_, i) =>
+          prev[i] ||
+          resolveCoachImpactPack(mode, result?.creativeBrief.contentType).junctionType,
+      );
+      if (index < n && target < n) {
+        const j = nextJoins[index]!;
+        nextJoins[index] = nextJoins[target]!;
+        nextJoins[target] = j;
+      }
+      return nextJoins;
+    });
     const next = { ...plan, segments };
     setDraftPlan(next);
     setChecked(defaultChecks(next));
     pushPreview(next, flags);
+    queuePersistApplied();
   }
 
   function updateSegmentTime(
@@ -386,6 +445,7 @@ export function ClipCoachPanel({
       return next;
     });
     updateDraftPlan({ ...plan, segments });
+    queuePersistApplied();
   }
 
   const toggleCheck = (key: string) => {
@@ -398,6 +458,7 @@ export function ClipCoachPanel({
       pushPreview(plan, undefined, next);
       return next;
     });
+    queuePersistApplied();
   };
 
   const analyze = async () => {
@@ -473,6 +534,10 @@ export function ClipCoachPanel({
 
   const apply = async (value: boolean) => {
     if (!plan || !result) return;
+    if (persistAppliedTimerRef.current) {
+      clearTimeout(persistAppliedTimerRef.current);
+      persistAppliedTimerRef.current = null;
+    }
     setBusy(true);
     try {
       // Persist the exact analyzed context so save cannot drift from the Coach brief.
@@ -701,16 +766,9 @@ export function ClipCoachPanel({
                       {" from the mode above. Play the clip or tap Preview BGM to hear it. Change mode to switch tracks."}
                     </li>
                     <li>
-                      <span className="font-medium text-foreground/80">SFX</span>
-                      {" — "}
-                      short cut sound ({impact.junctionSfx}) between keep-ranges on{" "}
-                      <span className="font-medium text-foreground/80">Render</span>
-                      {" — not in live preview"}
-                    </li>
-                    <li>
                       <span className="font-medium text-foreground/80">Transition</span>
                       {" — "}
-                      {impact.junctionType} between cuts on Render
+                      {impact.junctionType} between cuts on Render (visual only — no join beep)
                       {impact.duckBgm
                         ? " · Music ducking is the green row below (music drops while people speak)"
                         : ""}
@@ -972,6 +1030,7 @@ export function ClipCoachPanel({
                           flags[i] = flags[i] === false;
                           setTextOnCut(flags);
                           pushPreview(plan, flags);
+                          queuePersistApplied();
                         }}
                         className={cn(
                           "inline-flex h-7 w-7 items-center justify-center rounded-md border",
@@ -1029,14 +1088,7 @@ export function ClipCoachPanel({
                       <span className="mr-0.5 text-[10px] text-muted-foreground">
                         Into next cut
                       </span>
-                      {(
-                        [
-                          ["none", "Off"],
-                          ["flash", "Flash"],
-                          ["crossfade", "Fade"],
-                          ["cut", "Cut"],
-                        ] as const
-                      ).map(([type, label]) => {
+                      {CUT_JOIN_OPTIONS.map(([type, label]) => {
                         const selected =
                           (cutTransitions[i] ||
                             resolveCoachImpactPack(mode, result.creativeBrief.contentType)
@@ -1052,6 +1104,7 @@ export function ClipCoachPanel({
                               next[i] = type;
                               setCutTransitions(next);
                               pushPreview(plan, undefined, undefined, next);
+                              queuePersistApplied();
                             }}
                             className={cn(
                               "h-6 rounded-full border px-2 text-[10px] font-medium",
