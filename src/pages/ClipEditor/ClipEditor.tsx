@@ -1908,15 +1908,31 @@ export default function ClipEditor() {
     setIsPublishing(true);
     triggerHaptic("medium");
     try {
+      // Polish preview is CSS + client BGM only. Always burn-in before publish when
+      // there is any polish — never trust a prior "completed" copy-fallback render.
       const needsRender =
         coachViralApplied ||
         polishNeedsBurnIn() ||
+        Boolean(selectedTrackId) ||
+        Boolean(topText.trim() || bottomText.trim()) ||
+        hooks.some((h) => Boolean(h?.text?.trim())) ||
         isDirty ||
         String(renderStatus || "").toLowerCase() !== "completed";
       if (needsRender) {
         setIsRendering(true);
-        toast.loading("Applying polish before publish…", { id: "publish-clip" });
+        toast.loading("Burning text, captions, and BGM into the clip…", {
+          id: "publish-clip",
+        });
         await ensurePolishedRender({ toastId: "publish-clip" });
+        const latest = await contentApi.getOwnedContentById(id, {
+          suppressErrorLog: true,
+        });
+        if (String(latest.renderStatus || "").toLowerCase() !== "completed") {
+          throw new Error(
+            "Polish render did not complete. Text/BGM were not burned in — retry Publish.",
+          );
+        }
+        setRenderStatus("completed");
         setIsRendering(false);
       } else {
         await saveClipEditToServer();
@@ -1939,7 +1955,9 @@ export default function ClipEditor() {
       triggerHaptic("success");
       setIsDirty(false);
       setPublishPreviewOpen(false);
-      navigate("/feed");
+      navigate("/feed", {
+        state: { refreshFeed: true, publishedContentId: id },
+      });
     } catch (err: any) {
       console.error(err);
       toast.error("Failed to publish clip", {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Plus,
   Rocket,
@@ -510,6 +510,8 @@ export default function HomeFeed() {
     }
   }, [fetchPersonalFeed, fetchMetricsContent, fetchTrending]);
 
+  const location = useLocation();
+
   // Critical path: personal feed only — unlock UI as soon as Posts can render.
   useEffect(() => {
     let cancelled = false;
@@ -527,6 +529,38 @@ export default function HomeFeed() {
       cancelled = true;
     };
   }, [fetchPersonalFeed]);
+
+  // After Clip Studio publish, force refetch — moderation/feed index can lag the redirect.
+  useEffect(() => {
+    const state = location.state as
+      | { refreshFeed?: boolean; publishedContentId?: string }
+      | null;
+    if (!state?.refreshFeed) return;
+    let cancelled = false;
+    void (async () => {
+      await refreshFeed();
+      if (cancelled) return;
+      // Moderation → feed projection often lands 1–5s after publish returns.
+      await new Promise((r) => setTimeout(r, 2500));
+      if (!cancelled) await fetchPersonalFeed();
+      await new Promise((r) => setTimeout(r, 4000));
+      if (!cancelled) {
+        await fetchPersonalFeed();
+        await fetchMetricsContent();
+      }
+      navigate(location.pathname, { replace: true, state: {} });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    location.state,
+    location.pathname,
+    refreshFeed,
+    fetchPersonalFeed,
+    fetchMetricsContent,
+    navigate,
+  ]);
 
   // Secondary: studio metrics from /content/mine (capped) — does not block first paint.
   useEffect(() => {
