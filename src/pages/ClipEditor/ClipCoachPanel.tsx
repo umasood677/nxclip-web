@@ -234,6 +234,17 @@ export function ClipCoachPanel({
     }, 750);
   };
 
+  // Never fire a late Apply after leaving Clip Studio — that wiped renderStorageKey
+  // and made the feed play the unedited master.
+  useEffect(() => {
+    return () => {
+      if (persistAppliedTimerRef.current) {
+        clearTimeout(persistAppliedTimerRef.current);
+        persistAppliedTimerRef.current = null;
+      }
+    };
+  }, []);
+
   useEffect(() => {
     let alive = true;
     setResult(null);

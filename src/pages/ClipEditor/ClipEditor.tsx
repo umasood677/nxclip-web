@@ -706,9 +706,11 @@ export default function ClipEditor() {
           specHydratedRef.current = true;
         }
 
-        // Always use the authenticated media route for video (not image URL extractors).
+        // Always load the original master for editing. Feed/detail use the polished
+        // render by default once burn-in completes — without variant=master Studio
+        // would show the burned MP4 and feel like edits "didn't apply" on re-open.
         const token = getAccessToken();
-        const mediaUrl = `${resolveBaseGatewayUrl()}/content/${id}/media`;
+        const mediaUrl = `${resolveBaseGatewayUrl()}/content/${id}/media?variant=master`;
         let lastErr: unknown;
         for (let attempt = 0; attempt < 4; attempt++) {
           if (cancelled) return;
@@ -1827,10 +1829,13 @@ export default function ClipEditor() {
 
   /** Persist clipEditSpec and wait for media-worker polish (BGM, captions, hooks, trim). */
   const ensurePolishedRender = useCallback(
-    async (opts?: { download?: boolean; toastId?: string }) => {
+    async (opts?: { download?: boolean; toastId?: string; loadingMessage?: string }) => {
       if (!id) throw new Error("No active clip ID found.");
       const toastId = opts?.toastId ?? "render-clip";
-      toast.loading("Saving edit and applying polish (BGM, captions)…", { id: toastId });
+      toast.loading(
+        opts?.loadingMessage ?? "Saving edit and applying polish (BGM, captions)…",
+        { id: toastId },
+      );
       const spec = buildClipEditSpec();
       try {
         await contentApi.saveClipEdit(id, spec);
@@ -1920,10 +1925,10 @@ export default function ClipEditor() {
         String(renderStatus || "").toLowerCase() !== "completed";
       if (needsRender) {
         setIsRendering(true);
-        toast.loading("Burning text, captions, and BGM into the clip…", {
-          id: "publish-clip",
+        await ensurePolishedRender({
+          toastId: "publish-clip",
+          loadingMessage: "Applying edit and Publishing clip...",
         });
-        await ensurePolishedRender({ toastId: "publish-clip" });
         const latest = await contentApi.getOwnedContentById(id, {
           suppressErrorLog: true,
         });
@@ -2084,7 +2089,7 @@ export default function ClipEditor() {
             toast.success("Animation ready — loading preview");
             // Trigger media reload by clearing then re-setting via navigation params
             const token = getAccessToken();
-            const mediaUrl = `${resolveBaseGatewayUrl()}/content/${id}/media`;
+            const mediaUrl = `${resolveBaseGatewayUrl()}/content/${id}/media?variant=master`;
             try {
               const res = await fetch(mediaUrl, {
                 cache: "no-store",
