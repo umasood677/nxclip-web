@@ -49,8 +49,13 @@ function statusTone(status: string): string {
 export function SocialLiveActions({ contentId, caption }: SocialLiveActionsProps) {
   const [platforms, setPlatforms] = useState<SocialPlatform[]>([]);
   const [busy, setBusy] = useState(false);
-  const [scheduleDate, setScheduleDate] = useState("");
-  const [scheduleTime, setScheduleTime] = useState("");
+  const [scheduleDate, setScheduleDate] = useState(() => {
+    // Default to ~1 hour from now so the fields are never empty placeholders.
+    return localDateValue(new Date(Date.now() + 60 * 60 * 1000));
+  });
+  const [scheduleTime, setScheduleTime] = useState(() => {
+    return localTimeValue(new Date(Date.now() + 60 * 60 * 1000));
+  });
   const [linkUrl, setLinkUrl] = useState("");
   const [linkPlatform, setLinkPlatform] = useState<SocialPlatform>("youtube");
   const [items, setItems] = useState<Array<Record<string, unknown>>>([]);

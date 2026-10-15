@@ -26,6 +26,7 @@ import {
   Layout,
   Download,
   Film,
+  Save,
 } from "lucide-react";
 import { SocialPlatformIcon } from "../../components/social/SocialPlatformIcon";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -201,10 +202,15 @@ export default function ClipEditor() {
   const [currentTime, setCurrentTime] = useState(0);
   const [DURATION, setDuration] = useState(90);
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
+  /** Blob URL of the completed burn-in MP4 — shown in polish preview after Save & Render. */
+  const [renderPreviewSrc, setRenderPreviewSrc] = useState<string | null>(null);
+  const [renderPreviewDuration, setRenderPreviewDuration] = useState(0);
   const [videoLoading, setVideoLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const trimPreviewRef = useRef<HTMLDivElement | null>(null);
   const polishPreviewRef = useRef<HTMLDivElement | null>(null);
+  const renderPreviewUrlRef = useRef<string | null>(null);
+  const showingFinalRenderRef = useRef(false);
   const [activePolishTab, setActivePolishTab] = useState(
     () => (searchParams.get("action") === "hooks" ? "details" : "audio"),
   );
@@ -780,6 +786,53 @@ export default function ClipEditor() {
     hashtags,
   }).slice(0, 2000);
 
+  /** Completed burn-in that matches current edits — Publish/Download unlock. */
+  const renderReady =
+    String(renderStatus || "").toLowerCase() === "completed" && !isDirty;
+
+  /** Polish player shows the real burned MP4 (not CSS/live mix preview). */
+  const showingFinalRender = Boolean(renderReady && renderPreviewSrc);
+  showingFinalRenderRef.current = showingFinalRender;
+
+  const renderGateMessage =
+    "Save & Render first so your latest edits are burned into the MP4. Then Publish or Download.";
+
+  const clearRenderPreview = useCallback(() => {
+    if (renderPreviewUrlRef.current) {
+      URL.revokeObjectURL(renderPreviewUrlRef.current);
+      renderPreviewUrlRef.current = null;
+    }
+    setRenderPreviewSrc(null);
+    setRenderPreviewDuration(0);
+  }, []);
+
+  /** Fetch completed render into the polish preview player. */
+  const loadRenderPreview = useCallback(async () => {
+    if (!id) return;
+    const token = getAccessToken();
+    const mediaUrl = `${resolveBaseGatewayUrl()}/content/${id}/media?variant=render&_=${Date.now()}`;
+    const res = await fetch(mediaUrl, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error(`Render preview failed (${res.status})`);
+    const blob = await res.blob();
+    if (!blob || blob.size < 64) throw new Error("Render preview empty");
+    const objectUrl = URL.createObjectURL(blob);
+    if (renderPreviewUrlRef.current) {
+      URL.revokeObjectURL(renderPreviewUrlRef.current);
+    }
+    renderPreviewUrlRef.current = objectUrl;
+    setRenderPreviewSrc(objectUrl);
+    // Stop live mix — final MP4 already has BGM/captions burned in.
+    mixBgmRef.current?.pause();
+    const el = videoRef.current;
+    if (el) {
+      el.pause();
+      setIsPlaying(false);
+    }
+  }, [id]);
+
   const openPublishPreview = () => {
     if (!id) {
       toast.error("No active clip ID found.");
@@ -788,6 +841,12 @@ export default function ClipEditor() {
     if (isAlreadyPublished) {
       toast.error("Already published", {
         description: publishBlockedReason || undefined,
+      });
+      return;
+    }
+    if (!renderReady) {
+      toast.error("Save & Render required", {
+        description: renderGateMessage,
       });
       return;
     }
@@ -1140,6 +1199,21 @@ export default function ClipEditor() {
         }
         setPreviewingTrackId(null);
         setPreviewProgress(0);
+
+        // Final burned MP4: play as-is (trim/BGM/captions already in file).
+        if (showingFinalRenderRef.current) {
+          coachStitchPlayRef.current = false;
+          mixBgmRef.current?.pause();
+          clearMixBgm();
+          if (el.currentTime >= Math.max(0.05, (el.duration || 0) - 0.08)) {
+            el.currentTime = 0;
+            setCurrentTime(0);
+          }
+          await el.play();
+          setIsPlaying(true);
+          return;
+        }
+
         if (coachTextCuts?.length) {
           coachStitchPlayRef.current = true;
           const t = el.currentTime;
@@ -1755,7 +1829,8 @@ export default function ClipEditor() {
       creatorContext: prompt ? sanitizeCreatorContext(prompt) || undefined : undefined,
       extras: {
         hashtags: hashtags.length ? hashtags : undefined,
-        transitions: appliedTransitions.length ? appliedTransitions : undefined,
+        // Always send transitions (incl. []) so clearing them invalidates prior burn-in.
+        transitions: appliedTransitions,
         enhance: {
           noiseReduced: isNoiseReduced,
           colorCorrection,
@@ -1827,30 +1902,48 @@ export default function ClipEditor() {
     captionTextColor,
   ]);
 
-  /** Persist clipEditSpec and wait for media-worker polish (BGM, captions, hooks, trim). */
+  /** Persist clipEditSpec and wait for media-worker polish (BGM, captions, hooks, trim).
+   * Shared by Publish and Download. Always saves current edits then asks the server to
+   * render — server reuses the prior MP4 only when the edit fingerprint is unchanged.
+   * So iterative edit→download without publish always burns the latest changes. */
   const ensurePolishedRender = useCallback(
-    async (opts?: { download?: boolean; toastId?: string; loadingMessage?: string }) => {
+    async (opts?: {
+      download?: boolean;
+      toastId?: string;
+      loadingMessage?: string;
+      force?: boolean;
+    }) => {
       if (!id) throw new Error("No active clip ID found.");
       const toastId = opts?.toastId ?? "render-clip";
-      toast.loading(
-        opts?.loadingMessage ?? "Saving edit and applying polish (BGM, captions)…",
-        { id: toastId },
-      );
-      const spec = buildClipEditSpec();
-      try {
-        await contentApi.saveClipEdit(id, spec);
-        const queued = await contentApi.renderClip(id, { clipEditSpec: spec });
-        setRenderStatus(queued.renderStatus || "queued");
+      let status = String(renderStatus || "").toLowerCase();
 
-        // Multi-cut viral stitch can exceed 2 minutes on cold workers.
-        const started = Date.now();
-        let status = queued.renderStatus || "queued";
-        while (Date.now() - started < 240_000) {
-          await new Promise((r) => setTimeout(r, 2000));
-          const latest = await contentApi.getOwnedContentById(id, { suppressErrorLog: true });
-          status = latest.renderStatus || status;
-          setRenderStatus(status);
-          if (status === "completed" || status === "failed") break;
+      try {
+        const spec = buildClipEditSpec();
+        await contentApi.saveClipEdit(id, spec);
+        // Never skip this call based on local isDirty — transitions/prompt/etc. can
+        // change without flipping dirty. Backend short-circuits when hash matches.
+        const queued = await contentApi.renderClip(id, { clipEditSpec: spec });
+        status = String(
+          queued.renderStatus || queued.status || "queued",
+        ).toLowerCase();
+        setRenderStatus(status === "completed" ? "completed" : queued.renderStatus || "queued");
+
+        // Backend returns completed immediately when edit fingerprint matches prior burn-in.
+        if (status !== "completed") {
+          toast.loading(
+            opts?.loadingMessage ?? "Saving edit and applying polish (BGM, captions)…",
+            { id: toastId },
+          );
+          const started = Date.now();
+          while (Date.now() - started < 240_000) {
+            await new Promise((r) => setTimeout(r, 2000));
+            const polled = await contentApi.getOwnedContentById(id, {
+              suppressErrorLog: true,
+            });
+            status = String(polled.renderStatus || status).toLowerCase();
+            setRenderStatus(polled.renderStatus || status);
+            if (status === "completed" || status === "failed") break;
+          }
         }
 
         if (status !== "completed") {
@@ -1860,6 +1953,7 @@ export default function ClipEditor() {
               : "Render timed out after 4 minutes. Your Apply is still saved — retry Publish.",
           );
         }
+        setIsDirty(false);
       } catch (err) {
         const detail = formatClipApiError(
           err,
@@ -1869,10 +1963,13 @@ export default function ClipEditor() {
       }
 
       if (opts?.download) {
+        toast.loading("Preparing download…", { id: toastId });
         const token = getAccessToken();
-        const mediaUrl = `${resolveBaseGatewayUrl()}/content/${id}/media?variant=render`;
+        // Cache-bust so iterative downloads never get a stale browser-cached MP4.
+        const mediaUrl = `${resolveBaseGatewayUrl()}/content/${id}/media?variant=render&_=${Date.now()}`;
         const res = await fetch(mediaUrl, {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          cache: "no-store",
         });
         if (!res.ok) throw new Error(`Download failed (${res.status})`);
         const blob = await res.blob();
@@ -1886,10 +1983,9 @@ export default function ClipEditor() {
         URL.revokeObjectURL(objectUrl);
       }
 
-      setIsDirty(false);
       return status;
     },
-    [id, buildClipEditSpec, title],
+    [id, buildClipEditSpec, title, renderStatus],
   );
 
   const handlePublishContent = async () => {
@@ -1910,39 +2006,17 @@ export default function ClipEditor() {
       });
       return;
     }
+    if (!renderReady) {
+      toast.error("Save & Render required", {
+        description: renderGateMessage,
+        id: "publish-clip",
+      });
+      return;
+    }
     setIsPublishing(true);
     triggerHaptic("medium");
     try {
-      // Polish preview is CSS + client BGM only. Always burn-in before publish when
-      // there is any polish — never trust a prior "completed" copy-fallback render.
-      const needsRender =
-        coachViralApplied ||
-        polishNeedsBurnIn() ||
-        Boolean(selectedTrackId) ||
-        Boolean(topText.trim() || bottomText.trim()) ||
-        hooks.some((h) => Boolean(h?.text?.trim())) ||
-        isDirty ||
-        String(renderStatus || "").toLowerCase() !== "completed";
-      if (needsRender) {
-        setIsRendering(true);
-        await ensurePolishedRender({
-          toastId: "publish-clip",
-          loadingMessage: "Applying edit and Publishing clip...",
-        });
-        const latest = await contentApi.getOwnedContentById(id, {
-          suppressErrorLog: true,
-        });
-        if (String(latest.renderStatus || "").toLowerCase() !== "completed") {
-          throw new Error(
-            "Polish render did not complete. Text/BGM were not burned in — retry Publish.",
-          );
-        }
-        setRenderStatus("completed");
-        setIsRendering(false);
-      } else {
-        await saveClipEditToServer();
-      }
-
+      // Render already completed via Save & Render — publish that same MP4 to the feed.
       toast.loading("Submitting to content moderation and feed...", { id: "publish-clip" });
       await contentApi.publish(id, {
         title,
@@ -1971,7 +2045,6 @@ export default function ClipEditor() {
       });
       triggerHaptic("error");
     } finally {
-      setIsRendering(false);
       setIsPublishing(false);
     }
   };
@@ -2130,20 +2203,83 @@ export default function ClipEditor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot deep link
   }, [id, searchParams]);
 
-  const handleRenderDownload = async () => {
+  /** Burn current edits once. After success, load final MP4 into preview; Publish/Download unlock. */
+  const handleSaveAndRender = async () => {
     if (!id) {
       toast.error("No active clip ID found.");
+      return;
+    }
+    if (coachTextCuts && coachTextCuts.length > 1 && !coachViralApplied) {
+      toast.error("Apply the Coach edit first", {
+        description:
+          "Stitch order, joins, and hide-text only burn in after Apply to clip.",
+      });
       return;
     }
     setIsRendering(true);
     triggerHaptic("medium");
     try {
-      await ensurePolishedRender({ download: true, toastId: "render-clip" });
-      toast.success("Render ready — download started", { id: "render-clip" });
+      await ensurePolishedRender({
+        toastId: "save-render",
+        loadingMessage: "Saving edit and rendering clip…",
+      });
+      setRenderStatus("completed");
+      toast.loading("Loading final preview…", { id: "save-render" });
+      await loadRenderPreview();
+      toast.success("Final render ready — play it below, then Publish or Download", {
+        id: "save-render",
+      });
       triggerHaptic("success");
     } catch (err: any) {
       console.error(err);
-      toast.error("Render failed", {
+      toast.error("Save & Render failed", {
+        description: formatClipApiError(err, "Could not burn in this clip."),
+        id: "save-render",
+      });
+      triggerHaptic("error");
+    } finally {
+      setIsRendering(false);
+    }
+  };
+
+  /** Download the completed render only — no re-render (use Save & Render first). */
+  const handleRenderDownload = async () => {
+    if (!id) {
+      toast.error("No active clip ID found.");
+      return;
+    }
+    if (!renderReady) {
+      toast.error("Save & Render required", {
+        description: renderGateMessage,
+        id: "render-clip",
+      });
+      return;
+    }
+    setIsRendering(true);
+    triggerHaptic("medium");
+    try {
+      toast.loading("Preparing download…", { id: "render-clip" });
+      const token = getAccessToken();
+      const mediaUrl = `${resolveBaseGatewayUrl()}/content/${id}/media?variant=render&_=${Date.now()}`;
+      const res = await fetch(mediaUrl, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(`Download failed (${res.status})`);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = `${(title || "clip").replace(/[^\w\-]+/g, "_")}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objectUrl);
+      toast.success("Download started", { id: "render-clip" });
+      triggerHaptic("success");
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Download failed", {
         description: formatClipApiError(err, "Could not export this clip."),
         id: "render-clip",
       });
@@ -2203,12 +2339,41 @@ export default function ClipEditor() {
     return () => clearTimeout(timer);
   }, [trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, captionTextColor, title, description, prompt, hooks, silenceEnabled, hashtags, isNoiseReduced, colorCorrection, clipVolume, musicVolume, masterVolume, appliedTransitions, id, saveClipEditToServer]);
 
-  // Track if any changes have been made (making the editor "dirty")
+  // Track real user edits only — ignore hydration / post-render state sync.
   useEffect(() => {
-    if (isLoaded.current) {
-      setIsDirty(true);
-    }
-  }, [trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, captionTextColor, title, description, hooks, silenceEnabled, hashtags, colorCorrection, isNoiseReduced, clipVolume, musicVolume, masterVolume, coachViralApplied, coachTextCuts, coachStitchJoins]);
+    if (!isLoaded.current || !specHydratedRef.current) return;
+    setIsDirty(true);
+    // New edits invalidate the final-render preview — back to live CSS/mix preview.
+    clearRenderPreview();
+  }, [trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, captionTextColor, title, description, prompt, hooks, silenceEnabled, hashtags, colorCorrection, isNoiseReduced, clipVolume, musicVolume, masterVolume, appliedTransitions, cropMode, coachViralApplied, coachTextCuts, coachStitchJoins, clearRenderPreview]);
+
+  // If a completed render already exists (reload / prior session), show it in polish preview.
+  useEffect(() => {
+    if (step !== "polish" || !renderReady || renderPreviewSrc || isRendering) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        await loadRenderPreview();
+      } catch {
+        if (!cancelled) {
+          /* keep live preview if render asset is not fetchable yet */
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [step, renderReady, renderPreviewSrc, isRendering, loadRenderPreview]);
+
+  // Revoke render preview blob on leave / content change.
+  useEffect(() => {
+    return () => {
+      if (renderPreviewUrlRef.current) {
+        URL.revokeObjectURL(renderPreviewUrlRef.current);
+        renderPreviewUrlRef.current = null;
+      }
+    };
+  }, [id]);
 
   // Tab/window close warning. In-app leave confirm needs a data router (useBlocker);
   // App uses BrowserRouter, so we only guard hard navigations here.
@@ -3702,27 +3867,47 @@ export default function ClipEditor() {
                   ref={polishPreviewRef}
                   className="aspect-[9/16] w-full bg-background rounded-xl overflow-hidden relative shadow-soft-2xl border border-border group"
                 >
-                {videoSrc ? (
-                  <div className="w-full h-full" style={previewFilterStyle}>
+                {(showingFinalRender ? renderPreviewSrc : videoSrc) ? (
+                  <div
+                    className="w-full h-full"
+                    style={showingFinalRender ? undefined : previewFilterStyle}
+                  >
                   <video
                     ref={videoRef}
-                    src={videoSrc}
+                    key={showingFinalRender ? `final-${renderPreviewSrc}` : `live-${videoSrc}`}
+                    src={(showingFinalRender ? renderPreviewSrc : videoSrc) || undefined}
                     className="w-full h-full object-cover transform-gpu"
                     muted={false}
                     playsInline
                     controls={false}
                     onLoadedMetadata={(e) => {
+                      if (showingFinalRender) {
+                        e.currentTarget.currentTime = 0;
+                        setCurrentTime(0);
+                        setRenderPreviewDuration(
+                          Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0,
+                        );
+                        mixBgmRef.current?.pause();
+                        return;
+                      }
                       const start = finalTrim?.start ?? trimStart;
-                      const end = finalTrim?.end ?? trimEnd;
                       e.currentTarget.currentTime = start;
                       setCurrentTime(start);
                       applyPreviewMix();
                     }}
                     onTimeUpdate={(e) => {
-                      const start = finalTrim?.start ?? trimStart;
-                      const end = finalTrim?.end ?? trimEnd;
                       const tNow = e.currentTarget.currentTime;
                       setCurrentTime(tNow);
+                      if (showingFinalRender) {
+                        const dur = e.currentTarget.duration || renderPreviewDuration;
+                        if (dur > 0 && tNow >= dur - 0.05) {
+                          e.currentTarget.currentTime = 0;
+                          setCurrentTime(0);
+                        }
+                        return;
+                      }
+                      const start = finalTrim?.start ?? trimStart;
+                      const end = finalTrim?.end ?? trimEnd;
                       if (tickCoachStitch(e.currentTarget, tNow)) return;
                       // Fire applied Enhance transitions when the playhead crosses them.
                       if (!transitionPreviewActiveRef.current && appliedTransitions.length) {
@@ -3748,6 +3933,7 @@ export default function ClipEditor() {
                       setIsPlaying(true);
                       setPreviewingTrackId(null);
                       transitionFiredKeysRef.current.clear();
+                      if (showingFinalRender) mixBgmRef.current?.pause();
                     }}
                     onPause={() => {
                       setIsPlaying(false);
@@ -3757,15 +3943,17 @@ export default function ClipEditor() {
                   </div>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
-                    {videoLoading ? "Loading preview…" : "No clip media yet"}
+                    {videoLoading || isRendering ? "Loading preview…" : "No clip media yet"}
                   </div>
                 )}
 
-                <TransitionPreviewOverlay
-                  type={transitionPreview?.type ?? null}
-                  caption={transitionPreview?.caption}
-                  sfx={transitionPreview?.sfx}
-                />
+                {!showingFinalRender ? (
+                  <TransitionPreviewOverlay
+                    type={transitionPreview?.type ?? null}
+                    caption={transitionPreview?.caption}
+                    sfx={transitionPreview?.sfx}
+                  />
+                ) : null}
 
                 <div
                   className="absolute inset-0 z-10 cursor-pointer"
@@ -3786,12 +3974,12 @@ export default function ClipEditor() {
 
                 {/* Duration overlay */}
                 <div className="absolute top-3 left-3 px-2 py-1 rounded-md bg-black/60 text-[10px] font-mono font-bold text-white pointer-events-none">
-                  {formatTime(Math.max(0, currentTime - (finalTrim?.start ?? trimStart)))}
-                  {" / "}
-                  {formatTime((finalTrim?.end ?? trimEnd) - (finalTrim?.start ?? trimStart))}
+                  {showingFinalRender
+                    ? `${formatTime(Math.max(0, currentTime))} / ${formatTime(renderPreviewDuration || 0)}`
+                    : `${formatTime(Math.max(0, currentTime - (finalTrim?.start ?? trimStart)))} / ${formatTime((finalTrim?.end ?? trimEnd) - (finalTrim?.start ?? trimStart))}`}
                 </div>
 
-                {enhanceShowOriginal || isNoiseReduced || colorCorrection > 0 ? (
+                {!showingFinalRender && (enhanceShowOriginal || isNoiseReduced || colorCorrection > 0) ? (
                   <div className="absolute bottom-3 left-3 right-3 z-20 pointer-events-none flex justify-center">
                     <div className="px-2.5 py-1 rounded-md bg-black/70 text-[10px] font-bold text-white">
                       {enhanceShowOriginal
@@ -3814,15 +4002,31 @@ export default function ClipEditor() {
                 ) : null}
 
                 {/* Preview Badge */}
-                <div className="absolute top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0 pointer-events-none">
-                  <div className="px-4 py-2 bg-popover/80 backdrop-blur-xl rounded-md border border-border shadow-soft-xl flex items-center gap-2">
-                    <Sparkles size={14} className="text-primary animate-pulse" />
-                    <span className="text-[10px] font-bold text-foreground">Live clip preview</span>
+                <div className="absolute top-3 right-3 z-20 pointer-events-none">
+                  <div
+                    className={cn(
+                      "px-2.5 py-1 rounded-md border text-[10px] font-bold shadow-soft-xl flex items-center gap-1.5",
+                      showingFinalRender
+                        ? "bg-emerald-600/90 border-emerald-400/40 text-white"
+                        : "bg-popover/80 backdrop-blur-xl border-border text-foreground",
+                    )}
+                  >
+                    {showingFinalRender ? (
+                      <>
+                        <CheckCircle2 size={12} />
+                        Final render
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={12} className="text-primary" />
+                        Live preview
+                      </>
+                    )}
                   </div>
                 </div>
                 
-                {/* Caption / hook overlays — drag to reposition; fonts in Captions tab */}
-                {(topText || hooks[0]?.text) && coachOverlayOnCut(currentTime, coachTextCuts) ? (
+                {/* Caption overlays only for live preview — final render already has them burned in */}
+                {!showingFinalRender && (topText || hooks[0]?.text) && coachOverlayOnCut(currentTime, coachTextCuts) ? (
                   <DraggableCaptionOverlay
                     text={topText || hooks[0]?.text || ""}
                     xPct={topOverlay.x}
@@ -3834,7 +4038,7 @@ export default function ClipEditor() {
                     color={captionTextColor}
                   />
                 ) : null}
-                {bottomText && coachOverlayOnCut(currentTime, coachTextCuts) ? (
+                {!showingFinalRender && bottomText && coachOverlayOnCut(currentTime, coachTextCuts) ? (
                   <DraggableCaptionOverlay
                     text={bottomText}
                     xPct={bottomOverlay.x}
@@ -3852,12 +4056,14 @@ export default function ClipEditor() {
                   size="lg"
                   className="w-full rounded-full font-bold h-11"
                   onClick={() => void togglePlayback()}
-                  disabled={!videoSrc}
+                  disabled={!(showingFinalRender ? renderPreviewSrc : videoSrc)}
                 >
                   {isPlaying ? <Pause size={18} fill="currentColor" className="mr-2" /> : <Play size={18} fill="currentColor" className="mr-2 ml-0.5" />}
                   {isPlaying
                     ? t("clip_editor.player.pause")
-                    : t("clip_editor.polish.audio.play_mix", { defaultValue: "Play clip + music mix" })}
+                    : showingFinalRender
+                      ? "Play final render"
+                      : t("clip_editor.polish.audio.play_mix", { defaultValue: "Play clip + music mix" })}
                 </Button>
               </div>
             </div>
@@ -4989,115 +5195,171 @@ export default function ClipEditor() {
               </div>
 
               <div className="hidden lg:block space-y-3 pt-4">
+                <div
+                  className={cn(
+                    "rounded-xl border px-3 py-2 text-[11px] font-medium",
+                    renderReady
+                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                      : "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-200",
+                  )}
+                >
+                  {isRendering
+                    ? "Rendering your edits into the MP4…"
+                    : showingFinalRender
+                      ? "Final render in preview — play it, then Publish or Download."
+                      : renderReady
+                        ? "Render ready — loading final preview…"
+                        : "Edits pending — tap Save & Render before Publish or Download."}
+                </div>
+                <Button
+                  size="default"
+                  onClick={() => void handleSaveAndRender()}
+                  disabled={isPublishing || isRendering}
+                  className={cn(
+                    "w-full flex items-center justify-center gap-2 rounded-full font-bold transition-all h-11",
+                    renderReady
+                      ? "border border-border bg-muted/40 text-foreground hover:bg-muted"
+                      : "shadow-lg shadow-primary/20 bg-primary hover:bg-primary-strong text-primary-foreground",
+                  )}
+                  variant={renderReady ? "outline" : "default"}
+                >
+                  {isRendering ? (
+                    <>
+                      <Loader2 size={18} className="mr-1 animate-spin" />
+                      {renderStatus === "processing" || renderStatus === "queued"
+                        ? "Rendering…"
+                        : "Saving…"}
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} className="mr-1" />
+                      {renderReady ? "Re-render" : "Save & Render"}
+                    </>
+                  )}
+                </Button>
                 <SocialPublishTargets
                   selected={socialPlatforms}
                   onChange={setSocialPlatforms}
-                  disabled={isPublishing || isAlreadyPublished}
+                  disabled={isPublishing || isAlreadyPublished || !renderReady}
                 />
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="block w-full">
-                <Button 
-                        size="default" 
+                      <Button
+                        size="default"
                         onClick={openPublishPreview}
-                        disabled={isPublishing || isAlreadyPublished}
-                        className="w-full flex items-center justify-center gap-2 shadow-lg shadow-primary/20 rounded-full font-bold bg-primary hover:bg-primary-strong transition-all h-11 disabled:opacity-60"
-                >
-                  {isPublishing ? (
-                    <>
-                      <span className="w-3.5 h-3.5 border-2 border-background border-t-transparent rounded-full animate-spin mr-2" />
-                      Publishing...
-                    </>
-                  ) : (
-                    <>
+                        disabled={isPublishing || isAlreadyPublished || !renderReady || isRendering}
+                        className="w-full flex items-center justify-center gap-2 rounded-full font-bold transition-all h-11 disabled:opacity-60"
+                        variant="outline"
+                      >
+                        {isPublishing ? (
+                          <>
+                            <span className="w-3.5 h-3.5 border-2 border-foreground border-t-transparent rounded-full animate-spin mr-2" />
+                            Publishing...
+                          </>
+                        ) : (
+                          <>
                             {isAlreadyPublished
                               ? "Already published"
-                              : t('clip_editor.polish.actions.publish')}
+                              : t("clip_editor.polish.actions.publish")}
                             {!isAlreadyPublished ? <ChevronRight size={18} /> : null}
-                    </>
-                  )}
-                </Button>
+                          </>
+                        )}
+                      </Button>
                     </span>
                   </TooltipTrigger>
-                  {publishBlockedReason ? (
-                    <TooltipContent side="top" className="max-w-[260px]">
-                      {publishBlockedReason}
-                    </TooltipContent>
-                  ) : null}
+                  <TooltipContent side="top" className="max-w-[280px]">
+                    {publishBlockedReason ||
+                      (!renderReady ? renderGateMessage : "Publish the rendered MP4 to your feed.")}
+                  </TooltipContent>
                 </Tooltip>
-                <Button 
-                  variant="outline" 
-                  size="default" 
+                <Button
+                  variant="outline"
+                  size="default"
                   onClick={() => void handleRenderDownload()}
-                  disabled={isPublishing || isRendering}
-                  className="w-full rounded-full font-bold transition-all h-11"
+                  disabled={isPublishing || isRendering || !renderReady}
+                  className="w-full rounded-full font-bold transition-all h-11 disabled:opacity-60"
                 >
-                  {isRendering ? (
-                    <>
-                      <Loader2 size={18} className="mr-2 animate-spin" />
-                      {renderStatus === "processing" || renderStatus === "queued"
-                        ? "Rendering…"
-                        : "Preparing…"}
-                    </>
-                  ) : (
-                    <>
                   <Download size={18} className="mr-2" />
-                  {t('clip_editor.polish.actions.download')}
-                    </>
-                  )}
+                  {t("clip_editor.polish.actions.download")}
                 </Button>
               </div>
 
               {/* Mobile Sticky Footer */}
-              <div className="lg:hidden space-y-3 pt-4 pb-24">
+              <div className="lg:hidden space-y-3 pt-4 pb-28">
+                <div
+                  className={cn(
+                    "rounded-xl border px-3 py-2 text-[11px] font-medium",
+                    renderReady
+                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                      : "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-200",
+                  )}
+                >
+                  {renderReady
+                    ? "Render ready — Publish or Download."
+                    : "Save & Render required before Publish or Download."}
+                </div>
                 <SocialPublishTargets
                   selected={socialPlatforms}
                   onChange={setSocialPlatforms}
-                  disabled={isPublishing || isAlreadyPublished}
+                  disabled={isPublishing || isAlreadyPublished || !renderReady}
                 />
               </div>
               <div className="lg:hidden fixed bottom-20 left-0 right-0 p-4 bg-background/95 backdrop-blur-xl border-t border-border z-50 animate-in fade-in slide-in-from-bottom-5 duration-300 shadow-soft-xl">
                 <div className="max-w-md mx-auto grid grid-cols-6 gap-2">
-                  <Button 
+                  <Button
                     onClick={() => void handleRenderDownload()}
-                    className="col-span-1 rounded-xl border-border bg-muted/50 hover:bg-muted active:scale-95" 
-                    variant="outline" 
+                    className="col-span-1 rounded-xl border-border bg-muted/50 hover:bg-muted active:scale-95 disabled:opacity-50"
+                    variant="outline"
                     size="icon-2xl"
+                    disabled={isPublishing || isRendering || !renderReady}
+                    title={renderReady ? "Download" : "Save & Render first"}
+                  >
+                    <Download size={18} />
+                  </Button>
+                  <Button
+                    onClick={() => void handleSaveAndRender()}
+                    className={cn(
+                      "col-span-2 rounded-xl font-bold text-xs active:scale-95",
+                      !renderReady && "bg-primary text-primary-foreground",
+                    )}
+                    variant={renderReady ? "outline" : "default"}
+                    size="2xl"
                     disabled={isPublishing || isRendering}
                   >
-                    {isRendering ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                    {isRendering ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <>
+                        <Save size={14} className="mr-1 shrink-0" />
+                        {renderReady ? "Re-render" : "Save & Render"}
+                      </>
+                    )}
                   </Button>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="col-span-5 block">
-                  <Button 
+                      <span className="col-span-3 block">
+                        <Button
                           onClick={openPublishPreview}
-                    size="2xl" 
-                          disabled={isPublishing || isAlreadyPublished}
-                          className="w-full flex items-center justify-center gap-2 shadow-soft-lg rounded-xl font-bold text-sm bg-primary hover:bg-primary-strong transition-all active:scale-95 text-primary-foreground disabled:opacity-60"
-                  >
-                          {!isAlreadyPublished ? (
-                    <div className="flex items-center gap-1.5 mr-1">
-                              <SocialPlatformIcon platform="youtube" size={14} variant="mono" />
-                              <SocialPlatformIcon platform="instagram" size={14} variant="mono" />
-                              <SocialPlatformIcon platform="facebook" size={14} variant="mono" />
-                              <SocialPlatformIcon platform="tiktok" size={14} variant="mono" />
-                    </div>
-                          ) : null}
+                          size="2xl"
+                          disabled={
+                            isPublishing || isAlreadyPublished || !renderReady || isRendering
+                          }
+                          className="w-full flex items-center justify-center gap-1.5 shadow-soft-lg rounded-xl font-bold text-sm bg-primary hover:bg-primary-strong transition-all active:scale-95 text-primary-foreground disabled:opacity-60"
+                        >
                           {isPublishing
                             ? "Publishing..."
                             : isAlreadyPublished
-                              ? "Already published"
-                              : t('clip_editor.polish.actions.publish_socials')}
-                          {!isAlreadyPublished ? <ChevronRight size={16} /> : null}
-                  </Button>
+                              ? "Published"
+                              : t("clip_editor.polish.actions.publish")}
+                          {!isAlreadyPublished && renderReady ? <ChevronRight size={16} /> : null}
+                        </Button>
                       </span>
                     </TooltipTrigger>
-                    {publishBlockedReason ? (
-                      <TooltipContent side="top" className="max-w-[260px]">
-                        {publishBlockedReason}
-                      </TooltipContent>
-                    ) : null}
+                    <TooltipContent side="top" className="max-w-[280px]">
+                      {publishBlockedReason ||
+                        (!renderReady ? renderGateMessage : "Publish the rendered MP4.")}
+                    </TooltipContent>
                   </Tooltip>
                 </div>
               </div>

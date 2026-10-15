@@ -32,8 +32,10 @@ import {
   ShieldAlert,
   UserPlus,
   UserCheck,
+  Type as TypeIcon,
+  Music,
 } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { SEO } from "../../components/SEO";
 import { AuthenticatedMediaPreview } from "../../components/AuthenticatedMediaPreview";
@@ -49,9 +51,30 @@ import {
 import { toast } from "sonner";
 import { cn } from "../../lib/utils";
 import { SocialLiveActions } from "../../components/social/SocialLiveActions";
-import { extensionForMimeType, toDownloadableBlob } from "../../lib/imageDownload";
+import { downloadContentMedia } from "../../lib/downloadContentMedia";
 import { useAppSelector } from "../../store/hooks";
 import { selectAuthUser } from "../../store/slices/authSlice";
+
+const CLIP_BGM_LABELS: Record<string, string> = {
+  "1": "Cyberpunk Pulse",
+  "2": "Lo-Fi Gaming",
+  "3": "Epic Victory",
+  "4": "Trap King",
+  "5": "Neon Nights",
+  "6": "Aggressive Phonk",
+  "7": "Summer Vibes",
+  "8": "Dark Souls",
+  "9": "Future Bass",
+  "10": "8-Bit Adventure",
+};
+
+function formatClipDuration(inMs?: number, outMs?: number): string {
+  if (typeof inMs !== "number" || typeof outMs !== "number" || outMs <= inMs) return "—";
+  const sec = Math.max(0, Math.round((outMs - inMs) / 1000));
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return m > 0 ? `${m}m ${String(s).padStart(2, "0")}s` : `${s}s`;
+}
 
 export function generateMetadata(id: string | undefined) {
   return {
@@ -197,8 +220,6 @@ export default function PostDetail() {
   const [copiedCaption, setCopiedCaption] = useState(false);
   const [copiedHashtagsAll, setCopiedHashtagsAll] = useState(false);
   const [copiedHashtag, setCopiedHashtag] = useState<string | null>(null);
-  const [copiedRawJson, setCopiedRawJson] = useState(false);
-  const [showRawJson, setShowRawJson] = useState(false);
   const [commentsList, setCommentsList] = useState<Array<{ id: string; author: string; avatar: string; text: string; time: string }>>([]);
   const [isFullscreenImage, setIsFullscreenImage] = useState(false);
   const [creatorProfile, setCreatorProfile] = useState<{
@@ -210,6 +231,9 @@ export default function PostDetail() {
     isFollowing: boolean;
   } | null>(null);
   const [followBusy, setFollowBusy] = useState(false);
+  /** Intrinsic media aspect (w/h) once video/image loads — avoids letterbox bars. */
+  const [mediaAspectCss, setMediaAspectCss] = useState<string | null>(null);
+  const [downloadBusy, setDownloadBusy] = useState(false);
 
   const meta = generateMetadata(id);
 
@@ -280,14 +304,50 @@ export default function PostDetail() {
             if (isPublished) {
               try {
                 const commentsRes = await feedApi.getCommentsList(commentTargetId);
-                if (commentsRes.items && commentsRes.items.length > 0) {
-                  setCommentsList(commentsRes.items.map((c: any) => ({
-                    id: c.id,
-                    author: c.userName || "Anonymous",
-                    avatar: c.userAvatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + c.id,
-                    text: c.body || "",
-                    time: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "Just now"
-                  })));
+                const items = Array.isArray(commentsRes.items) ? commentsRes.items : [];
+                if (items.length > 0) {
+                  const userIds = [
+                    ...new Set(
+                      items
+                        .map((c: any) => String(c.userId || "").trim())
+                        .filter(Boolean),
+                    ),
+                  ];
+                  const profileEntries = await Promise.all(
+                    userIds.map(async (uid) => {
+                      try {
+                        const u = await identityApi.getUserById(uid);
+                        return [
+                          uid,
+                          {
+                            name: u?.displayName || u?.username || "User",
+                            avatar: u?.avatarUrl || u?.photoURL || "",
+                          },
+                        ] as const;
+                      } catch {
+                        return [uid, { name: "User", avatar: "" }] as const;
+                      }
+                    }),
+                  );
+                  const profiles = Object.fromEntries(profileEntries);
+                  setCommentsList(
+                    items.map((c: any) => {
+                      const uid = String(c.userId || "");
+                      const profile = profiles[uid];
+                      return {
+                        id: c.id,
+                        author: profile?.name || c.userName || "User",
+                        avatar:
+                          profile?.avatar ||
+                          c.userAvatar ||
+                          `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(uid || c.id)}`,
+                        text: c.body || "",
+                        time: c.createdAt
+                          ? new Date(c.createdAt).toLocaleDateString()
+                          : "Just now",
+                      };
+                    }),
+                  );
                 }
               } catch (err) {
                 console.warn("Failed to fetch live comments:", err);
@@ -410,7 +470,11 @@ export default function PostDetail() {
     }
   };
 
-  const handleCopyText = (text: string, type: "prompt" | "negPrompt" | "caption" | "hashtag" | "json", tagValue?: string) => {
+  const handleCopyText = (
+    text: string,
+    type: "prompt" | "negPrompt" | "caption" | "hashtag",
+    tagValue?: string,
+  ) => {
     if (!text) return;
     navigator.clipboard.writeText(text);
     if (type === "prompt") {
@@ -429,10 +493,6 @@ export default function PostDetail() {
       setCopiedHashtag(tagValue);
       setTimeout(() => setCopiedHashtag(null), 2000);
       toast.success(`Copied ${tagValue}`);
-    } else if (type === "json") {
-      setCopiedRawJson(true);
-      setTimeout(() => setCopiedRawJson(false), 2000);
-      toast.success("Raw JSON metadata copied");
     }
   };
 
@@ -446,24 +506,35 @@ export default function PostDetail() {
   };
 
   const handleDownloadMedia = async () => {
-    if (!imageUrl) return;
+    const contentId = postData?.id || id;
+    if (!contentId) {
+      toast.error("Nothing to download");
+      return;
+    }
+    setDownloadBusy(true);
+    const toastId = "post-detail-download";
     try {
-      toast.info("Preparing download...");
-      const response = await fetch(imageUrl);
-      let blob = await response.blob();
-      blob = await toDownloadableBlob(blob);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${(title || "creation").toLowerCase().replace(/[^a-z0-9]+/g, "_")}_nxclip.${extensionForMimeType(blob.type)}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success("Download started!");
-    } catch {
-      window.open(imageUrl, "_blank");
-      toast.success("Opened media asset in new tab");
+      toast.loading("Preparing download…", { id: toastId });
+      // All download entry points share this path (auth + render-once for clips).
+      await downloadContentMedia({
+        id: contentId,
+        title: title || postData?.title,
+        contentType: postData?.contentType || contentType,
+        type: postData?.type,
+        mimeType: postData?.mimeType,
+        style: postData?.style,
+        memeSpec: postData?.memeSpec,
+        renderStatus: postData?.renderStatus,
+        ensureRender: contentType === "CLIP",
+      });
+      toast.success("Download started", { id: toastId });
+    } catch (err) {
+      toast.error("Download failed", {
+        id: toastId,
+        description: err instanceof Error ? err.message : "Try again in a moment.",
+      });
+    } finally {
+      setDownloadBusy(false);
     }
   };
 
@@ -494,19 +565,49 @@ export default function PostDetail() {
     toast.success("Loaded content into Image Studio!");
   };
 
-  const handleAddComment = (e: React.FormEvent) => {
+  const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!comment.trim()) return;
-    const newComment = {
-      id: `c_${Date.now()}`,
-      author: "You",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=You",
-      text: comment.trim(),
-      time: "Just now"
+    const body = comment.trim();
+    const contentId = postData?.id || postData?.contentId || id;
+    if (!body || !contentId) return;
+    if (!authUser?.uid) {
+      toast.error("Sign in to comment");
+      return;
+    }
+    const optimistic = {
+      id: `local_${Date.now()}`,
+      author: authUser.displayName || "You",
+      avatar:
+        authUser.photoURL ||
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(authUser.uid)}`,
+      text: body,
+      time: "Just now",
     };
-    setCommentsList(prev => [newComment, ...prev]);
+    setCommentsList((prev) => [optimistic, ...prev]);
     setComment("");
-    toast.success("Comment added!");
+    try {
+      const saved = await feedApi.addComment(contentId, body);
+      setCommentsList((prev) =>
+        prev.map((c) =>
+          c.id === optimistic.id
+            ? {
+                ...c,
+                id: saved.id,
+                time: saved.createdAt
+                  ? new Date(saved.createdAt).toLocaleDateString()
+                  : "Just now",
+              }
+            : c,
+        ),
+      );
+      toast.success("Comment posted");
+    } catch (err) {
+      setCommentsList((prev) => prev.filter((c) => c.id !== optimistic.id));
+      setComment(body);
+      toast.error("Could not post comment", {
+        description: err instanceof Error ? err.message : "Try again.",
+      });
+    }
   };
 
   const handleDeletePost = async () => {
@@ -529,6 +630,7 @@ export default function PostDetail() {
   useEffect(() => {
     if (postData) {
       setDisplayImage(extractValidImageUrl(postData));
+      setMediaAspectCss(null);
     }
   }, [postData]);
 
@@ -606,31 +708,69 @@ export default function PostDetail() {
     postData?.metadata?.negativePrompt || 
     "";
 
-  const aiModel = 
-    postData?.model || 
-    postData?.imageModel || 
-    postData?.metadata?.model || 
-    (contentType === "MEME" ? "NxClip Meme Composer" : "Gemini Image");
+  const clipSpec =
+    postData?.clipEditSpec && typeof postData.clipEditSpec === "object"
+      ? postData.clipEditSpec
+      : null;
+  const isClip = contentType === "CLIP";
 
-  const style = postData?.style || postData?.metadata?.style || (contentType === "MEME" ? "Meme" : "—");
+  const aiModel = isClip
+    ? clipSpec?.animate?.mode
+      ? `NxClip Animate (${clipSpec.animate.mode})`
+      : clipSpec?.compose?.enabled
+        ? "NxClip Story Engine"
+        : "NxClip Clip Studio"
+    : postData?.model ||
+      postData?.imageModel ||
+      postData?.metadata?.model ||
+      (contentType === "MEME" ? "NxClip Meme Composer" : "Gemini Image");
+
+  const style = isClip
+    ? clipSpec?.creatorCategory ||
+      (Array.isArray(clipSpec?.niches) && clipSpec.niches.length
+        ? clipSpec.niches.slice(0, 2).join(" · ")
+        : null) ||
+      postData?.style ||
+      "—"
+    : postData?.style || postData?.metadata?.style || (contentType === "MEME" ? "Meme" : "—");
+
   const aspectRatio = pickAspectRatio(postData);
-  
-  const lighting = 
-    postData?.lighting || 
-    postData?.metadata?.lighting || 
-    "—";
+  const frameAspectCss =
+    mediaAspectCss ||
+    String(aspectRatio || (contentType === "CLIP" ? "9:16" : "1:1")).replace(":", " / ");
 
-  const guidance = 
-    postData?.creativity?.[0] !== undefined 
-      ? `${postData.creativity[0]} / 1.0` 
-      : postData?.guidanceScale 
-        ? `${postData.guidanceScale}`
+  const clipDuration = isClip
+    ? formatClipDuration(Number(clipSpec?.inMs), Number(clipSpec?.outMs))
+    : "—";
+  const clipBgm =
+    isClip && clipSpec?.bgmTrackId
+      ? CLIP_BGM_LABELS[String(clipSpec.bgmTrackId)] || `Track ${clipSpec.bgmTrackId}`
+      : isClip
+        ? "None"
         : "—";
+  const clipRenderLabel = isClip
+    ? String(postData?.renderStatus || "idle").replace(/^\w/, (c: string) => c.toUpperCase())
+    : "—";
+  const clipCaptionSummary = isClip
+    ? [clipSpec?.captions?.topText, clipSpec?.captions?.bottomText]
+        .map((t) => String(t || "").trim())
+        .filter(Boolean)
+        .join(" / ") || "None"
+    : "—";
 
-  const seed = 
-    postData?.seed || 
-    postData?.metadata?.seed || 
-    "—";
+  const lighting =
+    postData?.lighting ||
+    postData?.metadata?.lighting ||
+    "";
+
+  const guidance =
+    postData?.creativity?.[0] !== undefined
+      ? `${postData.creativity[0]} / 1.0`
+      : postData?.guidanceScale
+        ? `${postData.guidanceScale}`
+        : "";
+
+  const seed = postData?.seed || postData?.metadata?.seed || "";
 
   const memeTexts: Array<{ slot: string; text: string }> = Array.isArray(postData?.memeSpec?.texts)
     ? postData.memeSpec.texts
@@ -649,19 +789,6 @@ export default function PostDetail() {
   const alternativeCaptions: string[] = Array.isArray(postData?.captions) 
     ? postData.captions.filter((c: string) => c && c !== selectedCaption) 
     : [];
-
-  const inspectPayload = useMemo(() => {
-    if (!postData) return null;
-    return {
-      ...postData,
-      contentType: contentType.toLowerCase(),
-      selectedCaption: selectedCaption || undefined,
-      caption: selectedCaption || postData.caption,
-      aspectRatio,
-      prompt: prompt || undefined,
-      basePrompt: postData.basePrompt || prompt || undefined,
-    };
-  }, [postData, contentType, selectedCaption, aspectRatio, prompt]);
 
   const getResolutionEstimate = (ratio: string) => {
     switch (ratio) {
@@ -761,10 +888,11 @@ export default function PostDetail() {
 
           <button
             type="button"
-            onClick={handleDownloadMedia}
-            className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs font-semibold text-foreground transition-all hover:bg-muted/50"
+            onClick={() => void handleDownloadMedia()}
+            disabled={downloadBusy}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs font-semibold text-foreground transition-all hover:bg-muted/50 disabled:opacity-50"
           >
-            <Download size={14} />
+            {downloadBusy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
             Download
           </button>
 
@@ -811,12 +939,12 @@ export default function PostDetail() {
             {/* Top Media Frame — size from content aspect so 9:16 and 16:9 both fill properly */}
             <div
               className={cn(
-                "group relative w-full overflow-hidden bg-black",
-                contentType === "CLIP" ? "mx-auto max-w-md" : "max-w-full",
+                "group relative w-full overflow-hidden bg-zinc-950",
+                contentType === "CLIP" ? "mx-auto max-w-lg" : "max-w-full",
               )}
               style={{
-                aspectRatio: String(aspectRatio || "1:1").replace(":", " / "),
-                maxHeight: contentType === "CLIP" ? "min(72vh, 720px)" : "min(70vh, 640px)",
+                aspectRatio: frameAspectCss,
+                maxHeight: contentType === "CLIP" ? "min(78vh, 820px)" : "min(70vh, 640px)",
               }}
             >
               {loading ? (
@@ -833,9 +961,23 @@ export default function PostDetail() {
                     fallbackSrc={GLOBAL_FALLBACK_IMAGES[0]}
                     alt={title}
                     playable={contentType === "CLIP"}
-                    className="!absolute !inset-0 !h-full !w-full !object-contain"
+                    autoPlay={contentType === "CLIP"}
+                    priority={contentType === "CLIP"}
+                    className="!absolute !inset-0 !h-full !w-full !object-cover"
                     wrapperClassName="!absolute !inset-0 !h-full !w-full !aspect-auto !bg-transparent"
                     showPlayBadge={contentType === "CLIP"}
+                    onLoad={(e) => {
+                      const el = e.currentTarget;
+                      if (el instanceof HTMLVideoElement && el.videoWidth > 0 && el.videoHeight > 0) {
+                        setMediaAspectCss(`${el.videoWidth} / ${el.videoHeight}`);
+                      } else if (
+                        el instanceof HTMLImageElement &&
+                        el.naturalWidth > 0 &&
+                        el.naturalHeight > 0
+                      ) {
+                        setMediaAspectCss(`${el.naturalWidth} / ${el.naturalHeight}`);
+                      }
+                    }}
                     onError={handleImageError}
                   />
                   
@@ -916,11 +1058,13 @@ export default function PostDetail() {
                   <span className="hidden sm:inline">Share</span>
                 </button>
                 <button 
-                  onClick={handleDownloadMedia}
-                  className="rounded-lg p-2 text-muted-foreground transition-all hover:bg-muted/40 hover:text-foreground"
+                  type="button"
+                  onClick={() => void handleDownloadMedia()}
+                  disabled={downloadBusy}
+                  className="rounded-lg p-2 text-muted-foreground transition-all hover:bg-muted/40 hover:text-foreground disabled:opacity-50"
                   title="Download Media"
                 >
-                  <Download size={18} />
+                  {downloadBusy ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
                 </button>
 
                 <button 
@@ -1063,12 +1207,12 @@ export default function PostDetail() {
               <span className="text-xs font-mono text-muted-foreground">ID: {id}</span>
             </div>
 
-            {/* Key Information Badges & Grid */}
+            {/* Specs — clip fields for videos; image fields only when present */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                   <Cpu size={14} className="text-primary" />
-                  <span>AI Engine / Model</span>
+                  <span>{isClip ? "Studio / Engine" : "AI Engine / Model"}</span>
                 </div>
                 <p className="text-sm font-bold text-foreground truncate">{aiModel}</p>
               </div>
@@ -1076,7 +1220,7 @@ export default function PostDetail() {
               <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                   <Sparkles size={14} className="text-primary" />
-                  <span>Visual Style</span>
+                  <span>{isClip ? "Category / Niche" : "Visual Style"}</span>
                 </div>
                 <p className="text-sm font-bold text-foreground truncate">{style}</p>
               </div>
@@ -1086,32 +1230,73 @@ export default function PostDetail() {
                   <Maximize2 size={14} className="text-primary" />
                   <span>Aspect Ratio</span>
                 </div>
-                <p className="text-sm font-bold text-foreground font-mono">{aspectRatio} ({getResolutionEstimate(aspectRatio)})</p>
+                <p className="text-sm font-bold text-foreground font-mono">
+                  {aspectRatio} ({getResolutionEstimate(aspectRatio)})
+                </p>
               </div>
 
-              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                  <Zap size={14} className="text-primary" />
-                  <span>Lighting / Mood</span>
-                </div>
-                <p className="text-sm font-bold text-foreground truncate">{lighting}</p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                  <Sliders size={14} className="text-primary" />
-                  <span>Creativity Scale</span>
-                </div>
-                <p className="text-sm font-bold text-foreground font-mono">{guidance}</p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                  <Code2 size={14} className="text-primary" />
-                  <span>Generation Seed</span>
-                </div>
-                <p className="text-xs font-mono font-bold text-foreground truncate">{seed}</p>
-              </div>
+              {isClip ? (
+                <>
+                  <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                      <Clock size={14} className="text-primary" />
+                      <span>Clip Duration</span>
+                    </div>
+                    <p className="text-sm font-bold text-foreground font-mono">{clipDuration}</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                      <Music size={14} className="text-primary" />
+                      <span>Background Music</span>
+                    </div>
+                    <p className="text-sm font-bold text-foreground truncate">{clipBgm}</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                      <Film size={14} className="text-primary" />
+                      <span>Render Status</span>
+                    </div>
+                    <p className="text-sm font-bold text-foreground truncate">{clipRenderLabel}</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-1 col-span-2 sm:col-span-3">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                      <TypeIcon size={14} className="text-primary" />
+                      <span>Burned Captions</span>
+                    </div>
+                    <p className="text-sm font-bold text-foreground line-clamp-2">{clipCaptionSummary}</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {lighting ? (
+                    <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                        <Zap size={14} className="text-primary" />
+                        <span>Lighting / Mood</span>
+                      </div>
+                      <p className="text-sm font-bold text-foreground truncate">{lighting}</p>
+                    </div>
+                  ) : null}
+                  {guidance ? (
+                    <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                        <Sliders size={14} className="text-primary" />
+                        <span>Creativity Scale</span>
+                      </div>
+                      <p className="text-sm font-bold text-foreground font-mono">{guidance}</p>
+                    </div>
+                  ) : null}
+                  {seed ? (
+                    <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                        <Code2 size={14} className="text-primary" />
+                        <span>Generation Seed</span>
+                      </div>
+                      <p className="text-xs font-mono font-bold text-foreground truncate">{seed}</p>
+                    </div>
+                  ) : null}
+                </>
+              )}
 
               <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
@@ -1217,35 +1402,6 @@ export default function PostDetail() {
               </div>
             </div>
 
-            {/* Developer Raw JSON Inspector */}
-            <div className="border-t border-white/10 pt-4 space-y-3">
-              <button 
-                onClick={() => setShowRawJson(!showRawJson)}
-                className="inline-flex items-center gap-2 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Code2 size={14} className="text-primary" />
-                <span>{showRawJson ? "Hide Raw JSON Metadata" : "Inspect Raw JSON Metadata"}</span>
-              </button>
-
-              {showRawJson && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-zinc-500">Full Raw Payload Dump</span>
-                    <button 
-                      onClick={() => handleCopyText(JSON.stringify(inspectPayload ?? postData, null, 2), "json")}
-                      className="inline-flex items-center gap-1 text-[11px] font-mono text-primary"
-                    >
-                      {copiedRawJson ? <Check size={12} /> : <Copy size={12} />}
-                      <span>{copiedRawJson ? "Copied" : "Copy JSON"}</span>
-                    </button>
-                  </div>
-                  <pre className="p-4 rounded-xl bg-black/80 border border-white/10 font-mono text-[11px] text-zinc-400 overflow-x-auto max-h-80 custom-scrollbar select-all">
-                    {JSON.stringify(inspectPayload ?? postData, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-
           </div>
 
         </div>
@@ -1258,7 +1414,7 @@ export default function PostDetail() {
             <h3 className="text-xs font-bold text-muted-foreground tracking-wider uppercase">Creator Profile</h3>
             <button
               type="button"
-              className="flex w-full items-center gap-4 text-start rounded-xl hover:bg-muted/30 transition-colors p-1 -m-1"
+              className="flex w-full items-center gap-3 sm:gap-4 text-start rounded-xl hover:bg-muted/30 transition-colors p-2"
               onClick={() => {
                 if (isOwnPost) {
                   navigate("/profile");
@@ -1273,7 +1429,7 @@ export default function PostDetail() {
                 size="lg"
                 className="!h-12 !w-12 border-white/20 shrink-0"
               />
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 pl-0.5">
                 <p className="text-base font-bold text-foreground truncate">
                   {creatorName}
                 </p>
@@ -1294,7 +1450,7 @@ export default function PostDetail() {
                 type="button"
                 disabled={followBusy}
                 className={cn(
-                  "w-full h-9 rounded-lg text-xs font-bold transition-colors inline-flex items-center justify-center gap-2",
+                  "w-full h-9 mt-1 rounded-lg text-xs font-bold transition-colors inline-flex items-center justify-center gap-2",
                   creatorProfile?.isFollowing
                     ? "bg-muted text-foreground border border-border hover:bg-muted/80"
                     : "bg-primary text-primary-foreground hover:bg-primary/90",
@@ -1318,7 +1474,7 @@ export default function PostDetail() {
             ) : isOwnPost ? (
               <button
                 type="button"
-                className="w-full h-9 rounded-lg text-xs font-bold bg-muted text-foreground border border-border hover:bg-muted/80 transition-colors"
+                className="w-full h-9 mt-1 rounded-lg text-xs font-bold bg-muted text-foreground border border-border hover:bg-muted/80 transition-colors"
                 onClick={() => navigate("/profile")}
               >
                 View your profile
@@ -1413,13 +1569,16 @@ export default function PostDetail() {
               ) : (
                 commentsList.map((c) => (
                   <div key={c.id} className="flex gap-3 text-xs">
-                    <div className="w-8 h-8 rounded-full bg-muted border border-white/10 overflow-hidden shrink-0">
-                      <img src={c.avatar} alt={c.author} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    </div>
+                    <CreatorAvatar
+                      src={c.avatar}
+                      email={c.author}
+                      size="sm"
+                      className="!h-8 !w-8 shrink-0 border-white/10"
+                    />
                     <div className="space-y-1 min-w-0 flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-foreground">{c.author}</span>
-                        <span className="text-[10px] text-muted-foreground">{c.time}</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold text-foreground truncate">{c.author}</span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">{c.time}</span>
                       </div>
                       <p className="text-muted-foreground leading-relaxed break-words">{c.text}</p>
                     </div>
@@ -1428,23 +1587,39 @@ export default function PostDetail() {
               )}
             </div>
 
-            <form onSubmit={handleAddComment} className="p-3 border-t border-white/10 bg-black/20">
-              <div className="relative">
-                <input 
-                  type="text" 
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Add a comment..."
-                  className="w-full pl-3 pr-10 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs font-medium text-foreground focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
+            <form onSubmit={(e) => void handleAddComment(e)} className="p-3 border-t border-white/10 bg-black/20">
+              <div className="flex items-center gap-2.5">
+                <CreatorAvatar
+                  src={authUser?.photoURL || ""}
+                  email={authUser?.displayName || authUser?.uid || "you"}
+                  size="sm"
+                  className="!h-8 !w-8 shrink-0 border-white/15"
                 />
-                <button 
-                  type="submit"
-                  disabled={!comment.trim()}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 text-primary disabled:opacity-30 hover:scale-110 transition-all"
-                >
-                  <Send size={16} />
-                </button>
+                <div className="relative min-w-0 flex-1">
+                  <input
+                    type="text"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder={
+                      authUser?.uid
+                        ? "Add a comment…"
+                        : "Sign in to comment on this post"
+                    }
+                    disabled={!authUser?.uid}
+                    className="w-full pl-3 pr-10 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs font-medium text-foreground focus:border-primary outline-none transition-all placeholder:text-muted-foreground disabled:opacity-60"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!comment.trim() || !authUser?.uid}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 text-primary disabled:opacity-30 hover:scale-110 transition-all"
+                  >
+                    <Send size={16} />
+                  </button>
+                </div>
               </div>
+              <p className="mt-2 text-[10px] text-muted-foreground leading-relaxed">
+                Any signed-in viewer can comment on a published post — following the creator is optional.
+              </p>
             </form>
           </div>
 
@@ -1464,9 +1639,9 @@ export default function PostDetail() {
           <button 
             type="button"
             onClick={(e) => {
-              e.stopPropagation();
-              setIsFullscreenImage(false);
-            }}
+                      e.stopPropagation();
+                      setIsFullscreenImage(false);
+                    }}
             className="absolute top-6 right-6 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all border border-white/20 z-20"
           >
             <X size={20} />
@@ -1476,13 +1651,13 @@ export default function PostDetail() {
             const [aw, ah] = token.split(/[:/]/).map((n) => Number(n.trim()));
             const w = aw > 0 ? aw : 9;
             const h = ah > 0 ? ah : 16;
-            // Size from viewport so video parent has definite box (clips were collapsing to 0).
+            const fsAspect = mediaAspectCss || `${w} / ${h}`;
             const widthCss = `min(90vw, calc(90vh * ${w} / ${h}), ${contentType === "CLIP" ? "28rem" : "70rem"})`;
             return (
               <div
-                className="relative overflow-hidden rounded-xl border border-white/10 shadow-2xl bg-black"
+                className="relative overflow-hidden rounded-xl border border-white/10 shadow-2xl bg-zinc-950"
                 style={{
-                  aspectRatio: `${w} / ${h}`,
+                  aspectRatio: fsAspect,
                   width: widthCss,
                   height: "auto",
                   maxHeight: "90vh",
@@ -1495,8 +1670,9 @@ export default function PostDetail() {
                   src={imageUrl}
                   alt={title}
                   playable={contentType === "CLIP"}
+                  autoPlay={contentType === "CLIP"}
                   priority
-                  className="!absolute !inset-0 !h-full !w-full !max-h-none !max-w-none !object-contain"
+                  className="!absolute !inset-0 !h-full !w-full !max-h-none !max-w-none !object-cover"
                   wrapperClassName="!absolute !inset-0 !h-full !w-full !max-w-none !max-h-none !aspect-auto !bg-transparent"
                   showPlayBadge={contentType === "CLIP"}
                 />

@@ -28,6 +28,8 @@ export type AuthenticatedMediaPreviewProps = Omit<
    * Tile thumbs stay non-interactive (default false).
    */
   playable?: boolean;
+  /** Start muted playback when media is ready (detail page). */
+  autoPlay?: boolean;
 };
 
 function useGatewayMediaUrl(src: string, enabled: boolean): {
@@ -82,12 +84,14 @@ function AuthenticatedVideoPreview({
   showPlayBadge = true,
   loadingCompact = false,
   playable = false,
+  autoPlay = false,
 }: AuthenticatedMediaPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const autoPlayAttemptedRef = useRef(false);
   const { url, waiting } = useGatewayMediaUrl(src, !failed);
   const resolvedUrl = url
     ? retryCount > 0
@@ -100,6 +104,7 @@ function AuthenticatedVideoPreview({
     setFailed(false);
     setRetryCount(0);
     setIsPlaying(false);
+    autoPlayAttemptedRef.current = false;
   }, [src]);
 
   useEffect(() => {
@@ -117,16 +122,33 @@ function AuthenticatedVideoPreview({
 
   const handleLoaded = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
     const el = e.currentTarget;
-    try {
-      if (el.readyState >= 1 && el.duration > 0.15) {
-        el.currentTime = Math.min(0.12, el.duration * 0.05);
+    // Keep frame 0 for autoplay; otherwise nudge for a clearer poster still.
+    if (!autoPlay) {
+      try {
+        if (el.readyState >= 1 && el.duration > 0.15) {
+          el.currentTime = Math.min(0.12, el.duration * 0.05);
+        }
+      } catch {
+        /* seek for poster frame — best effort */
       }
-    } catch {
-      /* seek for poster frame — best effort */
     }
     setLoaded(true);
     onLoad?.(e);
   };
+
+  useEffect(() => {
+    if (!autoPlay || !playable || !loaded || failed || autoPlayAttemptedRef.current) return;
+    const el = videoRef.current;
+    if (!el) return;
+    autoPlayAttemptedRef.current = true;
+    el.muted = true;
+    void el
+      .play()
+      .then(() => setIsPlaying(true))
+      .catch(() => {
+        /* browser blocked autoplay — user can tap */
+      });
+  }, [autoPlay, playable, loaded, failed]);
 
   const togglePlayback = async () => {
     const el = videoRef.current;
@@ -161,7 +183,7 @@ function AuthenticatedVideoPreview({
       onClick={(e) => {
         onClick?.(e);
         if (!playable || !loaded || failed) return;
-        // While playing, native controls own interaction; first tap starts playback.
+        // While playing, native controls own interaction; first tap starts / unmutes.
         if (isPlaying) return;
         e.stopPropagation();
         void togglePlayback();
@@ -180,10 +202,11 @@ function AuthenticatedVideoPreview({
             !loaded ? "opacity-0" : "opacity-100",
             className,
           )}
-          muted={!playable}
+          muted
           playsInline
+          autoPlay={autoPlay && playable}
           controls={playable && isPlaying}
-          preload={priority ? "auto" : "metadata"}
+          preload={priority || autoPlay ? "auto" : "metadata"}
           aria-label={alt}
           onLoadedData={handleLoaded}
           onPlay={() => setIsPlaying(true)}
@@ -233,6 +256,7 @@ export function AuthenticatedMediaPreview({
   showPlayBadge,
   loadingCompact,
   playable,
+  autoPlay,
   ...props
 }: AuthenticatedMediaPreviewProps) {
   const resolvedKind =
@@ -245,6 +269,7 @@ export function AuthenticatedMediaPreview({
         loadingCompact={loadingCompact}
         showPlayBadge={showPlayBadge ?? true}
         playable={playable}
+        autoPlay={autoPlay}
       />
     );
   }
