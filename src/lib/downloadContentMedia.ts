@@ -20,8 +20,25 @@ function guessExtension(contentType: string | null | undefined, kind: "image" | 
  * burns a new one so iterative edits download correctly without publishing.
  */
 async function ensureClipRenderOnce(contentId: string): Promise<string> {
-  const queued = await contentApi.renderClip(contentId, {});
-  let status = String(queued.renderStatus || queued.status || "queued").toLowerCase();
+  const latest = await contentApi.getOwnedContentById(contentId, {
+    suppressErrorLog: true,
+  });
+  let status = String(latest.renderStatus || "").toLowerCase();
+
+  if (status !== "queued" && status !== "processing") {
+    try {
+      const queued = await contentApi.renderClip(contentId, {});
+      status = String(queued.renderStatus || queued.status || "queued").toLowerCase();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err || "");
+      if (/already in progress/i.test(msg)) {
+        status = "processing";
+      } else {
+        throw err;
+      }
+    }
+  }
+
   if (status === "completed") return status;
 
   const started = Date.now();

@@ -1451,6 +1451,8 @@ export const contentApi = {
         extras?: Record<string, unknown>;
       };
       watermark?: boolean;
+      /** Bypass completed-render reuse and force a new FFmpeg burn-in. */
+      force?: boolean;
     }
   ): Promise<{ contentId: string; jobId: string; status: string; renderStatus?: string }> => {
     return performApiRequest(`/content/${id}/render`, {

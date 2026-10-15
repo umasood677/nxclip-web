@@ -193,6 +193,8 @@ export default function ClipEditor() {
   
   // Dirty state tracking for navigation guard
   const [isDirty, setIsDirty] = useState(false);
+  /** Ignore dirty marks while hydrating server state into form fields (refresh). */
+  const suppressDirtyRef = useRef(true);
   const isLoaded = useRef(false);
   /** True after server clipEditSpec (or first metadata) applied — blocks trim corruption. */
   const specHydratedRef = useRef(false);
@@ -445,8 +447,24 @@ export default function ClipEditor() {
         if (Array.isArray(item.captions) && item.captions.length) {
           setAiSuggestions(item.captions.slice(0, 3));
         }
-        if (item.renderStatus) setRenderStatus(item.renderStatus);
         if (item.status) setContentStatus(String(item.status));
+        {
+          const st = String(item.renderStatus || "").toLowerCase();
+          const extras =
+            item.clipEditSpec?.extras && typeof item.clipEditSpec.extras === "object"
+              ? (item.clipEditSpec.extras as Record<string, unknown>)
+              : {};
+          const quality = String(extras.renderQuality || "");
+          const hasHash = typeof extras.renderSpecHash === "string" && extras.renderSpecHash;
+          // Copy-fallback / unverified "completed" must not unlock Final Preview.
+          if (st === "completed" && (quality === "fallback" || !hasHash)) {
+            setRenderStatus("idle");
+            setIsDirty(true);
+          } else {
+            if (item.renderStatus) setRenderStatus(item.renderStatus);
+            if (st === "completed") setIsDirty(false);
+          }
+        }
         const spec = item.clipEditSpec;
         const isAnimate =
           Boolean(spec?.animate) ||
@@ -709,7 +727,12 @@ export default function ClipEditor() {
                 .map((h) => (h.startsWith("#") ? h : `#${h}`)),
             );
           }
+          suppressDirtyRef.current = true;
           specHydratedRef.current = true;
+          // Allow form state to settle after hydrate before treating changes as edits.
+          window.setTimeout(() => {
+            if (!cancelled) suppressDirtyRef.current = false;
+          }, 1800);
         }
 
         // Always load the original master for editing. Feed/detail use the polished
@@ -1437,48 +1460,131 @@ export default function ClipEditor() {
 
     try {
       if (!still()) return;
+
+      // Resume-aware: drafts that already finished Whisper / copy should not re-run them.
+      let existingTranscript =
+        (transcriptPreview || "").trim() ||
+        "";
+      let serverHashtags: string[] = [];
+      let serverCaption = "";
+      let serverRenderStatus = "";
+      if (id) {
+        try {
+          const latest = await contentApi.getOwnedContentById(id, {
+            suppressErrorLog: true,
+          });
+          if (!still()) return;
+          serverRenderStatus = String(latest.renderStatus || "");
+          const spec = latest.clipEditSpec;
+          if (typeof spec?.transcript === "string" && spec.transcript.trim()) {
+            existingTranscript = spec.transcript.trim();
+            setTranscriptPreview(existingTranscript);
+          }
+          const tags =
+            latest.selectedHashtags ||
+            latest.hashtagSets?.[0] ||
+            (Array.isArray(spec?.extras?.hashtags) ? spec.extras.hashtags : []);
+          if (Array.isArray(tags)) {
+            serverHashtags = tags
+              .filter((t): t is string => typeof t === "string" && Boolean(t.trim()))
+              .map((t) => (t.startsWith("#") ? t : `#${t}`));
+          }
+          serverCaption = String(
+            latest.selectedCaption ||
+              latest.captions?.[0] ||
+              latest.description ||
+              "",
+          ).trim();
+        } catch {
+          /* continue with local state */
+        }
+      }
+
+      const hasTranscript = Boolean(existingTranscript);
+      const hasCopy =
+        Boolean(description.trim() || serverCaption) &&
+        Boolean(hashtags.length || serverHashtags.length);
+      const hasHook =
+        Boolean(topText.trim()) ||
+        hooks.some((h) => Boolean(h?.text?.trim())) ||
+        coachViralApplied;
+      const hasTransitions = appliedTransitions.length > 0 || coachViralApplied;
+      const polishAlreadyDone =
+        hasTranscript && hasCopy && (hasHook || hasTransitions);
+
+      // Fast path: returning draft — skip Whisper/captions/effects regeneration.
+      if (polishAlreadyDone) {
+        setPolishStep(0);
+        setNote(0, t("clip_editor.overlays.steps.transcribing_done", { defaultValue: "Transcript ready" }));
+        setPolishProgress(40);
+        setPolishStep(1);
+        setNote(1, t("clip_editor.overlays.steps.captions_done", { defaultValue: "Caption and hashtags drafted" }));
+        autoCaptionRanRef.current = true;
+        if (serverHashtags.length && !hashtags.length) setHashtags(serverHashtags);
+        if (!description.trim() && serverCaption) setDescription(serverCaption);
+        setPolishProgress(80);
+        setPolishStep(2);
+        setNote(2, t("clip_editor.overlays.steps.effects_done", { defaultValue: "Hooks and transition beats ready" }));
+        await waitAtLeast(Date.now(), 450);
+        if (!still()) return;
+        setPolishProgress(100);
+        setPolishStep(3);
+        if (String(serverRenderStatus).toLowerCase() === "completed") {
+          setIsDirty(false);
+        }
+        mergeSearchParams({ step: "polish" });
+        return;
+      }
+
       setPolishProgress(10);
       setNote(0, t("clip_editor.overlays.steps.transcribing_queued", { defaultValue: "Queued speech-to-text…" }));
 
       if (id) {
         const transcribeStarted = Date.now();
         try {
-          await contentApi.transcribeClip(id);
-          const transcript = await waitForClipTranscript(
-            () => contentApi.getOwnedContentById(id, { suppressErrorLog: true }),
-            {
-              attempts: 12,
-              delayMs: 2000,
-              isCancelled: () => !still(),
-              onTick: (attempt, attempts) => {
-                setPolishProgress(10 + Math.round((attempt / Math.max(1, attempts)) * 28));
-                setNote(
-                  0,
-                  t("clip_editor.overlays.steps.transcribing_wait", {
-                    defaultValue: "Listening for words… {{attempt}}/{{attempts}}",
-                    attempt: attempt + 1,
-                    attempts,
-                  }),
-                );
-              },
-            },
-          );
-          if (!still()) return;
-          if (transcript != null) {
-            setTranscriptPreview(transcript);
+          if (hasTranscript) {
             setNote(
               0,
-              transcript.trim()
-                ? t("clip_editor.overlays.steps.transcribing_done", { defaultValue: "Transcript ready" })
-                : t("clip_editor.overlays.steps.transcribing_empty", { defaultValue: "No speech detected — continuing" }),
+              t("clip_editor.overlays.steps.transcribing_done", { defaultValue: "Transcript ready" }),
             );
           } else {
-            setNote(
-              0,
-              t("clip_editor.overlays.steps.transcribing_slow", {
-                defaultValue: "Still processing — you can transcribe again on Captions",
-              }),
+            await contentApi.transcribeClip(id);
+            const transcript = await waitForClipTranscript(
+              () => contentApi.getOwnedContentById(id, { suppressErrorLog: true }),
+              {
+                attempts: 12,
+                delayMs: 2000,
+                isCancelled: () => !still(),
+                onTick: (attempt, attempts) => {
+                  setPolishProgress(10 + Math.round((attempt / Math.max(1, attempts)) * 28));
+                  setNote(
+                    0,
+                    t("clip_editor.overlays.steps.transcribing_wait", {
+                      defaultValue: "Listening for words… {{attempt}}/{{attempts}}",
+                      attempt: attempt + 1,
+                      attempts,
+                    }),
+                  );
+                },
+              },
             );
+            if (!still()) return;
+            if (transcript != null) {
+              setTranscriptPreview(transcript);
+              setNote(
+                0,
+                transcript.trim()
+                  ? t("clip_editor.overlays.steps.transcribing_done", { defaultValue: "Transcript ready" })
+                  : t("clip_editor.overlays.steps.transcribing_empty", { defaultValue: "No speech detected — continuing" }),
+              );
+            } else {
+              setNote(
+                0,
+                t("clip_editor.overlays.steps.transcribing_slow", {
+                  defaultValue: "Still processing — you can transcribe again on Captions",
+                }),
+              );
+            }
           }
         } catch (err) {
           setNote(0, formatClipApiError(err, t("clip_editor.overlays.steps.transcribing_fail", { defaultValue: "Transcription skipped" })));
@@ -1491,11 +1597,18 @@ export default function ClipEditor() {
       setPolishProgress(42);
       setNote(1, t("clip_editor.overlays.steps.generating_captions_sub"));
       const captionStarted = Date.now();
-      await generateAICaption({ silent: true });
-      autoCaptionRanRef.current = true;
+      if (hasCopy) {
+        autoCaptionRanRef.current = true;
+        if (serverHashtags.length && !hashtags.length) setHashtags(serverHashtags);
+        if (!description.trim() && serverCaption) setDescription(serverCaption);
+        setNote(1, t("clip_editor.overlays.steps.captions_done", { defaultValue: "Caption and hashtags drafted" }));
+      } else {
+        await generateAICaption({ silent: true });
+        autoCaptionRanRef.current = true;
+        setNote(1, t("clip_editor.overlays.steps.captions_done", { defaultValue: "Caption and hashtags drafted" }));
+      }
       await waitAtLeast(captionStarted, 700);
       if (!still()) return;
-      setNote(1, t("clip_editor.overlays.steps.captions_done", { defaultValue: "Caption and hashtags drafted" }));
 
       setPolishStep(2);
       setPolishProgress(72);
@@ -1529,7 +1642,7 @@ export default function ClipEditor() {
                 /* optional alternatives */
               }
             }
-          } else {
+          } else if (!hasHook) {
             const hooksRes = await contentApi.generateClipHooks(id);
             if (still() && hooksRes.hooks?.length) {
               setHookOptions(hooksRes.hooks);
@@ -1546,7 +1659,7 @@ export default function ClipEditor() {
         }
         if (!still()) return;
         // Do not replace Coach cut joins with Enhance timeline suggestions after Viral Apply.
-        if (!coachViralApplied) {
+        if (!coachViralApplied && !hasTransitions) {
           try {
             await generateTransitionSuggestions();
           } catch {
@@ -1903,9 +2016,7 @@ export default function ClipEditor() {
   ]);
 
   /** Persist clipEditSpec and wait for media-worker polish (BGM, captions, hooks, trim).
-   * Shared by Publish and Download. Always saves current edits then asks the server to
-   * render — server reuses the prior MP4 only when the edit fingerprint is unchanged.
-   * So iterative edit→download without publish always burns the latest changes. */
+   * If a job is already queued/processing, polls it instead of starting another (avoids 400). */
   const ensurePolishedRender = useCallback(
     async (opts?: {
       download?: boolean;
@@ -1917,40 +2028,93 @@ export default function ClipEditor() {
       const toastId = opts?.toastId ?? "render-clip";
       let status = String(renderStatus || "").toLowerCase();
 
-      try {
-        const spec = buildClipEditSpec();
-        await contentApi.saveClipEdit(id, spec);
-        // Never skip this call based on local isDirty — transitions/prompt/etc. can
-        // change without flipping dirty. Backend short-circuits when hash matches.
-        const queued = await contentApi.renderClip(id, { clipEditSpec: spec });
-        status = String(
-          queued.renderStatus || queued.status || "queued",
-        ).toLowerCase();
-        setRenderStatus(status === "completed" ? "completed" : queued.renderStatus || "queued");
+      const isPolishedComplete = (item: {
+        renderStatus?: string | null;
+        clipEditSpec?: { extras?: Record<string, unknown> | null } | null;
+      }) => {
+        const st = String(item.renderStatus || "").toLowerCase();
+        const extras = item.clipEditSpec?.extras || {};
+        const quality = String(extras.renderQuality || "");
+        const hasHash =
+          typeof extras.renderSpecHash === "string" && Boolean(extras.renderSpecHash);
+        // Reject copy-fallback / unverified "completed" assets — no burned edits.
+        return st === "completed" && quality !== "fallback" && (quality === "polished" || hasHash);
+      };
 
-        // Backend returns completed immediately when edit fingerprint matches prior burn-in.
-        if (status !== "completed") {
-          toast.loading(
-            opts?.loadingMessage ?? "Saving edit and applying polish (BGM, captions)…",
-            { id: toastId },
-          );
-          const started = Date.now();
-          while (Date.now() - started < 240_000) {
-            await new Promise((r) => setTimeout(r, 2000));
-            const polled = await contentApi.getOwnedContentById(id, {
-              suppressErrorLog: true,
+      const pollUntilDone = async () => {
+        toast.loading(
+          opts?.loadingMessage ?? "Rendering your edits into the MP4…",
+          { id: toastId },
+        );
+        const started = Date.now();
+        while (Date.now() - started < 240_000) {
+          await new Promise((r) => setTimeout(r, 2000));
+          const polled = await contentApi.getOwnedContentById(id, {
+            suppressErrorLog: true,
+          });
+          status = String(polled.renderStatus || status).toLowerCase();
+          setRenderStatus(polled.renderStatus || status);
+          if (status === "completed" || status === "failed") break;
+        }
+      };
+
+      try {
+        const latest = await contentApi.getOwnedContentById(id, {
+          suppressErrorLog: true,
+        });
+        status = String(latest.renderStatus || status).toLowerCase();
+        setRenderStatus(latest.renderStatus || status);
+
+        // Stale copy-fallback must not unlock Final Preview — force a real burn-in.
+        const staleFallback =
+          String(latest.clipEditSpec?.extras?.renderQuality || "") === "fallback" ||
+          (status === "completed" && !latest.clipEditSpec?.extras?.renderSpecHash);
+
+        if (!opts?.force && !staleFallback && (status === "queued" || status === "processing")) {
+          await pollUntilDone();
+        } else if (!opts?.force && !staleFallback && isPolishedComplete(latest)) {
+          status = "completed";
+        } else {
+          const spec = buildClipEditSpec();
+          await contentApi.saveClipEdit(id, spec);
+          const forceNew = Boolean(opts?.force || staleFallback);
+          try {
+            const queued = await contentApi.renderClip(id, {
+              clipEditSpec: spec,
+              ...(forceNew ? { force: true } : {}),
             });
-            status = String(polled.renderStatus || status).toLowerCase();
-            setRenderStatus(polled.renderStatus || status);
-            if (status === "completed" || status === "failed") break;
+            status = String(
+              queued.renderStatus || queued.status || "queued",
+            ).toLowerCase();
+            setRenderStatus(
+              status === "completed" ? "completed" : queued.renderStatus || status,
+            );
+          } catch (err) {
+            const msg = formatClipApiError(err, "");
+            if (/already in progress/i.test(msg)) {
+              status = "processing";
+              setRenderStatus("processing");
+            } else {
+              throw err;
+            }
+          }
+
+          if (status !== "completed") {
+            await pollUntilDone();
           }
         }
 
-        if (status !== "completed") {
+        const verified = await contentApi.getOwnedContentById(id, {
+          suppressErrorLog: true,
+        });
+        status = String(verified.renderStatus || status).toLowerCase();
+        setRenderStatus(verified.renderStatus || status);
+        if (!isPolishedComplete(verified)) {
+          clearRenderPreview();
           throw new Error(
             status === "failed"
-              ? "Render failed on the server. Open Clip Studio again — your Apply is saved; retry Publish."
-              : "Render timed out after 4 minutes. Your Apply is still saved — retry Publish.",
+              ? "Render did not burn edits (encode failed). Retry Save & Render."
+              : "Render finished without a polished MP4. Retry Save & Render.",
           );
         }
         setIsDirty(false);
@@ -1965,7 +2129,6 @@ export default function ClipEditor() {
       if (opts?.download) {
         toast.loading("Preparing download…", { id: toastId });
         const token = getAccessToken();
-        // Cache-bust so iterative downloads never get a stale browser-cached MP4.
         const mediaUrl = `${resolveBaseGatewayUrl()}/content/${id}/media?variant=render&_=${Date.now()}`;
         const res = await fetch(mediaUrl, {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -1985,7 +2148,7 @@ export default function ClipEditor() {
 
       return status;
     },
-    [id, buildClipEditSpec, title, renderStatus],
+    [id, buildClipEditSpec, title, renderStatus, clearRenderPreview],
   );
 
   const handlePublishContent = async () => {
@@ -2219,9 +2382,11 @@ export default function ClipEditor() {
     setIsRendering(true);
     triggerHaptic("medium");
     try {
+      // Re-render always forces a new FFmpeg burn-in (never reuse a stale/raw asset).
       await ensurePolishedRender({
         toastId: "save-render",
         loadingMessage: "Saving edit and rendering clip…",
+        force: renderReady,
       });
       setRenderStatus("completed");
       toast.loading("Loading final preview…", { id: "save-render" });
@@ -2232,6 +2397,8 @@ export default function ClipEditor() {
       triggerHaptic("success");
     } catch (err: any) {
       console.error(err);
+      clearRenderPreview();
+      setRenderStatus("failed");
       toast.error("Save & Render failed", {
         description: formatClipApiError(err, "Could not burn in this clip."),
         id: "save-render",
@@ -2293,11 +2460,13 @@ export default function ClipEditor() {
   useEffect(() => {
     specHydratedRef.current = false;
     isLoaded.current = false;
+    suppressDirtyRef.current = true;
+    clearRenderPreview();
     const timer = setTimeout(() => {
       isLoaded.current = true;
     }, 400);
     return () => clearTimeout(timer);
-  }, [id]);
+  }, [id, clearRenderPreview]);
 
   const saveToLocalStorage = useCallback(() => {
     if (!id || !specHydratedRef.current) return;
@@ -2341,11 +2510,60 @@ export default function ClipEditor() {
 
   // Track real user edits only — ignore hydration / post-render state sync.
   useEffect(() => {
-    if (!isLoaded.current || !specHydratedRef.current) return;
+    if (!isLoaded.current || !specHydratedRef.current || suppressDirtyRef.current) return;
     setIsDirty(true);
     // New edits invalidate the final-render preview — back to live CSS/mix preview.
     clearRenderPreview();
   }, [trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, captionTextColor, title, description, prompt, hooks, silenceEnabled, hashtags, colorCorrection, isNoiseReduced, clipVolume, musicVolume, masterVolume, appliedTransitions, cropMode, coachViralApplied, coachTextCuts, coachStitchJoins, clearRenderPreview]);
+
+  // Resume an in-flight render after refresh (no 400 — just poll until done).
+  useEffect(() => {
+    if (!id || step !== "polish") return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const latest = await contentApi.getOwnedContentById(id, {
+          suppressErrorLog: true,
+        });
+        if (cancelled) return;
+        let status = String(latest.renderStatus || "").toLowerCase();
+        setRenderStatus(latest.renderStatus || status);
+        if (status !== "queued" && status !== "processing") {
+          if (status === "completed") setIsDirty(false);
+          return;
+        }
+        setIsRendering(true);
+        toast.loading("Finishing render in progress…", { id: "save-render" });
+        const started = Date.now();
+        while (!cancelled && Date.now() - started < 240_000) {
+          await new Promise((r) => setTimeout(r, 2000));
+          const polled = await contentApi.getOwnedContentById(id, {
+            suppressErrorLog: true,
+          });
+          status = String(polled.renderStatus || status).toLowerCase();
+          if (!cancelled) setRenderStatus(polled.renderStatus || status);
+          if (status === "completed" || status === "failed") break;
+        }
+        if (cancelled) return;
+        if (status === "completed") {
+          setIsDirty(false);
+          await loadRenderPreview();
+          toast.success("Final render ready — play it below", { id: "save-render" });
+        } else if (status === "failed") {
+          toast.error("Render failed — tap Save & Render to retry", { id: "save-render" });
+        } else {
+          toast.error("Render timed out — tap Save & Render to retry", { id: "save-render" });
+        }
+      } catch {
+        /* soft — user can tap Save & Render */
+      } finally {
+        if (!cancelled) setIsRendering(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, step, loadRenderPreview]);
 
   // If a completed render already exists (reload / prior session), show it in polish preview.
   useEffect(() => {
