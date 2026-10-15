@@ -34,16 +34,16 @@ export function ReimaginePresets({
   return (
     <div className="space-y-2">
       <div className="flex items-baseline justify-between gap-2">
-        <div className="text-xs font-medium text-white/80">Reimagine this clip as…</div>
+        <div className="text-xs font-medium text-white/80">Creative leap · Reimagine as…</div>
         {locked ? (
           <span className="text-[10px] text-amber-200/80">Analyze first</span>
         ) : suggestedIds.length ? (
-          <span className="text-[10px] text-emerald-300/80">Suggested for this clip</span>
+          <span className="text-[10px] text-emerald-300/80">Best match for this clip</span>
         ) : null}
       </div>
       <p className="text-[11px] text-white/45">
-        One-tap creative treatment (mode + commentary + Foley + mix). Best after Analyze so timing
-        matches the clip — not the same as the Auto/Broadcast mode chips below.
+        Full package in one tap. Prefer highlighted chips. Not the same as Advanced mode chips
+        (Auto / Broadcast / …).
       </p>
       <div className="flex flex-wrap gap-1.5">
         {PRESETS.map((p) => {

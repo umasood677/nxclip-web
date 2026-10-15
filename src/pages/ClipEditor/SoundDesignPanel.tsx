@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Headphones, Loader2, Sparkles, Volume2 } from "lucide-react";
+import { Check, Headphones, Loader2, Sparkles, Volume2 } from "lucide-react";
 import { toast } from "sonner";
 import { contentApi } from "../../services/apiClient";
 import { Button } from "../../components/ui/button";
@@ -46,7 +46,6 @@ const DEFAULT_COMPONENTS: SoundDesignComponents = {
   preserveImportantOriginalAudio: true,
 };
 
-/** Production credit estimates (mirrors ai-service SOUND_DESIGN metering). */
 function estimateCredits(opts: {
   analyze: boolean;
   plan: boolean;
@@ -85,16 +84,53 @@ function toTimelineItems(edl: unknown[]): TimelineEdlItem[] {
     .filter(Boolean) as TimelineEdlItem[];
 }
 
+function StepPill({
+  n,
+  label,
+  active,
+  done,
+}: {
+  n: number;
+  label: string;
+  active?: boolean;
+  done?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide",
+        done && "bg-emerald-500/20 text-emerald-200",
+        active && !done && "bg-white/15 text-white",
+        !active && !done && "bg-white/5 text-white/35",
+      )}
+    >
+      <span
+        className={cn(
+          "flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px]",
+          done ? "bg-emerald-400 text-black" : active ? "bg-white text-black" : "bg-white/10",
+        )}
+      >
+        {done ? <Check className="h-2.5 w-2.5" /> : n}
+      </span>
+      <span className="truncate">{label}</span>
+    </div>
+  );
+}
+
 type Props = {
   contentId: string | null;
   durationSec: number;
   creatorContext: string;
   disabled?: boolean;
-  /** Story Engine compose drafts share the same Sound Engine. */
   storyEngine?: boolean;
   onApplied?: () => void;
 };
 
+/**
+ * Flagship Sound Engine UI.
+ * Principle: Understand the clip first. Design the sound second.
+ * No Reimagine / Apply until Analyze completes.
+ */
 export function SoundDesignPanel({
   contentId,
   durationSec,
@@ -119,16 +155,19 @@ export function SoundDesignPanel({
   const [planSummary, setPlanSummary] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<TimelineEdlItem[]>([]);
   const [lastPreset, setLastPreset] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const hasPlan = Boolean(planSummary || timeline.length);
+  const step = !analyzed ? 1 : !hasPlan ? 2 : 3;
 
   const layers = useMemo(() => {
-    const rows: Array<{ id: string; label: string; on: boolean }> = [
+    return [
       { id: "original", label: "ORIGINAL", on: components.preserveImportantOriginalAudio },
       { id: "voice", label: "VOICE", on: components.aiCommentary },
       { id: "foley", label: "FOLEY", on: components.aiFoley },
       { id: "ambience", label: "AMBIENCE", on: components.ambience },
       { id: "music", label: "MUSIC", on: components.backgroundMusic },
     ];
-    return rows;
   }, [components]);
 
   const suggestedPresets = useMemo(
@@ -167,21 +206,21 @@ export function SoundDesignPanel({
         durationSec: Math.max(0.5, durationSec),
       });
       const rec = res.recommendation
-        ? {
-            ...res.recommendation,
-            suggestedMode: res.recommendation.suggestedMode,
-          }
+        ? { ...res.recommendation, suggestedMode: res.recommendation.suggestedMode }
         : null;
       setRecommendation(rec);
       setAnalyzed(true);
       setLastPreset(null);
-      if (rec?.commentaryRecommended && !components.aiCommentary) {
+      setPlanSummary(null);
+      setTimeline([]);
+      setTtsInfo(null);
+      if (rec?.commentaryRecommended) {
         setComponents((c) => ({ ...c, aiCommentary: true }));
       }
       if (rec?.suggestedMode) {
         setMode(rec.suggestedMode as SoundDesignMode);
       }
-      toast.success("Clip understood — pick a treatment next");
+      toast.success("Clip understood — choose a treatment");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sound Design analyze failed");
     } finally {
@@ -209,7 +248,7 @@ export function SoundDesignPanel({
     if (!contentId) return;
     if (!analyzed) {
       toast.message("Analyze first", {
-        description: "Understand the clip before applying Foley / commentary.",
+        description: "nxClip designs sound from what it understands about the clip.",
       });
       return;
     }
@@ -251,10 +290,9 @@ export function SoundDesignPanel({
         setTtsInfo(null);
       }
       setTimeline(toTimelineItems(edl));
-      setPlanSummary(
-        `${voice} commentary · ${foley} Foley · ${edl.length} EDL decisions`,
-      );
-      toast.success("Sound Design plan applied — ready to render");
+      setLastPreset(null);
+      setPlanSummary(`${voice} commentary · ${foley} Foley · ${edl.length} EDL decisions`);
+      toast.success("Sound plan applied — review timeline, then Render");
       onApplied?.();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sound Design plan failed");
@@ -267,7 +305,7 @@ export function SoundDesignPanel({
     if (!contentId) return;
     if (!analyzed) {
       toast.message("Analyze first", {
-        description: "Reimagine uses clip understanding for better Foley and commentary timing.",
+        description: "Reimagine needs clip understanding for synced Foley and commentary.",
       });
       return;
     }
@@ -308,213 +346,268 @@ export function SoundDesignPanel({
   };
 
   return (
-    <div className="space-y-4 rounded-xl border border-white/10 bg-black/20 p-3">
-      <div className="flex items-center gap-2 text-sm font-medium text-white">
-        <Headphones className="h-4 w-4 text-emerald-400" />
-        AI Sound Design
-        {storyEngine ? (
-          <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] text-emerald-200">
-            Story Engine
-          </span>
-        ) : null}
-      </div>
-      <p className="text-xs text-white/60">
-        {storyEngine
-          ? "Shared Sound Engine — first understand the story audio, then apply a treatment."
-          : "Guided flow: understand the clip first, then apply a recommended or Reimagine treatment."}
-      </p>
+    <div className="relative overflow-hidden rounded-2xl border border-emerald-400/25 bg-gradient-to-b from-emerald-950/40 via-black/50 to-black/30 shadow-[0_0_0_1px_rgba(16,185,129,0.08)]">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-40"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 100% at 20% 0%, rgba(52,211,153,0.35), transparent 70%)",
+        }}
+      />
 
-      {/* Step 1 — Analyze */}
-      <section className="space-y-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300/90">
-              Step 1 · Understand
-            </div>
-            <p className="mt-0.5 text-xs text-white/70">
-              Analyze finds moments, suggests a sound mode, and recommends Foley / commentary.
-              Always do this before Reimagine or Preview & Apply.
-            </p>
-          </div>
-          {analyzed ? (
-            <span className="shrink-0 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-200">
-              Done
-            </span>
-          ) : null}
-        </div>
-        <Button
-          type="button"
-          size="sm"
-          disabled={!contentId || disabled || Boolean(busy)}
-          onClick={() => void analyze()}
-          className="w-full sm:w-auto"
-        >
-          {busy === "analyze" ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Sparkles className="h-3.5 w-3.5" />
-          )}
-          {analyzed ? "Re-analyze" : "Analyze clip"}
-        </Button>
-        {recommendation && (
-          <div className="rounded-lg border border-emerald-500/20 bg-black/20 p-2 text-xs text-white/80">
-            <div className="mb-1 font-medium text-emerald-300">Recommendation</div>
-            <p>{recommendation.summary}</p>
-            <ul className="mt-1 list-disc pl-4 text-white/70">
-              {recommendation.bullets?.slice(0, 6).map((b) => (
-                <li key={b}>{b}</li>
-              ))}
-            </ul>
-            {recommendation.suggestedMode ? (
-              <p className="mt-1 text-white/50">
-                Suggested mode: <span className="text-white/80">{recommendation.suggestedMode}</span>
+      <div className="relative space-y-4 p-4">
+        <header className="space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300/90">
+                nxClip Sound Engine
               </p>
-            ) : null}
-            {recommendation.lightTouchOnly && (
-              <p className="mt-1 text-white/50">Light touch — original audio already works well.</p>
-            )}
+              <h3 className="mt-0.5 flex items-center gap-2 text-base font-semibold text-white">
+                <Headphones className="h-4 w-4 text-emerald-400" />
+                AI Sound Design
+                {storyEngine ? (
+                  <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-medium text-emerald-200">
+                    Story Engine
+                  </span>
+                ) : null}
+              </h3>
+            </div>
           </div>
-        )}
-      </section>
-
-      {/* Step 2 — Choose treatment */}
-      <section
-        className={cn(
-          "space-y-3 rounded-lg border p-3",
-          analyzed ? "border-white/15 bg-black/20" : "border-white/5 bg-black/10 opacity-70",
-        )}
-      >
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-white/50">
-            Step 2 · Choose treatment
-          </div>
-          <p className="mt-0.5 text-xs text-white/55">
-            Either apply the recommended settings, or pick a Reimagine preset for a full creative
-            package. Prefer highlighted presets that match this clip.
+          <p className="text-xs leading-relaxed text-white/60">
+            Understand the clip first. Design the sound second. Non-destructive until you Render.
           </p>
-        </div>
-
-        <ReimaginePresets
-          disabled={disabled}
-          busy={Boolean(busy)}
-          lockedUntilAnalyze={!analyzed}
-          suggestedIds={analyzed ? suggestedPresets : []}
-          lastPresetId={lastPreset}
-          onSelect={(id) => void reimagine(id)}
-        />
-
-        <div className="space-y-1.5 border-t border-white/10 pt-3">
-          <div className="text-[11px] text-white/55">
-            Or refine manually — <span className="text-white/80">mode chips</span> are not Reimagine
-            presets. <span className="text-white/80">Auto</span> means “use analyze suggestion.”
+          <div className="flex gap-1.5">
+            <StepPill n={1} label="Understand" active={step === 1} done={analyzed} />
+            <StepPill n={2} label="Treat" active={step === 2} done={hasPlan} />
+            <StepPill n={3} label="Review" active={step === 3} done={hasPlan && step === 3} />
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {MODES.map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                disabled={!analyzed || disabled || Boolean(busy)}
-                onClick={() => setMode(id)}
-                className={cn(
-                  "rounded-full px-2.5 py-1 text-xs",
-                  mode === id ? "bg-emerald-500/90 text-black" : "bg-white/10 text-white/80",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        </header>
 
-          <div className="grid gap-1.5 text-xs text-white/80">
-            {(
-              [
-                ["enhanceOriginalAudio", "Enhance Original Audio"],
-                ["aiFoley", "AI Foley"],
-                ["ambience", "Environment / Ambience"],
-                ["aiCommentary", "AI Commentary / Narration"],
-                ["autoDucking", "Auto Ducking"],
-                ["preserveImportantOriginalAudio", "Preserve Important Original Audio"],
-                ["backgroundMusic", "Background Music"],
-              ] as Array<[keyof SoundDesignComponents, string]>
-            ).map(([key, label]) => (
-              <label key={key} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={components[key]}
-                  disabled={!analyzed || disabled || Boolean(busy)}
-                  onChange={() => toggle(key)}
-                />
-                {label}
-              </label>
-            ))}
-            <label className="flex items-center gap-2 text-white/55">
-              <input
-                type="checkbox"
-                checked={premiumVoice}
-                disabled={!analyzed || disabled || Boolean(busy)}
-                onChange={() => setPremiumVoice((v) => !v)}
-              />
-              Estimate Premium TTS credits (ElevenLabs)
-            </label>
+        {/* STEP 1 */}
+        <section
+          className={cn(
+            "space-y-3 rounded-xl border p-3",
+            step === 1
+              ? "border-emerald-400/40 bg-emerald-500/10"
+              : "border-white/10 bg-black/25",
+          )}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-300">
+                1 · Understand
+              </p>
+              <p className="mt-1 text-xs text-white/65">
+                Required. Finds moments and recommends Foley, ambience, and whether commentary helps.
+              </p>
+            </div>
+            {analyzed ? (
+              <span className="shrink-0 rounded-full bg-emerald-500/25 px-2 py-0.5 text-[10px] text-emerald-100">
+                Ready
+              </span>
+            ) : null}
           </div>
-
           <Button
             type="button"
             size="sm"
-            disabled={!contentId || !analyzed || disabled || Boolean(busy)}
-            onClick={() => void planAndApply()}
+            disabled={!contentId || disabled || Boolean(busy)}
+            onClick={() => void analyze()}
+            className="w-full bg-emerald-500 text-black hover:bg-emerald-400 sm:w-auto"
           >
-            {busy === "plan" || busy === "tts" ? (
+            {busy === "analyze" ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Headphones className="h-3.5 w-3.5" />
+              <Sparkles className="h-3.5 w-3.5" />
             )}
-            Preview & Apply recommended
+            {analyzed ? "Re-analyze clip" : "Analyze clip"}
           </Button>
-        </div>
-      </section>
-
-      {/* Step 3 — Edit / review */}
-      {(timeline.length > 0 || planSummary) && (
-        <section className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-3">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-white/50">
-            Step 3 · Review timeline
-          </div>
-          {planSummary && (
-            <p className="text-xs text-emerald-300/90">Plan ready: {planSummary}</p>
-          )}
-          {ttsInfo && <p className="text-xs text-white/55">{ttsInfo}</p>}
-
-          <div className="space-y-1 rounded-lg bg-black/30 p-2">
-            <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-white/50">
-              <Volume2 className="h-3 w-3" /> Audio layers
+          {recommendation && (
+            <div className="rounded-lg border border-emerald-500/20 bg-black/30 p-2.5 text-xs text-white/85">
+              <p className="font-medium text-emerald-300">What nxClip heard</p>
+              <p className="mt-1">{recommendation.summary}</p>
+              <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-white/65">
+                {recommendation.bullets?.slice(0, 5).map((b) => (
+                  <li key={b}>{b}</li>
+                ))}
+              </ul>
+              {recommendation.suggestedMode ? (
+                <p className="mt-2 text-[11px] text-white/45">
+                  Suggested mode:{" "}
+                  <span className="font-medium text-white/80">{recommendation.suggestedMode}</span>
+                </p>
+              ) : null}
             </div>
-            {layers.map((l) => (
-              <div key={l.id} className="flex items-center gap-2 text-[11px] text-white/70">
-                <span className="w-16 shrink-0 font-mono text-white/40">{l.label}</span>
-                <div className="h-2 flex-1 overflow-hidden rounded bg-white/10">
-                  <div className={cn("h-full", l.on ? "w-full bg-emerald-500/50" : "w-0")} />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {timeline.length > 0 && (
-            <AudioTimelineEditor
-              durationMs={Math.max(1000, Math.round(durationSec * 1000))}
-              items={timeline}
-              disabled={disabled || Boolean(busy)}
-              onChange={(items) => void applyEdlLocal(items)}
-            />
           )}
         </section>
-      )}
 
-      <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-2 py-1.5 text-[11px] text-amber-100/90">
-        Est. ~{creditPreview.credits} sound credits · {creditPreview.label}
-        <span className="block text-white/45">
-          Metered server-side on analyze / plan / TTS (ai_jobs · sound_design).
-        </span>
+        {/* STEP 2 — locked until analyze */}
+        <section
+          className={cn(
+            "space-y-3 rounded-xl border p-3 transition-opacity",
+            analyzed
+              ? step === 2
+                ? "border-emerald-400/35 bg-emerald-500/5"
+                : "border-white/10 bg-black/25"
+              : "pointer-events-none border-white/5 bg-black/10 opacity-45",
+          )}
+          aria-disabled={!analyzed}
+        >
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-white/50">
+              2 · Treat
+            </p>
+            <p className="mt-1 text-xs text-white/55">
+              {analyzed
+                ? "Apply the recommendation, or leap with a matching Reimagine preset."
+                : "Locked until Analyze finishes — prevents mismatched Foley / commentary."}
+            </p>
+          </div>
+
+          {analyzed && (
+            <>
+              <div className="space-y-2">
+                <p className="text-[11px] font-medium text-white/80">Recommended path</p>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={!contentId || disabled || Boolean(busy)}
+                  onClick={() => void planAndApply()}
+                  className="w-full"
+                >
+                  {busy === "plan" || busy === "tts" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Headphones className="h-3.5 w-3.5" />
+                  )}
+                  Preview & Apply recommended
+                </Button>
+                <p className="text-[10px] text-white/40">
+                  Uses suggested mode ({mode}) and layer toggles. Safest for quality.
+                </p>
+              </div>
+
+              <div className="border-t border-white/10 pt-3">
+                <ReimaginePresets
+                  disabled={disabled}
+                  busy={Boolean(busy)}
+                  lockedUntilAnalyze={false}
+                  suggestedIds={suggestedPresets}
+                  lastPresetId={lastPreset}
+                  onSelect={(id) => void reimagine(id)}
+                />
+              </div>
+
+              <details
+                className="rounded-lg border border-white/10 bg-black/20"
+                open={showAdvanced}
+                onToggle={(e) => setShowAdvanced((e.target as HTMLDetailsElement).open)}
+              >
+                <summary className="cursor-pointer px-3 py-2 text-[11px] text-white/55">
+                  Advanced — manual mode & layers
+                  <span className="ml-1 text-white/35">(not Reimagine presets)</span>
+                </summary>
+                <div className="space-y-2 border-t border-white/10 px-3 py-2">
+                  <p className="text-[10px] text-white/40">
+                    <strong className="text-white/60">Auto</strong> = follow Analyze suggestion. These
+                    chips only affect Preview & Apply — not the Reimagine buttons above.
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {MODES.map(([id, label]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        disabled={disabled || Boolean(busy)}
+                        onClick={() => setMode(id)}
+                        className={cn(
+                          "rounded-full px-2.5 py-1 text-xs",
+                          mode === id
+                            ? "bg-emerald-500/90 text-black"
+                            : "bg-white/10 text-white/80",
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid gap-1.5 text-xs text-white/80">
+                    {(
+                      [
+                        ["enhanceOriginalAudio", "Enhance Original Audio"],
+                        ["aiFoley", "AI Foley"],
+                        ["ambience", "Environment / Ambience"],
+                        ["aiCommentary", "AI Commentary / Narration"],
+                        ["autoDucking", "Auto Ducking"],
+                        ["preserveImportantOriginalAudio", "Preserve Important Original Audio"],
+                        ["backgroundMusic", "Background Music"],
+                      ] as Array<[keyof SoundDesignComponents, string]>
+                    ).map(([key, label]) => (
+                      <label key={key} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={components[key]}
+                          disabled={disabled || Boolean(busy)}
+                          onChange={() => toggle(key)}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                    <label className="flex items-center gap-2 text-white/50">
+                      <input
+                        type="checkbox"
+                        checked={premiumVoice}
+                        disabled={disabled || Boolean(busy)}
+                        onChange={() => setPremiumVoice((v) => !v)}
+                      />
+                      Estimate Premium TTS credits
+                    </label>
+                  </div>
+                </div>
+              </details>
+            </>
+          )}
+        </section>
+
+        {/* STEP 3 */}
+        {hasPlan && (
+          <section className="space-y-2 rounded-xl border border-emerald-400/25 bg-black/30 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-300/90">
+              3 · Review
+            </p>
+            {planSummary && (
+              <p className="text-xs text-emerald-200/90">Plan ready: {planSummary}</p>
+            )}
+            {ttsInfo && <p className="text-xs text-white/50">{ttsInfo}</p>}
+            <div className="space-y-1 rounded-lg bg-black/40 p-2">
+              <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-white/45">
+                <Volume2 className="h-3 w-3" /> Layers
+              </div>
+              {layers.map((l) => (
+                <div key={l.id} className="flex items-center gap-2 text-[11px] text-white/70">
+                  <span className="w-16 shrink-0 font-mono text-white/35">{l.label}</span>
+                  <div className="h-1.5 flex-1 overflow-hidden rounded bg-white/10">
+                    <div className={cn("h-full", l.on ? "w-full bg-emerald-500/60" : "w-0")} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            {timeline.length > 0 && (
+              <AudioTimelineEditor
+                durationMs={Math.max(1000, Math.round(durationSec * 1000))}
+                items={timeline}
+                disabled={disabled || Boolean(busy)}
+                onChange={(items) => void applyEdlLocal(items)}
+              />
+            )}
+            <p className="text-[11px] text-white/45">
+              Drag or mute regions, then use the editor <strong className="text-white/70">Render</strong>{" "}
+              to burn Sound Design into the export.
+            </p>
+          </section>
+        )}
+
+        <footer className="text-[10px] text-white/35">
+          Est. ~{creditPreview.credits} sound credits · {creditPreview.label}
+        </footer>
       </div>
     </div>
   );
