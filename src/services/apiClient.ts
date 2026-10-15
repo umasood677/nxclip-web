@@ -1265,6 +1265,10 @@ export interface ContentDto {
     extras?: Record<string, unknown>;
   };
   renderStatus?: string;
+  /** Active/last polish job id — used to detect soft "already in progress" replies. */
+  renderJobId?: string;
+  /** True when completed renderStorageKey exists (burn-in asset ready). */
+  hasPolishedRender?: boolean;
   views?: number;
   likes?: number;
   comments?: number;
@@ -1454,7 +1458,13 @@ export const contentApi = {
       /** Bypass completed-render reuse and force a new FFmpeg burn-in. */
       force?: boolean;
     }
-  ): Promise<{ contentId: string; jobId: string; status: string; renderStatus?: string }> => {
+  ): Promise<{
+    contentId: string;
+    jobId: string;
+    status: string;
+    renderStatus?: string;
+    alreadyInProgress?: boolean;
+  }> => {
     return performApiRequest(`/content/${id}/render`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1963,18 +1973,34 @@ export const contentApi = {
     return options?.fetchAll ? uniqueItems : filtered.slice(0, limitCount || 100);
   },
 
-  getContentById: async (id: string, options?: { suppressErrorLog?: boolean }): Promise<ContentDto> => {
-    return performApiRequest(
-      `/content/${id}`,
-      { method: "GET", ...options }
-    );
+  getContentById: async (
+    id: string,
+    options?: { suppressErrorLog?: boolean; cacheBust?: boolean },
+  ): Promise<ContentDto> => {
+    const qs = options?.cacheBust ? `?_=${Date.now()}` : "";
+    return performApiRequest(`/content/${id}${qs}`, {
+      method: "GET",
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+      },
+      suppressErrorLog: options?.suppressErrorLog,
+    });
   },
 
-  getUserContentById: async (id: string, options?: { suppressErrorLog?: boolean }): Promise<ContentDto> => {
-    return performApiRequest(
-      `/content/mine/${id}`,
-      { method: "GET", ...options }
-    );
+  getUserContentById: async (
+    id: string,
+    options?: { suppressErrorLog?: boolean; cacheBust?: boolean },
+  ): Promise<ContentDto> => {
+    const qs = options?.cacheBust ? `?_=${Date.now()}` : "";
+    return performApiRequest(`/content/mine/${id}${qs}`, {
+      method: "GET",
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+      },
+      suppressErrorLog: options?.suppressErrorLog,
+    });
   },
 
   /**
@@ -2045,7 +2071,7 @@ export const contentApi = {
    */
   getOwnedContentById: async (
     id: string,
-    options?: { suppressErrorLog?: boolean },
+    options?: { suppressErrorLog?: boolean; cacheBust?: boolean },
   ): Promise<ContentDto> => {
     try {
       return await contentApi.getUserContentById(id, {

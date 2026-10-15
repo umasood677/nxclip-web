@@ -1,5 +1,10 @@
 export async function waitForClipTranscript(
-  fetchItem: () => Promise<{ clipEditSpec?: { transcript?: string } | null }>,
+  fetchItem: () => Promise<{
+    clipEditSpec?: {
+      transcript?: string;
+      transcriptWords?: Array<{ word?: string }>;
+    } | null;
+  }>,
   opts?: {
     attempts?: number;
     delayMs?: number;
@@ -18,8 +23,16 @@ export async function waitForClipTranscript(
     if (opts?.isCancelled?.()) return null;
     try {
       const item = await fetchItem();
-      if (typeof item.clipEditSpec?.transcript === "string") {
-        return item.clipEditSpec.transcript;
+      const spec = item.clipEditSpec;
+      if (typeof spec?.transcript === "string") {
+        return spec.transcript;
+      }
+      // Words-only completion still counts — rebuild a preview string for the UI.
+      if (Array.isArray(spec?.transcriptWords) && spec.transcriptWords.length > 0) {
+        return spec.transcriptWords
+          .map((w) => (typeof w?.word === "string" ? w.word : ""))
+          .filter(Boolean)
+          .join(" ");
       }
     } catch {
       /* keep polling */

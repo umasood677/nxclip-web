@@ -546,7 +546,16 @@ export default function ClipEditor() {
             }
           }
           if (spec.silence?.enabled === false) setSilenceEnabled(false);
-          if (spec.transcript) setTranscriptPreview(spec.transcript);
+          if (spec.transcript) {
+            setTranscriptPreview(spec.transcript);
+          } else if (Array.isArray(spec.transcriptWords) && spec.transcriptWords.length > 0) {
+            setTranscriptPreview(
+              spec.transcriptWords
+                .map((w) => (typeof w?.word === "string" ? w.word : ""))
+                .filter(Boolean)
+                .join(" "),
+            );
+          }
           {
             const storedContext =
               typeof spec.creatorContext === "string"
@@ -1446,28 +1455,18 @@ export default function ClipEditor() {
     };
 
     try {
-      if (id) {
-        await contentApi.saveClipEdit(id, buildClipEditSpec());
-      }
-    } catch (err) {
-      toast.error("Could not save trim", {
-        description: formatClipApiError(err, "Fix trim and try again."),
-      });
-      setIsPolishing(false);
-      polishBusyRef.current = false;
-      return;
-    }
-
-    try {
       if (!still()) return;
 
-      // Resume-aware: drafts that already finished Whisper / copy should not re-run them.
-      let existingTranscript =
-        (transcriptPreview || "").trim() ||
-        "";
+      // Read server draft FIRST so resume can skip Whisper/captions before any trim save.
+      let existingTranscript = (transcriptPreview || "").trim();
+      let hasTranscriptWords = false;
       let serverHashtags: string[] = [];
       let serverCaption = "";
       let serverRenderStatus = "";
+      let polishPrepCompleted = false;
+      let serverTopText = "";
+      let serverHookCount = 0;
+      let serverTransitionCount = 0;
       if (id) {
         try {
           const latest = await contentApi.getOwnedContentById(id, {
@@ -1476,14 +1475,25 @@ export default function ClipEditor() {
           if (!still()) return;
           serverRenderStatus = String(latest.renderStatus || "");
           const spec = latest.clipEditSpec;
+          const extras =
+            spec?.extras && typeof spec.extras === "object"
+              ? (spec.extras as Record<string, unknown>)
+              : {};
+          polishPrepCompleted = extras.polishPrepCompleted === true;
           if (typeof spec?.transcript === "string" && spec.transcript.trim()) {
             existingTranscript = spec.transcript.trim();
             setTranscriptPreview(existingTranscript);
           }
+          hasTranscriptWords = Array.isArray(spec?.transcriptWords) && spec.transcriptWords.length > 0;
+          serverTopText = String(spec?.captions?.topText || "").trim();
+          serverHookCount = Array.isArray(spec?.hooks) ? spec.hooks.length : 0;
+          serverTransitionCount = Array.isArray(extras.transitions)
+            ? (extras.transitions as unknown[]).length
+            : 0;
           const tags =
             latest.selectedHashtags ||
             latest.hashtagSets?.[0] ||
-            (Array.isArray(spec?.extras?.hashtags) ? spec.extras.hashtags : []);
+            (Array.isArray(extras.hashtags) ? extras.hashtags : []);
           if (Array.isArray(tags)) {
             serverHashtags = tags
               .filter((t): t is string => typeof t === "string" && Boolean(t.trim()))
@@ -1493,6 +1503,7 @@ export default function ClipEditor() {
             latest.selectedCaption ||
               latest.captions?.[0] ||
               latest.description ||
+              spec?.description ||
               "",
           ).trim();
         } catch {
@@ -1500,17 +1511,40 @@ export default function ClipEditor() {
         }
       }
 
-      const hasTranscript = Boolean(existingTranscript);
+      try {
+        if (id) {
+          await contentApi.saveClipEdit(id, buildClipEditSpec());
+        }
+      } catch (err) {
+        toast.error("Could not save trim", {
+          description: formatClipApiError(err, "Fix trim and try again."),
+        });
+        setIsPolishing(false);
+        polishBusyRef.current = false;
+        return;
+      }
+      if (!still()) return;
+
+      const hasTranscript = Boolean(existingTranscript) || hasTranscriptWords;
       const hasCopy =
-        Boolean(description.trim() || serverCaption) &&
+        Boolean(description.trim() || serverCaption) ||
         Boolean(hashtags.length || serverHashtags.length);
       const hasHook =
-        Boolean(topText.trim()) ||
+        Boolean(topText.trim() || serverTopText) ||
         hooks.some((h) => Boolean(h?.text?.trim())) ||
+        serverHookCount > 0 ||
         coachViralApplied;
-      const hasTransitions = appliedTransitions.length > 0 || coachViralApplied;
+      const hasTransitions =
+        appliedTransitions.length > 0 || serverTransitionCount > 0 || coachViralApplied;
+      const renderCompleted =
+        String(serverRenderStatus).toLowerCase() === "completed";
+      // Prior polish may have wiped transcript via trim autosave — social copy,
+      // hooks, or a completed render are enough to skip the full pipeline.
       const polishAlreadyDone =
-        hasTranscript && hasCopy && (hasHook || hasTransitions);
+        polishPrepCompleted ||
+        hasCopy ||
+        renderCompleted ||
+        (hasTranscript && (hasHook || hasTransitions));
 
       // Fast path: returning draft — skip Whisper/captions/effects regeneration.
       if (polishAlreadyDone) {
@@ -1529,8 +1563,17 @@ export default function ClipEditor() {
         if (!still()) return;
         setPolishProgress(100);
         setPolishStep(3);
-        if (String(serverRenderStatus).toLowerCase() === "completed") {
+        if (renderCompleted) {
           setIsDirty(false);
+        }
+        if (id && !polishPrepCompleted) {
+          const base = buildClipEditSpec();
+          void contentApi
+            .saveClipEdit(id, {
+              ...base,
+              extras: { ...(base.extras || {}), polishPrepCompleted: true },
+            })
+            .catch(() => undefined);
         }
         mergeSearchParams({ step: "polish" });
         return;
@@ -1542,7 +1585,8 @@ export default function ClipEditor() {
       if (id) {
         const transcribeStarted = Date.now();
         try {
-          if (hasTranscript) {
+          // Skip Whisper when copy/hooks already prove a prior polish (transcript may be gone).
+          if (hasTranscript || hasCopy || hasHook || polishPrepCompleted) {
             setNote(
               0,
               t("clip_editor.overlays.steps.transcribing_done", { defaultValue: "Transcript ready" }),
@@ -1620,7 +1664,10 @@ export default function ClipEditor() {
           // Coach / prior edit already set the active hook — do not auto-overwrite it.
           // Still fetch alternatives into hookOptions when empty so Details can offer picks.
           const existingHook =
-            topText.trim() || hooks.find((h) => Boolean(h?.text?.trim()))?.text?.trim() || "";
+            topText.trim() ||
+            serverTopText ||
+            hooks.find((h) => Boolean(h?.text?.trim()))?.text?.trim() ||
+            "";
           if (existingHook) {
             if (still() && (!hooks.length || !hooks[0]?.text?.trim())) {
               setHooks([
@@ -1672,6 +1719,17 @@ export default function ClipEditor() {
       setNote(2, t("clip_editor.overlays.steps.effects_done", { defaultValue: "Hooks and transition beats ready" }));
       setPolishProgress(100);
       setPolishStep(3);
+
+      // Mark prep done so Creator Hub → Next never re-runs Whisper/captions.
+      if (id) {
+        const base = buildClipEditSpec();
+        void contentApi
+          .saveClipEdit(id, {
+            ...base,
+            extras: { ...(base.extras || {}), polishPrepCompleted: true },
+          })
+          .catch(() => undefined);
+      }
 
       mergeSearchParams({ step: "polish" });
     } catch (err) {
@@ -1935,6 +1993,8 @@ export default function ClipEditor() {
       })(),
       silence: { enabled: silenceEnabled, minSilenceMs: 700 },
       crop: { mode: cropMode },
+      // Keep Whisper text on the wire so trim autosave cannot drop it client-side.
+      transcript: transcriptPreview.trim() || undefined,
       // creatorContext is authoritative (up to 500). polishPrompt stays ≤200 for legacy readers.
       polishPrompt: prompt
         ? sanitizeCreatorContext(prompt).slice(0, 200)
@@ -1979,6 +2039,7 @@ export default function ClipEditor() {
     colorCorrection,
     appliedTransitions,
     cropMode,
+    transcriptPreview,
   ]);
 
   const saveClipEditToServer = useCallback(async () => {
@@ -2030,6 +2091,7 @@ export default function ClipEditor() {
 
       const isPolishedComplete = (item: {
         renderStatus?: string | null;
+        hasPolishedRender?: boolean;
         clipEditSpec?: { extras?: Record<string, unknown> | null } | null;
       }) => {
         const st = String(item.renderStatus || "").toLowerCase();
@@ -2037,84 +2099,143 @@ export default function ClipEditor() {
         const quality = String(extras.renderQuality || "");
         const hasHash =
           typeof extras.renderSpecHash === "string" && Boolean(extras.renderSpecHash);
-        // Reject copy-fallback / unverified "completed" assets — no burned edits.
-        return st === "completed" && quality !== "fallback" && (quality === "polished" || hasHash);
+        // Reject copy-fallback. Accept completed+asset even if autosave raced away
+        // renderQuality/hash (hasPolishedRender is set from renderStorageKey).
+        if (st !== "completed" || quality === "fallback") return false;
+        return (
+          quality === "polished" ||
+          hasHash ||
+          item.hasPolishedRender === true
+        );
       };
 
-      const pollUntilDone = async () => {
+      const renderAgeMs = (item: {
+        clipEditSpec?: { extras?: Record<string, unknown> | null } | null;
+      }) => {
+        const raw = item.clipEditSpec?.extras?.renderQueuedAt;
+        if (typeof raw !== "string" && typeof raw !== "number") return Number.POSITIVE_INFINITY;
+        const t = Date.parse(String(raw));
+        return Number.isFinite(t) ? Date.now() - t : Number.POSITIVE_INFINITY;
+      };
+
+      const pollUntilDone = async (maxMs = 120_000) => {
         toast.loading(
           opts?.loadingMessage ?? "Rendering your edits into the MP4…",
           { id: toastId },
         );
         const started = Date.now();
-        while (Date.now() - started < 240_000) {
+        while (Date.now() - started < maxMs) {
           await new Promise((r) => setTimeout(r, 2000));
           const polled = await contentApi.getOwnedContentById(id, {
             suppressErrorLog: true,
+            cacheBust: true,
           });
-          status = String(polled.renderStatus || status).toLowerCase();
-          setRenderStatus(polled.renderStatus || status);
+          const next = String(polled.renderStatus || "").toLowerCase();
+          if (next) {
+            status = next;
+            setRenderStatus(polled.renderStatus || next);
+          }
           if (status === "completed" || status === "failed") break;
         }
+      };
+
+      const enqueueRender = async (forceNew: boolean, previousJobId?: string | null) => {
+        const spec = buildClipEditSpec();
+        await contentApi.saveClipEdit(id, spec);
+        const queued = await contentApi.renderClip(id, {
+          clipEditSpec: spec,
+          ...(forceNew ? { force: true } : {}),
+        });
+        const nextStatus = String(
+          queued.renderStatus || queued.status || "queued",
+        ).toLowerCase();
+        const nextJobId = String(queued.jobId || "");
+        // Soft 200 "already in progress" must not look like a fresh enqueue — that
+        // is what made timeout → Save & Render poll the same hung job forever.
+        if (
+          forceNew &&
+          (queued.alreadyInProgress === true ||
+            nextJobId === "in-progress" ||
+            (previousJobId && nextJobId && nextJobId === previousJobId))
+        ) {
+          throw new Error(
+            "Server is still holding a stuck render. Retry Save & Render in a few seconds.",
+          );
+        }
+        status = nextStatus;
+        setRenderStatus(
+          status === "completed" ? "completed" : queued.renderStatus || status,
+        );
       };
 
       try {
         const latest = await contentApi.getOwnedContentById(id, {
           suppressErrorLog: true,
+          cacheBust: true,
         });
         status = String(latest.renderStatus || status).toLowerCase();
         setRenderStatus(latest.renderStatus || status);
+        const previousJobId =
+          typeof latest.renderJobId === "string" ? latest.renderJobId : null;
 
         // Stale copy-fallback must not unlock Final Preview — force a real burn-in.
+        const latestQuality = String(latest.clipEditSpec?.extras?.renderQuality || "");
+        const latestHasHash =
+          typeof latest.clipEditSpec?.extras?.renderSpecHash === "string" &&
+          Boolean(latest.clipEditSpec?.extras?.renderSpecHash);
         const staleFallback =
-          String(latest.clipEditSpec?.extras?.renderQuality || "") === "fallback" ||
-          (status === "completed" && !latest.clipEditSpec?.extras?.renderSpecHash);
+          latestQuality === "fallback" ||
+          (status === "completed" &&
+            latestQuality !== "polished" &&
+            !latestHasHash &&
+            latest.hasPolishedRender !== true);
+        // Hung worker / lost callback — do not poll forever on refresh.
+        const staleInFlight =
+          (status === "queued" || status === "processing") &&
+          renderAgeMs(latest) >= 90_000;
+        // Explicit Save & Render / retry after timeout must never attach to a hung job.
+        const mustForce = Boolean(opts?.force || staleFallback || staleInFlight);
 
-        if (!opts?.force && !staleFallback && (status === "queued" || status === "processing")) {
-          await pollUntilDone();
-        } else if (!opts?.force && !staleFallback && isPolishedComplete(latest)) {
+        if (!mustForce && isPolishedComplete(latest)) {
           status = "completed";
-        } else {
-          const spec = buildClipEditSpec();
-          await contentApi.saveClipEdit(id, spec);
-          const forceNew = Boolean(opts?.force || staleFallback);
-          try {
-            const queued = await contentApi.renderClip(id, {
-              clipEditSpec: spec,
-              ...(forceNew ? { force: true } : {}),
-            });
-            status = String(
-              queued.renderStatus || queued.status || "queued",
-            ).toLowerCase();
-            setRenderStatus(
-              status === "completed" ? "completed" : queued.renderStatus || status,
-            );
-          } catch (err) {
-            const msg = formatClipApiError(err, "");
-            if (/already in progress/i.test(msg)) {
-              status = "processing";
-              setRenderStatus("processing");
-            } else {
-              throw err;
-            }
+        } else if (
+          !mustForce &&
+          (status === "queued" || status === "processing")
+        ) {
+          await pollUntilDone(90_000);
+          if (status !== "completed" && status !== "failed") {
+            toast.loading("Render stalled — restarting burn-in…", { id: toastId });
+            await enqueueRender(true, previousJobId);
+            if (status !== "completed") await pollUntilDone(180_000);
           }
-
+        } else {
+          await enqueueRender(mustForce, previousJobId);
           if (status !== "completed") {
-            await pollUntilDone();
+            await pollUntilDone(180_000);
           }
         }
 
         const verified = await contentApi.getOwnedContentById(id, {
           suppressErrorLog: true,
+          cacheBust: true,
         });
         status = String(verified.renderStatus || status).toLowerCase();
         setRenderStatus(verified.renderStatus || status);
         if (!isPolishedComplete(verified)) {
           clearRenderPreview();
+          const quality = String(verified.clipEditSpec?.extras?.renderQuality || "");
+          if (status === "failed" || quality === "fallback") {
+            throw new Error(
+              "Render did not burn edits (encode failed). Retry Save & Render.",
+            );
+          }
+          if (status === "queued" || status === "processing") {
+            throw new Error(
+              "Render timed out while still processing. Tap Save & Render to restart.",
+            );
+          }
           throw new Error(
-            status === "failed"
-              ? "Render did not burn edits (encode failed). Retry Save & Render."
-              : "Render finished without a polished MP4. Retry Save & Render.",
+            "Render finished without a polished MP4. Retry Save & Render.",
           );
         }
         setIsDirty(false);
@@ -2382,11 +2503,12 @@ export default function ClipEditor() {
     setIsRendering(true);
     triggerHaptic("medium");
     try {
-      // Re-render always forces a new FFmpeg burn-in (never reuse a stale/raw asset).
+      // Always force on this button: after a client timeout the server may still
+      // say queued/processing — reuse/poll would hang on the same dead job again.
       await ensurePolishedRender({
         toastId: "save-render",
         loadingMessage: "Saving edit and rendering clip…",
-        force: renderReady,
+        force: true,
       });
       setRenderStatus("completed");
       toast.loading("Loading final preview…", { id: "save-render" });
@@ -2516,7 +2638,7 @@ export default function ClipEditor() {
     clearRenderPreview();
   }, [trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, captionTextColor, title, description, prompt, hooks, silenceEnabled, hashtags, colorCorrection, isNoiseReduced, clipVolume, musicVolume, masterVolume, appliedTransitions, cropMode, coachViralApplied, coachTextCuts, coachStitchJoins, clearRenderPreview]);
 
-  // Resume an in-flight render after refresh (no 400 — just poll until done).
+  // Resume an in-flight render after refresh; force-requeue if the job is hung.
   useEffect(() => {
     if (!id || step !== "polish") return;
     let cancelled = false;
@@ -2524,6 +2646,7 @@ export default function ClipEditor() {
       try {
         const latest = await contentApi.getOwnedContentById(id, {
           suppressErrorLog: true,
+          cacheBust: true,
         });
         if (cancelled) return;
         let status = String(latest.renderStatus || "").toLowerCase();
@@ -2534,14 +2657,40 @@ export default function ClipEditor() {
         }
         setIsRendering(true);
         toast.loading("Finishing render in progress…", { id: "save-render" });
+
+        const queuedRaw = latest.clipEditSpec?.extras?.renderQueuedAt;
+        const queuedMs =
+          typeof queuedRaw === "string" || typeof queuedRaw === "number"
+            ? Date.parse(String(queuedRaw))
+            : NaN;
+        const ageMs = Number.isFinite(queuedMs) ? Date.now() - queuedMs : Number.POSITIVE_INFINITY;
+        // Missing clock (older hung jobs) or >90s → restart instead of endless "Finishing…".
+        if (ageMs >= 90_000) {
+          toast.loading("Render stalled — restarting burn-in…", { id: "save-render" });
+          await ensurePolishedRender({
+            toastId: "save-render",
+            loadingMessage: "Restarting render…",
+            force: true,
+          });
+          if (cancelled) return;
+          setIsDirty(false);
+          await loadRenderPreview();
+          toast.success("Final render ready — play it below", { id: "save-render" });
+          return;
+        }
+
         const started = Date.now();
-        while (!cancelled && Date.now() - started < 240_000) {
+        while (!cancelled && Date.now() - started < 90_000) {
           await new Promise((r) => setTimeout(r, 2000));
           const polled = await contentApi.getOwnedContentById(id, {
             suppressErrorLog: true,
+            cacheBust: true,
           });
-          status = String(polled.renderStatus || status).toLowerCase();
-          if (!cancelled) setRenderStatus(polled.renderStatus || status);
+          const next = String(polled.renderStatus || "").toLowerCase();
+          if (next) {
+            status = next;
+            if (!cancelled) setRenderStatus(polled.renderStatus || next);
+          }
           if (status === "completed" || status === "failed") break;
         }
         if (cancelled) return;
@@ -2552,10 +2701,21 @@ export default function ClipEditor() {
         } else if (status === "failed") {
           toast.error("Render failed — tap Save & Render to retry", { id: "save-render" });
         } else {
-          toast.error("Render timed out — tap Save & Render to retry", { id: "save-render" });
+          toast.loading("Render stalled — restarting burn-in…", { id: "save-render" });
+          await ensurePolishedRender({
+            toastId: "save-render",
+            loadingMessage: "Restarting render…",
+            force: true,
+          });
+          if (cancelled) return;
+          setIsDirty(false);
+          await loadRenderPreview();
+          toast.success("Final render ready — play it below", { id: "save-render" });
         }
       } catch {
-        /* soft — user can tap Save & Render */
+        if (!cancelled) {
+          toast.error("Render stalled — tap Save & Render to retry", { id: "save-render" });
+        }
       } finally {
         if (!cancelled) setIsRendering(false);
       }
@@ -2563,7 +2723,7 @@ export default function ClipEditor() {
     return () => {
       cancelled = true;
     };
-  }, [id, step, loadRenderPreview]);
+  }, [id, step, loadRenderPreview, ensurePolishedRender]);
 
   // If a completed render already exists (reload / prior session), show it in polish preview.
   useEffect(() => {
