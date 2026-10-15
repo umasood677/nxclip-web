@@ -2118,7 +2118,8 @@ export default function ClipEditor() {
         return Number.isFinite(t) ? Date.now() - t : Number.POSITIVE_INFINITY;
       };
 
-      const pollUntilDone = async (maxMs = 120_000) => {
+      // Match media-worker inline FFmpeg budget (up to ~6 min) + callback latency.
+      const pollUntilDone = async (maxMs = 360_000) => {
         toast.loading(
           opts?.loadingMessage ?? "Rendering your edits into the MP4…",
           { id: toastId },
@@ -2202,16 +2203,16 @@ export default function ClipEditor() {
           !mustForce &&
           (status === "queued" || status === "processing")
         ) {
-          await pollUntilDone(90_000);
+          await pollUntilDone(120_000);
           if (status !== "completed" && status !== "failed") {
             toast.loading("Render stalled — restarting burn-in…", { id: toastId });
             await enqueueRender(true, previousJobId);
-            if (status !== "completed") await pollUntilDone(180_000);
+            if (status !== "completed") await pollUntilDone(360_000);
           }
         } else {
           await enqueueRender(mustForce, previousJobId);
           if (status !== "completed") {
-            await pollUntilDone(180_000);
+            await pollUntilDone(360_000);
           }
         }
 
