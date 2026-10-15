@@ -29,7 +29,7 @@ import {
   Save,
 } from "lucide-react";
 import { SocialPlatformIcon } from "../../components/social/SocialPlatformIcon";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useParams, useNavigate } from "react-router-dom";
 import {
   contentApi,
@@ -211,7 +211,7 @@ export default function ClipEditor() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const trimPreviewRef = useRef<HTMLDivElement | null>(null);
   const polishPreviewRef = useRef<HTMLDivElement | null>(null);
-  /** Host under clip preview for Sound Design Review timeline (wider than sidebar). */
+  /** Host after trim timeline for Sound Design Review (wider than sidebar). */
   const [soundReviewHost, setSoundReviewHost] = useState<HTMLDivElement | null>(null);
   const renderPreviewUrlRef = useRef<string | null>(null);
   const showingFinalRenderRef = useRef(false);
@@ -350,6 +350,31 @@ export default function ClipEditor() {
   const [persistedSoundDesign, setPersistedSoundDesign] = useState<PersistedSoundDesign | null>(
     null,
   );
+  /** True after Apply / plan in this session (persisted may lag until reload). */
+  const [soundDesignMixActive, setSoundDesignMixActive] = useState(false);
+  /** Sound Design SRC/AMB bars own these levels — Polish Original/BGM must not double them. */
+  const soundDesignOwnsOriginal = useMemo(() => {
+    if (!soundDesignMixActive && !persistedSoundDesign) return false;
+    const edl = Array.isArray(persistedSoundDesign?.audioEdl)
+      ? persistedSoundDesign!.audioEdl!
+      : [];
+    if (edl.some((d) => d && typeof d === "object" && (d as { type?: string }).type === "original")) {
+      return true;
+    }
+    return soundDesignMixActive;
+  }, [soundDesignMixActive, persistedSoundDesign]);
+  const soundDesignOwnsAmbience = useMemo(() => {
+    const edl = Array.isArray(persistedSoundDesign?.audioEdl)
+      ? persistedSoundDesign!.audioEdl!
+      : [];
+    return edl.some(
+      (d) =>
+        d &&
+        typeof d === "object" &&
+        (d as { type?: string; enabled?: boolean }).type === "ambience" &&
+        (d as { enabled?: boolean }).enabled !== false,
+    );
+  }, [persistedSoundDesign]);
   const coachStitchIndexRef = useRef(0);
   /** True while playing the full Coach moment playlist (not a single Preview cut). */
   const coachStitchPlayRef = useRef(false);
@@ -587,9 +612,16 @@ export default function ClipEditor() {
           setCoachViralApplied(viralOn);
           {
             const sd = extras?.soundDesign;
-            setPersistedSoundDesign(
-              sd && typeof sd === "object" ? (sd as PersistedSoundDesign) : null,
-            );
+            if (sd && typeof sd === "object") {
+              const typed = sd as PersistedSoundDesign;
+              setPersistedSoundDesign(typed);
+              const edl = Array.isArray(typed.audioEdl) ? typed.audioEdl : [];
+              if (edl.length > 0 || typed.audioStoryPlan) {
+                setSoundDesignMixActive(true);
+              }
+            } else {
+              setPersistedSoundDesign(null);
+            }
           }
           const coach = extras?.clipCoach as
             | {
@@ -3446,6 +3478,7 @@ export default function ClipEditor() {
                   creatorContext={prompt}
                   reviewHostEl={soundReviewHost}
                   initialSoundDesign={persistedSoundDesign}
+                  onApplied={() => setSoundDesignMixActive(true)}
                 />
               </div>
             </aside>
@@ -3697,14 +3730,7 @@ export default function ClipEditor() {
               </div>
             </div>
 
-            {/* AI Sound Design Review docks here (under clip preview, above trim filmstrip) */}
-            <div
-              ref={setSoundReviewHost}
-              className="w-full min-w-0 empty:hidden"
-              data-sound-review-host="trim"
-            />
-
-            {/* Clip trim filmstrip / precision trim — stays below Sound Review */}
+            {/* Clip trim filmstrip / precision trim */}
             <div className="ui-card p-4 md:p-8 space-y-6 relative overflow-hidden">
               <AnimatePresence>
                 {(isScanning || isSuggestingTrim) && (
@@ -4194,6 +4220,13 @@ export default function ClipEditor() {
                 </Button>
               </div>
             </div>
+
+            {/* AI Sound Design Review — after trim timeline */}
+            <div
+              ref={setSoundReviewHost}
+              className="w-full min-w-0 empty:hidden"
+              data-sound-review-host="trim"
+            />
           </div>
         )}
 
@@ -4257,6 +4290,7 @@ export default function ClipEditor() {
                   storyEngine
                   reviewHostEl={soundReviewHost}
                   initialSoundDesign={persistedSoundDesign}
+                  onApplied={() => setSoundDesignMixActive(true)}
                 />
               </div>
             ) : null}
@@ -5143,18 +5177,43 @@ export default function ClipEditor() {
                                 "Tap Play on the preview to hear original clip audio and selected BGM together. Master mix scales both.",
                             })}
                           </p>
+                          {(soundDesignOwnsOriginal || soundDesignOwnsAmbience) && (
+                            <p className="mt-2 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1.5 text-[10px] leading-relaxed text-emerald-800 dark:text-emerald-100/90">
+                              AI Sound Design is active: use the{" "}
+                              <span className="font-semibold">SRC</span> and{" "}
+                              <span className="font-semibold">AMB</span> bars on the Sound timeline
+                              for original clip and ambience levels. Polish controls below stay for
+                              live preview / Coach BGM only and do not stack on Final Render.
+                            </p>
+                          )}
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 gap-4">
                         {/* Clip Volume */}
-                        <div className="space-y-4 p-4 bg-muted/30 rounded-xl border border-border/50">
+                        <div
+                          className={cn(
+                            "space-y-4 p-4 rounded-xl border",
+                            soundDesignOwnsOriginal
+                              ? "bg-muted/20 border-border/40 opacity-80"
+                              : "bg-muted/30 border-border/50",
+                          )}
+                        >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
                                 <Scissors size={14} />
                               </div>
-                              <span className="text-xs font-bold text-foreground">{t('clip_editor.polish.audio.original_clip')}</span>
+                              <div>
+                                <span className="text-xs font-bold text-foreground">
+                                  {t('clip_editor.polish.audio.original_clip')}
+                                </span>
+                                {soundDesignOwnsOriginal ? (
+                                  <p className="text-[9px] font-medium text-emerald-600 dark:text-emerald-300/90">
+                                    Controlled by Sound timeline · SRC
+                                  </p>
+                                ) : null}
+                              </div>
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-mono text-muted-foreground">{Math.round((isClipMuted ? 0 : clipVolume) * 100)}%</span>
@@ -5163,6 +5222,7 @@ export default function ClipEditor() {
                                 size="icon-sm"
                                 onClick={() => setIsClipMuted(!isClipMuted)}
                                 className="hover:bg-muted rounded-md"
+                                disabled={soundDesignOwnsOriginal}
                               >
                                 {isClipMuted || clipVolume === 0 ? <VolumeX size={14} className="text-destructive" /> : <Volume2 size={14} />}
                               </Button>
@@ -5179,8 +5239,14 @@ export default function ClipEditor() {
                               if (isClipMuted) setIsClipMuted(false);
                             }}
                             className="w-full"
+                            disabled={soundDesignOwnsOriginal}
                           />
-                          {isAnimateClip ? (
+                          {soundDesignOwnsOriginal ? (
+                            <p className="text-[10px] text-muted-foreground leading-relaxed">
+                              Drag the SRC handle on the Sound timeline (below trim) to raise or lower
+                              original clip audio for Final Render.
+                            </p>
+                          ) : isAnimateClip ? (
                             <p className="text-[10px] text-muted-foreground leading-relaxed">
                               {t('clip_editor.polish.audio.animate_no_source', {
                                 defaultValue: 'Animated clips often have no source audio — raise BGM or keep this low.',
@@ -5190,13 +5256,29 @@ export default function ClipEditor() {
                         </div>
 
                         {/* Music Volume */}
-                        <div className="space-y-4 p-4 bg-muted/30 rounded-xl border border-border/50">
+                        <div
+                          className={cn(
+                            "space-y-4 p-4 rounded-xl border",
+                            soundDesignOwnsAmbience
+                              ? "bg-muted/20 border-border/40"
+                              : "bg-muted/30 border-border/50",
+                          )}
+                        >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
                                 <Music size={14} />
                               </div>
-                              <span className="text-xs font-bold text-foreground">{t('clip_editor.polish.audio.bg_music')}</span>
+                              <div>
+                                <span className="text-xs font-bold text-foreground">
+                                  {t('clip_editor.polish.audio.bg_music')}
+                                </span>
+                                {soundDesignOwnsAmbience ? (
+                                  <p className="text-[9px] font-medium text-teal-700 dark:text-teal-300/90">
+                                    Separate from AMB · Ambience uses Sound timeline
+                                  </p>
+                                ) : null}
+                              </div>
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-mono text-muted-foreground">{Math.round((isMusicMuted ? 0 : musicVolume) * 100)}%</span>
@@ -5224,6 +5306,12 @@ export default function ClipEditor() {
                             className="w-full"
                             disabled={!selectedTrackId}
                           />
+                          {soundDesignOwnsAmbience ? (
+                            <p className="text-[10px] text-muted-foreground leading-relaxed">
+                              AMB on the Sound timeline is ambient bed (room/crowd). This BGM slider
+                              is Coach underscore music only — it does not change AMB.
+                            </p>
+                          ) : null}
                         </div>
                       </div>
 

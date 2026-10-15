@@ -88,7 +88,10 @@ function estimateCredits(opts: {
 function toTimelineItems(edl: unknown[]): TimelineEdlItem[] {
   return (edl || [])
     .map((raw) => {
-      const it = raw as Partial<TimelineEdlItem>;
+      const it = raw as Partial<TimelineEdlItem> & {
+        assetId?: string;
+        sourceUrl?: string;
+      };
       if (!it?.id || !it.type || typeof it.startMs !== "number") return null;
       return {
         id: String(it.id),
@@ -97,6 +100,8 @@ function toTimelineItems(edl: unknown[]): TimelineEdlItem[] {
         endMs: typeof it.endMs === "number" ? it.endMs : undefined,
         gainDb: typeof it.gainDb === "number" ? it.gainDb : 0,
         enabled: it.enabled !== false,
+        assetId: typeof it.assetId === "string" ? it.assetId : undefined,
+        sourceUrl: typeof it.sourceUrl === "string" ? it.sourceUrl : undefined,
         metadata: it.metadata,
       };
     })
@@ -154,7 +159,7 @@ type Props = {
   disabled?: boolean;
   storyEngine?: boolean;
   onApplied?: () => void;
-  /** When set, step-3 Review + timeline render here (under clip preview) for more width. */
+  /** When set, step-3 Review + timeline render here (after trim timeline) for more width. */
   reviewHostEl?: HTMLElement | null;
   /** Hydrate from clipEditSpec.extras.soundDesign after refresh / Creator Hub. */
   initialSoundDesign?: PersistedSoundDesign | null;
@@ -234,22 +239,6 @@ export function SoundDesignPanel({
 
   const hasPlan = Boolean(planSummary || timeline.length);
   const step = !analyzed ? 1 : !hasPlan ? 2 : 3;
-
-  const layers = useMemo(() => {
-    const hasType = (t: string) => timeline.some((item) => item.type === t && item.enabled !== false);
-    return [
-      {
-        id: "original",
-        label: "ORIGINAL",
-        on: hasType("original") || components.preserveImportantOriginalAudio,
-      },
-      // Voice only lights up once TTS assets are on the EDL — planned commentary alone is deferred.
-      { id: "voice", label: "VOICE", on: hasType("voice") },
-      { id: "foley", label: "FOLEY", on: hasType("foley") || components.aiFoley },
-      { id: "ambience", label: "AMBIENCE", on: hasType("ambience") || components.ambience },
-      { id: "music", label: "MUSIC", on: hasType("music") || components.backgroundMusic },
-    ];
-  }, [components, timeline]);
 
   const retrySynthesize = async () => {
     if (!contentId) return;
@@ -340,8 +329,19 @@ export function SoundDesignPanel({
     if (!contentId) return;
     setBusy("edl");
     try {
+      // Send timing/mute only — server merges assetId/sourceUrl so long signed URLs
+      // are not re-validated on every drag (that was causing PATCH 500s).
       await contentApi.patchSoundDesignEdl(contentId, {
-        audioEdl: items,
+        audioEdl: items.map((it) => ({
+          id: it.id,
+          type: it.type,
+          startMs: it.startMs,
+          endMs: it.endMs,
+          gainDb: it.gainDb,
+          enabled: it.enabled,
+          assetId: it.assetId,
+          metadata: it.metadata,
+        })),
         durationMs: Math.max(1000, Math.round(durationSec * 1000)),
       });
     } catch (err) {
@@ -690,8 +690,8 @@ export function SoundDesignPanel({
 
         {hasPlan && reviewHostEl ? (
           <p className="rounded-lg border border-emerald-400/20 bg-emerald-500/5 px-2.5 py-2 text-[11px] text-emerald-100/80">
-            Plan ready{planSummary ? `: ${planSummary}` : ""}. Review timeline is under the clip
-            preview (not in this sidebar). Save &amp; Render to hear Foley/voice in Final Preview.
+            Plan ready{planSummary ? `: ${planSummary}` : ""}. Timeline is below trim — Save &amp;
+            Render for Final Preview.
           </p>
         ) : null}
 
@@ -705,68 +705,42 @@ export function SoundDesignPanel({
             const review = (
               <section
                 className={cn(
-                  "space-y-3 rounded-xl border border-emerald-400/25 bg-gradient-to-b from-emerald-950/50 to-black/40 p-3 sm:p-4",
-                  reviewHostEl && "shadow-soft-xl",
+                  "space-y-2 rounded-xl border border-emerald-400/20 bg-black/50 p-2.5 sm:p-3",
+                  reviewHostEl && "shadow-soft-lg",
                 )}
               >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-300/90">
-                      3 · Review · Sound timeline
+                      Sound timeline
                     </p>
-                    {planSummary && (
-                      <p className="mt-1 text-xs text-emerald-200/90">Plan ready: {planSummary}</p>
-                    )}
+                    {planSummary ? (
+                      <p className="truncate text-[10px] text-white/45">{planSummary}</p>
+                    ) : null}
                   </div>
+                  {ttsDeferred ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 shrink-0 border-amber-400/40 px-2 text-[10px] text-amber-100 hover:bg-amber-500/10"
+                      disabled={disabled || Boolean(busy)}
+                      onClick={() => void retrySynthesize()}
+                    >
+                      {busy === "tts" ? (
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      ) : (
+                        <Volume2 className="mr-1 h-3 w-3" />
+                      )}
+                      Retry TTS
+                    </Button>
+                  ) : ttsInfo ? (
+                    <p className="max-w-[14rem] truncate text-[10px] text-white/40" title={ttsInfo}>
+                      {ttsInfo}
+                    </p>
+                  ) : null}
                 </div>
-                {ttsInfo && (
-                  <p
-                    className={cn(
-                      "text-xs",
-                      ttsDeferred ? "text-amber-200/80" : "text-white/50",
-                    )}
-                  >
-                    {ttsInfo}
-                  </p>
-                )}
-                {ttsDeferred && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-8 border-amber-400/40 text-amber-100 hover:bg-amber-500/10"
-                    disabled={disabled || Boolean(busy)}
-                    onClick={() => void retrySynthesize()}
-                  >
-                    {busy === "tts" ? (
-                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Volume2 className="mr-1.5 h-3.5 w-3.5" />
-                    )}
-                    Retry commentary TTS
-                  </Button>
-                )}
-                <div className="space-y-1 rounded-lg bg-black/40 p-2 sm:p-3">
-                  <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-white/45">
-                    <Volume2 className="h-3 w-3" /> Layers
-                  </div>
-                  <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-5">
-                    {layers.map((l) => (
-                      <div
-                        key={l.id}
-                        className="flex items-center gap-2 text-[11px] text-white/70"
-                      >
-                        <span className="w-16 shrink-0 font-mono text-white/35">{l.label}</span>
-                        <div className="h-1.5 flex-1 overflow-hidden rounded bg-white/10">
-                          <div
-                            className={cn("h-full", l.on ? "w-full bg-emerald-500/60" : "w-0")}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                {timeline.length > 0 && (
+                {timeline.length > 0 ? (
                   <AudioTimelineEditor
                     durationMs={Math.max(1000, Math.round(durationSec * 1000))}
                     items={timeline}
@@ -774,13 +748,9 @@ export function SoundDesignPanel({
                     onChange={(items) => void applyEdlLocal(items)}
                     comfortable={Boolean(reviewHostEl)}
                   />
+                ) : (
+                  <p className="text-[11px] text-white/45">No EDL clips yet — Apply a treatment first.</p>
                 )}
-                <p className="text-[11px] text-white/55">
-                  Timeline edits are non-destructive here. Live clip play is video + BGM only —
-                  Foley / commentary / ambience appear in{" "}
-                  <strong className="text-white/80">Final Preview</strong> after{" "}
-                  <strong className="text-white/80">Save &amp; Render</strong>.
-                </p>
               </section>
             );
             return reviewHostEl ? createPortal(review, reviewHostEl) : review;
