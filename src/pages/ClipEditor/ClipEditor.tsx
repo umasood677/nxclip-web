@@ -211,6 +211,8 @@ export default function ClipEditor() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const trimPreviewRef = useRef<HTMLDivElement | null>(null);
   const polishPreviewRef = useRef<HTMLDivElement | null>(null);
+  /** Host under clip preview for Sound Design Review timeline (wider than sidebar). */
+  const [soundReviewHost, setSoundReviewHost] = useState<HTMLDivElement | null>(null);
   const renderPreviewUrlRef = useRef<string | null>(null);
   const showingFinalRenderRef = useRef(false);
   const [activePolishTab, setActivePolishTab] = useState(
@@ -3432,6 +3434,7 @@ export default function ClipEditor() {
                   contentId={id}
                   durationSec={DURATION}
                   creatorContext={prompt}
+                  reviewHostEl={soundReviewHost}
                 />
               </div>
             </aside>
@@ -3683,7 +3686,14 @@ export default function ClipEditor() {
               </div>
             </div>
 
-            {/* Timeline Area */}
+            {/* AI Sound Design Review docks here (under clip preview, above trim filmstrip) */}
+            <div
+              ref={setSoundReviewHost}
+              className="w-full min-w-0 empty:hidden"
+              data-sound-review-host="trim"
+            />
+
+            {/* Clip trim filmstrip / precision trim — stays below Sound Review */}
             <div className="ui-card p-4 md:p-8 space-y-6 relative overflow-hidden">
               <AnimatePresence>
                 {(isScanning || isSuggestingTrim) && (
@@ -4234,6 +4244,7 @@ export default function ClipEditor() {
                   durationSec={DURATION}
                   creatorContext={prompt}
                   storyEngine
+                  reviewHostEl={soundReviewHost}
                 />
               </div>
             ) : null}
@@ -4445,6 +4456,12 @@ export default function ClipEditor() {
                       : t("clip_editor.polish.audio.play_mix", { defaultValue: "Play clip + music mix" })}
                 </Button>
               </div>
+                {/* AI Sound Design Review — under polish clip preview (hidden when empty) */}
+                <div
+                  ref={setSoundReviewHost}
+                  className="w-full min-w-0 empty:hidden"
+                  data-sound-review-host="polish"
+                />
             </div>
 
             {/* Controls Column */}

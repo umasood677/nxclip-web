@@ -17,6 +17,8 @@ type Props = {
   items: TimelineEdlItem[];
   disabled?: boolean;
   onChange: (items: TimelineEdlItem[]) => void;
+  /** Wider / taller rows when docked under clip preview. */
+  comfortable?: boolean;
 };
 
 const LAYER_ORDER: TimelineEdlItem["type"][] = [
@@ -36,11 +38,19 @@ const LAYER_LABEL: Record<TimelineEdlItem["type"], string> = {
 };
 
 /** Lightweight drag-edit timeline for Sound Design EDL regions. */
-export function AudioTimelineEditor({ durationMs, items, disabled, onChange }: Props) {
+export function AudioTimelineEditor({
+  durationMs,
+  items,
+  disabled,
+  onChange,
+  comfortable,
+}: Props) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [draft, setDraft] = useState<TimelineEdlItem[] | null>(null);
   const widthMs = Math.max(1000, durationMs);
   const view = draft || items;
+  const rowH = comfortable ? "h-11" : "h-8";
+  const clipH = comfortable ? "top-1.5 h-8" : "top-1 h-6";
 
   const byLayer = useMemo(() => {
     const map = new Map<TimelineEdlItem["type"], TimelineEdlItem[]>();
@@ -73,7 +83,12 @@ export function AudioTimelineEditor({ durationMs, items, disabled, onChange }: P
   };
 
   return (
-    <div className="space-y-2 rounded-lg border border-white/10 bg-black/30 p-2">
+    <div
+      className={cn(
+        "space-y-2 rounded-lg border border-white/10 bg-black/30",
+        comfortable ? "p-3 sm:p-4" : "p-2",
+      )}
+    >
       <div className="text-[10px] uppercase tracking-wide text-white/50">
         Audio timeline — drag clips to retiming · toggle to mute
       </div>
@@ -84,7 +99,7 @@ export function AudioTimelineEditor({ durationMs, items, disabled, onChange }: P
           <div key={layer} className="space-y-1">
             <div className="font-mono text-[10px] text-white/40">{LAYER_LABEL[layer]}</div>
             <div
-              className="relative h-8 rounded bg-white/5"
+              className={cn("relative rounded bg-white/5", rowH)}
               onPointerMove={(e) => dragId && onPointerMove(e, dragId)}
               onPointerUp={() => {
                 if (dragId && draft) commit(draft);
@@ -115,13 +130,14 @@ export function AudioTimelineEditor({ durationMs, items, disabled, onChange }: P
                       setDraft(view);
                     }}
                     className={cn(
-                      "absolute top-1 h-6 truncate rounded px-1 text-left text-[10px] text-black",
+                      "absolute truncate rounded px-1.5 text-left text-[10px] text-black",
+                      clipH,
                       item.enabled ? "bg-emerald-400/80" : "bg-white/20 text-white/50",
                       dragId === item.id && "ring-2 ring-white",
                     )}
                     style={{ left: `${left}%`, width: `${Math.max(4, width)}%` }}
                   >
-                    {item.metadata?.text?.slice(0, 24) || item.type}
+                    {item.metadata?.text?.slice(0, comfortable ? 48 : 24) || item.type}
                   </button>
                 );
               })}

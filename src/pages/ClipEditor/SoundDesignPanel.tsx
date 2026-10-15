@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, Headphones, Loader2, Sparkles, Volume2 } from "lucide-react";
 import { toast } from "sonner";
 import { contentApi } from "../../services/apiClient";
@@ -98,7 +99,7 @@ function StepPill({
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide",
+        "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-md px-1.5 py-1.5 text-center sm:flex-row sm:gap-1.5 sm:px-2 sm:text-left",
         done && "bg-emerald-500/20 text-emerald-200",
         active && !done && "bg-white/15 text-white",
         !active && !done && "bg-white/5 text-white/35",
@@ -106,13 +107,15 @@ function StepPill({
     >
       <span
         className={cn(
-          "flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px]",
+          "flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-semibold",
           done ? "bg-emerald-400 text-black" : active ? "bg-white text-black" : "bg-white/10",
         )}
       >
         {done ? <Check className="h-2.5 w-2.5" /> : n}
       </span>
-      <span className="truncate">{label}</span>
+      <span className="text-[9px] font-semibold uppercase leading-tight tracking-wide sm:text-[10px]">
+        {label}
+      </span>
     </div>
   );
 }
@@ -124,6 +127,8 @@ type Props = {
   disabled?: boolean;
   storyEngine?: boolean;
   onApplied?: () => void;
+  /** When set, step-3 Review + timeline render here (under clip preview) for more width. */
+  reviewHostEl?: HTMLElement | null;
 };
 
 /**
@@ -138,11 +143,14 @@ export function SoundDesignPanel({
   disabled,
   storyEngine,
   onApplied,
+  reviewHostEl,
 }: Props) {
   const [mode, setMode] = useState<SoundDesignMode>("auto");
   const [components, setComponents] = useState<SoundDesignComponents>(DEFAULT_COMPONENTS);
   const [busy, setBusy] = useState<"analyze" | "plan" | "tts" | "reimagine" | "edl" | null>(null);
   const [ttsInfo, setTtsInfo] = useState<string | null>(null);
+  /** True when commentary was planned but TTS upload/EDL step failed (Foley still usable). */
+  const [ttsDeferred, setTtsDeferred] = useState(false);
   const [premiumVoice, setPremiumVoice] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
   const [recommendation, setRecommendation] = useState<{
@@ -161,14 +169,46 @@ export function SoundDesignPanel({
   const step = !analyzed ? 1 : !hasPlan ? 2 : 3;
 
   const layers = useMemo(() => {
+    const hasType = (t: string) => timeline.some((item) => item.type === t && item.enabled !== false);
     return [
-      { id: "original", label: "ORIGINAL", on: components.preserveImportantOriginalAudio },
-      { id: "voice", label: "VOICE", on: components.aiCommentary },
-      { id: "foley", label: "FOLEY", on: components.aiFoley },
-      { id: "ambience", label: "AMBIENCE", on: components.ambience },
-      { id: "music", label: "MUSIC", on: components.backgroundMusic },
+      {
+        id: "original",
+        label: "ORIGINAL",
+        on: hasType("original") || components.preserveImportantOriginalAudio,
+      },
+      // Voice only lights up once TTS assets are on the EDL — planned commentary alone is deferred.
+      { id: "voice", label: "VOICE", on: hasType("voice") },
+      { id: "foley", label: "FOLEY", on: hasType("foley") || components.aiFoley },
+      { id: "ambience", label: "AMBIENCE", on: hasType("ambience") || components.ambience },
+      { id: "music", label: "MUSIC", on: hasType("music") || components.backgroundMusic },
     ];
-  }, [components]);
+  }, [components, timeline]);
+
+  const retrySynthesize = async () => {
+    if (!contentId) return;
+    setBusy("tts");
+    try {
+      const tts = await contentApi.synthesizeSoundDesign(contentId, {
+        durationSec: Math.max(0.5, durationSec),
+      });
+      setTimeline(toTimelineItems((tts.audioEdl as unknown[]) || []));
+      setTtsDeferred(false);
+      setTtsInfo(
+        `TTS ${tts.provider}: ${tts.synthesized} segments${
+          tts.failed ? `, ${tts.failed} skipped` : ""
+        }`,
+      );
+      toast.success("Commentary synthesized — voice layer ready");
+      onApplied?.();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "TTS failed";
+      setTtsDeferred(true);
+      setTtsInfo(`Commentary TTS failed — Foley/ambience still available. ${message}`);
+      toast.error("Could not synthesize commentary", { description: message });
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const suggestedPresets = useMemo(
     () =>
@@ -266,6 +306,7 @@ export function SoundDesignPanel({
       const synth = (res as { synthesize?: { provider?: string; synthesized?: number; failed?: number } })
         .synthesize;
       if (synth) {
+        setTtsDeferred(false);
         setTtsInfo(
           `TTS ${synth.provider || "voice"}: ${synth.synthesized ?? 0} segments${
             synth.failed ? `, ${synth.failed} skipped` : ""
@@ -278,15 +319,24 @@ export function SoundDesignPanel({
             durationSec: Math.max(0.5, durationSec),
           });
           edl = (tts.audioEdl as unknown[]) || edl;
+          setTtsDeferred(false);
           setTtsInfo(
             `TTS ${tts.provider}: ${tts.synthesized} segments${
               tts.failed ? `, ${tts.failed} skipped` : ""
             }`,
           );
-        } catch {
-          setTtsInfo("TTS deferred — Foley/ambience still available");
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "TTS failed";
+          setTtsDeferred(true);
+          setTtsInfo(
+            `Commentary TTS failed — Foley/ambience still available. ${message}`,
+          );
+          toast.message("Sound plan saved without voice", {
+            description: "Retry commentary TTS when ready — Foley stays on the timeline.",
+          });
         }
       } else {
+        setTtsDeferred(false);
         setTtsInfo(null);
       }
       setTimeline(toTimelineItems(edl));
@@ -325,9 +375,13 @@ export function SoundDesignPanel({
         `${res.preset?.name || presetId}: ${voice} commentary · ${foley} Foley · ${edl.length} EDL`,
       );
       if (res.synthesize) {
+        setTtsDeferred(false);
         setTtsInfo(
           `TTS ${res.synthesize.provider || "voice"}: ${res.synthesize.synthesized ?? 0} segments`,
         );
+      } else if (voice > 0) {
+        setTtsDeferred(true);
+        setTtsInfo("Commentary planned — synthesize voice to add the VOICE layer");
       }
       if (res.audioStoryPlan) {
         setComponents((c) => ({
@@ -567,48 +621,104 @@ export function SoundDesignPanel({
           )}
         </section>
 
-        {/* STEP 3 */}
-        {hasPlan && (
-          <section className="space-y-2 rounded-xl border border-emerald-400/25 bg-black/30 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-300/90">
-              3 · Review
-            </p>
-            {planSummary && (
-              <p className="text-xs text-emerald-200/90">Plan ready: {planSummary}</p>
-            )}
-            {ttsInfo && <p className="text-xs text-white/50">{ttsInfo}</p>}
-            <div className="space-y-1 rounded-lg bg-black/40 p-2">
-              <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-white/45">
-                <Volume2 className="h-3 w-3" /> Layers
-              </div>
-              {layers.map((l) => (
-                <div key={l.id} className="flex items-center gap-2 text-[11px] text-white/70">
-                  <span className="w-16 shrink-0 font-mono text-white/35">{l.label}</span>
-                  <div className="h-1.5 flex-1 overflow-hidden rounded bg-white/10">
-                    <div className={cn("h-full", l.on ? "w-full bg-emerald-500/60" : "w-0")} />
-                  </div>
-                </div>
-              ))}
-            </div>
-            {timeline.length > 0 && (
-              <AudioTimelineEditor
-                durationMs={Math.max(1000, Math.round(durationSec * 1000))}
-                items={timeline}
-                disabled={disabled || Boolean(busy)}
-                onChange={(items) => void applyEdlLocal(items)}
-              />
-            )}
-            <p className="text-[11px] text-white/45">
-              Drag or mute regions, then use the editor <strong className="text-white/70">Render</strong>{" "}
-              to burn Sound Design into the export.
-            </p>
-          </section>
-        )}
+        {hasPlan && reviewHostEl ? (
+          <p className="rounded-lg border border-emerald-400/20 bg-emerald-500/5 px-2.5 py-2 text-[11px] text-emerald-100/80">
+            Plan ready{planSummary ? `: ${planSummary}` : ""}. Review timeline is under the clip
+            preview (not in this sidebar). Save &amp; Render to hear Foley/voice in Final Preview.
+          </p>
+        ) : null}
 
         <footer className="text-[10px] text-white/35">
           Est. ~{creditPreview.credits} sound credits · {creditPreview.label}
         </footer>
       </div>
+
+      {hasPlan
+        ? (() => {
+            const review = (
+              <section
+                className={cn(
+                  "space-y-3 rounded-xl border border-emerald-400/25 bg-gradient-to-b from-emerald-950/50 to-black/40 p-3 sm:p-4",
+                  reviewHostEl && "shadow-soft-xl",
+                )}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-300/90">
+                      3 · Review · Sound timeline
+                    </p>
+                    {planSummary && (
+                      <p className="mt-1 text-xs text-emerald-200/90">Plan ready: {planSummary}</p>
+                    )}
+                  </div>
+                </div>
+                {ttsInfo && (
+                  <p
+                    className={cn(
+                      "text-xs",
+                      ttsDeferred ? "text-amber-200/80" : "text-white/50",
+                    )}
+                  >
+                    {ttsInfo}
+                  </p>
+                )}
+                {ttsDeferred && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8 border-amber-400/40 text-amber-100 hover:bg-amber-500/10"
+                    disabled={disabled || Boolean(busy)}
+                    onClick={() => void retrySynthesize()}
+                  >
+                    {busy === "tts" ? (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Volume2 className="mr-1.5 h-3.5 w-3.5" />
+                    )}
+                    Retry commentary TTS
+                  </Button>
+                )}
+                <div className="space-y-1 rounded-lg bg-black/40 p-2 sm:p-3">
+                  <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-white/45">
+                    <Volume2 className="h-3 w-3" /> Layers
+                  </div>
+                  <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-5">
+                    {layers.map((l) => (
+                      <div
+                        key={l.id}
+                        className="flex items-center gap-2 text-[11px] text-white/70"
+                      >
+                        <span className="w-16 shrink-0 font-mono text-white/35">{l.label}</span>
+                        <div className="h-1.5 flex-1 overflow-hidden rounded bg-white/10">
+                          <div
+                            className={cn("h-full", l.on ? "w-full bg-emerald-500/60" : "w-0")}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {timeline.length > 0 && (
+                  <AudioTimelineEditor
+                    durationMs={Math.max(1000, Math.round(durationSec * 1000))}
+                    items={timeline}
+                    disabled={disabled || Boolean(busy)}
+                    onChange={(items) => void applyEdlLocal(items)}
+                    comfortable={Boolean(reviewHostEl)}
+                  />
+                )}
+                <p className="text-[11px] text-white/55">
+                  Timeline edits are non-destructive here. Live clip play is video + BGM only —
+                  Foley / commentary / ambience appear in{" "}
+                  <strong className="text-white/80">Final Preview</strong> after{" "}
+                  <strong className="text-white/80">Save &amp; Render</strong>.
+                </p>
+              </section>
+            );
+            return reviewHostEl ? createPortal(review, reviewHostEl) : review;
+          })()
+        : null}
     </div>
   );
 }
