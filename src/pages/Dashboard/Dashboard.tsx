@@ -765,7 +765,7 @@ export default function Dashboard() {
   return (
     <div className="ui-dashboard-page !pt-3 !space-y-5">
       <SEO 
-        title="Creator Dashboard | NexaClip.ai"
+        title="Creator Dashboard"
         description="Monitor your gaming content performance, viral reach, and AI-powered creator insights."
       />
       {/* --- Page Header --- */}

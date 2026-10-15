@@ -437,7 +437,7 @@ export default function CreateHub() {
   return (
     <div className="w-full pb-10">
       <SEO
-        title={`${t("create.header.title")} | NexaClip.ai`}
+        title={t("create.header.title")}
         description={t("create.header.subtitle")}
       />
 

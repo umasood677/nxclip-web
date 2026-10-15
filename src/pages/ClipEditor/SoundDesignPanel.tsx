@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Headphones, Loader2, Sparkles, Volume2 } from "lucide-react";
 import { toast } from "sonner";
@@ -25,6 +25,24 @@ export type SoundDesignComponents = {
   backgroundMusic: boolean;
   autoDucking: boolean;
   preserveImportantOriginalAudio: boolean;
+};
+
+/** Persisted under clipEditSpec.extras.soundDesign (server). */
+export type PersistedSoundDesign = {
+  mode?: SoundDesignMode | string;
+  components?: Partial<SoundDesignComponents>;
+  recommendation?: {
+    summary?: string;
+    bullets?: string[];
+    commentaryRecommended?: boolean;
+    lightTouchOnly?: boolean;
+    suggestedMode?: string;
+  };
+  audioStoryPlan?: {
+    foleyEvents?: Array<{ enabled?: boolean }>;
+    commentary?: { segments?: unknown[] };
+  };
+  audioEdl?: unknown[];
 };
 
 const MODES: Array<[SoundDesignMode, string]> = [
@@ -99,7 +117,7 @@ function StepPill({
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-md px-1.5 py-1.5 text-center sm:flex-row sm:gap-1.5 sm:px-2 sm:text-left",
+        "flex flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-center sm:flex-row sm:gap-1 sm:px-1.5",
         done && "bg-emerald-500/20 text-emerald-200",
         active && !done && "bg-white/15 text-white",
         !active && !done && "bg-white/5 text-white/35",
@@ -113,11 +131,20 @@ function StepPill({
       >
         {done ? <Check className="h-2.5 w-2.5" /> : n}
       </span>
-      <span className="text-[9px] font-semibold uppercase leading-tight tracking-wide sm:text-[10px]">
+      <span className="whitespace-nowrap text-[9px] font-semibold uppercase leading-none tracking-normal sm:text-[10px]">
         {label}
       </span>
     </div>
   );
+}
+
+function planSummaryFromState(state: PersistedSoundDesign): string | null {
+  const edl = Array.isArray(state.audioEdl) ? state.audioEdl : [];
+  const plan = state.audioStoryPlan;
+  if (!plan && !edl.length) return null;
+  const foley = plan?.foleyEvents?.filter((f) => f.enabled !== false).length ?? 0;
+  const voice = plan?.commentary?.segments?.length ?? 0;
+  return `${voice} commentary · ${foley} Foley · ${edl.length} EDL decisions`;
 }
 
 type Props = {
@@ -129,6 +156,8 @@ type Props = {
   onApplied?: () => void;
   /** When set, step-3 Review + timeline render here (under clip preview) for more width. */
   reviewHostEl?: HTMLElement | null;
+  /** Hydrate from clipEditSpec.extras.soundDesign after refresh / Creator Hub. */
+  initialSoundDesign?: PersistedSoundDesign | null;
 };
 
 /**
@@ -144,6 +173,7 @@ export function SoundDesignPanel({
   storyEngine,
   onApplied,
   reviewHostEl,
+  initialSoundDesign,
 }: Props) {
   const [mode, setMode] = useState<SoundDesignMode>("auto");
   const [components, setComponents] = useState<SoundDesignComponents>(DEFAULT_COMPONENTS);
@@ -164,6 +194,43 @@ export function SoundDesignPanel({
   const [timeline, setTimeline] = useState<TimelineEdlItem[]>([]);
   const [lastPreset, setLastPreset] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const hydratedRef = useRef(false);
+
+  useEffect(() => {
+    hydratedRef.current = false;
+  }, [contentId]);
+
+  // Restore Analyze / Treat / Review after refresh or re-open from Creator Hub.
+  useEffect(() => {
+    if (hydratedRef.current || !initialSoundDesign) return;
+    hydratedRef.current = true;
+
+    const sd = initialSoundDesign;
+    if (sd.mode && MODES.some(([m]) => m === sd.mode)) {
+      setMode(sd.mode as SoundDesignMode);
+    }
+    if (sd.components && typeof sd.components === "object") {
+      setComponents({ ...DEFAULT_COMPONENTS, ...sd.components });
+    }
+    const rec = sd.recommendation;
+    if (rec?.summary) {
+      setRecommendation({
+        summary: String(rec.summary),
+        bullets: Array.isArray(rec.bullets) ? rec.bullets.map(String) : [],
+        commentaryRecommended: Boolean(rec.commentaryRecommended),
+        lightTouchOnly: Boolean(rec.lightTouchOnly),
+        suggestedMode: rec.suggestedMode ? String(rec.suggestedMode) : undefined,
+      });
+    }
+    const edl = toTimelineItems(Array.isArray(sd.audioEdl) ? sd.audioEdl : []);
+    if (edl.length) setTimeline(edl);
+    const summary = planSummaryFromState(sd);
+    if (summary) setPlanSummary(summary);
+    // Analyze persisted recommendation or any generated plan/EDL → skip step 1.
+    if (rec?.summary || sd.audioStoryPlan || edl.length) {
+      setAnalyzed(true);
+    }
+  }, [contentId, initialSoundDesign]);
 
   const hasPlan = Boolean(planSummary || timeline.length);
   const step = !analyzed ? 1 : !hasPlan ? 2 : 3;
@@ -430,7 +497,7 @@ export function SoundDesignPanel({
           <p className="text-xs leading-relaxed text-white/60">
             Understand the clip first. Design the sound second. Non-destructive until you Render.
           </p>
-          <div className="flex gap-1.5">
+          <div className="grid grid-cols-3 gap-1">
             <StepPill n={1} label="Understand" active={step === 1} done={analyzed} />
             <StepPill n={2} label="Treat" active={step === 2} done={hasPlan} />
             <StepPill n={3} label="Review" active={step === 3} done={hasPlan && step === 3} />

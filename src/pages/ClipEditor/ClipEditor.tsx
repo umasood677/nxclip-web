@@ -46,7 +46,7 @@ import { setMixPreviewGains } from "./useMixAnalyser";
 import { composeSocialCaption } from "./composeSocialCaption";
 import { ComposeTimelinePanel } from "./ComposeTimelinePanel";
 import { ClipCoachPanel, type CoachPreviewPayload } from './ClipCoachPanel';
-import { SoundDesignPanel } from './SoundDesignPanel';
+import { SoundDesignPanel, type PersistedSoundDesign } from './SoundDesignPanel';
 import { TransitionPreviewOverlay } from "./TransitionPreviewOverlay";
 import { ClipPublishPreview } from "./ClipPublishPreview";
 import {
@@ -346,6 +346,10 @@ export default function ClipEditor() {
   >([]);
   /** True after Apply to clip — keep multi-cut order through Polish / Download. */
   const [coachViralApplied, setCoachViralApplied] = useState(false);
+  /** Restored from clipEditSpec.extras.soundDesign so Sound Design skips re-Analyze. */
+  const [persistedSoundDesign, setPersistedSoundDesign] = useState<PersistedSoundDesign | null>(
+    null,
+  );
   const coachStitchIndexRef = useRef(0);
   /** True while playing the full Coach moment playlist (not a single Preview cut). */
   const coachStitchPlayRef = useRef(false);
@@ -581,6 +585,12 @@ export default function ClipEditor() {
           const extras = (spec as { extras?: Record<string, unknown> }).extras;
           const viralOn = extras?.viralEditApplied === true;
           setCoachViralApplied(viralOn);
+          {
+            const sd = extras?.soundDesign;
+            setPersistedSoundDesign(
+              sd && typeof sd === "object" ? (sd as PersistedSoundDesign) : null,
+            );
+          }
           const coach = extras?.clipCoach as
             | {
                 creativeBrief?: {
@@ -3056,7 +3066,7 @@ export default function ClipEditor() {
         />
       ) : null}
       <SEO 
-        title="Advanced AI Video Clip Studio | NexaClip.ai"
+        title="Advanced AI Video Clip Studio"
         description="AI Coach cuts, sound design, captions, and polish for short-form clips — then publish."
       />
       <StudioPlanBanner
@@ -3435,6 +3445,7 @@ export default function ClipEditor() {
                   durationSec={DURATION}
                   creatorContext={prompt}
                   reviewHostEl={soundReviewHost}
+                  initialSoundDesign={persistedSoundDesign}
                 />
               </div>
             </aside>
@@ -4245,6 +4256,7 @@ export default function ClipEditor() {
                   creatorContext={prompt}
                   storyEngine
                   reviewHostEl={soundReviewHost}
+                  initialSoundDesign={persistedSoundDesign}
                 />
               </div>
             ) : null}

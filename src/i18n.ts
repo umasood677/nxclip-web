@@ -1293,7 +1293,7 @@ const resources = {
         }
       },
       "image_studio": {
-        "seo_title": "AI Image & Meme Studio | NexaClip.ai",
+        "seo_title": "AI Image & Meme Studio",
         "seo_description": "Generate stunning AI images and viral memes with our advanced Image Studio. Powered by Gemini AI for professional creators.",
         "tabs": {
           "generate": "Generate",
@@ -3376,7 +3376,7 @@ const resources = {
         }
       },
       "image_studio": {
-        "seo_title": "استوديو الصور والميمات بالذكاء الاصطناعي | NexaClip.ai",
+        "seo_title": "استوديو الصور والميمات بالذكاء الاصطناعي",
         "seo_description": "قم بإنشاء صور ألعاب مذهلة وميمات فيروسية باستخدام استوديو الصور المتقدم لدينا. مدعوم بذكاء Gemini للمنشئين المحترفين.",
         "tabs": {
           "generate": "توليد",

@@ -18,7 +18,13 @@ export function SEO({
   type = "website" 
 }: SEOProps) {
   const siteTitle = "nxclip.app | Creator OS";
-  const fullTitle = title ? `${title} | nxclip.app` : siteTitle;
+  // Drop legacy brand suffixes so page titles stay clean (no NexaClip.ai duplication).
+  const cleanTitle = title
+    ?.replace(/\s*\|\s*NexaClip\.ai\s*/gi, "")
+    .replace(/\s*NexaClip\.ai\s*/gi, "")
+    .replace(/\s*\|\s*nxclip\.app\s*$/i, "")
+    .trim();
+  const fullTitle = cleanTitle ? `${cleanTitle} | nxclip.app` : siteTitle;
   const siteDescription = description || "Plan, create images and clips, go Live on YouTube, Instagram, TikTok, and Facebook, then measure the next move — in one Creator OS.";
   const siteKeywords = keywords || "creator os, ai image generator, clip editor, social publishing, analytics, creator coach, content library";
 

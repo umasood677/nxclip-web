@@ -117,7 +117,7 @@ export default function PublicPostView() {
   return (
     <div className="min-h-screen ui-bg-landing flex flex-col">
       <SEO 
-        title={`${title || "Creator Post"} | nxclip.app`} 
+        title={title || "Creator Post"} 
         description={description || "Check out this creator's latest performance on nxclip.app."}
         type="article"
       />
