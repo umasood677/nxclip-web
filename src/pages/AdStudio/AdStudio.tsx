@@ -32,6 +32,7 @@ export default function AdStudio() {
   const [brandsError, setBrandsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
   const creatingRef = useRef(false);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [concepts, setConcepts] = useState<AdConcept[]>([]);
@@ -220,6 +221,35 @@ export default function AdStudio() {
     }
   };
 
+  const deleteProject = async (project: { id: string; name: string }) => {
+    if (
+      !window.confirm(
+        `Delete “${project.name}”? This soft-deletes the project and hides it from Ad Studio.`,
+      )
+    ) {
+      return;
+    }
+    setDeletingProjectId(project.id);
+    try {
+      await adStudioApi.deleteProject(project.id);
+      const nextProjects = projects.filter((p) => p.id !== project.id);
+      setProjects(nextProjects);
+      setRecentCreatives((prev) => prev.filter((c) => c.projectId !== project.id));
+      void loadRecentCreatives(nextProjects);
+      if (projectId === project.id) {
+        setProjectId(null);
+        setConcepts([]);
+        setCreatives([]);
+        setView("home");
+      }
+      toast.success("Project deleted");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete project");
+    } finally {
+      setDeletingProjectId(null);
+    }
+  };
+
   const selectProject = async (id: string) => {
     setProjectId(id);
     setView("compose");
@@ -364,11 +394,13 @@ export default function AdStudio() {
           brandsError={brandsError}
           selectedBrandId={form.brandKitId}
           selectedFormat={form.outputFormat}
+          deletingProjectId={deletingProjectId}
           onSelectBrand={selectBrand}
           onSelectFormat={(formatId) => patchForm({ outputFormat: formatId })}
           onStartIdea={startIdea}
           onUseExample={useExample}
           onContinueProject={(id) => void selectProject(id)}
+          onDeleteProject={(p) => void deleteProject(p)}
           onOpenCreative={(id) => navigate(`/create/ad/${id}`)}
           onCreateBrand={openCreateBrand}
           onEditBrand={openEditBrand}

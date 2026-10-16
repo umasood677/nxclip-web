@@ -5,9 +5,11 @@ import {
   Clock3,
   FolderOpen,
   Lightbulb,
+  Loader2,
   Megaphone,
   Palette,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
@@ -34,11 +36,13 @@ type Props = {
   brandsError?: string | null;
   selectedBrandId: string;
   selectedFormat: string;
+  deletingProjectId?: string | null;
   onSelectBrand: (id: string) => void;
   onSelectFormat: (formatId: string) => void;
   onStartIdea: () => void;
   onUseExample: (example: FeaturedExample) => void;
   onContinueProject: (projectId: string) => void;
+  onDeleteProject: (project: { id: string; name: string }) => void;
   onOpenCreative: (creativeId: string) => void;
   onCreateBrand: () => void;
   onEditBrand: (kit: BrandKitSummary) => void;
@@ -54,11 +58,13 @@ export function AdStudioHome({
   brandsError,
   selectedBrandId,
   selectedFormat,
+  deletingProjectId = null,
   onSelectBrand,
   onSelectFormat,
   onStartIdea,
   onUseExample,
   onContinueProject,
+  onDeleteProject,
   onOpenCreative,
   onCreateBrand,
   onEditBrand,
@@ -214,25 +220,48 @@ export function AdStudioHome({
           </div>
           {recentProjects.length ? (
             <div className="space-y-2">
-              {recentProjects.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => onContinueProject(p.id)}
-                  className="w-full flex items-center justify-between gap-3 rounded-xl border border-border px-4 py-3 text-left hover:border-primary/40 transition-colors"
-                >
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">{p.name}</div>
-                    <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-                      <Clock3 size={11} />
-                      {p.updatedAt
-                        ? new Date(p.updatedAt).toLocaleString()
-                        : "Open brief & concepts"}
-                    </div>
+              {recentProjects.map((p) => {
+                const deleting = deletingProjectId === p.id;
+                return (
+                  <div
+                    key={p.id}
+                    className="flex items-stretch gap-1 rounded-xl border border-border hover:border-primary/40 transition-colors"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => onContinueProject(p.id)}
+                      disabled={deleting}
+                      className="min-w-0 flex-1 flex items-center justify-between gap-3 px-4 py-3 text-left disabled:opacity-60"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium truncate">{p.name}</div>
+                        <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+                          <Clock3 size={11} />
+                          {p.updatedAt
+                            ? new Date(p.updatedAt).toLocaleString()
+                            : "Open brief & concepts"}
+                        </div>
+                      </div>
+                      <ArrowRight size={16} className="text-muted-foreground shrink-0" />
+                    </button>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-auto w-10 shrink-0 rounded-none rounded-r-xl text-muted-foreground hover:text-destructive"
+                      disabled={deleting}
+                      aria-label={`Delete project ${p.name}`}
+                      onClick={() => onDeleteProject({ id: p.id, name: p.name })}
+                    >
+                      {deleting ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={16} />
+                      )}
+                    </Button>
                   </div>
-                  <ArrowRight size={16} className="text-muted-foreground shrink-0" />
-                </button>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">

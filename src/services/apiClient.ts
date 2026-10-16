@@ -2896,6 +2896,8 @@ export const adStudioApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     }),
+  deleteProject: async (id: string): Promise<void> =>
+    performApiRequest(`/ad-studio/projects/${id}`, { method: "DELETE" }),
   listCreatives: async (projectId: string): Promise<{ items: any[] }> =>
     performApiRequest(`/ad-studio/projects/${projectId}/creatives`, { method: "GET" }),
   getCreative: async (id: string): Promise<any> =>
