@@ -3520,8 +3520,8 @@ export default function ClipEditor() {
                   onOriginalLevelChange={(linear, muted) => {
                     syncingFromSrcRef.current = true;
                     setClipVolume(linear);
-                    setIsClipMuted(muted || linear <= 0);
-                    queue Promise.resolve().then(() => {
+                    setIsClipMuted(Boolean(muted) || linear < 0.0001);
+                    queueMicrotask(() => {
                       syncingFromSrcRef.current = false;
                     });
                   }}
@@ -4343,8 +4343,8 @@ export default function ClipEditor() {
                   onOriginalLevelChange={(linear, muted) => {
                     syncingFromSrcRef.current = true;
                     setClipVolume(linear);
-                    setIsClipMuted(muted || linear <= 0);
-                    void Promise.resolve().then(() => {
+                    setIsClipMuted(Boolean(muted) || linear < 0.0001);
+                    queueMicrotask(() => {
                       syncingFromSrcRef.current = false;
                     });
                   }}

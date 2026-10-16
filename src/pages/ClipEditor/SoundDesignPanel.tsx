@@ -398,8 +398,8 @@ export function SoundDesignPanel({
           const cur = next[idx]!;
           next[idx] = {
             ...cur,
-            gainDb: muted || linear <= 0 ? cur.gainDb : linearToGainDb(linear),
-            enabled: !(muted || linear <= 0),
+            gainDb: muted || (linear <= 0) ? cur.gainDb : linearToGainDb(linear),
+            enabled: !(muted || (linear <= 0)),
           };
           void (async () => {
             if (!contentId) return;
