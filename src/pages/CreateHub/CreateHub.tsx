@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Film,
   Megaphone,
+  Palette,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -77,6 +78,21 @@ const tools = [
       desc: "text-sky-800/80 dark:text-sky-200/80",
       chevron: "bg-sky-500/20 text-sky-700 dark:text-sky-300 group-hover:bg-sky-600 group-hover:text-white",
       glow: "from-sky-500/20",
+    },
+  },
+  {
+    title: "create.tools.brand_kits.title",
+    description: "create.tools.brand_kits.description",
+    icon: Palette,
+    href: "/brands",
+    roleRequired: "user",
+    tone: {
+      card: "border-amber-500/25 bg-amber-500/10 hover:bg-amber-500/15 hover:border-amber-500/40 dark:bg-amber-500/15 dark:hover:bg-amber-500/25",
+      icon: "bg-amber-600 text-white shadow-sm shadow-amber-600/30 dark:bg-amber-500",
+      title: "text-foreground",
+      desc: "text-amber-900/80 dark:text-amber-200/80",
+      chevron: "bg-amber-500/20 text-amber-800 dark:text-amber-300 group-hover:bg-amber-600 group-hover:text-white",
+      glow: "from-amber-500/20",
     },
   },
   {

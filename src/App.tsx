@@ -69,6 +69,8 @@ const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
 const ImageStudio = lazy(() => import("./pages/ImageStudio/ImageStudio"));
 const AdStudio = lazy(() => import("./pages/AdStudio/AdStudio"));
 const AdStudioEditor = lazy(() => import("./pages/AdStudio/AdStudioEditor"));
+const BrandKits = lazy(() => import("./pages/BrandKits/BrandKits"));
+const BrandKitEditor = lazy(() => import("./pages/BrandKits/BrandKitEditor"));
 const Analytics = lazy(() => import("./pages/Analytics/Analytics"));
 const CreatorCoach = lazy(() => import("./pages/CreatorCoach/CreatorCoach"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel/AdminPanel"));
@@ -409,6 +411,9 @@ export default function App() {
                     <Route path="/image-studio" element={<ImageStudio />} />
                     <Route path="/create/ad" element={<AdStudio />} />
                     <Route path="/create/ad/:creativeId" element={<AdStudioEditor />} />
+                    <Route path="/brands" element={<BrandKits />} />
+                    <Route path="/brands/:brandId" element={<BrandKitEditor />} />
+                    <Route path="/create/brands" element={<Navigate to="/brands" replace />} />
                     <Route path="/create/clip" element={<ClipUpload />} />
                     <Route path="/create/clip/:id/edit" element={<ClipEditor />} />
                     <Route path="/create/story-engine" element={<EventHighlight />} />

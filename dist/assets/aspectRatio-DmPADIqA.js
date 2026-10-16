@@ -1,0 +1,1 @@
+import"./index-BQ_P_xGS.js";import{n as e}from"./mediaRatioStore-CV_q23z2.js";function a(r){const o=r.aspectRatio||r.aspect_ratio||void 0;if(o&&e(o))return o;const t=(r.description||"").match(/ratio[:\s]+(\d+\s*[:/]\s*\d+)/i);if(t!=null&&t[1])return t[1].replace(/\s+/g,"")}export{a as r};

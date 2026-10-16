@@ -1,102 +1,180 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2, Megaphone, Plus, Sparkles } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
-import { Textarea } from "../../components/ui/textarea";
-import { ScrollArea } from "../../components/ui/scroll-area";
-import { Badge } from "../../components/ui/badge";
+import { Loader2 } from "lucide-react";
 import { SEO } from "../../components/SEO";
 import { adStudioApi, brandApi } from "../../services/apiClient";
-import { AD_FORMATS, type AdConcept } from "./types";
+import {
+  CreateBrandKitDialog,
+  type BrandKitSummary,
+} from "../BrandKits/CreateBrandKitDialog";
+import { BrandKitImportDialog } from "../BrandKits/components/BrandKitImportDialog";
+import { seedBriefFromBrand } from "../BrandKits/lib/brandContext";
+import { AdStudioHome, type RecentCreative } from "./components/AdStudioHome";
+import { GuidedBriefComposer } from "./components/GuidedBriefComposer";
+import {
+  DEFAULT_AD_BRIEF,
+  type AdBriefFormState,
+} from "./lib/adStudioLabels";
+import type { FeaturedExample } from "./lib/exampleCreatives";
+import type { AdConcept } from "./types";
 import "../ImageStudio/components/image-edit-fonts.css";
 
-const OBJECTIVES = [
-  "brand_awareness",
-  "product_promotion",
-  "website_traffic",
-  "lead_generation",
-  "engagement",
-  "event_promotion",
-  "app_installation",
-];
-
-const PLATFORMS = [
-  "instagram_feed",
-  "instagram_story",
-  "facebook_feed",
-  "linkedin",
-  "x_twitter",
-  "generic",
-];
+type StudioView = "home" | "compose";
 
 export default function AdStudio() {
   const navigate = useNavigate();
+  const [view, setView] = useState<StudioView>("home");
   const [projects, setProjects] = useState<any[]>([]);
-  const [brands, setBrands] = useState<any[]>([]);
+  const [recentCreatives, setRecentCreatives] = useState<RecentCreative[]>([]);
+  const [brands, setBrands] = useState<BrandKitSummary[]>([]);
+  const [brandsLoading, setBrandsLoading] = useState(true);
+  const [brandsError, setBrandsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const creatingRef = useRef(false);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [concepts, setConcepts] = useState<AdConcept[]>([]);
+  const [selectedConceptId, setSelectedConceptId] = useState<string | null>(null);
+  const [conceptsLoading, setConceptsLoading] = useState(false);
+  const [conceptImages, setConceptImages] = useState<Record<string, string>>({});
   const [creatives, setCreatives] = useState<any[]>([]);
   const [generationSource, setGenerationSource] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    name: "New ad project",
-    brandKitId: "",
-    productOrService: "",
-    advertisingObjective: "product_promotion",
-    targetAudience: "",
-    coreMessage: "",
-    desiredTone: "confident",
-    platform: "instagram_feed",
-    outputFormat: "portrait_1080x1350",
-    cta: "Learn More",
-  });
+  const [createBrandOpen, setCreateBrandOpen] = useState(false);
+  const [importBrandOpen, setImportBrandOpen] = useState(false);
+  const [editingBrand, setEditingBrand] = useState<BrandKitSummary | null>(null);
+  const [form, setForm] = useState<AdBriefFormState>({ ...DEFAULT_AD_BRIEF });
+
+  const patchForm = useCallback((patch: Partial<AdBriefFormState>) => {
+    setForm((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  const syncProjectBrand = useCallback(async (pid: string, brandKitId: string) => {
+    try {
+      const updated = await adStudioApi.updateProject(
+        pid,
+        brandKitId ? { brandKitId } : { clearBrandKit: true },
+      );
+      setProjects((prev) =>
+        prev.map((p) => (p.id === pid ? { ...p, ...updated } : p)),
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update project brand");
+    }
+  }, []);
+
+  const selectBrand = useCallback(
+    (id: string) => {
+      setForm((prev) => {
+        const kit = brands.find((b) => b.id === id) ?? null;
+        const seed = seedBriefFromBrand(kit, prev);
+        return { ...prev, brandKitId: id, ...seed };
+      });
+      if (projectId) {
+        void syncProjectBrand(projectId, id);
+      }
+    },
+    [brands, projectId, syncProjectBrand],
+  );
+
+  const refreshBrands = useCallback(async (): Promise<BrandKitSummary[]> => {
+    setBrandsLoading(true);
+    setBrandsError(null);
+    try {
+      const b = await brandApi.listKits();
+      const items = (b.items ?? []) as BrandKitSummary[];
+      setBrands(items);
+      return items;
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to load Brand Kits";
+      setBrandsError(message);
+      setBrands([]);
+      return [];
+    } finally {
+      setBrandsLoading(false);
+    }
+  }, []);
+
+  const loadRecentCreatives = useCallback(async (projectList: any[]) => {
+    const top = projectList.slice(0, 4);
+    const batches = await Promise.all(
+      top.map(async (p) => {
+        try {
+          const res = await adStudioApi.listCreatives(p.id);
+          return (res.items ?? []).map((c: any) => ({
+            ...c,
+            projectId: p.id,
+          }));
+        } catch {
+          return [];
+        }
+      }),
+    );
+    const flat = batches.flat().sort((a, b) => {
+      const at = a.updatedAt ? Date.parse(a.updatedAt) : 0;
+      const bt = b.updatedAt ? Date.parse(b.updatedAt) : 0;
+      return bt - at;
+    });
+    setRecentCreatives(flat.slice(0, 8));
+  }, []);
 
   useEffect(() => {
     void (async () => {
       try {
-        const [p, b] = await Promise.all([
-          adStudioApi.listProjects(),
-          brandApi.listKits().catch(() => ({ items: [] })),
-        ]);
-        setProjects(p.items ?? []);
-        setBrands(b.items ?? []);
+        const [p] = await Promise.all([adStudioApi.listProjects(), refreshBrands()]);
+        const items = p.items ?? [];
+        setProjects(items);
+        await loadRecentCreatives(items);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Failed to load Ad Studio");
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [loadRecentCreatives, refreshBrands]);
+
+  const canCreateProject =
+    !!form.name.trim() &&
+    !!form.productOrService.trim() &&
+    !!form.coreMessage.trim() &&
+    !!form.targetAudience.trim() &&
+    !!form.desiredTone.trim();
 
   const createProject = async () => {
+    if (!canCreateProject) {
+      toast.error("Fill in product, core message, and audience");
+      return;
+    }
+    if (creatingRef.current || busy) return;
+    creatingRef.current = true;
     setBusy(true);
     try {
       const project = await adStudioApi.createProject({
-        name: form.name,
+        name: form.name.trim(),
         brandKitId: form.brandKitId || undefined,
         brief: {
-          productOrService: form.productOrService,
+          productOrService: form.productOrService.trim(),
           advertisingObjective: form.advertisingObjective,
-          targetAudience: form.targetAudience,
-          coreMessage: form.coreMessage,
-          desiredTone: form.desiredTone,
+          targetAudience: form.targetAudience.trim(),
+          coreMessage: form.coreMessage.trim(),
+          desiredTone: form.desiredTone.trim(),
           platform: form.platform,
           outputFormat: form.outputFormat,
-          cta: form.cta,
+          cta: form.cta.trim() || "Learn more",
         },
         routingProfile: "BALANCED",
       });
       setProjectId(project.id);
-      setProjects((prev) => [project, ...prev]);
+      setProjects((prev) => [project, ...prev.filter((x) => x.id !== project.id)]);
+      setConcepts([]);
+      setCreatives([]);
+      setGenerationSource(null);
+      setView("compose");
       toast.success("Project created");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Create failed");
     } finally {
+      creatingRef.current = false;
       setBusy(false);
     }
   };
@@ -107,9 +185,12 @@ export default function AdStudio() {
       return;
     }
     setBusy(true);
+    setConceptsLoading(true);
     try {
       const res = await adStudioApi.generateConcepts(projectId, { conceptCount: 4 });
-      setConcepts(res.concepts ?? []);
+      const next = (res.concepts ?? []) as AdConcept[];
+      setConcepts(next);
+      setSelectedConceptId(next[0]?.conceptId ?? null);
       setGenerationSource(res.generationSource ?? res.provider ?? null);
       if (res.generationSource === "heuristic" || /heuristic/i.test(res.provider ?? "")) {
         toast.message("Concepts ready (heuristic)", {
@@ -121,6 +202,7 @@ export default function AdStudio() {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Concept generation failed");
     } finally {
+      setConceptsLoading(false);
       setBusy(false);
     }
   };
@@ -140,12 +222,33 @@ export default function AdStudio() {
 
   const selectProject = async (id: string) => {
     setProjectId(id);
+    setView("compose");
+    const project = projects.find((p) => p.id === id);
+    if (project) {
+      const brief = (project.brief ?? {}) as Partial<AdBriefFormState>;
+      setForm((prev) => ({
+        ...prev,
+        name: project.name || prev.name,
+        brandKitId: project.brandKitId || prev.brandKitId || "",
+        outputFormat: project.outputFormat || brief.outputFormat || prev.outputFormat,
+        productOrService: brief.productOrService ?? prev.productOrService,
+        coreMessage: brief.coreMessage ?? prev.coreMessage,
+        targetAudience: brief.targetAudience ?? prev.targetAudience,
+        advertisingObjective:
+          brief.advertisingObjective ?? prev.advertisingObjective,
+        platform: brief.platform ?? prev.platform,
+        cta: brief.cta ?? prev.cta,
+        desiredTone: brief.desiredTone ?? prev.desiredTone,
+      }));
+    }
     try {
       const [listed, creativeList] = await Promise.all([
         adStudioApi.listConcepts(id),
         adStudioApi.listCreatives(id),
       ]);
-      setConcepts(listed.concepts ?? []);
+      const next = (listed.concepts ?? []) as AdConcept[];
+      setConcepts(next);
+      setSelectedConceptId(next[0]?.conceptId ?? null);
       setGenerationSource(listed.generationSource ?? listed.provider ?? null);
       setCreatives(creativeList.items ?? []);
     } catch {
@@ -161,15 +264,83 @@ export default function AdStudio() {
     }
     setBusy(true);
     try {
-      const res = await adStudioApi.generateImage(projectId, {
-        conceptId,
-      });
-      toast.success(res.jobId ? `Image job queued (${res.jobId.slice(0, 8)}…)` : "Image generation started");
+      const res = await adStudioApi.generateImage(projectId, { conceptId });
+      if (conceptId && typeof res.imageBase64 === "string" && res.imageBase64) {
+        const mime = res.mimeType || "image/png";
+        setConceptImages((prev) => ({
+          ...prev,
+          [conceptId]: `data:${mime};base64,${res.imageBase64}`,
+        }));
+      }
+      toast.success(
+        res.jobId
+          ? `Image job queued (${res.jobId.slice(0, 8)}…)`
+          : "Image generation started",
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Image generation failed");
     } finally {
       setBusy(false);
     }
+  };
+
+  const handleBrandCreated = async (kit: BrandKitSummary) => {
+    const items = await refreshBrands();
+    const exists = items.some((b) => b.id === kit.id);
+    if (!exists) {
+      setBrands((prev) => [kit, ...prev.filter((b) => b.id !== kit.id)]);
+    } else {
+      setBrands((prev) => prev.map((b) => (b.id === kit.id ? { ...b, ...kit } : b)));
+    }
+    // Preserve unsaved brief fields; only seed empties + auto-select.
+    setForm((prev) => {
+      const seed = seedBriefFromBrand(kit, prev);
+      return { ...prev, brandKitId: kit.id, ...seed };
+    });
+    if (projectId) {
+      void syncProjectBrand(projectId, kit.id);
+    }
+    setEditingBrand(null);
+  };
+
+  const openCreateBrand = () => {
+    setEditingBrand(null);
+    setCreateBrandOpen(true);
+  };
+
+  const openImportBrand = () => {
+    setImportBrandOpen(true);
+  };
+
+  const openEditBrand = (kit: BrandKitSummary) => {
+    setEditingBrand(kit);
+    setCreateBrandOpen(true);
+  };
+
+  const startIdea = () => {
+    setProjectId(null);
+    setConcepts([]);
+    setCreatives([]);
+    setGenerationSource(null);
+    setForm((prev) => ({
+      ...DEFAULT_AD_BRIEF,
+      brandKitId: prev.brandKitId,
+      outputFormat: prev.outputFormat,
+    }));
+    setView("compose");
+  };
+
+  const useExample = (example: FeaturedExample) => {
+    setProjectId(null);
+    setConcepts([]);
+    setCreatives([]);
+    setGenerationSource(null);
+    setForm({
+      ...DEFAULT_AD_BRIEF,
+      ...example.briefDefaults,
+      brandKitId: form.brandKitId,
+    });
+    setView("compose");
   };
 
   if (loading) {
@@ -181,194 +352,83 @@ export default function AdStudio() {
   }
 
   return (
-    <div className="space-y-4 pb-8">
+    <div className="pb-6">
       <SEO title="Static Ad Studio | NxClip" />
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
-          <Megaphone size={20} />
-        </div>
-        <div>
-          <h1 className="text-xl font-semibold">Static Ad Studio</h1>
-          <p className="text-sm text-muted-foreground">
-            Brief → Brand Kit → Concepts → Editable creative
-          </p>
-        </div>
-      </div>
 
-      <div className="grid lg:grid-cols-12 gap-4 min-h-[calc(100vh-180px)]">
-        <Card className="lg:col-span-4 glass border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Project & brief</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[calc(100vh-240px)] pr-3">
-              <div className="space-y-3">
-                <div>
-                  <Label>Existing projects</Label>
-                  <div className="space-y-1 mt-1">
-                    {projects.map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        className={`w-full text-left text-sm rounded-md border px-3 py-2 ${
-                          projectId === p.id ? "border-primary bg-muted" : "border-border"
-                        }`}
-                        onClick={() => void selectProject(p.id)}
-                      >
-                        {p.name}
-                      </button>
-                    ))}
-                    {!projects.length && (
-                      <p className="text-xs text-muted-foreground">No projects yet.</p>
-                    )}
-                  </div>
-                </div>
+      {view === "home" ? (
+        <AdStudioHome
+          projects={projects}
+          creatives={recentCreatives}
+          brands={brands}
+          brandsLoading={brandsLoading}
+          brandsError={brandsError}
+          selectedBrandId={form.brandKitId}
+          selectedFormat={form.outputFormat}
+          onSelectBrand={selectBrand}
+          onSelectFormat={(formatId) => patchForm({ outputFormat: formatId })}
+          onStartIdea={startIdea}
+          onUseExample={useExample}
+          onContinueProject={(id) => void selectProject(id)}
+          onOpenCreative={(id) => navigate(`/create/ad/${id}`)}
+          onCreateBrand={openCreateBrand}
+          onEditBrand={openEditBrand}
+          onImportBrand={openImportBrand}
+          onRetryBrands={() => void refreshBrands()}
+        />
+      ) : (
+        <GuidedBriefComposer
+          form={form}
+          onChange={patchForm}
+          brands={brands}
+          brandsLoading={brandsLoading}
+          brandsError={brandsError}
+          onRetryBrands={() => void refreshBrands()}
+          onSelectBrand={selectBrand}
+          onCreateBrand={openCreateBrand}
+          onEditBrand={openEditBrand}
+          onImportBrand={openImportBrand}
+          onBack={() => setView("home")}
+          busy={busy}
+          conceptsLoading={conceptsLoading}
+          projectId={projectId}
+          canCreate={canCreateProject}
+          onCreateProject={() => void createProject()}
+          onGenerateConcepts={() => void generateConcepts()}
+          concepts={concepts}
+          selectedConceptId={selectedConceptId}
+          onSelectConcept={setSelectedConceptId}
+          generationSource={generationSource}
+          conceptImages={conceptImages}
+          creatives={creatives}
+          onOpenConcept={(id) => void openFromConcept(id)}
+          onGenerateBackground={(id) => void generateBackground(id)}
+          onOpenCreative={(id) => navigate(`/create/ad/${id}`)}
+        />
+      )}
 
-                <div>
-                  <Label>Project name</Label>
-                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Brand Kit (optional)</Label>
-                  <select
-                    className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
-                    value={form.brandKitId}
-                    onChange={(e) => setForm({ ...form, brandKitId: e.target.value })}
-                  >
-                    <option value="">Neutral / no brand</option>
-                    {brands.map((b) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <Label>Product / service</Label>
-                  <Input value={form.productOrService} onChange={(e) => setForm({ ...form, productOrService: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Core message</Label>
-                  <Textarea value={form.coreMessage} onChange={(e) => setForm({ ...form, coreMessage: e.target.value })} rows={2} />
-                </div>
-                <div>
-                  <Label>Audience</Label>
-                  <Input value={form.targetAudience} onChange={(e) => setForm({ ...form, targetAudience: e.target.value })} />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label>Objective</Label>
-                    <select className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm" value={form.advertisingObjective} onChange={(e) => setForm({ ...form, advertisingObjective: e.target.value })}>
-                      {OBJECTIVES.map((o) => <option key={o} value={o}>{o}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <Label>Platform</Label>
-                    <select className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm" value={form.platform} onChange={(e) => setForm({ ...form, platform: e.target.value })}>
-                      {PLATFORMS.map((o) => <option key={o} value={o}>{o}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <Label>Format</Label>
-                  <select className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm" value={form.outputFormat} onChange={(e) => setForm({ ...form, outputFormat: e.target.value })}>
-                    {AD_FORMATS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <Label>CTA</Label>
-                  <Input value={form.cta} onChange={(e) => setForm({ ...form, cta: e.target.value })} />
-                </div>
-
-                <div className="flex flex-col gap-2 pt-2">
-                  <Button type="button" onClick={() => void createProject()} disabled={busy || !form.productOrService || !form.coreMessage}>
-                    <Plus size={16} className="mr-1" /> Create project
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => void generateConcepts()} disabled={busy || !projectId}>
-                    <Sparkles size={16} className="mr-1" /> Generate concepts
-                  </Button>
-                </div>
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-8 glass border-border">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-base">Creative concepts</CardTitle>
-            {generationSource && (
-              <Badge variant="outline">{generationSource}</Badge>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-3">
-              {concepts.map((c) => (
-                <div
-                  key={c.conceptId}
-                  className="text-left rounded-xl border border-border p-4 space-y-3"
-                >
-                  <button
-                    type="button"
-                    className="w-full text-left hover:opacity-90"
-                    onClick={() => void openFromConcept(c.conceptId)}
-                    disabled={busy}
-                  >
-                    <div className="font-semibold mb-1">{c.title}</div>
-                    <div className="text-sm text-muted-foreground mb-2">{c.creativeDirection}</div>
-                    <div className="text-base font-medium">{c.primaryHeadline}</div>
-                    <div className="text-sm mt-1 opacity-80">{c.supportingCopy}</div>
-                    <Badge className="mt-3" variant="secondary">{c.cta}</Badge>
-                  </button>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={busy}
-                      onClick={() => void openFromConcept(c.conceptId)}
-                    >
-                      Edit creative
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      disabled={busy}
-                      onClick={() => void generateBackground(c.conceptId)}
-                    >
-                      AI background
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              {!concepts.length && (
-                <p className="text-sm text-muted-foreground col-span-2">
-                  Create a project and generate concepts to open an editable creative.
-                </p>
-              )}
-            </div>
-
-            {!!creatives.length && (
-              <div>
-                <h3 className="text-sm font-medium mb-2">Saved creatives</h3>
-                <div className="grid md:grid-cols-2 gap-2">
-                  {creatives.map((cr) => (
-                    <button
-                      key={cr.id}
-                      type="button"
-                      className="text-left rounded-lg border border-border px-3 py-2 text-sm hover:border-primary/40"
-                      onClick={() => navigate(`/create/ad/${cr.id}`)}
-                    >
-                      {cr.name}
-                      <span className="block text-xs text-muted-foreground">
-                        v{cr.currentVersion ?? 1}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      <CreateBrandKitDialog
+        open={createBrandOpen}
+        onOpenChange={(open) => {
+          setCreateBrandOpen(open);
+          if (!open) setEditingBrand(null);
+        }}
+        initialKit={editingBrand}
+        onCreated={(kit) => void handleBrandCreated(kit)}
+      />
+      <BrandKitImportDialog
+        open={importBrandOpen}
+        onOpenChange={setImportBrandOpen}
+        existingKits={brands}
+        onImported={(incoming) => {
+          void (async () => {
+            await refreshBrands();
+            const first = incoming[0];
+            if (first) {
+              await handleBrandCreated(first);
+            }
+          })();
+        }}
+      />
     </div>
   );
 }

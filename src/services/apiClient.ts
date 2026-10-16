@@ -2788,6 +2788,94 @@ export const brandApi = {
     performApiRequest("/brands", { method: "GET" }),
   getKit: async (id: string): Promise<any> =>
     performApiRequest(`/brands/${id}`, { method: "GET" }),
+  createKit: async (body: {
+    name: string;
+    description?: string;
+    guidelines?: string;
+    voice?: Record<string, unknown>;
+  }): Promise<any> =>
+    performApiRequest("/brands", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  updateKit: async (id: string, body: Record<string, unknown>): Promise<any> =>
+    performApiRequest(`/brands/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  deleteKit: async (id: string): Promise<void> =>
+    performApiRequest(`/brands/${id}`, { method: "DELETE" }),
+  replaceColors: async (
+    id: string,
+    colors: Array<{ role: string; hex: string; name?: string; sortOrder?: number }>,
+  ): Promise<any> =>
+    performApiRequest(`/brands/${id}/colors`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ colors }),
+    }),
+  replaceTypography: async (
+    id: string,
+    typography: Array<{
+      role: string;
+      family: string;
+      weight?: string;
+      style?: string;
+      sortOrder?: number;
+    }>,
+  ): Promise<any> =>
+    performApiRequest(`/brands/${id}/typography`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ typography }),
+    }),
+  updateGuidelines: async (id: string, guidelines: string): Promise<any> =>
+    performApiRequest(`/brands/${id}/guidelines`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ guidelines }),
+    }),
+  requestAssetUploadUrl: async (
+    id: string,
+    body: {
+      role: string;
+      fileName: string;
+      mimeType: string;
+      fileSize: number;
+      label?: string;
+      description?: string;
+      usageGuidance?: string;
+    },
+  ): Promise<{ uploadUrl: string; assetId: string; storageKey: string; expiresIn: number }> =>
+    performApiRequest(`/brands/${id}/assets/upload-url`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  confirmAsset: async (id: string, assetId: string): Promise<any> =>
+    performApiRequest(`/brands/${id}/assets/${assetId}/confirm`, {
+      method: "POST",
+    }),
+  updateAsset: async (
+    id: string,
+    assetId: string,
+    body: {
+      label?: string | null;
+      description?: string | null;
+      usageGuidance?: string | null;
+    },
+  ): Promise<any> =>
+    performApiRequest(`/brands/${id}/assets/${assetId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  deleteAsset: async (id: string, assetId: string): Promise<any> =>
+    performApiRequest(`/brands/${id}/assets/${assetId}`, {
+      method: "DELETE",
+    }),
 };
 
 /** Static Ad Studio (Phase 3) */

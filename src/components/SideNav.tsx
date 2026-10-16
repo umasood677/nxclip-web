@@ -15,6 +15,7 @@ import {
   Video,
   Film,
   Megaphone,
+  Palette,
   LayoutDashboard,
   Swords,
   Cpu
@@ -46,6 +47,7 @@ const navItems = [
 const toolItems = [
   { icon: ImageIcon, label: "Image Studio", href: "/create/image", translationKey: "nav.image_studio" },
   { icon: Megaphone, label: "Ad Studio", href: "/create/ad", translationKey: "nav.ad_studio" },
+  { icon: Palette, label: "Brand Kits", href: "/brands", translationKey: "nav.brand_kits" },
   { icon: Video, label: "Clip Studio", href: "/create/clip", translationKey: "nav.clip_editor" },
   { icon: Film, label: "AI Story Engine", href: "/create/story-engine", translationKey: "nav.story_engine" },
 ];

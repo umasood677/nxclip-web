@@ -22,6 +22,7 @@ const resources = {
         "create_hub": "Create Hub",
         "image_studio": "Image Studio",
         "ad_studio": "Ad Studio",
+        "brand_kits": "Brand Kits",
         "clip_editor": "Clip Studio",
         "story_engine": "AI Story Engine",
         "content_library": "Content Library",
@@ -1890,6 +1891,10 @@ const resources = {
             "title": "Static Ad Studio",
             "description": "Turn briefs and Brand Kits into editable static ad creatives."
           },
+          "brand_kits": {
+            "title": "Brand Kits",
+            "description": "Manage brand name, logo, colors, fonts, and guidelines for Ad Studio."
+          },
           "clip_editor": {
             "title": "Clip Studio",
             "description": "Upload your gameplay, trim highlights, and add AI-powered polish."
@@ -2294,6 +2299,7 @@ const resources = {
         "create_hub": "مركز الإنشاء",
         "image_studio": "استوديو الصور",
         "ad_studio": "استوديو الإعلانات",
+        "brand_kits": "مجموعات العلامة التجارية",
         "clip_editor": "استوديو المقاطع",
         "story_engine": "محرك القصة بالذكاء الاصطناعي",
         "content_library": "مكتبة المحتوى",
@@ -3977,6 +3983,10 @@ const resources = {
           "ad_studio": {
             "title": "استوديو الإعلانات الثابتة",
             "description": "حوّل الملخصات ومجموعات العلامة التجارية إلى إعلانات ثابتة قابلة للتحرير."
+          },
+          "brand_kits": {
+            "title": "مجموعات العلامة التجارية",
+            "description": "إدارة الاسم والشعار والألوان والخطوط والإرشادات لاستوديو الإعلانات."
           },
           "clip_editor": {
             "title": "استوديو المقاطع",
