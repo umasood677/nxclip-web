@@ -298,7 +298,8 @@ export function AudioTimelineEditor({
   }, [view]);
 
   const ticks = useMemo(() => {
-    const count = comfortable ? 8 : 5;
+    // Fewer labels so they don't smash together on narrow docks.
+    const count = comfortable ? 4 : 3;
     return Array.from({ length: count + 1 }, (_, i) => (widthMs * i) / count);
   }, [widthMs, comfortable]);
 
@@ -344,16 +345,32 @@ export function AudioTimelineEditor({
         >
           TIME
         </div>
-        <div className="relative min-h-[22px] flex-1">
-          {ticks.map((ms, i) => (
-            <span
-              key={ms}
-              className="absolute top-0.5 -translate-x-1/2 font-mono text-[9px] tabular-nums text-white/40"
-              style={{ left: `${(i / (ticks.length - 1)) * 100}%` }}
-            >
-              {formatClock(ms)}
-            </span>
-          ))}
+        <div className="relative min-h-[22px] flex-1 overflow-hidden px-0.5">
+          {ticks.map((ms, i) => {
+            const isFirst = i === 0;
+            const isLast = i === ticks.length - 1;
+            const pct = (i / (ticks.length - 1)) * 100;
+            return (
+              <span
+                key={ms}
+                className={cn(
+                  "absolute top-0.5 font-mono text-[9px] tabular-nums text-white/40",
+                  isFirst && "left-0",
+                  isLast && "right-0",
+                  !isFirst && !isLast && "-translate-x-1/2",
+                )}
+                style={
+                  !isFirst && !isLast
+                    ? { left: `${pct}%` }
+                    : isLast
+                      ? { right: 0 }
+                      : { left: 0 }
+                }
+              >
+                {formatClock(ms)}
+              </span>
+            );
+          })}
           <div
             className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-between px-0"
             aria-hidden

@@ -248,6 +248,10 @@ export default function ClipEditor() {
   const [isClipMuted, setIsClipMuted] = useState(false);
   const [isMusicMuted, setIsMusicMuted] = useState(false);
   const [isMasterMuted, setIsMasterMuted] = useState(false);
+  const soundOriginalSyncRef = useRef<{
+    setFromLinear: (linear: number, muted: boolean) => void;
+  } | null>(null);
+  const syncingFromSrcRef = useRef(false);
   const [isPolishing, setIsPolishing] = useState(false);
   const [polishProgress, setPolishProgress] = useState(0);
   const [polishStep, setPolishStep] = useState(0);
@@ -2239,12 +2243,26 @@ export default function ClipEditor() {
           (status === "queued" || status === "processing") &&
           renderAgeMs(latest) >= 90_000;
         // Explicit Save & Render / retry after timeout must never attach to a hung job.
+        // Sound Design / Coach edits that land after a prior burn must not reuse that MP4
+        // in Final Preview — always ask the server (reuse is instant when hash matches).
         const mustForce = Boolean(opts?.force || staleFallback || staleInFlight);
+        const hasSoundDesignMix = (() => {
+          const sd = latest.clipEditSpec?.extras?.soundDesign;
+          if (!sd || typeof sd !== "object") return soundDesignMixActive;
+          const edl = (sd as { audioEdl?: unknown[] }).audioEdl;
+          return (
+            soundDesignMixActive ||
+            (Array.isArray(edl) && edl.length > 0) ||
+            Boolean((sd as { audioStoryPlan?: unknown }).audioStoryPlan)
+          );
+        })();
+        // Missing fingerprint after Sound Design plan/EDL → must burn again.
+        const soundDesignNeedsBurn =
+          hasSoundDesignMix && (!latestHasHash || latestQuality !== "polished");
 
-        if (!mustForce && isPolishedComplete(latest)) {
-          status = "completed";
-        } else if (
+        if (
           !mustForce &&
+          !soundDesignNeedsBurn &&
           (status === "queued" || status === "processing")
         ) {
           await pollUntilDone(120_000);
@@ -2253,8 +2271,21 @@ export default function ClipEditor() {
             await enqueueRender(true, previousJobId);
             if (status !== "completed") await pollUntilDone(360_000);
           }
+        } else if (
+          !mustForce &&
+          !soundDesignNeedsBurn &&
+          isPolishedComplete(latest)
+        ) {
+          // Server decides reuse vs new job via renderSpecHash (includes Sound Design).
+          await enqueueRender(false, previousJobId);
+          if (status !== "completed") {
+            await pollUntilDone(360_000);
+          }
         } else {
-          await enqueueRender(mustForce, previousJobId);
+          await enqueueRender(
+            mustForce || soundDesignNeedsBurn,
+            previousJobId,
+          );
           if (status !== "completed") {
             await pollUntilDone(360_000);
           }
@@ -2314,7 +2345,14 @@ export default function ClipEditor() {
 
       return status;
     },
-    [id, buildClipEditSpec, title, renderStatus, clearRenderPreview],
+    [
+      id,
+      buildClipEditSpec,
+      title,
+      renderStatus,
+      clearRenderPreview,
+      soundDesignMixActive,
+    ],
   );
 
   const handlePublishContent = async () => {
@@ -3474,11 +3512,22 @@ export default function ClipEditor() {
               <div className="mt-4">
                 <SoundDesignPanel
                   contentId={id}
-                  durationSec={DURATION}
+                  durationSec={Math.max(0.5, trimEnd - trimStart)}
                   creatorContext={prompt}
                   reviewHostEl={soundReviewHost}
                   initialSoundDesign={persistedSoundDesign}
                   onApplied={() => setSoundDesignMixActive(true)}
+                  onOriginalLevelChange={(linear, muted) => {
+                    syncingFromSrcRef.current = true;
+                    setClipVolume(linear);
+                    setIsClipMuted(muted || linear <= 0);
+                    queue Promise.resolve().then(() => {
+                      syncingFromSrcRef.current = false;
+                    });
+                  }}
+                  onRegisterOriginalSync={(api) => {
+                    soundOriginalSyncRef.current = api;
+                  }}
                 />
               </div>
             </aside>
@@ -4285,12 +4334,23 @@ export default function ClipEditor() {
               <div className="mt-2">
                 <SoundDesignPanel
                   contentId={id}
-                  durationSec={DURATION}
+                  durationSec={Math.max(0.5, trimEnd - trimStart)}
                   creatorContext={prompt}
                   storyEngine
                   reviewHostEl={soundReviewHost}
                   initialSoundDesign={persistedSoundDesign}
                   onApplied={() => setSoundDesignMixActive(true)}
+                  onOriginalLevelChange={(linear, muted) => {
+                    syncingFromSrcRef.current = true;
+                    setClipVolume(linear);
+                    setIsClipMuted(muted || linear <= 0);
+                    void Promise.resolve().then(() => {
+                      syncingFromSrcRef.current = false;
+                    });
+                  }}
+                  onRegisterOriginalSync={(api) => {
+                    soundOriginalSyncRef.current = api;
+                  }}
                 />
               </div>
             ) : null}
@@ -5179,11 +5239,10 @@ export default function ClipEditor() {
                           </p>
                           {(soundDesignOwnsOriginal || soundDesignOwnsAmbience) && (
                             <p className="mt-2 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1.5 text-[10px] leading-relaxed text-emerald-800 dark:text-emerald-100/90">
-                              AI Sound Design is active: use the{" "}
-                              <span className="font-semibold">SRC</span> and{" "}
-                              <span className="font-semibold">AMB</span> bars on the Sound timeline
-                              for original clip and ambience levels. Polish controls below stay for
-                              live preview / Coach BGM only and do not stack on Final Render.
+                              AI Sound Design is active: Original Clip syncs with the{" "}
+                              <span className="font-semibold">SRC</span> bar.{" "}
+                              <span className="font-semibold">AMB</span> is ambience on the Sound
+                              timeline — Polish BGM stays separate and does not stack on Final Render.
                             </p>
                           )}
                         </div>
@@ -5191,14 +5250,7 @@ export default function ClipEditor() {
 
                       <div className="grid grid-cols-1 gap-4">
                         {/* Clip Volume */}
-                        <div
-                          className={cn(
-                            "space-y-4 p-4 rounded-xl border",
-                            soundDesignOwnsOriginal
-                              ? "bg-muted/20 border-border/40 opacity-80"
-                              : "bg-muted/30 border-border/50",
-                          )}
-                        >
+                        <div className="space-y-4 p-4 rounded-xl border bg-muted/30 border-border/50">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
@@ -5210,7 +5262,7 @@ export default function ClipEditor() {
                                 </span>
                                 {soundDesignOwnsOriginal ? (
                                   <p className="text-[9px] font-medium text-emerald-600 dark:text-emerald-300/90">
-                                    Controlled by Sound timeline · SRC
+                                    Synced with Sound timeline · SRC
                                   </p>
                                 ) : null}
                               </div>
@@ -5220,9 +5272,17 @@ export default function ClipEditor() {
                               <Button 
                                 variant="ghost"
                                 size="icon-sm"
-                                onClick={() => setIsClipMuted(!isClipMuted)}
+                                onClick={() => {
+                                  const next = !isClipMuted;
+                                  setIsClipMuted(next);
+                                  if (soundDesignOwnsOriginal && !syncingFromSrcRef.current) {
+                                    soundOriginalSyncRef.current?.setFromLinear(
+                                      next ? 0 : clipVolume,
+                                      next,
+                                    );
+                                  }
+                                }}
                                 className="hover:bg-muted rounded-md"
-                                disabled={soundDesignOwnsOriginal}
                               >
                                 {isClipMuted || clipVolume === 0 ? <VolumeX size={14} className="text-destructive" /> : <Volume2 size={14} />}
                               </Button>
@@ -5237,14 +5297,15 @@ export default function ClipEditor() {
                               const val = Array.isArray(v) ? v[0] : v;
                               setClipVolume(val);
                               if (isClipMuted) setIsClipMuted(false);
+                              if (soundDesignOwnsOriginal && !syncingFromSrcRef.current) {
+                                soundOriginalSyncRef.current?.setFromLinear(val, val <= 0);
+                              }
                             }}
                             className="w-full"
-                            disabled={soundDesignOwnsOriginal}
                           />
                           {soundDesignOwnsOriginal ? (
                             <p className="text-[10px] text-muted-foreground leading-relaxed">
-                              Drag the SRC handle on the Sound timeline (below trim) to raise or lower
-                              original clip audio for Final Render.
+                              Changes here update the SRC bar on the Sound timeline (and Final Render).
                             </p>
                           ) : isAnimateClip ? (
                             <p className="text-[10px] text-muted-foreground leading-relaxed">

@@ -154,6 +154,7 @@ function planSummaryFromState(state: PersistedSoundDesign): string | null {
 
 type Props = {
   contentId: string | null;
+  /** Trim / keep length in seconds — drives plan + timeline ruler (not full source). */
   durationSec: number;
   creatorContext: string;
   disabled?: boolean;
@@ -163,7 +164,24 @@ type Props = {
   reviewHostEl?: HTMLElement | null;
   /** Hydrate from clipEditSpec.extras.soundDesign after refresh / Creator Hub. */
   initialSoundDesign?: PersistedSoundDesign | null;
+  /** SRC gain ↔ Polish Original live sync. */
+  onOriginalLevelChange?: (linear: number, muted: boolean) => void;
+  /** Parent registers a setter so Polish Original can drive SRC. */
+  onRegisterOriginalSync?: (api: {
+    setFromLinear: (linear: number, muted: boolean) => void;
+  }) => void;
 };
+
+function gainDbToLinear(db: number): number {
+  const clamped = Math.min(6, Math.max(-24, db));
+  return Math.min(1, Math.pow(10, clamped / 20));
+}
+
+function linearToGainDb(linear: number): number {
+  if (linear <= 0) return -24;
+  const db = 20 * Math.log10(Math.min(1, Math.max(0.01, linear)));
+  return Math.round(Math.min(6, Math.max(-24, db)) * 2) / 2;
+}
 
 /**
  * Flagship Sound Engine UI.
@@ -179,6 +197,8 @@ export function SoundDesignPanel({
   onApplied,
   reviewHostEl,
   initialSoundDesign,
+  onOriginalLevelChange,
+  onRegisterOriginalSync,
 }: Props) {
   const [mode, setMode] = useState<SoundDesignMode>("auto");
   const [components, setComponents] = useState<SoundDesignComponents>(DEFAULT_COMPONENTS);
@@ -228,14 +248,21 @@ export function SoundDesignPanel({
       });
     }
     const edl = toTimelineItems(Array.isArray(sd.audioEdl) ? sd.audioEdl : []);
-    if (edl.length) setTimeline(edl);
+    if (edl.length) {
+      setTimeline(edl);
+      const orig = edl.find((it) => it.type === "original");
+      if (orig && onOriginalLevelChange) {
+        const muted = orig.enabled === false;
+        onOriginalLevelChange(muted ? 0 : gainDbToLinear(orig.gainDb), muted);
+      }
+    }
     const summary = planSummaryFromState(sd);
     if (summary) setPlanSummary(summary);
     // Analyze persisted recommendation or any generated plan/EDL → skip step 1.
     if (rec?.summary || sd.audioStoryPlan || edl.length) {
       setAnalyzed(true);
     }
-  }, [contentId, initialSoundDesign]);
+  }, [contentId, initialSoundDesign, onOriginalLevelChange]);
 
   const hasPlan = Boolean(planSummary || timeline.length);
   const step = !analyzed ? 1 : !hasPlan ? 2 : 3;
@@ -324,8 +351,16 @@ export function SoundDesignPanel({
     }
   };
 
+  const notifyOriginalLevel = (items: TimelineEdlItem[]) => {
+    const orig = items.find((it) => it.type === "original");
+    if (!orig || !onOriginalLevelChange) return;
+    const muted = orig.enabled === false;
+    onOriginalLevelChange(muted ? 0 : gainDbToLinear(orig.gainDb), muted);
+  };
+
   const applyEdlLocal = async (items: TimelineEdlItem[]) => {
     setTimeline(items);
+    notifyOriginalLevel(items);
     if (!contentId) return;
     setBusy("edl");
     try {
@@ -350,6 +385,47 @@ export function SoundDesignPanel({
       setBusy(null);
     }
   };
+
+  // Polish Original → SRC bar
+  useEffect(() => {
+    if (!onRegisterOriginalSync) return;
+    onRegisterOriginalSync({
+      setFromLinear: (linear, muted) => {
+        setTimeline((prev) => {
+          const idx = prev.findIndex((it) => it.type === "original");
+          if (idx < 0) return prev;
+          const next = [...prev];
+          const cur = next[idx]!;
+          next[idx] = {
+            ...cur,
+            gainDb: muted || linear <= 0 ? cur.gainDb : linearToGainDb(linear),
+            enabled: !(muted || linear <= 0),
+          };
+          void (async () => {
+            if (!contentId) return;
+            try {
+              await contentApi.patchSoundDesignEdl(contentId, {
+                audioEdl: next.map((it) => ({
+                  id: it.id,
+                  type: it.type,
+                  startMs: it.startMs,
+                  endMs: it.endMs,
+                  gainDb: it.gainDb,
+                  enabled: it.enabled,
+                  assetId: it.assetId,
+                  metadata: it.metadata,
+                })),
+                durationMs: Math.max(1000, Math.round(durationSec * 1000)),
+              });
+            } catch {
+              /* polish slider stays local; next timeline edit retries */
+            }
+          })();
+          return next;
+        });
+      },
+    });
+  }, [onRegisterOriginalSync, contentId, durationSec]);
 
   const planAndApply = async () => {
     if (!contentId) return;
@@ -406,7 +482,9 @@ export function SoundDesignPanel({
         setTtsDeferred(false);
         setTtsInfo(null);
       }
-      setTimeline(toTimelineItems(edl));
+      const items = toTimelineItems(edl);
+      setTimeline(items);
+      notifyOriginalLevel(items);
       setLastPreset(null);
       setPlanSummary(`${voice} commentary · ${foley} Foley · ${edl.length} EDL decisions`);
       toast.success("Sound plan applied — review timeline, then Render");
@@ -712,7 +790,7 @@ export function SoundDesignPanel({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-300/90">
-                      Sound timeline
+                      Review
                     </p>
                     {planSummary ? (
                       <p className="truncate text-[10px] text-white/45">{planSummary}</p>
@@ -742,7 +820,7 @@ export function SoundDesignPanel({
                 </div>
                 {timeline.length > 0 ? (
                   <AudioTimelineEditor
-                    durationMs={Math.max(1000, Math.round(durationSec * 1000))}
+                    durationMs={Math.max(1000, Math.round(Math.max(0.5, durationSec) * 1000))}
                     items={timeline}
                     disabled={disabled || Boolean(busy)}
                     onChange={(items) => void applyEdlLocal(items)}
