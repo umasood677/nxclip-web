@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { GripVertical, Volume2, VolumeX } from "lucide-react";
+import { GripVertical, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 export type TimelineEdlItem = {
@@ -22,6 +22,10 @@ type Props = {
   onChange: (items: TimelineEdlItem[]) => void;
   /** Wider dock under trim timeline. */
   comfortable?: boolean;
+  /** Clip currently playing via the note preview control. */
+  previewingId?: string | null;
+  /** Play / stop commentary or Foley for a single timeline note. */
+  onPreviewClip?: (item: TimelineEdlItem) => void;
 };
 
 const LAYER_ORDER: TimelineEdlItem["type"][] = [
@@ -260,6 +264,8 @@ export function AudioTimelineEditor({
   disabled,
   onChange,
   comfortable,
+  previewingId,
+  onPreviewClip,
 }: Props) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [draft, setDraft] = useState<TimelineEdlItem[] | null>(null);
@@ -540,47 +546,101 @@ export function AudioTimelineEditor({
                     const widthPct = Math.min(100 - left, (spanMs / widthMs) * 100);
                     const label = clipLabel(item);
                     const isFoley = item.type === "foley";
-                    const minW = isFoley ? 5 : item.type === "voice" ? 10 : 8;
+                    const canPreview =
+                      Boolean(onPreviewClip) &&
+                      (item.type === "voice" || item.type === "foley");
+                    const isPreviewing = previewingId === item.id;
+                    const minW = isFoley
+                      ? canPreview
+                        ? 8
+                        : 5
+                      : item.type === "voice"
+                        ? 12
+                        : 8;
                     const isSelected = selectedId === item.id;
                     return (
-                      <button
+                      <div
                         key={item.id}
-                        type="button"
-                        disabled={disabled}
-                        title={`${label} · ${formatClock(item.startMs)}${
-                          item.endMs != null ? `–${formatClock(item.endMs)}` : ""
-                        } · drag to move · double-click mute`}
-                        onPointerDown={(e) => {
-                          e.currentTarget.setPointerCapture(e.pointerId);
-                          setDragId(item.id);
-                          setSelectedId(item.id);
-                          setDraft(view);
-                        }}
-                        onDoubleClick={(e) => {
-                          e.stopPropagation();
-                          if (disabled) return;
-                          commit(
-                            view.map((it) =>
-                              it.id === item.id ? { ...it, enabled: !it.enabled } : it,
-                            ),
-                          );
-                        }}
                         className={cn(
-                          "absolute top-1.5 bottom-1.5 overflow-hidden rounded-md border text-left shadow-sm transition-[box-shadow,transform,opacity]",
-                          "cursor-grab active:cursor-grabbing",
+                          "absolute top-1.5 bottom-1.5 flex overflow-hidden rounded-md border text-left shadow-sm transition-[box-shadow,transform,opacity]",
                           item.enabled ? meta.clip : meta.muted,
                           isSelected && "z-10 ring-2 ring-white/80",
                           dragId === item.id && "z-20 scale-[1.02] shadow-lg",
                           !item.enabled && "opacity-50",
-                          isFoley && "px-1",
-                          !isFoley && "px-2",
                         )}
                         style={{
                           left: `${left}%`,
                           width: `${Math.max(minW, widthPct)}%`,
                         }}
                       >
-                        <span className="flex h-full items-center gap-1">
+                        {canPreview ? (
+                          <button
+                            type="button"
+                            aria-label={
+                              isPreviewing
+                                ? "Stop preview"
+                                : item.type === "voice"
+                                  ? "Preview commentary"
+                                  : "Preview Foley"
+                            }
+                            title={
+                              isPreviewing
+                                ? "Stop preview"
+                                : item.type === "voice"
+                                  ? "Preview this commentary before render"
+                                  : "Preview this Foley before render"
+                            }
+                            className={cn(
+                              "flex h-full w-7 shrink-0 items-center justify-center border-r border-black/20",
+                              isPreviewing
+                                ? "bg-black/45 text-white"
+                                : "bg-black/25 text-white hover:bg-black/40",
+                            )}
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onPreviewClip?.(item);
+                            }}
+                          >
+                            {isPreviewing ? (
+                              <Pause className="h-3.5 w-3.5" />
+                            ) : (
+                              <Play className="h-3.5 w-3.5 fill-current" />
+                            )}
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          disabled={disabled}
+                          title={`${label} · ${formatClock(item.startMs)}${
+                            item.endMs != null ? `–${formatClock(item.endMs)}` : ""
+                          } · drag to move · double-click mute`}
+                          onPointerDown={(e) => {
+                            if (disabled) return;
+                            e.currentTarget.setPointerCapture(e.pointerId);
+                            setDragId(item.id);
+                            setSelectedId(item.id);
+                            setDraft(view);
+                          }}
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            if (disabled) return;
+                            commit(
+                              view.map((it) =>
+                                it.id === item.id
+                                  ? { ...it, enabled: !it.enabled }
+                                  : it,
+                              ),
+                            );
+                          }}
+                          className={cn(
+                            "flex min-w-0 flex-1 items-center gap-1 text-left",
+                            "cursor-grab active:cursor-grabbing disabled:cursor-not-allowed",
+                            isFoley ? "px-1" : "px-1.5",
+                          )}
+                        >
                           {!isFoley ? (
                             <GripVertical className="h-3 w-3 shrink-0 opacity-40" />
                           ) : null}
@@ -594,8 +654,8 @@ export function AudioTimelineEditor({
                           >
                             {label}
                           </span>
-                        </span>
-                      </button>
+                        </button>
+                      </div>
                     );
                   })
                 )}
@@ -615,12 +675,29 @@ export function AudioTimelineEditor({
           <span className={selected.enabled ? "text-emerald-300/80" : "text-amber-300/80"}>
             {selected.enabled ? "Audible" : "Muted"}
           </span>
-          <span className="text-white/30">Drag to retime · Double-click to mute</span>
+          {onPreviewClip &&
+          (selected.type === "voice" || selected.type === "foley") ? (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 rounded-md bg-white/10 px-1.5 py-0.5 font-semibold text-white/80 hover:bg-white/15"
+              onClick={() => onPreviewClip(selected)}
+            >
+              {previewingId === selected.id ? (
+                <Pause className="h-3 w-3" />
+              ) : (
+                <Play className="h-3 w-3" />
+              )}
+              {previewingId === selected.id ? "Stop" : "Preview"}
+            </button>
+          ) : null}
+          <span className="text-white/30">
+            Play icon previews this note · Drag to retime · Double-click to mute
+          </span>
         </div>
       ) : (
         <p className="border-t border-white/8 px-3 py-1.5 text-[9px] text-white/30">
-          Commentary &amp; Foley: drag to retime · Original &amp; Ambience: use the level slider ·
-          Save &amp; Render for Final Preview
+          Commentary &amp; Foley: tap ▶ on a note to preview · drag to retime · Original &amp;
+          Ambience: level slider · Save &amp; Render for Final Preview
         </p>
       )}
     </div>

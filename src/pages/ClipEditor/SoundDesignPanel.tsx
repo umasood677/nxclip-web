@@ -7,6 +7,7 @@ import { Button } from "../../components/ui/button";
 import { cn } from "../../lib/utils";
 import { ReimaginePresets, suggestReimaginePresets } from "./ReimaginePresets";
 import { AudioTimelineEditor, type TimelineEdlItem } from "./AudioTimelineEditor";
+import { isHttpAudioUrl, resolveSfxPreviewUrl } from "./sfxPreviewCatalog";
 
 export type SoundDesignMode =
   | "auto"
@@ -217,7 +218,8 @@ type Props = {
   creatorContext: string;
   disabled?: boolean;
   storyEngine?: boolean;
-  onApplied?: () => void;
+  /** Fired after plan/TTS/reimagine so parent can refresh Final Render layer checklist. */
+  onApplied?: (snapshot?: PersistedSoundDesign) => void;
   /** When set, step-3 Review + timeline render here (after trim timeline) for more width. */
   reviewHostEl?: HTMLElement | null;
   /** Hydrate from clipEditSpec.extras.soundDesign after refresh / Creator Hub. */
@@ -277,7 +279,9 @@ export function SoundDesignPanel({
   const [timeline, setTimeline] = useState<TimelineEdlItem[]>([]);
   const [lastPreset, setLastPreset] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [previewingId, setPreviewingId] = useState<string | null>(null);
   const hydratedRef = useRef(false);
+  const clipPreviewAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     hydratedRef.current = false;
@@ -356,6 +360,99 @@ export function SoundDesignPanel({
   const hasPlan = Boolean(planSummary || timeline.length);
   const step = !analyzed ? 1 : !hasPlan ? 2 : 3;
 
+  const snapshotSoundDesign = (edlOverride?: TimelineEdlItem[]): PersistedSoundDesign => ({
+    mode,
+    components,
+    recommendation: recommendation || undefined,
+    audioEdl: (edlOverride || timeline).map((it) => ({
+      id: it.id,
+      type: it.type,
+      startMs: it.startMs,
+      endMs: it.endMs,
+      gainDb: it.gainDb,
+      enabled: it.enabled,
+      assetId: it.assetId,
+      sourceUrl: it.sourceUrl,
+      metadata: it.metadata,
+    })),
+  });
+
+  const notifyApplied = (edlOverride?: TimelineEdlItem[]) => {
+    onApplied?.(snapshotSoundDesign(edlOverride));
+  };
+
+  const stopClipPreview = () => {
+    const audio = clipPreviewAudioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.removeAttribute("src");
+      try {
+        audio.load();
+      } catch {
+        /* ignore */
+      }
+    }
+    setPreviewingId(null);
+  };
+
+  useEffect(() => () => stopClipPreview(), []);
+
+  const previewTimelineClip = (item: TimelineEdlItem) => {
+    if (item.type !== "voice" && item.type !== "foley") return;
+    if (previewingId === item.id) {
+      stopClipPreview();
+      return;
+    }
+    stopClipPreview();
+
+    const label =
+      item.type === "voice"
+        ? item.metadata?.text?.trim() || "Commentary"
+        : String(item.metadata?.type || item.assetId || "Foley").replace(/[-_]/g, " ");
+
+    let url: string | null = null;
+    if (item.type === "voice") {
+      if (isHttpAudioUrl(item.sourceUrl)) {
+        url = item.sourceUrl!;
+      } else {
+        toast.message(label, {
+          description:
+            "No voice audio yet — tap Retry TTS so this commentary can play and burn into Final Render.",
+        });
+        return;
+      }
+    } else {
+      url = resolveSfxPreviewUrl(item.assetId);
+      if (!url && isHttpAudioUrl(item.sourceUrl)) url = item.sourceUrl!;
+      if (!url) {
+        toast.message(label, {
+          description: "This Foley id has no browser preview — it still burns in Final Render.",
+        });
+        return;
+      }
+    }
+
+    const audio = clipPreviewAudioRef.current || new Audio();
+    clipPreviewAudioRef.current = audio;
+    audio.onended = () => setPreviewingId(null);
+    audio.onerror = () => {
+      setPreviewingId(null);
+      toast.error(
+        item.type === "voice"
+          ? "Could not play commentary — Retry TTS or re-open the clip"
+          : "Could not play Foley preview",
+      );
+    };
+    audio.src = url;
+    void audio
+      .play()
+      .then(() => setPreviewingId(item.id))
+      .catch(() => {
+        setPreviewingId(null);
+        toast.error("Preview blocked — tap again after interacting with the page");
+      });
+  };
+
   const retrySynthesize = async () => {
     if (!contentId) return;
     setBusy("tts");
@@ -376,7 +473,7 @@ export function SoundDesignPanel({
         }`,
       );
       toast.success("Commentary synthesized — voice layer ready");
-      onApplied?.();
+      notifyApplied(items);
     } catch (err) {
       const message = err instanceof Error ? err.message : "TTS failed";
       setTtsDeferred(true);
@@ -458,6 +555,7 @@ export function SoundDesignPanel({
       summaryFromEdl(items, keepDurationMs) || `${items.length} on timeline`,
     );
     notifyOriginalLevel(items);
+    notifyApplied(items);
     if (!contentId) return;
     setBusy("edl");
     try {
@@ -606,7 +704,7 @@ export function SoundDesignPanel({
       } else {
         toast.success("Sound plan applied — review timeline, then Render");
       }
-      onApplied?.();
+      notifyApplied(items);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sound Design plan failed");
     } finally {
@@ -658,7 +756,7 @@ export function SoundDesignPanel({
         }));
       }
       toast.success(`Reimagined as ${res.preset?.name || presetId}`);
-      onApplied?.();
+      notifyApplied(items);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Reimagine failed");
     } finally {
@@ -924,6 +1022,9 @@ export function SoundDesignPanel({
                         {planSummary}
                       </p>
                     ) : null}
+                    <p className="mt-0.5 text-[10px] text-white/40">
+                      Tap ▶ on each Commentary / Foley note to hear what will burn into Final Render.
+                    </p>
                     {ttsDeferred ? (
                       <p className="mt-0.5 text-[10px] text-amber-200/70">
                         Some commentary lines may be missing until TTS succeeds.
@@ -964,6 +1065,8 @@ export function SoundDesignPanel({
                     durationMs={keepDurationMs}
                     items={visibleTimeline}
                     disabled={disabled || Boolean(busy)}
+                    previewingId={previewingId}
+                    onPreviewClip={previewTimelineClip}
                     onChange={(visibleNext) => {
                       // Preserve off-window EDL rows so a drag does not delete them.
                       const hidden = timeline.filter(

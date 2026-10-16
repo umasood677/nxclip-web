@@ -2,9 +2,9 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Scissors, 
   Sparkles, 
-  CheckCircle2, 
-  Volume2, 
-  Maximize, 
+  CheckCircle2,
+  Volume2,
+  Maximize,
   BrainCircuit,
   ChevronRight,
   Clock,
@@ -47,6 +47,13 @@ import { composeSocialCaption } from "./composeSocialCaption";
 import { ComposeTimelinePanel } from "./ComposeTimelinePanel";
 import { ClipCoachPanel, type CoachPreviewPayload } from './ClipCoachPanel';
 import { SoundDesignPanel, type PersistedSoundDesign } from './SoundDesignPanel';
+import {
+  RenderLayerProgressBanner,
+  buildRenderLayers,
+  estimateRenderLayerIndex,
+  type RenderLayer,
+  type RenderLayerPhase,
+} from "./RenderLayerProgress";
 import { TransitionPreviewOverlay } from "./TransitionPreviewOverlay";
 import { ClipPublishPreview } from "./ClipPublishPreview";
 import {
@@ -187,10 +194,18 @@ export default function ClipEditor() {
   isRenderingRef.current = isRendering;
   /** Prevents parallel Save & Render / resume pollers stacking GETs. */
   const renderPollLockRef = useRef(false);
+  /** Collapsible Final Preview layer checklist (optimistic while worker is coarse). */
+  const [renderLayers, setRenderLayers] = useState<RenderLayer[]>([]);
+  const [renderLayerIndex, setRenderLayerIndex] = useState(0);
+  const [renderLayerPhase, setRenderLayerPhase] = useState<RenderLayerPhase>("idle");
+  const [renderLayersExpanded, setRenderLayersExpanded] = useState(true);
+  const renderProgressStartedAtRef = useRef(0);
   const [contentStatus, setContentStatus] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const step = searchParams.get("step") || "trim";
   const isAlreadyPublished = String(contentStatus || "").toLowerCase() === "published";
+  /** Block burn-affecting edits while Final Preview is encoding. */
+  const editsLocked = isRendering;
   const publishBlockedReason = isAlreadyPublished
     ? "This clip is already published. Publish is locked — use Download to export a new polished MP4."
     : null;
@@ -2132,6 +2147,78 @@ export default function ClipEditor() {
     captionTextColor,
   ]);
 
+  const beginRenderLayerProgress = useCallback(() => {
+    const layers = buildRenderLayers({
+      soundDesign: persistedSoundDesign,
+      soundDesignMixActive,
+      hasBgmTrack: Boolean(selectedTrackId),
+      hasCaptions: Boolean(
+        topText.trim() ||
+          bottomText.trim() ||
+          hooks.some((h) => Boolean(h?.text?.trim())),
+      ),
+      hasEffects: Boolean(
+        coachViralApplied ||
+          silenceEnabled ||
+          appliedTransitions.length ||
+          isNoiseReduced ||
+          colorCorrection > 0,
+      ),
+    });
+    renderProgressStartedAtRef.current = Date.now();
+    setRenderLayers(layers);
+    setRenderLayerIndex(0);
+    setRenderLayerPhase("running");
+    setRenderLayersExpanded(true);
+  }, [
+    persistedSoundDesign,
+    soundDesignMixActive,
+    selectedTrackId,
+    topText,
+    bottomText,
+    hooks,
+    coachViralApplied,
+    silenceEnabled,
+    appliedTransitions.length,
+    isNoiseReduced,
+    colorCorrection,
+  ]);
+
+  const finishRenderLayerProgress = useCallback((ok: boolean) => {
+    setRenderLayerPhase(ok ? "completed" : "failed");
+    if (ok) {
+      setRenderLayerIndex((idx) => Math.max(idx, 99));
+    }
+  }, []);
+
+  // Advance the layer checklist while burn-in is running (worker has no per-layer events).
+  useEffect(() => {
+    if (renderLayerPhase !== "running" || !renderLayers.length) return;
+    const tick = () => {
+      setRenderLayerIndex(
+        estimateRenderLayerIndex({
+          layerCount: renderLayers.length,
+          startedAtMs: renderProgressStartedAtRef.current,
+          renderStatus: renderStatusRef.current,
+        }),
+      );
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [renderLayerPhase, renderLayers.length]);
+
+  // Auto-collapse a few seconds after success; clear idle after dismiss window.
+  useEffect(() => {
+    if (renderLayerPhase !== "completed") return;
+    const collapse = window.setTimeout(() => setRenderLayersExpanded(false), 2500);
+    const clear = window.setTimeout(() => setRenderLayerPhase("idle"), 8000);
+    return () => {
+      window.clearTimeout(collapse);
+      window.clearTimeout(clear);
+    };
+  }, [renderLayerPhase]);
+
   /** Persist clipEditSpec and wait for media-worker polish (BGM, captions, hooks, trim).
    * If a job is already queued/processing, polls it instead of starting another (avoids 400). */
   const ensurePolishedRender = useCallback(
@@ -2177,8 +2264,11 @@ export default function ClipEditor() {
       // Match media-worker inline FFmpeg budget (up to ~6 min) + callback latency.
       const pollUntilDone = async (maxMs = 360_000) => {
         toast.loading(
-          opts?.loadingMessage ?? "Rendering your edits into the MP4…",
-          { id: toastId },
+          opts?.loadingMessage ?? "Burning layers into the MP4…",
+          {
+            id: toastId,
+            description: "Open the top status card for layer-by-layer progress.",
+          },
         );
         const started = Date.now();
         while (Date.now() - started < maxMs) {
@@ -2581,6 +2671,7 @@ export default function ClipEditor() {
       return;
     }
     setIsRendering(true);
+    beginRenderLayerProgress();
     triggerHaptic("medium");
     try {
       // Always force on this button: after a client timeout the server may still
@@ -2591,6 +2682,7 @@ export default function ClipEditor() {
         force: true,
       });
       setRenderStatus("completed");
+      finishRenderLayerProgress(true);
       toast.loading("Loading final preview…", { id: "save-render" });
       await loadRenderPreview();
       toast.success("Final render ready — play it below, then Publish or Download", {
@@ -2601,6 +2693,7 @@ export default function ClipEditor() {
       console.error(err);
       clearRenderPreview();
       setRenderStatus("failed");
+      finishRenderLayerProgress(false);
       toast.error("Save & Render failed", {
         description: formatClipApiError(err, "Could not burn in this clip."),
         id: "save-render",
@@ -2781,6 +2874,7 @@ export default function ClipEditor() {
 
         if (isRenderingRef.current) return;
         setIsRendering(true);
+        beginRenderLayerProgress();
         toast.loading("Finishing render in progress…", { id: "save-render" });
 
         const started = Date.now();
@@ -2800,15 +2894,18 @@ export default function ClipEditor() {
         if (cancelled) return;
         if (status === "completed") {
           setIsDirty(false);
+          finishRenderLayerProgress(true);
           await loadRenderPreview();
           toast.success("Final render ready — play it below", { id: "save-render" });
         } else if (status === "failed") {
+          finishRenderLayerProgress(false);
           toast.error("Render failed — tap Save & Render to retry", {
             id: "save-render",
           });
         } else {
           // Still in flight after 90s — don't auto-force (worker may be slow or dead).
           setRenderStatus("failed");
+          finishRenderLayerProgress(false);
           toast.message("Render is taking longer than expected", {
             id: "save-render",
             description: "Tap Save & Render to restart the burn-in.",
@@ -2816,6 +2913,7 @@ export default function ClipEditor() {
         }
       } catch {
         if (!cancelled) {
+          finishRenderLayerProgress(false);
           toast.message("Couldn't check render status", {
             id: "save-render",
             description: "Tap Save & Render if the final preview isn't ready.",
@@ -3222,7 +3320,7 @@ export default function ClipEditor() {
                 icon: BrainCircuit,
                 active: step === "trim",
                 done: coachDone,
-                clickable: Boolean(id),
+                clickable: Boolean(id) && !editsLocked,
               },
               {
                 id: "polish",
@@ -3233,7 +3331,7 @@ export default function ClipEditor() {
                 icon: Sparkles,
                 active: step === "polish",
                 done: polishDone,
-                clickable: Boolean(id),
+                clickable: Boolean(id) && !editsLocked,
               },
             ];
             return studioSteps.map((s, i) => {
@@ -3247,7 +3345,7 @@ export default function ClipEditor() {
                   aria-current={s.active ? "step" : undefined}
                   aria-label={`${s.label}${s.done ? " (done)" : s.active ? " (current)" : ""}`}
                   onClick={() => {
-                    if (!s.clickable) return;
+                    if (!s.clickable || editsLocked) return;
                     mergeSearchParams({ step: s.id });
                   }}
                   className={cn(
@@ -3302,11 +3400,19 @@ export default function ClipEditor() {
           )}
         >
           {!composeEnabled && id ? (
-            <aside className="order-2 lg:order-1 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-0.5">
+            <aside
+              className={cn(
+                "order-2 lg:order-1 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-0.5",
+                editsLocked && "pointer-events-none select-none opacity-55",
+              )}
+            >
               <ClipCoachPanel
                 id={id}
                 context={prompt}
-                onContext={(v) => setPrompt(v.slice(0, 500))}
+                onContext={(v) => {
+                  if (editsLocked) return;
+                  setPrompt(v.slice(0, 500));
+                }}
                 duration={DURATION}
                 layout="sidebar"
                 captionFontId={captionFontId}
@@ -3537,9 +3643,13 @@ export default function ClipEditor() {
                   contentId={id}
                   durationSec={Math.max(0.5, trimEnd - trimStart)}
                   creatorContext={prompt}
+                  disabled={editsLocked}
                   reviewHostEl={soundReviewHost}
                   initialSoundDesign={persistedSoundDesign}
-                  onApplied={() => setSoundDesignMixActive(true)}
+                  onApplied={(snapshot) => {
+                    setSoundDesignMixActive(true);
+                    if (snapshot) setPersistedSoundDesign(snapshot);
+                  }}
                   onOriginalLevelChange={(linear, muted) => {
                     syncingFromSrcRef.current = true;
                     setClipVolume(linear);
@@ -3654,7 +3764,9 @@ export default function ClipEditor() {
               />
 
               {/* AI Coach / caption live preview — drag to reposition (same as Polish) */}
-              {(topText || hooks[0]?.text) && coachOverlayOnCut(currentTime, coachTextCuts) ? (
+              {!editsLocked &&
+              (topText || hooks[0]?.text) &&
+              coachOverlayOnCut(currentTime, coachTextCuts) ? (
                 <DraggableCaptionOverlay
                   text={topText || hooks[0]?.text || ""}
                   xPct={topOverlay.x}
@@ -3666,7 +3778,9 @@ export default function ClipEditor() {
                   color={captionTextColor}
                 />
               ) : null}
-              {bottomText && coachOverlayOnCut(currentTime, coachTextCuts) ? (
+              {!editsLocked &&
+              bottomText &&
+              coachOverlayOnCut(currentTime, coachTextCuts) ? (
                 <DraggableCaptionOverlay
                   text={bottomText}
                   xPct={bottomOverlay.x}
@@ -4312,7 +4426,11 @@ export default function ClipEditor() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => mergeSearchParams({ step: "trim" })}
+                disabled={editsLocked}
+                onClick={() => {
+                  if (editsLocked) return;
+                  mergeSearchParams({ step: "trim" });
+                }}
                 className="flex items-center gap-2 -ml-2 text-muted-foreground hover:text-foreground transition-all group active:scale-95"
               >
                 <div className="w-8 h-8 rounded-full border border-border flex items-center justify-center group-hover:border-primary/50 transition-colors">
@@ -4340,6 +4458,15 @@ export default function ClipEditor() {
               </div>
             ) : null}
 
+            <RenderLayerProgressBanner
+              layers={renderLayers}
+              currentIndex={renderLayerIndex}
+              phase={renderLayerPhase}
+              expanded={renderLayersExpanded}
+              onToggle={() => setRenderLayersExpanded((v) => !v)}
+              className="mb-2"
+            />
+
             {composeEnabled && composeSources.length >= 2 && (
               <ComposeTimelinePanel
                 contentId={id!}
@@ -4360,10 +4487,15 @@ export default function ClipEditor() {
                   durationSec={Math.max(0.5, trimEnd - trimStart)}
                   creatorContext={prompt}
                   storyEngine
+                  disabled={editsLocked}
                   reviewHostEl={soundReviewHost}
                   initialSoundDesign={persistedSoundDesign}
-                  onApplied={() => setSoundDesignMixActive(true)}
+                  onApplied={(snapshot) => {
+                    setSoundDesignMixActive(true);
+                    if (snapshot) setPersistedSoundDesign(snapshot);
+                  }}
                   onOriginalLevelChange={(linear, muted) => {
+                    if (editsLocked) return;
                     syncingFromSrcRef.current = true;
                     setClipVolume(linear);
                     setIsClipMuted(Boolean(muted) || linear < 0.0001);
@@ -4545,7 +4677,10 @@ export default function ClipEditor() {
                 </div>
                 
                 {/* Caption overlays only for live preview — final render already has them burned in */}
-                {!showingFinalRender && (topText || hooks[0]?.text) && coachOverlayOnCut(currentTime, coachTextCuts) ? (
+                {!showingFinalRender &&
+                !editsLocked &&
+                (topText || hooks[0]?.text) &&
+                coachOverlayOnCut(currentTime, coachTextCuts) ? (
                   <DraggableCaptionOverlay
                     text={topText || hooks[0]?.text || ""}
                     xPct={topOverlay.x}
@@ -4557,7 +4692,10 @@ export default function ClipEditor() {
                     color={captionTextColor}
                   />
                 ) : null}
-                {!showingFinalRender && bottomText && coachOverlayOnCut(currentTime, coachTextCuts) ? (
+                {!showingFinalRender &&
+                !editsLocked &&
+                bottomText &&
+                coachOverlayOnCut(currentTime, coachTextCuts) ? (
                   <DraggableCaptionOverlay
                     text={bottomText}
                     xPct={bottomOverlay.x}
@@ -4594,8 +4732,21 @@ export default function ClipEditor() {
             </div>
 
             {/* Controls Column */}
-            <div className="space-y-6">
-              <div className="ui-card p-0 overflow-hidden lg:border-border">
+            <div className={cn("relative space-y-6", editsLocked && "pointer-events-none select-none")}>
+              {editsLocked ? (
+                <div className="absolute inset-0 z-20 flex items-start justify-center rounded-xl bg-background/55 px-4 pt-6 backdrop-blur-[1px]">
+                  <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-center text-[11px] font-semibold text-amber-900 shadow-sm dark:text-amber-100">
+                    Rendering in progress — edits locked until Final Preview finishes.
+                  </div>
+                </div>
+              ) : null}
+              <div
+                className={cn(
+                  "ui-card p-0 overflow-hidden lg:border-border",
+                  editsLocked && "opacity-55",
+                )}
+                aria-disabled={editsLocked || undefined}
+              >
                 <Tabs value={activePolishTab} onValueChange={setActivePolishTab} className="w-full">
                   <TabsList className="w-full grid grid-cols-4 bg-muted border-none rounded-none p-1 shrink-0 h-14">
                     <TabsTrigger value="details" className="text-[10px] md:text-[11px] font-bold py-0 h-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
@@ -5783,13 +5934,15 @@ export default function ClipEditor() {
                       : "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-200",
                   )}
                 >
-                  {isRendering
-                    ? "Rendering your edits into the MP4…"
-                    : showingFinalRender
-                      ? "Final render in preview — play it, then Publish or Download."
-                      : renderReady
-                        ? "Render ready — loading final preview…"
-                        : "Edits pending — tap Save & Render before Publish or Download."}
+                  {isRendering && renderLayerPhase === "running"
+                    ? `Rendering ${renderLayers[Math.min(renderLayerIndex, Math.max(0, renderLayers.length - 1))]?.label || "clip"}…`
+                    : isRendering
+                      ? "Rendering your edits into the MP4…"
+                      : showingFinalRender
+                        ? "Final render in preview — play it, then Publish or Download."
+                        : renderReady
+                          ? "Render ready — loading final preview…"
+                          : "Edits pending — tap Save & Render before Publish or Download."}
                 </div>
                 <Button
                   size="default"
@@ -5875,9 +6028,11 @@ export default function ClipEditor() {
                       : "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-200",
                   )}
                 >
-                  {renderReady
-                    ? "Render ready — Publish or Download."
-                    : "Save & Render required before Publish or Download."}
+                  {isRendering && renderLayerPhase === "running"
+                    ? `Rendering ${renderLayers[Math.min(renderLayerIndex, Math.max(0, renderLayers.length - 1))]?.short || "…"} · tap to expand status above`
+                    : renderReady
+                      ? "Render ready — Publish or Download."
+                      : "Save & Render required before Publish or Download."}
                 </div>
                 <SocialPublishTargets
                   selected={socialPlatforms}
