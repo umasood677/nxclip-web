@@ -91,15 +91,22 @@ function toTimelineItems(edl: unknown[]): TimelineEdlItem[] {
       const it = raw as Partial<TimelineEdlItem> & {
         assetId?: string;
         sourceUrl?: string;
+        metadata?: { awaitingTts?: boolean };
       };
       if (!it?.id || !it.type || typeof it.startMs !== "number") return null;
+      // Heal commentary parked enabled:false while awaiting TTS (mute is user-only).
+      const parkedAwaitingTts =
+        it.type === "voice" &&
+        it.enabled === false &&
+        (it.metadata?.awaitingTts === true ||
+          (Boolean(it.assetId) && !it.sourceUrl));
       return {
         id: String(it.id),
         type: it.type as TimelineEdlItem["type"],
         startMs: it.startMs,
         endMs: typeof it.endMs === "number" ? it.endMs : undefined,
         gainDb: typeof it.gainDb === "number" ? it.gainDb : 0,
-        enabled: it.enabled !== false,
+        enabled: parkedAwaitingTts ? true : it.enabled !== false,
         assetId: typeof it.assetId === "string" ? it.assetId : undefined,
         sourceUrl: typeof it.sourceUrl === "string" ? it.sourceUrl : undefined,
         metadata: it.metadata,
@@ -143,13 +150,64 @@ function StepPill({
   );
 }
 
-function planSummaryFromState(state: PersistedSoundDesign): string | null {
+type EdlLike = {
+  type?: string;
+  startMs?: number;
+  endMs?: number;
+  enabled?: boolean;
+};
+
+/** Gain beds always sit on the keep window; timed clips must intersect it. */
+function edlItemInKeepWindow(item: EdlLike, durationMs: number): boolean {
+  const t = item.type;
+  if (t === "original" || t === "ambience") return true;
+  if (typeof item.startMs !== "number" || !Number.isFinite(item.startMs)) return false;
+  const start = item.startMs;
+  const end =
+    typeof item.endMs === "number" && Number.isFinite(item.endMs)
+      ? item.endMs
+      : start + (t === "foley" ? 450 : 2200);
+  return end > 0 && start < durationMs;
+}
+
+/**
+ * Counts only clips that actually appear on the Review ruler (keep / trim length).
+ * Plan segment totals were higher when TTS failed or events sat past the trim end.
+ */
+function summaryFromEdl(edl: unknown[], durationMs?: number): string | null {
+  if (!Array.isArray(edl) || !edl.length) return null;
+  const win = Math.max(1, durationMs ?? Number.POSITIVE_INFINITY);
+  let voice = 0;
+  let foley = 0;
+  let visible = 0;
+  let outside = 0;
+  for (const raw of edl) {
+    const item = raw as EdlLike;
+    const on = item.enabled !== false;
+    if (!on) continue;
+    if (!edlItemInKeepWindow(item, win)) {
+      if (item.type === "voice" || item.type === "foley") outside += 1;
+      continue;
+    }
+    visible += 1;
+    if (item.type === "voice") voice += 1;
+    if (item.type === "foley") foley += 1;
+  }
+  if (!visible && !outside) return null;
+  const parts: string[] = [];
+  if (voice) parts.push(`${voice} commentary`);
+  if (foley) parts.push(`${foley} Foley`);
+  parts.push(`${visible} on timeline`);
+  if (outside > 0) parts.push(`${outside} outside keep`);
+  return parts.join(" · ");
+}
+
+function planSummaryFromState(
+  state: PersistedSoundDesign,
+  durationMs?: number,
+): string | null {
   const edl = Array.isArray(state.audioEdl) ? state.audioEdl : [];
-  const plan = state.audioStoryPlan;
-  if (!plan && !edl.length) return null;
-  const foley = plan?.foleyEvents?.filter((f) => f.enabled !== false).length ?? 0;
-  const voice = plan?.commentary?.segments?.length ?? 0;
-  return `${voice} commentary · ${foley} Foley · ${edl.length} EDL decisions`;
+  return summaryFromEdl(edl, durationMs);
 }
 
 type Props = {
@@ -256,13 +314,44 @@ export function SoundDesignPanel({
         onOriginalLevelChange(muted ? 0 : gainDbToLinear(orig.gainDb), muted);
       }
     }
-    const summary = planSummaryFromState(sd);
+    const keepMs = Math.max(1000, Math.round(Math.max(0.5, durationSec) * 1000));
+    const summary = planSummaryFromState(sd, keepMs);
     if (summary) setPlanSummary(summary);
     // Analyze persisted recommendation or any generated plan/EDL → skip step 1.
     if (rec?.summary || sd.audioStoryPlan || edl.length) {
       setAnalyzed(true);
     }
-  }, [contentId, initialSoundDesign, onOriginalLevelChange]);
+  }, [contentId, initialSoundDesign, onOriginalLevelChange, durationSec]);
+
+  const keepDurationMs = Math.max(1000, Math.round(Math.max(0.5, durationSec) * 1000));
+
+  // Keep Review header in sync with what the ruler can actually show.
+  useEffect(() => {
+    if (!timeline.length) return;
+    setPlanSummary(summaryFromEdl(timeline, keepDurationMs) || `${timeline.length} on timeline`);
+  }, [timeline, keepDurationMs]);
+
+  const visibleTimeline = useMemo(
+    () =>
+      timeline.filter((it) =>
+        edlItemInKeepWindow(
+          { type: it.type, startMs: it.startMs, endMs: it.endMs, enabled: it.enabled },
+          keepDurationMs,
+        ),
+      ),
+    [timeline, keepDurationMs],
+  );
+
+  const outsideKeepCount = useMemo(() => {
+    return timeline.filter((it) => {
+      if (it.type !== "voice" && it.type !== "foley") return false;
+      if (it.enabled === false) return false;
+      return !edlItemInKeepWindow(
+        { type: it.type, startMs: it.startMs, endMs: it.endMs, enabled: it.enabled },
+        keepDurationMs,
+      );
+    }).length;
+  }, [timeline, keepDurationMs]);
 
   const hasPlan = Boolean(planSummary || timeline.length);
   const step = !analyzed ? 1 : !hasPlan ? 2 : 3;
@@ -274,7 +363,12 @@ export function SoundDesignPanel({
       const tts = await contentApi.synthesizeSoundDesign(contentId, {
         durationSec: Math.max(0.5, durationSec),
       });
-      setTimeline(toTimelineItems((tts.audioEdl as unknown[]) || []));
+      const edl = (tts.audioEdl as unknown[]) || [];
+      const items = toTimelineItems(edl);
+      setTimeline(items);
+      setPlanSummary(
+        summaryFromEdl(edl, keepDurationMs) || `${items.length} on timeline`,
+      );
       setTtsDeferred(false);
       setTtsInfo(
         `TTS ${tts.provider}: ${tts.synthesized} segments${
@@ -360,6 +454,9 @@ export function SoundDesignPanel({
 
   const applyEdlLocal = async (items: TimelineEdlItem[]) => {
     setTimeline(items);
+    setPlanSummary(
+      summaryFromEdl(items, keepDurationMs) || `${items.length} on timeline`,
+    );
     notifyOriginalLevel(items);
     if (!contentId) return;
     setBusy("edl");
@@ -486,8 +583,29 @@ export function SoundDesignPanel({
       setTimeline(items);
       notifyOriginalLevel(items);
       setLastPreset(null);
-      setPlanSummary(`${voice} commentary · ${foley} Foley · ${edl.length} EDL decisions`);
-      toast.success("Sound plan applied — review timeline, then Render");
+      setPlanSummary(
+        summaryFromEdl(edl, keepDurationMs) || `${items.length} on timeline`,
+      );
+      const plannedVoice = voice;
+      const onTimelineVoice = items.filter(
+        (i) =>
+          i.type === "voice" &&
+          edlItemInKeepWindow(
+            { type: i.type, startMs: i.startMs, endMs: i.endMs, enabled: i.enabled },
+            keepDurationMs,
+          ),
+      ).length;
+      if (plannedVoice > onTimelineVoice) {
+        toast.message("Sound plan applied", {
+          description: `${onTimelineVoice} of ${plannedVoice} commentary lines are on the timeline${
+            plannedVoice - onTimelineVoice > 0
+              ? " — use Retry TTS if lines are missing"
+              : ""
+          }.`,
+        });
+      } else {
+        toast.success("Sound plan applied — review timeline, then Render");
+      }
       onApplied?.();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sound Design plan failed");
@@ -515,9 +633,13 @@ export function SoundDesignPanel({
       const foley = res.audioStoryPlan?.foleyEvents?.filter((f) => f.enabled).length ?? 0;
       const voice = res.audioStoryPlan?.commentary?.segments?.length ?? 0;
       const edl = (res.audioEdl as unknown[]) || [];
-      setTimeline(toTimelineItems(edl));
+      const items = toTimelineItems(edl);
+      setTimeline(items);
+      const edlSummary = summaryFromEdl(edl, keepDurationMs);
       setPlanSummary(
-        `${res.preset?.name || presetId}: ${voice} commentary · ${foley} Foley · ${edl.length} EDL`,
+        edlSummary
+          ? `${res.preset?.name || presetId}: ${edlSummary}`
+          : `${res.preset?.name || presetId}: ${items.length} on timeline`,
       );
       if (res.synthesize) {
         setTtsDeferred(false);
@@ -652,7 +774,12 @@ export function SoundDesignPanel({
           aria-disabled={!analyzed}
         >
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-white/50">
+            <p
+              className={cn(
+                "text-[10px] font-bold uppercase tracking-wide",
+                analyzed ? "text-emerald-300" : "text-white/50",
+              )}
+            >
               2 · Treat
             </p>
             <p className="mt-1 text-xs text-white/55">
@@ -793,7 +920,21 @@ export function SoundDesignPanel({
                       Review
                     </p>
                     {planSummary ? (
-                      <p className="truncate text-[10px] text-white/45">{planSummary}</p>
+                      <p className="truncate text-[10px] text-white/45" title={planSummary}>
+                        {planSummary}
+                      </p>
+                    ) : null}
+                    {ttsDeferred ? (
+                      <p className="mt-0.5 text-[10px] text-amber-200/70">
+                        Some commentary lines may be missing until TTS succeeds.
+                      </p>
+                    ) : null}
+                    {outsideKeepCount > 0 ? (
+                      <p className="mt-0.5 text-[10px] text-amber-200/70">
+                        {outsideKeepCount} commentary/Foley clip
+                        {outsideKeepCount === 1 ? "" : "s"} sit outside this keep range — re-apply
+                        Treat after trim, or drag them into the window.
+                      </p>
                     ) : null}
                   </div>
                   {ttsDeferred ? (
@@ -820,10 +961,25 @@ export function SoundDesignPanel({
                 </div>
                 {timeline.length > 0 ? (
                   <AudioTimelineEditor
-                    durationMs={Math.max(1000, Math.round(Math.max(0.5, durationSec) * 1000))}
-                    items={timeline}
+                    durationMs={keepDurationMs}
+                    items={visibleTimeline}
                     disabled={disabled || Boolean(busy)}
-                    onChange={(items) => void applyEdlLocal(items)}
+                    onChange={(visibleNext) => {
+                      // Preserve off-window EDL rows so a drag does not delete them.
+                      const hidden = timeline.filter(
+                        (it) =>
+                          !edlItemInKeepWindow(
+                            {
+                              type: it.type,
+                              startMs: it.startMs,
+                              endMs: it.endMs,
+                              enabled: it.enabled,
+                            },
+                            keepDurationMs,
+                          ),
+                      );
+                      void applyEdlLocal([...visibleNext, ...hidden]);
+                    }}
                     comfortable={Boolean(reviewHostEl)}
                   />
                 ) : (

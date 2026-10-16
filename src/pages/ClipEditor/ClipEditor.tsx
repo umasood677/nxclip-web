@@ -181,6 +181,12 @@ export default function ClipEditor() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
   const [renderStatus, setRenderStatus] = useState<string | null>(null);
+  const renderStatusRef = useRef<string | null>(null);
+  renderStatusRef.current = renderStatus;
+  const isRenderingRef = useRef(false);
+  isRenderingRef.current = isRendering;
+  /** Prevents parallel Save & Render / resume pollers stacking GETs. */
+  const renderPollLockRef = useRef(false);
   const [contentStatus, setContentStatus] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const step = searchParams.get("step") || "trim";
@@ -2092,6 +2098,8 @@ export default function ClipEditor() {
 
   const saveClipEditToServer = useCallback(async () => {
     if (!id) return;
+    // Do not autosave during burn-in — that spammed clip-edit + cleared render hashes.
+    if (isRenderingRef.current || renderPollLockRef.current) return;
     try {
       await contentApi.saveClipEdit(id, buildClipEditSpec());
     } catch (err) {
@@ -2134,8 +2142,12 @@ export default function ClipEditor() {
       force?: boolean;
     }) => {
       if (!id) throw new Error("No active clip ID found.");
+      if (renderPollLockRef.current) {
+        throw new Error("A render is already in progress. Wait for it to finish.");
+      }
+      renderPollLockRef.current = true;
       const toastId = opts?.toastId ?? "render-clip";
-      let status = String(renderStatus || "").toLowerCase();
+      let status = String(renderStatusRef.current || "").toLowerCase();
 
       const isPolishedComplete = (item: {
         renderStatus?: string | null;
@@ -2147,14 +2159,10 @@ export default function ClipEditor() {
         const quality = String(extras.renderQuality || "");
         const hasHash =
           typeof extras.renderSpecHash === "string" && Boolean(extras.renderSpecHash);
-        // Reject copy-fallback. Accept completed+asset even if autosave raced away
-        // renderQuality/hash (hasPolishedRender is set from renderStorageKey).
+        // Require a real polished fingerprint — hasPolishedRender alone reused
+        // pre–Sound Design burns and skipped commentary/Foley.
         if (st !== "completed" || quality === "fallback") return false;
-        return (
-          quality === "polished" ||
-          hasHash ||
-          item.hasPolishedRender === true
-        );
+        return quality === "polished" && hasHash;
       };
 
       const renderAgeMs = (item: {
@@ -2174,7 +2182,7 @@ export default function ClipEditor() {
         );
         const started = Date.now();
         while (Date.now() - started < maxMs) {
-          await new Promise((r) => setTimeout(r, 2000));
+          await new Promise((r) => setTimeout(r, 3000));
           const polled = await contentApi.getOwnedContentById(id, {
             suppressErrorLog: true,
             cacheBust: true,
@@ -2242,9 +2250,6 @@ export default function ClipEditor() {
         const staleInFlight =
           (status === "queued" || status === "processing") &&
           renderAgeMs(latest) >= 90_000;
-        // Explicit Save & Render / retry after timeout must never attach to a hung job.
-        // Sound Design / Coach edits that land after a prior burn must not reuse that MP4
-        // in Final Preview — always ask the server (reuse is instant when hash matches).
         const mustForce = Boolean(opts?.force || staleFallback || staleInFlight);
         const hasSoundDesignMix = (() => {
           const sd = latest.clipEditSpec?.extras?.soundDesign;
@@ -2260,27 +2265,24 @@ export default function ClipEditor() {
         const soundDesignNeedsBurn =
           hasSoundDesignMix && (!latestHasHash || latestQuality !== "polished");
 
-        if (
-          !mustForce &&
-          !soundDesignNeedsBurn &&
-          (status === "queued" || status === "processing")
-        ) {
-          await pollUntilDone(120_000);
+        const inFlight = status === "queued" || status === "processing";
+
+        if (inFlight && !mustForce) {
+          // Never stack a second job — just wait (or soft-fail if it never moves).
+          await pollUntilDone(180_000);
           if (status !== "completed" && status !== "failed") {
-            toast.loading("Render stalled — restarting burn-in…", { id: toastId });
-            await enqueueRender(true, previousJobId);
-            if (status !== "completed") await pollUntilDone(360_000);
+            throw new Error(
+              "Render timed out while still processing. Tap Save & Render to restart.",
+            );
           }
         } else if (
           !mustForce &&
           !soundDesignNeedsBurn &&
           isPolishedComplete(latest)
         ) {
-          // Server decides reuse vs new job via renderSpecHash (includes Sound Design).
-          await enqueueRender(false, previousJobId);
-          if (status !== "completed") {
-            await pollUntilDone(360_000);
-          }
+          // Already burned with a matching fingerprint — do not re-save/re-enqueue
+          // (that caused clip-edit spam and cleared hashes mid-session).
+          status = "completed";
         } else {
           await enqueueRender(
             mustForce || soundDesignNeedsBurn,
@@ -2321,6 +2323,8 @@ export default function ClipEditor() {
           "Could not start or finish render. Your Apply is still saved.",
         );
         throw new Error(detail);
+      } finally {
+        renderPollLockRef.current = false;
       }
 
       if (opts?.download) {
@@ -2345,14 +2349,7 @@ export default function ClipEditor() {
 
       return status;
     },
-    [
-      id,
-      buildClipEditSpec,
-      title,
-      renderStatus,
-      clearRenderPreview,
-      soundDesignMixActive,
-    ],
+    [id, buildClipEditSpec, title, clearRenderPreview, soundDesignMixActive],
   );
 
   const handlePublishContent = async () => {
@@ -2704,14 +2701,16 @@ export default function ClipEditor() {
     saveToLocalStorage();
   }, [trimStart, trimEnd, selectedTrackId, saveToLocalStorage]);
 
-  // Debounced server clip-edit persist after trim / caption changes
+  // Debounced server clip-edit persist after trim / caption changes.
+  // Omit live volume sliders — SRC sync was firing clip-edit on every drag.
   useEffect(() => {
     if (!isLoaded.current || !id || !specHydratedRef.current) return;
+    if (isRenderingRef.current || renderPollLockRef.current) return;
     const timer = setTimeout(() => {
       void saveClipEditToServer();
     }, 1200);
     return () => clearTimeout(timer);
-  }, [trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, captionTextColor, title, description, prompt, hooks, silenceEnabled, hashtags, isNoiseReduced, colorCorrection, clipVolume, musicVolume, masterVolume, appliedTransitions, id, saveClipEditToServer]);
+  }, [trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, captionTextColor, title, description, prompt, hooks, silenceEnabled, hashtags, isNoiseReduced, colorCorrection, appliedTransitions, id, saveClipEditToServer]);
 
   // Track real user edits only — ignore hydration / post-render state sync.
   useEffect(() => {
@@ -2721,9 +2720,11 @@ export default function ClipEditor() {
     clearRenderPreview();
   }, [trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, captionTextColor, title, description, prompt, hooks, silenceEnabled, hashtags, colorCorrection, isNoiseReduced, clipVolume, musicVolume, masterVolume, appliedTransitions, cropMode, coachViralApplied, coachTextCuts, coachStitchJoins, clearRenderPreview]);
 
-  // Resume an in-flight render after refresh; force-requeue if the job is hung.
+  // Resume a *fresh* in-flight render after refresh. Stale queued/processing jobs
+  // must NOT auto force-restart here — that toasted timeout on every polish open.
   useEffect(() => {
     if (!id || step !== "polish") return;
+    if (isRenderingRef.current) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -2738,29 +2739,49 @@ export default function ClipEditor() {
           if (status === "completed") setIsDirty(false);
           return;
         }
-        setIsRendering(true);
-        toast.loading("Finishing render in progress…", { id: "save-render" });
 
-        const queuedRaw = latest.clipEditSpec?.extras?.renderQueuedAt;
+        const extras = latest.clipEditSpec?.extras || {};
+        const quality = String(extras.renderQuality || "");
+        const hasHash =
+          typeof extras.renderSpecHash === "string" && Boolean(extras.renderSpecHash);
+        // Lost callback: polished asset exists but status never flipped to completed.
+        if (
+          latest.hasPolishedRender === true &&
+          quality !== "fallback" &&
+          (quality === "polished" || hasHash)
+        ) {
+          setRenderStatus("completed");
+          setIsDirty(false);
+          try {
+            await loadRenderPreview();
+          } catch {
+            /* live preview stays if media fetch fails */
+          }
+          return;
+        }
+
+        const queuedRaw = extras.renderQueuedAt;
         const queuedMs =
           typeof queuedRaw === "string" || typeof queuedRaw === "number"
             ? Date.parse(String(queuedRaw))
             : NaN;
-        const ageMs = Number.isFinite(queuedMs) ? Date.now() - queuedMs : Number.POSITIVE_INFINITY;
-        // Missing clock (older hung jobs) or >90s → restart instead of endless "Finishing…".
+        const ageMs = Number.isFinite(queuedMs)
+          ? Date.now() - queuedMs
+          : Number.POSITIVE_INFINITY;
+
+        // Zombie job from a prior session — leave it for Save & Render (force).
         if (ageMs >= 90_000) {
-          toast.loading("Render stalled — restarting burn-in…", { id: "save-render" });
-          await ensurePolishedRender({
-            toastId: "save-render",
-            loadingMessage: "Restarting render…",
-            force: true,
+          setRenderStatus("failed");
+          toast.message("Previous render didn't finish", {
+            id: "save-render",
+            description: "Tap Save & Render to burn a new final preview.",
           });
-          if (cancelled) return;
-          setIsDirty(false);
-          await loadRenderPreview();
-          toast.success("Final render ready — play it below", { id: "save-render" });
           return;
         }
+
+        if (isRenderingRef.current) return;
+        setIsRendering(true);
+        toast.loading("Finishing render in progress…", { id: "save-render" });
 
         const started = Date.now();
         while (!cancelled && Date.now() - started < 90_000) {
@@ -2782,22 +2803,23 @@ export default function ClipEditor() {
           await loadRenderPreview();
           toast.success("Final render ready — play it below", { id: "save-render" });
         } else if (status === "failed") {
-          toast.error("Render failed — tap Save & Render to retry", { id: "save-render" });
-        } else {
-          toast.loading("Render stalled — restarting burn-in…", { id: "save-render" });
-          await ensurePolishedRender({
-            toastId: "save-render",
-            loadingMessage: "Restarting render…",
-            force: true,
+          toast.error("Render failed — tap Save & Render to retry", {
+            id: "save-render",
           });
-          if (cancelled) return;
-          setIsDirty(false);
-          await loadRenderPreview();
-          toast.success("Final render ready — play it below", { id: "save-render" });
+        } else {
+          // Still in flight after 90s — don't auto-force (worker may be slow or dead).
+          setRenderStatus("failed");
+          toast.message("Render is taking longer than expected", {
+            id: "save-render",
+            description: "Tap Save & Render to restart the burn-in.",
+          });
         }
       } catch {
         if (!cancelled) {
-          toast.error("Render stalled — tap Save & Render to retry", { id: "save-render" });
+          toast.message("Couldn't check render status", {
+            id: "save-render",
+            description: "Tap Save & Render if the final preview isn't ready.",
+          });
         }
       } finally {
         if (!cancelled) setIsRendering(false);
@@ -2806,7 +2828,8 @@ export default function ClipEditor() {
     return () => {
       cancelled = true;
     };
-  }, [id, step, loadRenderPreview, ensurePolishedRender]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one resume pass per clip/step
+  }, [id, step, loadRenderPreview]);
 
   // If a completed render already exists (reload / prior session), show it in polish preview.
   useEffect(() => {

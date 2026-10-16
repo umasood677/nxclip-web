@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Volume2, VolumeX } from "lucide-react";
+import { GripVertical, Volume2, VolumeX } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 export type TimelineEdlItem = {
@@ -32,57 +32,53 @@ const LAYER_ORDER: TimelineEdlItem["type"][] = [
   "original",
 ];
 
-/** Layers controlled by a left→right gain slider (not position drag). */
 const GAIN_LAYERS = new Set<TimelineEdlItem["type"]>(["ambience", "original"]);
 
 const GAIN_MIN_DB = -24;
 const GAIN_MAX_DB = 6;
 
-const LAYER_LABEL: Record<TimelineEdlItem["type"], string> = {
-  voice: "VO",
-  foley: "SFX",
-  ambience: "AMB",
-  music: "BGM",
-  original: "SRC",
-};
-
-const LAYER_TONE: Record<
+const LAYER_META: Record<
   TimelineEdlItem["type"],
-  { lane: string; clip: string; muted: string; ruler: string; fill: string }
+  { short: string; name: string; accent: string; clip: string; muted: string; fill: string }
 > = {
   voice: {
-    lane: "bg-sky-500/10",
-    clip: "bg-sky-400/90 text-sky-950 border-sky-200/40",
-    muted: "bg-sky-500/20 text-sky-200/50 border-sky-500/20",
-    ruler: "text-sky-300/80",
+    short: "VO",
+    name: "Commentary",
+    accent: "bg-sky-400",
+    clip: "bg-gradient-to-b from-sky-300 to-sky-500 text-sky-950 border-sky-200/50",
+    muted: "bg-sky-950/80 text-sky-200/40 border-sky-800/40",
     fill: "bg-sky-400",
   },
   foley: {
-    lane: "bg-amber-500/10",
-    clip: "bg-amber-400/90 text-amber-950 border-amber-200/40",
-    muted: "bg-amber-500/20 text-amber-200/50 border-amber-500/20",
-    ruler: "text-amber-300/80",
+    short: "SFX",
+    name: "Foley",
+    accent: "bg-amber-400",
+    clip: "bg-gradient-to-b from-amber-300 to-amber-500 text-amber-950 border-amber-200/50",
+    muted: "bg-amber-950/80 text-amber-200/40 border-amber-800/40",
     fill: "bg-amber-400",
   },
   ambience: {
-    lane: "bg-teal-500/10",
-    clip: "bg-teal-400/85 text-teal-950 border-teal-200/40",
-    muted: "bg-teal-500/20 text-teal-200/50 border-teal-500/20",
-    ruler: "text-teal-300/80",
+    short: "AMB",
+    name: "Ambience",
+    accent: "bg-teal-400",
+    clip: "bg-gradient-to-b from-teal-300 to-teal-500 text-teal-950 border-teal-200/40",
+    muted: "bg-teal-950/80 text-teal-200/40 border-teal-800/40",
     fill: "bg-teal-400",
   },
   music: {
-    lane: "bg-violet-500/10",
-    clip: "bg-violet-400/85 text-violet-950 border-violet-200/40",
-    muted: "bg-violet-500/20 text-violet-200/50 border-violet-500/20",
-    ruler: "text-violet-300/80",
+    short: "BGM",
+    name: "Music",
+    accent: "bg-violet-400",
+    clip: "bg-gradient-to-b from-violet-300 to-violet-500 text-violet-950 border-violet-200/40",
+    muted: "bg-violet-950/80 text-violet-200/40 border-violet-800/40",
     fill: "bg-violet-400",
   },
   original: {
-    lane: "bg-zinc-500/10",
-    clip: "bg-zinc-400/70 text-zinc-950 border-zinc-200/30",
-    muted: "bg-zinc-500/20 text-zinc-300/40 border-zinc-500/20",
-    ruler: "text-zinc-400/80",
+    short: "SRC",
+    name: "Original",
+    accent: "bg-zinc-300",
+    clip: "bg-gradient-to-b from-zinc-300 to-zinc-500 text-zinc-950 border-zinc-200/40",
+    muted: "bg-zinc-900/80 text-zinc-400/50 border-zinc-700/40",
     fill: "bg-zinc-300",
   },
 };
@@ -96,8 +92,8 @@ function formatClock(ms: number): string {
 
 function formatGain(db: number): string {
   const rounded = Math.round(db * 10) / 10;
-  if (rounded > 0) return `+${rounded.toFixed(1)} dB`;
-  return `${rounded.toFixed(1)} dB`;
+  if (rounded > 0) return `+${rounded.toFixed(1)}`;
+  return `${rounded.toFixed(1)}`;
 }
 
 function gainToPct(gainDb: number): number {
@@ -108,7 +104,7 @@ function gainToPct(gainDb: number): number {
 function pctToGain(pct: number): number {
   const t = Math.min(1, Math.max(0, pct / 100));
   const raw = GAIN_MIN_DB + t * (GAIN_MAX_DB - GAIN_MIN_DB);
-  return Math.round(raw * 2) / 2; // 0.5 dB steps
+  return Math.round(raw * 2) / 2;
 }
 
 function clipLabel(item: TimelineEdlItem): string {
@@ -136,19 +132,16 @@ function defaultSpanMs(type: TimelineEdlItem["type"]): number {
 type GainBarProps = {
   item: TimelineEdlItem;
   disabled?: boolean;
-  tone: (typeof LAYER_TONE)[TimelineEdlItem["type"]];
-  comfortable?: boolean;
+  fill: string;
   onGainLive: (id: string, gainDb: number) => void;
   onGainCommit: (id: string, gainDb: number) => void;
   onToggleMute: (id: string) => void;
 };
 
-/** Left = quieter, right = louder — fill + handle make direction obvious. */
 function GainLevelBar({
   item,
   disabled,
-  tone,
-  comfortable,
+  fill,
   onGainLive,
   onGainCommit,
   onToggleMute,
@@ -168,26 +161,18 @@ function GainLevelBar({
   return (
     <div
       className={cn(
-        "absolute inset-y-1 left-2 right-2 flex items-center gap-2 rounded border px-2",
-        item.enabled ? "border-white/15 bg-black/35" : "border-white/10 bg-black/20 opacity-60",
+        "absolute inset-y-1.5 left-3 right-3 flex items-center gap-3 rounded-lg border px-3",
+        item.enabled
+          ? "border-white/12 bg-black/40"
+          : "border-white/8 bg-black/25 opacity-55",
       )}
     >
-      <span
-        className={cn(
-          "shrink-0 font-mono text-[9px] font-semibold tabular-nums",
-          tone.ruler,
-          comfortable ? "w-14" : "w-12",
-        )}
-        title="Volume (left quieter · right louder)"
-      >
+      <span className="w-12 shrink-0 font-mono text-[10px] font-semibold tabular-nums text-white/70">
         {formatGain(item.gainDb)}
+        <span className="ml-0.5 text-white/35">dB</span>
       </span>
 
       <div className="relative min-w-0 flex-1">
-        <div className="mb-0.5 flex justify-between font-mono text-[8px] text-white/30">
-          <span>− quieter</span>
-          <span>louder +</span>
-        </div>
         <div
           ref={trackRef}
           role="slider"
@@ -197,7 +182,7 @@ function GainLevelBar({
           aria-label={`${item.type} volume`}
           tabIndex={disabled ? -1 : 0}
           className={cn(
-            "relative h-3.5 touch-none rounded-full bg-white/10",
+            "relative h-2.5 touch-none rounded-full bg-white/10",
             disabled ? "cursor-not-allowed opacity-50" : "cursor-ew-resize",
           )}
           onPointerDown={(e) => {
@@ -223,35 +208,32 @@ function GainLevelBar({
             const step = e.shiftKey ? 2 : 0.5;
             if (e.key === "ArrowRight" || e.key === "ArrowUp") {
               e.preventDefault();
-              const next = Math.min(GAIN_MAX_DB, item.gainDb + step);
-              onGainCommit(item.id, next);
+              onGainCommit(item.id, Math.min(GAIN_MAX_DB, item.gainDb + step));
             } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
               e.preventDefault();
-              const next = Math.max(GAIN_MIN_DB, item.gainDb - step);
-              onGainCommit(item.id, next);
+              onGainCommit(item.id, Math.max(GAIN_MIN_DB, item.gainDb - step));
             }
           }}
         >
-          {/* Fill grows left → right as volume increases */}
           <div
             className={cn(
-              "absolute inset-y-0 left-0 rounded-full opacity-90",
-              item.enabled ? tone.fill : "bg-white/25",
+              "absolute inset-y-0 left-0 rounded-full opacity-95",
+              item.enabled ? fill : "bg-white/20",
             )}
             style={{ width: `${pct}%` }}
           />
-          {/* Tiny handle at the loudness edge */}
           <div
             className={cn(
-              "absolute top-1/2 z-10 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-emerald-300 shadow",
-              "ring-1 ring-black/40",
-              dragging && "scale-110 bg-white",
+              "absolute top-1/2 z-10 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-white shadow-md",
+              dragging && "scale-110",
             )}
             style={{ left: `${pct}%` }}
             aria-hidden
-          >
-            <span className="absolute inset-[3px] rounded-full bg-black/25" />
-          </div>
+          />
+        </div>
+        <div className="mt-1 flex justify-between text-[8px] uppercase tracking-wide text-white/25">
+          <span>Quiet</span>
+          <span>Loud</span>
         </div>
       </div>
 
@@ -259,19 +241,19 @@ function GainLevelBar({
         type="button"
         disabled={disabled}
         title={item.enabled ? "Mute" : "Unmute"}
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-white/45 hover:bg-white/10 hover:text-white disabled:opacity-40"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white/50 hover:bg-white/10 hover:text-white disabled:opacity-40"
         onClick={(e) => {
           e.stopPropagation();
           onToggleMute(item.id);
         }}
       >
-        {item.enabled ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
+        {item.enabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
       </button>
     </div>
   );
 }
 
-/** Multi-track sound timeline — compact video-editor style lanes. */
+/** Multi-track sound timeline — editor-style lanes under trim. */
 export function AudioTimelineEditor({
   durationMs,
   items,
@@ -281,10 +263,11 @@ export function AudioTimelineEditor({
 }: Props) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [draft, setDraft] = useState<TimelineEdlItem[] | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const widthMs = Math.max(1000, durationMs);
   const view = draft || items;
-  const labelW = comfortable ? "w-14" : "w-11";
-  const rowH = comfortable ? "h-11" : "h-10";
+  const railW = comfortable ? "w-[5.5rem]" : "w-[4.75rem]";
+  const rowH = comfortable ? "h-14" : "h-12";
 
   const byLayer = useMemo(() => {
     const map = new Map<TimelineEdlItem["type"], TimelineEdlItem[]>();
@@ -298,10 +281,14 @@ export function AudioTimelineEditor({
   }, [view]);
 
   const ticks = useMemo(() => {
-    // Fewer labels so they don't smash together on narrow docks.
-    const count = comfortable ? 4 : 3;
+    const count = comfortable ? 5 : 4;
     return Array.from({ length: count + 1 }, (_, i) => (widthMs * i) / count);
   }, [widthMs, comfortable]);
+
+  const selected = useMemo(
+    () => (selectedId ? view.find((it) => it.id === selectedId) : undefined),
+    [selectedId, view],
+  );
 
   const patchLocal = (id: string, patch: Partial<TimelineEdlItem>) => {
     const next = view.map((it) => (it.id === id ? { ...it, ...patch } : it));
@@ -333,19 +320,49 @@ export function AudioTimelineEditor({
     return row.length > 0 || layer === "original";
   });
 
+  const layerCounts = useMemo(() => {
+    const c = { voice: 0, foley: 0, ambience: 0, music: 0, original: 0 };
+    for (const it of view) c[it.type] += 1;
+    return c;
+  }, [view]);
+
   return (
-    <div className="overflow-hidden rounded-lg border border-white/10 bg-[#0c0e12] shadow-inner">
+    <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0a0c10] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      {/* Layer chips + duration */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/8 bg-black/50 px-3 py-2">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {(["voice", "foley", "ambience", "original"] as const).map((t) => {
+            const n = layerCounts[t];
+            if (t !== "original" && n === 0) return null;
+            const meta = LAYER_META[t];
+            return (
+              <span
+                key={t}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white/70"
+              >
+                <span className={cn("h-1.5 w-1.5 rounded-full", meta.accent)} />
+                {meta.name}
+                <span className="font-mono text-white/40">{n || (t === "original" ? 1 : 0)}</span>
+              </span>
+            );
+          })}
+        </div>
+        <span className="font-mono text-[10px] tabular-nums text-white/40">
+          {formatClock(0)} – {formatClock(widthMs)}
+        </span>
+      </div>
+
       {/* Time ruler */}
-      <div className="flex border-b border-white/10 bg-black/40">
+      <div className="flex border-b border-white/8 bg-black/30">
         <div
           className={cn(
-            "shrink-0 border-r border-white/10 px-1.5 py-1 font-mono text-[9px] text-white/35",
-            labelW,
+            "shrink-0 border-r border-white/8 px-2 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-wider text-white/30",
+            railW,
           )}
         >
-          TIME
+          Time
         </div>
-        <div className="relative min-h-[22px] flex-1 overflow-hidden px-0.5">
+        <div className="relative min-h-[26px] flex-1 overflow-hidden px-1">
           {ticks.map((ms, i) => {
             const isFirst = i === 0;
             const isLast = i === ticks.length - 1;
@@ -354,17 +371,17 @@ export function AudioTimelineEditor({
               <span
                 key={ms}
                 className={cn(
-                  "absolute top-0.5 font-mono text-[9px] tabular-nums text-white/40",
-                  isFirst && "left-0",
-                  isLast && "right-0",
+                  "absolute top-1 font-mono text-[10px] tabular-nums text-white/45",
+                  isFirst && "left-1",
+                  isLast && "right-1",
                   !isFirst && !isLast && "-translate-x-1/2",
                 )}
                 style={
                   !isFirst && !isLast
                     ? { left: `${pct}%` }
                     : isLast
-                      ? { right: 0 }
-                      : { left: 0 }
+                      ? { right: 4 }
+                      : { left: 4 }
                 }
               >
                 {formatClock(ms)}
@@ -372,20 +389,20 @@ export function AudioTimelineEditor({
             );
           })}
           <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-between px-0"
+            className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-between px-1"
             aria-hidden
           >
             {ticks.map((ms) => (
-              <span key={`t-${ms}`} className="h-1.5 w-px bg-white/20" />
+              <span key={`t-${ms}`} className="h-2 w-px bg-white/25" />
             ))}
           </div>
         </div>
       </div>
 
-      <div className="divide-y divide-white/5">
+      <div className="divide-y divide-white/[0.06]">
         {activeLayers.map((layer) => {
           const row = byLayer.get(layer) || [];
-          const tone = LAYER_TONE[layer];
+          const meta = LAYER_META[layer];
           const layerMuted = row.length > 0 && row.every((it) => !it.enabled);
           const isGainLayer = GAIN_LAYERS.has(layer);
 
@@ -393,20 +410,30 @@ export function AudioTimelineEditor({
             <div key={layer} className="flex items-stretch">
               <div
                 className={cn(
-                  "flex shrink-0 flex-col items-stretch justify-center gap-0.5 border-r border-white/10 px-1 py-1",
-                  labelW,
-                  tone.lane,
+                  "relative flex shrink-0 flex-col justify-center gap-1 border-r border-white/8 px-2 py-2",
+                  railW,
+                  "bg-black/25",
                 )}
               >
-                <span className={cn("text-center font-mono text-[9px] font-bold", tone.ruler)}>
-                  {LAYER_LABEL[layer]}
-                </span>
+                <span
+                  className={cn("absolute inset-y-2 left-0 w-0.5 rounded-full", meta.accent)}
+                  aria-hidden
+                />
+                <div className="pl-1.5">
+                  <p className="text-[10px] font-semibold leading-none text-white/85">
+                    {meta.name}
+                  </p>
+                  <p className="mt-0.5 font-mono text-[9px] text-white/35">
+                    {meta.short}
+                    {row.length > 0 ? ` · ${row.length}` : ""}
+                  </p>
+                </div>
                 {row.length > 0 ? (
                   <button
                     type="button"
                     disabled={disabled}
                     title={layerMuted ? "Unmute layer" : "Mute layer"}
-                    className="mx-auto flex h-5 w-5 items-center justify-center rounded text-white/45 hover:bg-white/10 hover:text-white disabled:opacity-40"
+                    className="ml-1.5 flex h-6 w-6 items-center justify-center rounded-md text-white/40 hover:bg-white/10 hover:text-white disabled:opacity-40"
                     onClick={() => {
                       const enable = layerMuted;
                       commit(
@@ -430,12 +457,12 @@ export function AudioTimelineEditor({
                   "relative min-w-0 flex-1",
                   isGainLayer
                     ? row.length > 1
-                      ? "min-h-[4.5rem]"
+                      ? "min-h-[5.5rem]"
                       : comfortable
-                        ? "h-12"
-                        : "h-11"
+                        ? "h-[3.75rem]"
+                        : "h-14"
                     : rowH,
-                  tone.lane,
+                  "bg-[#0c0f14]",
                 )}
                 onPointerMove={(e) => {
                   if (!isGainLayer && dragId) onPointerMove(e, dragId);
@@ -453,126 +480,149 @@ export function AudioTimelineEditor({
               >
                 {!isGainLayer && (
                   <div
-                    className="pointer-events-none absolute inset-0 opacity-40"
+                    className="pointer-events-none absolute inset-0 opacity-50"
                     style={{
                       backgroundImage:
-                        "repeating-linear-gradient(90deg, transparent, transparent calc(12.5% - 1px), rgba(255,255,255,0.06) 12.5%)",
+                        "repeating-linear-gradient(90deg, transparent, transparent calc(20% - 1px), rgba(255,255,255,0.04) 20%)",
                     }}
                   />
                 )}
 
-                {isGainLayer
-                  ? (
-                      <div
-                        className={cn(
-                          "absolute inset-0 flex flex-col justify-center gap-1 py-0.5",
-                          row.length > 1 && "py-1",
-                        )}
-                      >
-                        {(row.length
-                          ? row
-                          : [
-                              {
-                                id: `ed-${layer}-placeholder`,
-                                type: layer,
-                                startMs: 0,
-                                endMs: widthMs,
-                                gainDb: 0,
-                                enabled: true,
-                              } as TimelineEdlItem,
-                            ]
-                        ).map((item) => (
-                          <div key={item.id} className="relative h-9 w-full shrink-0">
-                            <GainLevelBar
-                              item={item}
-                              disabled={disabled || item.id.includes("placeholder")}
-                              tone={tone}
-                              comfortable={comfortable}
-                              onGainLive={(id, gainDb) => {
-                                setDraft(
-                                  view.map((it) =>
-                                    it.id === id ? { ...it, gainDb } : it,
-                                  ),
-                                );
-                              }}
-                              onGainCommit={commitGain}
-                              onToggleMute={(id) =>
-                                commit(
-                                  view.map((it) =>
-                                    it.id === id ? { ...it, enabled: !it.enabled } : it,
-                                  ),
-                                )
-                              }
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )
-                  : row.map((item) => {
-                      const left = (item.startMs / widthMs) * 100;
-                      const spanMs = Math.max(
-                        180,
-                        (item.endMs ?? item.startMs + defaultSpanMs(layer)) - item.startMs,
-                      );
-                      const widthPct = Math.min(100 - left, (spanMs / widthMs) * 100);
-                      const label = clipLabel(item);
-                      const minW = item.type === "voice" ? 12 : item.type === "foley" ? 7 : 8;
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          disabled={disabled}
-                          title={`${label} · ${formatClock(item.startMs)}${
-                            item.endMs != null ? `–${formatClock(item.endMs)}` : ""
-                          } · drag to move`}
-                          onPointerDown={(e) => {
-                            e.currentTarget.setPointerCapture(e.pointerId);
-                            setDragId(item.id);
-                            setDraft(view);
-                          }}
-                          onDoubleClick={(e) => {
-                            e.stopPropagation();
-                            if (disabled) return;
-                            commit(
-                              view.map((it) =>
-                                it.id === item.id ? { ...it, enabled: !it.enabled } : it,
-                              ),
+                {isGainLayer ? (
+                  <div
+                    className={cn(
+                      "absolute inset-0 flex flex-col justify-center gap-1",
+                      row.length > 1 && "py-1",
+                    )}
+                  >
+                    {(row.length
+                      ? row
+                      : [
+                          {
+                            id: `ed-${layer}-placeholder`,
+                            type: layer,
+                            startMs: 0,
+                            endMs: widthMs,
+                            gainDb: 0,
+                            enabled: true,
+                          } as TimelineEdlItem,
+                        ]
+                    ).map((item) => (
+                      <div key={item.id} className="relative h-11 w-full shrink-0">
+                        <GainLevelBar
+                          item={item}
+                          disabled={disabled || item.id.includes("placeholder")}
+                          fill={meta.fill}
+                          onGainLive={(id, gainDb) => {
+                            setDraft(
+                              view.map((it) => (it.id === id ? { ...it, gainDb } : it)),
                             );
                           }}
-                          className={cn(
-                            "absolute top-1 bottom-1 overflow-hidden rounded border px-1.5 text-left shadow-sm transition-[box-shadow,opacity]",
-                            "cursor-grab active:cursor-grabbing",
-                            item.enabled ? tone.clip : tone.muted,
-                            dragId === item.id && "z-10 ring-2 ring-white/70 shadow-md",
-                            !item.enabled && "opacity-55",
-                          )}
-                          style={{
-                            left: `${left}%`,
-                            width: `${Math.max(minW, widthPct)}%`,
-                          }}
-                        >
+                          onGainCommit={commitGain}
+                          onToggleMute={(id) =>
+                            commit(
+                              view.map((it) =>
+                                it.id === id ? { ...it, enabled: !it.enabled } : it,
+                              ),
+                            )
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  row.map((item) => {
+                    const left = (item.startMs / widthMs) * 100;
+                    const spanMs = Math.max(
+                      180,
+                      (item.endMs ?? item.startMs + defaultSpanMs(layer)) - item.startMs,
+                    );
+                    const widthPct = Math.min(100 - left, (spanMs / widthMs) * 100);
+                    const label = clipLabel(item);
+                    const isFoley = item.type === "foley";
+                    const minW = isFoley ? 5 : item.type === "voice" ? 10 : 8;
+                    const isSelected = selectedId === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        disabled={disabled}
+                        title={`${label} · ${formatClock(item.startMs)}${
+                          item.endMs != null ? `–${formatClock(item.endMs)}` : ""
+                        } · drag to move · double-click mute`}
+                        onPointerDown={(e) => {
+                          e.currentTarget.setPointerCapture(e.pointerId);
+                          setDragId(item.id);
+                          setSelectedId(item.id);
+                          setDraft(view);
+                        }}
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          if (disabled) return;
+                          commit(
+                            view.map((it) =>
+                              it.id === item.id ? { ...it, enabled: !it.enabled } : it,
+                            ),
+                          );
+                        }}
+                        className={cn(
+                          "absolute top-1.5 bottom-1.5 overflow-hidden rounded-md border text-left shadow-sm transition-[box-shadow,transform,opacity]",
+                          "cursor-grab active:cursor-grabbing",
+                          item.enabled ? meta.clip : meta.muted,
+                          isSelected && "z-10 ring-2 ring-white/80",
+                          dragId === item.id && "z-20 scale-[1.02] shadow-lg",
+                          !item.enabled && "opacity-50",
+                          isFoley && "px-1",
+                          !isFoley && "px-2",
+                        )}
+                        style={{
+                          left: `${left}%`,
+                          width: `${Math.max(minW, widthPct)}%`,
+                        }}
+                      >
+                        <span className="flex h-full items-center gap-1">
+                          {!isFoley ? (
+                            <GripVertical className="h-3 w-3 shrink-0 opacity-40" />
+                          ) : null}
                           <span
                             className={cn(
-                              "block truncate font-medium leading-tight",
+                              "min-w-0 font-semibold leading-tight",
                               comfortable ? "text-[11px]" : "text-[10px]",
-                              item.type === "voice" && "whitespace-normal line-clamp-2",
+                              item.type === "voice" && "line-clamp-2 whitespace-normal",
+                              isFoley && "truncate text-[9px]",
                             )}
                           >
                             {label}
                           </span>
-                        </button>
-                      );
-                    })}
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
               </div>
             </div>
           );
         })}
       </div>
 
-      <p className="border-t border-white/5 px-2 py-1 text-[9px] text-white/35">
-        VO/SFX: drag to retime · AMB/SRC: drag handle right = louder, left = quieter · Save &amp;
-        Render for Final Preview
-      </p>
+      {selected && !GAIN_LAYERS.has(selected.type) ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/8 bg-black/40 px-3 py-2 text-[10px] text-white/55">
+          <span className="font-semibold text-white/80">{clipLabel(selected)}</span>
+          <span className="font-mono tabular-nums text-white/40">
+            {formatClock(selected.startMs)}
+            {selected.endMs != null ? ` → ${formatClock(selected.endMs)}` : ""}
+          </span>
+          <span className={selected.enabled ? "text-emerald-300/80" : "text-amber-300/80"}>
+            {selected.enabled ? "Audible" : "Muted"}
+          </span>
+          <span className="text-white/30">Drag to retime · Double-click to mute</span>
+        </div>
+      ) : (
+        <p className="border-t border-white/8 px-3 py-1.5 text-[9px] text-white/30">
+          Commentary &amp; Foley: drag to retime · Original &amp; Ambience: use the level slider ·
+          Save &amp; Render for Final Preview
+        </p>
+      )}
     </div>
   );
 }
