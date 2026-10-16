@@ -9,10 +9,12 @@ export function buildGatewayProxyUrl(src: string, retryToken?: number): string {
   const baseGateway = resolveBaseGatewayUrl();
   const isGatewayUrl =
     targetUrl.startsWith("/content/") ||
+    targetUrl.startsWith("/ad-studio/") ||
     targetUrl.startsWith("/api/gateway") ||
     targetUrl.startsWith(baseGateway) ||
     targetUrl.includes("api-gateway-") ||
     targetUrl.includes("/content/") ||
+    targetUrl.includes("/ad-studio/") ||
     targetUrl.includes("nxclip.ai") ||
     /\/content\/[^/]+\/media/.test(targetUrl);
 

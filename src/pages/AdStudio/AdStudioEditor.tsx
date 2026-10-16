@@ -9,8 +9,10 @@ import { Badge } from "../../components/ui/badge";
 import { SEO } from "../../components/SEO";
 import { adStudioApi } from "../../services/apiClient";
 import { AdCanvas } from "./components/AdCanvas";
+import { ExportPanel } from "./components/ExportPanel";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { LayerList } from "./components/LayerList";
+import { VariationsPanel } from "./components/VariationsPanel";
 import {
   adaptCanvasFormat,
   deleteLayer,
@@ -33,6 +35,7 @@ export default function AdStudioEditor() {
   const [zoom, setZoom] = useState(0.45);
   const [history, setHistory] = useState<AdSceneGraph[]>([]);
   const [future, setFuture] = useState<AdSceneGraph[]>([]);
+  const [previewMode, setPreviewMode] = useState(false);
   /** Monotonic token so in-flight saves never clobber newer local edits. */
   const editEpochRef = useRef(0);
   const graphRef = useRef<AdSceneGraph | null>(null);
@@ -210,14 +213,16 @@ export default function AdStudioEditor() {
           </select>
           <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setZoom((z) => Math.max(0.2, z - 0.05))}><ZoomOut size={14} /></Button>
           <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setZoom((z) => Math.min(1.2, z + 0.05))}><ZoomIn size={14} /></Button>
-          <Button type="button" size="sm" variant="outline" disabled title="Preview export lands in Phase 3D">
-            Preview
+          <Button
+            type="button"
+            size="sm"
+            variant={previewMode ? "default" : "outline"}
+            onClick={() => setPreviewMode((p) => !p)}
+          >
+            {previewMode ? "Exit preview" : "Preview"}
           </Button>
           <Button type="button" size="sm" onClick={() => void persist()} disabled={saving || saveState === "saved"}>
             <Save size={14} className="mr-1" /> Save
-          </Button>
-          <Button type="button" size="sm" variant="secondary" disabled title="Export lands in Phase 3D">
-            Export
           </Button>
         </div>
       </div>
@@ -256,36 +261,53 @@ export default function AdStudioEditor() {
 
         <AdCanvas
           graph={graph}
-          selectedLayerId={selectedLayerId}
-          onSelectLayer={setSelectedLayerId}
+          selectedLayerId={previewMode ? null : selectedLayerId}
+          onSelectLayer={previewMode ? () => undefined : setSelectedLayerId}
           zoom={zoom}
           onMoveLayer={(id, x, y) => {
-            if (!graph) return;
+            if (previewMode || !graph) return;
             const layer = graph.layers.find((l) => l.id === id);
             if (!layer || layer.locked) return;
             setGraph(updateLayer(graph, id, { x, y }));
             markDirty();
           }}
-          onResizeLayer={(id, width, height) => {
-            if (!graph) return;
-            const layer = graph.layers.find((l) => l.id === id);
-            if (!layer || layer.locked) return;
-            setGraph(updateLayer(graph, id, { width, height }));
-            markDirty();
-          }}
+          onResizeLayer={
+            previewMode
+              ? undefined
+              : (id, width, height) => {
+                  if (!graph) return;
+                  const layer = graph.layers.find((l) => l.id === id);
+                  if (!layer || layer.locked) return;
+                  setGraph(updateLayer(graph, id, { width, height }));
+                  markDirty();
+                }
+          }
         />
 
         <Card className="w-72 h-full glass border-border">
           <CardHeader className="pb-2"><CardTitle className="text-sm">Properties</CardTitle></CardHeader>
           <CardContent className="h-[calc(100%-3rem)]">
             <ScrollArea className="h-full pr-2">
-              <InspectorPanel
-                layer={selected}
-                onChange={(patch) => {
-                  if (!selectedLayerId) return;
-                  applyGraph((g) => updateLayer(g, selectedLayerId, patch as Partial<AdSceneLayer>));
-                }}
-              />
+              {!previewMode && (
+                <InspectorPanel
+                  layer={selected}
+                  onChange={(patch) => {
+                    if (!selectedLayerId) return;
+                    applyGraph((g) => updateLayer(g, selectedLayerId, patch as Partial<AdSceneLayer>));
+                  }}
+                />
+              )}
+              {previewMode && (
+                <p className="text-xs text-muted-foreground p-1">
+                  Preview mode — selection handles hidden. Exit preview to edit.
+                </p>
+              )}
+              {creativeId && (
+                <>
+                  <VariationsPanel creativeId={creativeId} />
+                  <ExportPanel creativeId={creativeId} />
+                </>
+              )}
               <div className="mt-4 text-xs text-muted-foreground">
                 Canvas {graph.canvas.width}×{graph.canvas.height} · schema {graph.schemaVersion}
               </div>

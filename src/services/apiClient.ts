@@ -2847,4 +2847,39 @@ export const adStudioApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     }),
+  createVariations: async (
+    creativeId: string,
+    body: Record<string, unknown> = {},
+  ): Promise<{ items: any[] }> =>
+    performApiRequest(`/ad-studio/creatives/${creativeId}/variations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  renderCreative: async (
+    creativeId: string,
+    body: Record<string, unknown> = {},
+  ): Promise<any> =>
+    performApiRequest(`/ad-studio/creatives/${creativeId}/render`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  exportCreative: async (
+    creativeId: string,
+    body: Record<string, unknown> = {},
+  ): Promise<any> =>
+    performApiRequest(`/ad-studio/creatives/${creativeId}/export`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  getRenderJob: async (jobId: string): Promise<any> =>
+    performApiRequest(`/ad-studio/render-jobs/${jobId}`, { method: "GET" }),
+  listExports: async (creativeId: string): Promise<{ items: any[] }> =>
+    performApiRequest(`/ad-studio/creatives/${creativeId}/exports`, {
+      method: "GET",
+    }),
+  downloadRenderJobUrl: (jobId: string): string =>
+    `/ad-studio/render-jobs/${jobId}/download`,
 };
