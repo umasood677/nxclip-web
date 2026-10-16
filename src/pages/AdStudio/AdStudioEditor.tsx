@@ -161,6 +161,29 @@ export default function AdStudioEditor() {
     return () => window.clearTimeout(timer);
   }, [saveState, graph, creativeId, persist]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const meta = e.metaKey || e.ctrlKey;
+      if (!meta) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+        return;
+      }
+      if (e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        void persist();
+      } else if (e.key.toLowerCase() === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey)) {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   if (loading || !graph) {
     return (
       <div className="flex items-center justify-center h-[50vh] text-muted-foreground gap-2">
@@ -305,11 +328,13 @@ export default function AdStudioEditor() {
               {creativeId && (
                 <>
                   <VariationsPanel creativeId={creativeId} />
-                  <ExportPanel creativeId={creativeId} />
+                  <ExportPanel creativeId={creativeId} graph={graph} />
                 </>
               )}
               <div className="mt-4 text-xs text-muted-foreground">
                 Canvas {graph.canvas.width}×{graph.canvas.height} · schema {graph.schemaVersion}
+                <br />
+                Shortcuts: Ctrl/Cmd+S save · Z undo · Y redo
               </div>
             </ScrollArea>
           </CardContent>
