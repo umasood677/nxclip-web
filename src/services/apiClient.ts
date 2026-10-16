@@ -2781,3 +2781,70 @@ export const coachApi = {
     );
   }
 };
+
+/** Brand Kit (Phase 1) — JWT-owned kits for Ad Studio. */
+export const brandApi = {
+  listKits: async (): Promise<{ items: any[] }> =>
+    performApiRequest("/brands", { method: "GET" }),
+  getKit: async (id: string): Promise<any> =>
+    performApiRequest(`/brands/${id}`, { method: "GET" }),
+};
+
+/** Static Ad Studio (Phase 3) */
+export const adStudioApi = {
+  listProjects: async (): Promise<{ items: any[] }> =>
+    performApiRequest("/ad-studio/projects", { method: "GET" }),
+  createProject: async (body: Record<string, unknown>): Promise<any> =>
+    performApiRequest("/ad-studio/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  getProject: async (id: string): Promise<any> =>
+    performApiRequest(`/ad-studio/projects/${id}`, { method: "GET" }),
+  updateProject: async (id: string, body: Record<string, unknown>): Promise<any> =>
+    performApiRequest(`/ad-studio/projects/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  listCreatives: async (projectId: string): Promise<{ items: any[] }> =>
+    performApiRequest(`/ad-studio/projects/${projectId}/creatives`, { method: "GET" }),
+  getCreative: async (id: string): Promise<any> =>
+    performApiRequest(`/ad-studio/creatives/${id}`, { method: "GET" }),
+  updateCreative: async (id: string, body: Record<string, unknown>): Promise<any> =>
+    performApiRequest(`/ad-studio/creatives/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  listConcepts: async (projectId: string): Promise<any> =>
+    performApiRequest(`/ad-studio/projects/${projectId}/concepts`, { method: "GET" }),
+  generateConcepts: async (
+    projectId: string,
+    body: Record<string, unknown> = {},
+  ): Promise<any> =>
+    performApiRequest(`/ad-studio/projects/${projectId}/concepts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  createFromConcept: async (
+    projectId: string,
+    body: { conceptId: string; name?: string },
+  ): Promise<any> =>
+    performApiRequest(`/ad-studio/projects/${projectId}/creatives/from-concept`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  generateImage: async (
+    projectId: string,
+    body: Record<string, unknown> = {},
+  ): Promise<any> =>
+    performApiRequest(`/ad-studio/projects/${projectId}/generate-image`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+};

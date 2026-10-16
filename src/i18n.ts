@@ -21,6 +21,7 @@ const resources = {
         "home_feed": "Home Feed",
         "create_hub": "Create Hub",
         "image_studio": "Image Studio",
+        "ad_studio": "Ad Studio",
         "clip_editor": "Clip Studio",
         "story_engine": "AI Story Engine",
         "content_library": "Content Library",
@@ -1885,6 +1886,10 @@ const resources = {
             "title": "Image Studio",
             "description": "Generate high-quality gaming images and memes from text prompts."
           },
+          "ad_studio": {
+            "title": "Static Ad Studio",
+            "description": "Turn briefs and Brand Kits into editable static ad creatives."
+          },
           "clip_editor": {
             "title": "Clip Studio",
             "description": "Upload your gameplay, trim highlights, and add AI-powered polish."
@@ -2288,6 +2293,7 @@ const resources = {
         "home_feed": "موجز الصفحة الرئيسية",
         "create_hub": "مركز الإنشاء",
         "image_studio": "استوديو الصور",
+        "ad_studio": "استوديو الإعلانات",
         "clip_editor": "استوديو المقاطع",
         "story_engine": "محرك القصة بالذكاء الاصطناعي",
         "content_library": "مكتبة المحتوى",
@@ -3967,6 +3973,10 @@ const resources = {
           "image_studio": {
             "title": "استوديو الصور",
             "description": "قم بإنشاء صور ألعاب عالية الجودة وميمات من مطالبات نصية."
+          },
+          "ad_studio": {
+            "title": "استوديو الإعلانات الثابتة",
+            "description": "حوّل الملخصات ومجموعات العلامة التجارية إلى إعلانات ثابتة قابلة للتحرير."
           },
           "clip_editor": {
             "title": "استوديو المقاطع",

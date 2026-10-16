@@ -2,7 +2,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import AppShell from "../AppShell";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BarChart3, Bell, Clapperboard, FileImage, Home, LayoutDashboard, LayoutGrid, Sparkles, User, Video } from "lucide-react";
+import { BarChart3, Bell, Clapperboard, FileImage, Home, LayoutDashboard, LayoutGrid, Megaphone, Sparkles, User, Video } from "lucide-react";
 
 /**
  * DashboardLayout wraps authenticated routes with the AppShell.
@@ -19,6 +19,7 @@ export default function DashboardLayout() {
   const isAnalytics = location.pathname === "/analytics";
   const isImageStudio =
     location.pathname.startsWith("/create/image") || location.pathname === "/image-studio";
+  const isAdStudio = location.pathname.startsWith("/create/ad");
   const isClipEditor = location.pathname.startsWith("/create/clip");
   const isCreateHub = location.pathname === "/create";
   const isPostDetail = location.pathname.startsWith("/feed/post/");
@@ -54,6 +55,8 @@ export default function DashboardLayout() {
       setTitle(t("user.profile", { defaultValue: "Creator profile" }));
     } else if (path.startsWith("/create/image") || path === "/image-studio") {
       setTitle(t("nav.image_studio"));
+    } else if (path.startsWith("/create/ad")) {
+      setTitle(t("nav.ad_studio", { defaultValue: "Ad Studio" }));
     } else if (path.startsWith("/create/clip")) {
       setTitle(t("nav.clip_editor"));
     } else {
@@ -87,6 +90,11 @@ export default function DashboardLayout() {
         defaultValue: "Generate images and memes with AI.",
       });
     }
+    if (isAdStudio) {
+      return t("ad_studio.header.subtitle", {
+        defaultValue: "Brief, concepts, and editable static ads.",
+      });
+    }
     if (isCreateHub) {
       return t("create.header.subtitle", {
         defaultValue: "Pick a studio and start creating.",
@@ -109,6 +117,7 @@ export default function DashboardLayout() {
     isFeed,
     isAnalytics,
     isImageStudio,
+    isAdStudio,
     isCreateHub,
     isClipEditor,
     isNotifications,
@@ -125,6 +134,8 @@ export default function DashboardLayout() {
     <BarChart3 className="h-4 w-4" />
   ) : isImageStudio ? (
     <Sparkles className="h-4 w-4" />
+  ) : isAdStudio ? (
+    <Megaphone className="h-4 w-4" />
   ) : isClipEditor ? (
     <Video className="h-4 w-4" />
   ) : isCreateHub ? (
@@ -142,6 +153,7 @@ export default function DashboardLayout() {
     isFeed ||
     isAnalytics ||
     isImageStudio ||
+    isAdStudio ||
     isCreateHub ||
     isClipEditor ||
     isPostDetail ||

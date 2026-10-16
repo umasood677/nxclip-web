@@ -14,6 +14,7 @@ import {
   Image as ImageIcon,
   Video,
   Film,
+  Megaphone,
   LayoutDashboard,
   Swords,
   Cpu
@@ -44,6 +45,7 @@ const navItems = [
 
 const toolItems = [
   { icon: ImageIcon, label: "Image Studio", href: "/create/image", translationKey: "nav.image_studio" },
+  { icon: Megaphone, label: "Ad Studio", href: "/create/ad", translationKey: "nav.ad_studio" },
   { icon: Video, label: "Clip Studio", href: "/create/clip", translationKey: "nav.clip_editor" },
   { icon: Film, label: "AI Story Engine", href: "/create/story-engine", translationKey: "nav.story_engine" },
 ];
@@ -225,12 +227,14 @@ export default function SideNav({ isCollapsed, setIsCollapsed }: SideNavProps) {
                 const isActive =
                   item.href === "/create/clip"
                     ? location.pathname.startsWith("/create/clip")
-                    : item.href === "/create/story-engine"
-                      ? location.pathname.startsWith("/create/story-engine") ||
-                        location.pathname.startsWith("/create/event-highlight")
-                      : location.pathname === item.href ||
-                        (item.href === "/create/image" &&
-                          location.pathname.startsWith("/create/image"));
+                    : item.href === "/create/ad"
+                      ? location.pathname.startsWith("/create/ad")
+                      : item.href === "/create/story-engine"
+                        ? location.pathname.startsWith("/create/story-engine") ||
+                          location.pathname.startsWith("/create/event-highlight")
+                        : location.pathname === item.href ||
+                          (item.href === "/create/image" &&
+                            location.pathname.startsWith("/create/image"));
                 return <NavLink key={item.href} item={item} isActive={isActive} isCollapsed={isCollapsed} t={t} i18n={i18n} />;
               })}
             </div>

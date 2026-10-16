@@ -67,6 +67,8 @@ const PageLoader = () => {
 // --- Lazy Load Pages ---
 const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
 const ImageStudio = lazy(() => import("./pages/ImageStudio/ImageStudio"));
+const AdStudio = lazy(() => import("./pages/AdStudio/AdStudio"));
+const AdStudioEditor = lazy(() => import("./pages/AdStudio/AdStudioEditor"));
 const Analytics = lazy(() => import("./pages/Analytics/Analytics"));
 const CreatorCoach = lazy(() => import("./pages/CreatorCoach/CreatorCoach"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel/AdminPanel"));
@@ -405,6 +407,8 @@ export default function App() {
                     <Route path="/create" element={<CreateHub />} />
                     <Route path="/create/image" element={<ImageStudio />} />
                     <Route path="/image-studio" element={<ImageStudio />} />
+                    <Route path="/create/ad" element={<AdStudio />} />
+                    <Route path="/create/ad/:creativeId" element={<AdStudioEditor />} />
                     <Route path="/create/clip" element={<ClipUpload />} />
                     <Route path="/create/clip/:id/edit" element={<ClipEditor />} />
                     <Route path="/create/story-engine" element={<EventHighlight />} />
