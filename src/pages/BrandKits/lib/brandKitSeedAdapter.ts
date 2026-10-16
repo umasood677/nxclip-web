@@ -131,14 +131,44 @@ export function adaptLegacySeedKit(seed: LegacySeedKit): PortableBrandKit {
       | undefined,
     advertisingPreferences: seed.advertisingPreferences,
     guidelines: seed.guidelines,
-    assets: (seed.assets ?? []).map((a) => ({
-      role: a.role || "other",
-      label: a.label || a.name,
-      description: a.description,
-      usageGuidance: a.usageGuidance || a.usage,
-      requiresReupload: true,
-    })),
+    assets: normalizeLegacyAssets(seed.assets),
   };
+}
+
+/** Accept array or role-keyed object; never throw on preview. */
+function normalizeLegacyAssets(
+  value: LegacySeedKit["assets"] | Record<string, unknown> | unknown,
+): PortableBrandKit["assets"] {
+  if (value == null) return [];
+  const rows: Array<Record<string, unknown>> = Array.isArray(value)
+    ? value.filter(
+        (item): item is Record<string, unknown> =>
+          Boolean(item) && typeof item === "object" && !Array.isArray(item),
+      )
+    : typeof value === "object"
+      ? Object.entries(value as Record<string, unknown>)
+          .filter(([, v]) => v && typeof v === "object" && !Array.isArray(v))
+          .map(([role, v]) => ({
+            ...(v as Record<string, unknown>),
+            role:
+              typeof (v as { role?: unknown }).role === "string"
+                ? (v as { role: string }).role
+                : role,
+          }))
+      : [];
+  return rows.map((a) => ({
+    role: (typeof a.role === "string" && a.role) || "other",
+    label:
+      (typeof a.label === "string" && a.label) ||
+      (typeof a.name === "string" && a.name) ||
+      undefined,
+    description: typeof a.description === "string" ? a.description : undefined,
+    usageGuidance:
+      (typeof a.usageGuidance === "string" && a.usageGuidance) ||
+      (typeof a.usage === "string" && a.usage) ||
+      undefined,
+    requiresReupload: true,
+  }));
 }
 
 export function adaptLegacySeedEnvelope(

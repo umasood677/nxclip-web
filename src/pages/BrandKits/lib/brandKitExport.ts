@@ -37,7 +37,8 @@ function typeMap(kit: BrandKitSummary) {
 }
 
 function assetRefs(kit: BrandKitSummary): PortableAssetRef[] {
-  return (kit.assets ?? [])
+  const list = Array.isArray(kit.assets) ? kit.assets : [];
+  return list
     .filter((a) => a.status === "ready")
     .map((a) => ({
       role: a.role || "other",

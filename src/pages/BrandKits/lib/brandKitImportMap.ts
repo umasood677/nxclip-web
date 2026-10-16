@@ -32,6 +32,50 @@ function asStringArray(value: unknown): string[] | undefined {
     .slice(0, PORTABLE_LIMITS.maxArrayItems);
 }
 
+/**
+ * Normalize assets to an array. Accepts:
+ * - array of asset refs
+ * - role-keyed object map (legacy / hand-authored JSON)
+ * - missing / invalid → empty array
+ */
+export function normalizeAssetList(
+  value: unknown,
+  issues?: ImportIssue[],
+  path = "assets",
+): Array<Record<string, unknown>> {
+  if (value == null) return [];
+  if (Array.isArray(value)) {
+    return value
+      .filter((item): item is Record<string, unknown> =>
+        Boolean(item) && typeof item === "object" && !Array.isArray(item),
+      )
+      .slice(0, PORTABLE_LIMITS.maxArrayItems);
+  }
+  if (typeof value === "object") {
+    issues?.push({
+      level: "warning",
+      path,
+      message: "assets object map was normalized to an array (role keys → role field)",
+    });
+    return Object.entries(value as Record<string, unknown>)
+      .filter(([, v]) => v && typeof v === "object" && !Array.isArray(v))
+      .map(([role, v]) => {
+        const item = v as Record<string, unknown>;
+        return {
+          ...item,
+          role: typeof item.role === "string" ? item.role : role,
+        };
+      })
+      .slice(0, PORTABLE_LIMITS.maxArrayItems);
+  }
+  issues?.push({
+    level: "warning",
+    path,
+    message: "assets field ignored — expected an array or role-keyed object",
+  });
+  return [];
+}
+
 function normalizeHex(value: string | undefined, path: string, issues: ImportIssue[]): string | undefined {
   if (!value) return undefined;
   const hex = value.trim().startsWith("#") ? value.trim() : `#${value.trim()}`;
@@ -171,9 +215,18 @@ export function extractPortableKits(value: unknown): {
         undefined,
       advertisingPreferences:
         (obj.advertisingPreferences as Record<string, unknown>) || undefined,
-      assets: Array.isArray(obj.assets)
-        ? (obj.assets as PortableBrandKit["assets"])
-        : undefined,
+      assets: (() => {
+        const list = normalizeAssetList(obj.assets, issues, "$.assets");
+        if (!list.length) return undefined;
+        return list.map((a) => ({
+          role: asString(a.role, 64) || "other",
+          label: asString(a.label ?? a.name, 160),
+          description: asString(a.description, 2000),
+          usageGuidance: asString(a.usageGuidance ?? a.usage, 2000),
+          requiresReupload: true,
+          externalHint: asString(a.externalHint ?? a.url, 2048),
+        }));
+      })(),
       guidelines: asString(obj.guidelines, 20_000),
     };
     return { kits: [kit], unsupportedFields, issues };
@@ -248,12 +301,18 @@ export function mapPortableKit(kit: PortableBrandKit): MappedImportKit {
     }
   });
 
-  const assets = (kit.assets ?? []).map((a) => ({
-    ...a,
-    role: a.role || "other",
-    requiresReupload: true,
+  const assetRows = normalizeAssetList(kit.assets, issues, "assets");
+  const assets = assetRows.map((a) => ({
+    role: (typeof a.role === "string" && a.role) || "other",
+    label: typeof a.label === "string" ? a.label : undefined,
+    description: typeof a.description === "string" ? a.description : undefined,
+    usageGuidance:
+      typeof a.usageGuidance === "string" ? a.usageGuidance : undefined,
+    requiresReupload: true as const,
+    externalHint:
+      typeof a.externalHint === "string" ? a.externalHint : undefined,
   }));
-  if (assets.some((a) => a.externalHint || (a as { url?: string }).url)) {
+  if (assets.some((a) => a.externalHint)) {
     issues.push({
       level: "warning",
       path: "assets",

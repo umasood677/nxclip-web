@@ -1,0 +1,1 @@
+import{j as t,l as n}from"./index-IhvVKGCr.js";function l({className:e,...s}){return t.jsxDEV("div",{"data-slot":"skeleton",className:n("animate-pulse rounded-md bg-muted",e),...s},void 0,!1,{fileName:"D:/NxClip-Web/src/components/ui/skeleton.tsx",lineNumber:6,columnNumber:5},this)}export{l as S};

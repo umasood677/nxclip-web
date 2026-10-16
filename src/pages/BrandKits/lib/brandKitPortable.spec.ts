@@ -105,4 +105,39 @@ describe("Brand Kit portable JSON", () => {
     });
     assert.ok(mapped.some((m) => m.issues.some((i) => i.level === "error")));
   });
+
+  it("normalizes role-keyed assets object without throwing on preview", () => {
+    const mapped = mapImportDocument({
+      schemaVersion: "1.0",
+      type: "nxclip.brand-kit",
+      brand: { name: "ZoeArtisan" },
+      assets: {
+        logo_primary: { label: "Zoe mark", usageGuidance: "Keep clear space" },
+        product_image: { name: "Lipstick" },
+      },
+    });
+    assert.equal(mapped.length, 1);
+    assert.ok(isImportable(mapped[0]!));
+    const roles = mapped[0]!.assetsRequiringReupload.map((a) => a.role).sort();
+    assert.deepEqual(roles, ["logo_primary", "product_image"]);
+  });
+
+  it("imports legacy seed with object-shaped assets", () => {
+    const mapped = mapImportDocument({
+      format: "nxclip-brand-seed",
+      version: "seed-1",
+      kits: [
+        {
+          brandName: "Object Assets Co",
+          palette: { primary: "#112233" },
+          assets: {
+            logo_primary: { name: "Mark", usage: "Centered" },
+          },
+        },
+      ],
+    });
+    assert.equal(mapped.length, 1);
+    assert.ok(isImportable(mapped[0]!));
+    assert.equal(mapped[0]!.assetsRequiringReupload[0]?.role, "logo_primary");
+  });
 });
