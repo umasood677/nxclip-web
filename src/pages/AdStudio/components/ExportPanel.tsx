@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Download, Loader2 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
@@ -9,6 +9,7 @@ import { buildGatewayProxyUrl } from "../../../lib/authenticatedMediaUrl";
 import { getAccessToken } from "../../../services/auth/authService";
 import { collectExportWarnings } from "../lib/exportWarnings";
 import type { AdSceneGraph } from "../types";
+import { AD_FORMATS } from "../types";
 
 interface ExportPanelProps {
   creativeId: string;
@@ -45,13 +46,51 @@ async function downloadJob(jobId: string, fileName: string) {
   }
 }
 
+async function pollJob(
+  jobId: string,
+  signal: AbortSignal,
+  onTick: (job: { status: string; errorMessage?: string }) => void,
+): Promise<any> {
+  let delay = 600;
+  for (let i = 0; i < 40; i++) {
+    if (signal.aborted) throw new Error("Export cancelled");
+    const job = await adStudioApi.getRenderJob(jobId);
+    onTick(job);
+    if (job.status === "completed" || job.status === "failed") return job;
+    await new Promise((r) => setTimeout(r, delay));
+    delay = Math.min(2500, Math.round(delay * 1.25));
+  }
+  throw new Error("Export timed out — check export history and retry download.");
+}
+
 export function ExportPanel({ creativeId, graph }: ExportPanelProps) {
   const [format, setFormat] = useState<"png" | "jpeg">("png");
+  const [quality, setQuality] = useState(90);
+  const [allowPlaceholders, setAllowPlaceholders] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [statusText, setStatusText] = useState<string | null>(null);
   const [exports, setExports] = useState<any[]>([]);
   const [lastJob, setLastJob] = useState<any | null>(null);
-  const warnings = useMemo(() => collectExportWarnings(graph), [graph]);
+  const abortRef = useRef<AbortController | null>(null);
+  const warnings = useMemo(
+    () => collectExportWarnings(graph, { allowPlaceholders }),
+    [graph, allowPlaceholders],
+  );
   const blocked = warnings.some((w) => w.blocking);
+  const hasPlaceholderRisk = warnings.some(
+    (w) => w.code === "missing_logo" || w.code === "missing_assets",
+  );
+
+  const dims = graph?.canvas;
+  const formatLabel = useMemo(() => {
+    if (!dims) return "—";
+    const hit = AD_FORMATS.find(
+      (f) => f.width === dims.width && f.height === dims.height,
+    );
+    return hit
+      ? `${hit.label} · ${dims.width}×${dims.height}`
+      : `${dims.width}×${dims.height}`;
+  }, [dims]);
 
   const refresh = async () => {
     try {
@@ -64,6 +103,7 @@ export function ExportPanel({ creativeId, graph }: ExportPanelProps) {
 
   useEffect(() => {
     void refresh();
+    return () => abortRef.current?.abort();
   }, [creativeId]);
 
   const runExport = async () => {
@@ -71,61 +111,125 @@ export function ExportPanel({ creativeId, graph }: ExportPanelProps) {
       toast.error(warnings.find((w) => w.blocking)?.message || "Cannot export");
       return;
     }
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setBusy(true);
     setLastJob(null);
+    setStatusText("Starting render…");
     try {
-      const job = await adStudioApi.exportCreative(creativeId, {
+      let job = await adStudioApi.exportCreative(creativeId, {
         exportFormat: format,
-        quality: format === "jpeg" ? 90 : undefined,
+        quality: format === "jpeg" ? quality : undefined,
       });
+      setLastJob(job);
+      if (job.status === "queued" || job.status === "running" || job.status === "pending") {
+        setStatusText(`Status: ${job.status}`);
+        job = await pollJob(job.id, ac.signal, (tick) => {
+          setStatusText(`Status: ${tick.status}`);
+          setLastJob(tick);
+        });
+      }
       setLastJob(job);
       if (job.status === "failed") {
         toast.error(job.errorMessage || "Export failed", {
           description: "Fix unsupported layers (e.g. GROUP) or retry.",
         });
+        setStatusText("Failed");
       } else if (job.status === "completed") {
         toast.success(`${format.toUpperCase()} ready`);
+        setStatusText("Completed");
         await downloadJob(
           job.id,
           `ad-export.${format === "jpeg" ? "jpg" : "png"}`,
         );
       } else {
         toast.message("Export queued", { description: job.status });
+        setStatusText(job.status);
       }
       await refresh();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Export failed";
-      toast.error(msg);
+      if (msg !== "Export cancelled") toast.error(msg);
+      setStatusText(null);
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="space-y-3 border-t border-border pt-3 mt-3">
-      <div className="text-sm font-medium">Export</div>
-      <ul className="space-y-1">
+    <div className="space-y-3">
+      <div>
+        <div className="text-sm font-medium">Export</div>
+        <p className="text-[11px] text-muted-foreground mt-0.5">
+          Output: {formatLabel}. Preview is approximate — not claimed as exact parity.
+        </p>
+      </div>
+
+      <ul className="space-y-1" aria-label="Export preflight warnings">
         {warnings.map((w) => (
           <li
             key={w.code}
-            className={`text-[11px] leading-snug ${w.blocking ? "text-destructive" : "text-muted-foreground"}`}
+            className={`text-[11px] leading-snug ${
+              w.blocking ? "text-destructive" : "text-muted-foreground"
+            }`}
           >
             {w.blocking ? "Blocked: " : "Note: "}
             {w.message}
           </li>
         ))}
       </ul>
-      <div>
-        <Label className="text-xs">Format</Label>
-        <select
-          className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
-          value={format}
-          onChange={(e) => setFormat(e.target.value as "png" | "jpeg")}
-        >
-          <option value="png">PNG</option>
-          <option value="jpeg">JPEG</option>
-        </select>
+
+      {hasPlaceholderRisk ? (
+        <label className="flex items-start gap-2 text-[11px] leading-snug">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={allowPlaceholders}
+            onChange={(e) => setAllowPlaceholders(e.target.checked)}
+          />
+          <span>
+            Allow export with missing image/logo placeholders (server draws slate
+            rectangles — not product/brand assets).
+          </span>
+        </label>
+      ) : null}
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label className="text-xs">Format</Label>
+          <select
+            className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+            value={format}
+            onChange={(e) => setFormat(e.target.value as "png" | "jpeg")}
+          >
+            <option value="png">PNG</option>
+            <option value="jpeg">JPEG</option>
+          </select>
+        </div>
+        <div>
+          <Label className="text-xs">Dimensions</Label>
+          <div className="h-9 flex items-center text-xs text-muted-foreground px-1">
+            {dims ? `${dims.width}×${dims.height}` : "—"}
+          </div>
+        </div>
       </div>
+
+      {format === "jpeg" ? (
+        <div>
+          <Label className="text-xs">JPEG quality ({quality})</Label>
+          <input
+            type="range"
+            min={60}
+            max={100}
+            step={1}
+            value={quality}
+            onChange={(e) => setQuality(Number(e.target.value))}
+            className="w-full mt-1"
+          />
+        </div>
+      ) : null}
+
       <Button
         type="button"
         size="sm"
@@ -133,22 +237,45 @@ export function ExportPanel({ creativeId, graph }: ExportPanelProps) {
         disabled={busy || blocked}
         onClick={() => void runExport()}
       >
-        {busy ? <Loader2 size={14} className="mr-1 animate-spin" /> : <Download size={14} className="mr-1" />}
+        {busy ? (
+          <Loader2 size={14} className="mr-1 animate-spin" />
+        ) : (
+          <Download size={14} className="mr-1" />
+        )}
         {busy ? "Rendering…" : "Render & download"}
       </Button>
+
+      {statusText ? (
+        <p className="text-xs text-muted-foreground" role="status">
+          {statusText}
+          {lastJob?.id ? ` · job ${String(lastJob.id).slice(0, 8)}…` : ""}
+        </p>
+      ) : null}
+
       {lastJob?.errorMessage && (
-        <p className="text-xs text-destructive" role="alert">{lastJob.errorMessage}</p>
+        <p className="text-xs text-destructive" role="alert">
+          {lastJob.errorMessage}
+        </p>
       )}
+
       {!!exports.length && (
         <div className="space-y-1">
           <div className="text-xs text-muted-foreground">Export history</div>
           {exports.slice(0, 6).map((job) => (
-            <div key={job.id} className="flex items-center justify-between gap-2 text-xs rounded-md border border-border px-2 py-1.5">
+            <div
+              key={job.id}
+              className="flex items-center justify-between gap-2 text-xs rounded-md border border-border px-2 py-1.5"
+            >
               <div className="min-w-0">
-                <Badge variant="outline" className="mr-1">{job.exportFormat}</Badge>
+                <Badge variant="outline" className="mr-1">
+                  {job.exportFormat}
+                </Badge>
                 <span className="text-muted-foreground">{job.status}</span>
                 {job.width && job.height ? (
-                  <span className="text-muted-foreground"> · {job.width}×{job.height}</span>
+                  <span className="text-muted-foreground">
+                    {" "}
+                    · {job.width}×{job.height}
+                  </span>
                 ) : null}
               </div>
               {job.status === "completed" && (
@@ -161,14 +288,19 @@ export function ExportPanel({ creativeId, graph }: ExportPanelProps) {
                     void downloadJob(
                       job.id,
                       `ad-export.${job.exportFormat === "jpeg" ? "jpg" : "png"}`,
-                    ).catch((e) => toast.error(e instanceof Error ? e.message : "Download failed"))
+                    ).catch((e) =>
+                      toast.error(e instanceof Error ? e.message : "Download failed"),
+                    )
                   }
                 >
                   Download
                 </Button>
               )}
               {job.status === "failed" && (
-                <span className="text-destructive truncate max-w-[8rem]" title={job.errorMessage}>
+                <span
+                  className="text-destructive truncate max-w-[8rem]"
+                  title={job.errorMessage}
+                >
                   Failed
                 </span>
               )}

@@ -1,19 +1,51 @@
 import { Label } from "../../../components/ui/label";
 import { Input } from "../../../components/ui/input";
+import { Button } from "../../../components/ui/button";
 import { AD_STUDIO_FONTS } from "../lib/adFonts";
+import type { AlignMode } from "../lib/sceneGraph";
 import type { AdSceneLayer } from "../types";
 
 interface InspectorPanelProps {
   layer: AdSceneLayer | null;
   onChange: (patch: Partial<AdSceneLayer>) => void;
+  onAlign?: (mode: AlignMode) => void;
+  canvasBackground?: string;
+  onCanvasBackground?: (hex: string) => void;
 }
 
-export function InspectorPanel({ layer, onChange }: InspectorPanelProps) {
+const ALIGN_MODES: { mode: AlignMode; label: string }[] = [
+  { mode: "left", label: "←" },
+  { mode: "center", label: "↔" },
+  { mode: "right", label: "→" },
+  { mode: "top", label: "↑" },
+  { mode: "middle", label: "↕" },
+  { mode: "bottom", label: "↓" },
+];
+
+export function InspectorPanel({
+  layer,
+  onChange,
+  onAlign,
+  canvasBackground,
+  onCanvasBackground,
+}: InspectorPanelProps) {
   if (!layer) {
     return (
-      <p className="text-sm text-muted-foreground p-2">
-        Select a layer to edit typography, color, and transform.
-      </p>
+      <div className="space-y-3 p-2">
+        <p className="text-sm text-muted-foreground">
+          Select a layer to edit typography, color, and transform.
+        </p>
+        {onCanvasBackground ? (
+          <div>
+            <Label className="text-xs">Canvas background</Label>
+            <Input
+              type="color"
+              value={canvasBackground || "#111827"}
+              onChange={(e) => onCanvasBackground(e.target.value)}
+            />
+          </div>
+        ) : null}
+      </div>
     );
   }
 
@@ -26,6 +58,27 @@ export function InspectorPanel({ layer, onChange }: InspectorPanelProps) {
           onChange={(e) => onChange({ name: e.target.value })}
         />
       </div>
+      {onAlign ? (
+        <div>
+          <Label className="text-xs">Align to canvas</Label>
+          <div className="flex flex-wrap gap-1 mt-1">
+            {ALIGN_MODES.map(({ mode, label }) => (
+              <Button
+                key={mode}
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-7 w-8 px-0 text-xs"
+                title={mode}
+                disabled={Boolean(layer.locked)}
+                onClick={() => onAlign(mode)}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label className="text-xs">X</Label>
@@ -44,6 +97,16 @@ export function InspectorPanel({ layer, onChange }: InspectorPanelProps) {
           <Input type="number" value={layer.height} onChange={(e) => onChange({ height: Number(e.target.value) })} />
         </div>
       </div>
+      {onCanvasBackground ? (
+        <div>
+          <Label className="text-xs">Canvas background</Label>
+          <Input
+            type="color"
+            value={canvasBackground || "#111827"}
+            onChange={(e) => onCanvasBackground(e.target.value)}
+          />
+        </div>
+      ) : null}
       <div>
         <Label className="text-xs">Opacity</Label>
         <Input

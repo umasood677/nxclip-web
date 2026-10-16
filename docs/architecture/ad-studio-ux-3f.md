@@ -1,53 +1,38 @@
 # Static Ad Studio UX — Phase 3F
 
-**Status:** 3F-A documented · 3F-B + **3F-C** implemented (uncommitted)  
-**Frontend:** `D:/nxclip-web` · **Backend:** unchanged Phase 3 contracts  
-**Scope stop:** After 3F-C. 3F-D–E deferred.
+**Status:** 3F-A–**3F-E** complete (3F-D/E polish uncommitted on FE; BK/3F-B/C on master)  
+**Frontend:** `D:/nxclip-web` · **Backend:** Phase 3 contracts + optional `CONTENT_SKIP_MIGRATIONS`  
+**Scope stop:** After 3F-E. **No Phase 4B.**
 
 ## Milestone map
 
 | ID | Deliverable | Status |
 |----|-------------|--------|
 | **3F-A** | Audit + architecture | Done |
-| **3F-B** | Premium home + guided brief + live sample preview | Done |
-| **3F-C** | Brand Kit cards + visual concept gallery | Done |
-| 3F-D | Editor / variations / export polish | Deferred |
-| 3F-E | Responsive hardening + acceptance | Deferred |
+| **3F-B** | Premium home + guided brief | Done |
+| **3F-C** | Brand Kit cards + concept gallery | Done |
+| **3F-D** | Editor / variations / export polish | Done |
+| **3F-E** | Responsive hardening + acceptance + release readiness | Done |
 
-## 3F-C behavior
+## 3F-E additions
 
-### Brand Kit
-- Visual picker cards: Neutral, logo/initials, palette dots, edit affordance
-- Create / edit via existing `CreateBrandKitDialog` + `brandApi` (no duplicate system)
-- Auto-select after create/update; live brief preview updates from selected kit
-- Loading / error / empty states retained
+- Responsive overflow / mobile tab a11y / brand picker snap scroll  
+- Export placeholder gate (no silent success for missing logo/product images)  
+- Lightweight version History panel (existing list/restore APIs)  
+- Release-scope + acceptance docs  
+- Backend: `CONTENT_SKIP_MIGRATIONS` to exclude `016` for 3F-only deploys  
 
-### Concept gallery
-- Visual cards with aspect-aware **preview mockups** derived from concept composition + colors + brand
-- Distinct layouts (`centered-hero`, `bottom-stack`, `left-editorial`, `top-banner`, `diagonal-luxury`)
-- Actions: select, details dialog, create editable creative, regenerate (explicit), optional AI background
-- Real image shown when `imageBase64` returns from existing generate-image path; otherwise labeled mockup (**Not AI image**)
-- No auto-regenerate on brief visual tweaks
+## Docs
 
-### ZoeArtisan scenario
-- Template **ZoeArtisan Lipstick** seeds portrait 4:5 luxury brief
-- Mockups use concept `colorRecommendations` / Brand Kit reds & darks when present
-- Does not invent Zoe photography; product images only via authorized generate-image / brand assets
-
-## Files (3F-C)
-
-| Path | Role |
-|------|------|
-| `components/BrandKitPicker.tsx` | Visual Brand Kit selection |
-| `components/ConceptMockup.tsx` | Aspect-aware concept preview |
-| `components/ConceptGallery.tsx` | Gallery + details + actions |
-| `lib/conceptVisual.ts` (+ `.spec.ts`) | Layout/palette resolution |
-| `lib/exampleCreatives.ts` | + ZoeArtisan template |
-| `CreateBrandKitDialog.tsx` | Edit mode via `initialKit` |
-| `AdStudio.tsx` / `GuidedBriefComposer` / `AdStudioHome` | Wiring |
+| Doc | Path |
+|-----|------|
+| Release scope | `docs/architecture/ad-studio-release-scope-3fe.md` |
+| Acceptance report | `docs/architecture/ad-studio-3fe-acceptance.md` |
+| BK-D matrix | `docs/architecture/brand-kit-ad-studio-bkd.md` |
 
 ## Known limitations
 
-- Concept mockups are deterministic CSS compositions — not provider renders
-- Signed logo `readUrl` depends on backend returning asset URLs
-- Editor / variations / export polish still 3F-D
+- BrowserRouter: no `useBlocker` — Projects confirm + `beforeunload` only  
+- SceneThumb ≠ export parity  
+- Device-lab matrix still manual  
+- Migration 016 must be skipped or approved separately  

@@ -350,7 +350,7 @@ export default function BrandKitEditor() {
   const contrastMeta = contrastLabel(contrast);
 
   return (
-    <div className="space-y-4 pb-10">
+    <div className="space-y-4 pb-10 max-w-[100vw] overflow-x-hidden">
       <SEO title={`${identity.name || "Brand Kit"} | Brand Kit Studio`} />
 
       <div className="flex flex-wrap items-center justify-between gap-3">

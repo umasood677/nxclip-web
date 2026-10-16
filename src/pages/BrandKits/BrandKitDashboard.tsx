@@ -213,10 +213,10 @@ export default function BrandKitDashboard() {
   };
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-6 pb-10 max-w-[100vw] overflow-x-hidden">
       <SEO title="Brand Kit Studio | NxClip" />
 
-      <section className="relative overflow-hidden rounded-2xl border border-border glass p-6 md:p-8">
+      <section className="relative overflow-hidden rounded-2xl border border-border glass p-4 sm:p-6 md:p-8">
         <div
           className="pointer-events-none absolute inset-0 opacity-70"
           style={{

@@ -60,6 +60,59 @@ export function deleteLayer(graph: AdSceneGraph, layerId: string): AdSceneGraph 
   return { ...graph, layers: graph.layers.filter((l) => l.id !== layerId) };
 }
 
+export type AlignMode =
+  | "left"
+  | "center"
+  | "right"
+  | "top"
+  | "middle"
+  | "bottom";
+
+/** Align a single layer to the canvas edges/center. Locked layers are unchanged. */
+export function alignLayer(
+  graph: AdSceneGraph,
+  layerId: string,
+  mode: AlignMode,
+): AdSceneGraph {
+  const layer = graph.layers.find((l) => l.id === layerId);
+  if (!layer || layer.locked) return graph;
+  const { width: cw, height: ch } = graph.canvas;
+  let x = layer.x;
+  let y = layer.y;
+  switch (mode) {
+    case "left":
+      x = 0;
+      break;
+    case "center":
+      x = Math.round((cw - layer.width) / 2);
+      break;
+    case "right":
+      x = Math.round(cw - layer.width);
+      break;
+    case "top":
+      y = 0;
+      break;
+    case "middle":
+      y = Math.round((ch - layer.height) / 2);
+      break;
+    case "bottom":
+      y = Math.round(ch - layer.height);
+      break;
+  }
+  return updateLayer(graph, layerId, { x, y });
+}
+
+/** Set canvas background color (editable background). */
+export function setCanvasBackground(
+  graph: AdSceneGraph,
+  backgroundColor: string,
+): AdSceneGraph {
+  return {
+    ...graph,
+    canvas: { ...graph.canvas, backgroundColor },
+  };
+}
+
 /** Adapt canvas size by proportional layout (no stretch/crop of layer content boxes). */
 export function adaptCanvasFormat(
   graph: AdSceneGraph,

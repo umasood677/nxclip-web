@@ -107,11 +107,12 @@ export function BrandKitPicker({
         </div>
       </div>
 
-      {brands.length > 4 ? (
-        <div className="relative max-w-xs">
+      {brands.length > 2 ? (
+        <div className="relative max-w-full sm:max-w-xs">
           <Search
             size={14}
             className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
           />
           <Input
             value={query}
@@ -124,7 +125,7 @@ export function BrandKitPicker({
       ) : null}
 
       <div
-        className="flex gap-2 overflow-x-auto pb-1"
+        className="flex gap-2 overflow-x-auto pb-1 snap-x [-ms-overflow-style:none] [scrollbar-width:thin] motion-safe:scroll-smooth"
         role="listbox"
         aria-label="Brand Kit selection"
       >
@@ -134,7 +135,7 @@ export function BrandKitPicker({
           aria-selected={!selectedId}
           onClick={() => onSelect("")}
           className={cn(
-            "shrink-0 w-[148px] rounded-xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+            "shrink-0 snap-start w-[132px] sm:w-[148px] rounded-xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
             !selectedId
               ? "border-primary bg-primary/10 shadow-soft"
               : "border-border hover:border-primary/35 bg-card/50",
@@ -161,7 +162,7 @@ export function BrandKitPicker({
             <div
               key={kit.id}
               className={cn(
-                "relative shrink-0 w-[168px] rounded-xl border p-3 transition-colors",
+                "relative shrink-0 snap-start w-[148px] sm:w-[168px] rounded-xl border p-3 transition-colors",
                 selected
                   ? "border-primary bg-primary/10 shadow-soft"
                   : "border-border hover:border-primary/35 bg-card/50",

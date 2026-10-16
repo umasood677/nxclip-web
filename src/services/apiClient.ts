@@ -2944,6 +2944,21 @@ export const adStudioApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     }),
+  listCreativeVersions: async (
+    creativeId: string,
+  ): Promise<{ items: Array<{ id: string; version: number; changeSummary?: string | null; createdAt: string }> }> =>
+    performApiRequest(`/ad-studio/creatives/${creativeId}/versions`, {
+      method: "GET",
+    }),
+  restoreCreativeVersion: async (
+    creativeId: string,
+    version: number,
+  ): Promise<any> =>
+    performApiRequest(`/ad-studio/creatives/${creativeId}/restore`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ version }),
+    }),
   renderCreative: async (
     creativeId: string,
     body: Record<string, unknown> = {},

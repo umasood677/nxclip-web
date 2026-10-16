@@ -10,7 +10,10 @@ interface AdCanvasProps {
   onSelectLayer: (id: string | null) => void;
   onMoveLayer: (id: string, x: number, y: number) => void;
   onResizeLayer?: (id: string, width: number, height: number) => void;
+  /** Fired once when a drag/resize gesture ends — use to commit undo history. */
+  onTransformEnd?: () => void;
   zoom: number;
+  className?: string;
 }
 
 export function AdCanvas({
@@ -19,7 +22,9 @@ export function AdCanvas({
   onSelectLayer,
   onMoveLayer,
   onResizeLayer,
+  onTransformEnd,
   zoom,
+  className,
 }: AdCanvasProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<{
@@ -81,12 +86,16 @@ export function AdCanvas({
       (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
       setDrag(null);
       setResize(null);
+      onTransformEnd?.();
     }
   };
 
   return (
     <div
-      className="flex-1 flex items-center justify-center overflow-auto bg-muted/30 rounded-xl border border-border p-6"
+      className={cn(
+        "flex-1 flex items-center justify-center overflow-auto bg-muted/30 rounded-xl border border-border p-6",
+        className,
+      )}
       onClick={() => onSelectLayer(null)}
     >
       <div

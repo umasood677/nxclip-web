@@ -69,9 +69,9 @@ export function AdStudioHome({
   const recentCreatives = creatives.slice(0, 6);
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-8 pb-10 max-w-[100vw] overflow-x-hidden px-0 sm:px-0">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-2xl border border-border glass p-6 md:p-8">
+      <section className="relative overflow-hidden rounded-2xl border border-border glass p-4 sm:p-6 md:p-8">
         <div
           className="pointer-events-none absolute inset-0 opacity-70"
           style={{
@@ -95,15 +95,26 @@ export function AdStudioHome({
               with a live sample preview before you generate concepts.
             </p>
             <div className="flex flex-wrap gap-2 pt-1">
-              <Button type="button" size="lg" onClick={onStartIdea}>
-                <Lightbulb size={16} className="mr-2" />
+              <Button
+                type="button"
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={onStartIdea}
+              >
+                <Lightbulb size={16} className="mr-2" aria-hidden />
                 Start from an idea
               </Button>
-              <Button type="button" size="lg" variant="outline" onClick={onCreateBrand}>
-                <Palette size={16} className="mr-2" />
+              <Button
+                type="button"
+                size="lg"
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={onCreateBrand}
+              >
+                <Palette size={16} className="mr-2" aria-hidden />
                 Brand Kit
               </Button>
-              <Button type="button" size="lg" variant="ghost" asChild>
+              <Button type="button" size="lg" variant="ghost" className="w-full sm:w-auto" asChild>
                 <Link to="/brands">Manage kits</Link>
               </Button>
             </div>
