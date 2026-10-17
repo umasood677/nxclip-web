@@ -3,8 +3,10 @@ import { describe, it } from "node:test";
 import type { BrandKitSummary } from "../../BrandKits/lib/brandKitTypes";
 import {
   buildBrandAssetUrlMap,
+  buildBrandAssetUrlMapByStorageKey,
   listBrandAssetsBySlotRole,
   resolveAssetUrl,
+  resolveLayerAssetUrl,
 } from "./brandAssetUrls";
 
 const brand: BrandKitSummary = {
@@ -61,6 +63,32 @@ describe("brandAssetUrls", () => {
     assert.equal(
       resolveAssetUrl({ x: "https://ok.example/a.png" }, "x"),
       "https://ok.example/a.png",
+    );
+  });
+
+  it("resolveLayerAssetUrl never treats storageKey as a browser URL", () => {
+    const byKey = buildBrandAssetUrlMapByStorageKey({
+      id: "k",
+      name: "K",
+      assets: [
+        {
+          id: "a1",
+          role: "logo_primary",
+          status: "ready",
+          readUrl: "https://cdn.example/logo.png",
+          storageKey: "brands/o/k/a1/logo.png",
+        } as never,
+      ],
+    });
+    const url = resolveLayerAssetUrl(
+      {},
+      byKey,
+      { storageKey: "brands/o/k/a1/logo.png" },
+    );
+    assert.equal(url, "https://cdn.example/logo.png");
+    assert.equal(
+      resolveLayerAssetUrl({}, {}, { storageKey: "https://evil.example/x" }),
+      null,
     );
   });
 });

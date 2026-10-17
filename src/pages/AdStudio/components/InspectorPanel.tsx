@@ -286,6 +286,28 @@ export function InspectorPanel({
           </div>
         </>
       )}
+
+      {(layer.type === "image" || layer.type === "logo") && (
+        <div>
+          <Label className="text-xs">Object fit</Label>
+          <select
+            className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+            value={(layer as { objectFit?: string }).objectFit ?? "cover"}
+            onChange={(e) =>
+              onChange({
+                objectFit: e.target.value as "cover" | "contain" | "fill",
+              } as Partial<AdSceneLayer>)
+            }
+          >
+            <option value="cover">Cover</option>
+            <option value="contain">Contain</option>
+            <option value="fill">Fill</option>
+          </select>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Asset identity stays on Brand Kit — crop/fit only.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

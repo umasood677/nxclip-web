@@ -1,5 +1,9 @@
 import React, { useMemo, useRef, useState } from "react";
 import { cn } from "../../../lib/utils";
+import {
+  resolveLayerAssetUrl,
+  type BrandAssetUrlMap,
+} from "../canvas/brandAssetUrls";
 import { resolveAdFontFamily } from "../lib/adFonts";
 import { inspectLayerAsset, missingAssetMessage } from "../lib/motionAssets";
 import { sortLayers } from "../lib/sceneGraph";
@@ -35,6 +39,13 @@ interface AdCanvasProps {
   motionPreview?: AdCanvasMotionPreview | null;
   /** Disable drag/resize while scrubbing/playing motion. */
   interactionLocked?: boolean;
+  /** assetId → temporary Brand Kit readUrl (never storageKey). */
+  assetUrls?: BrandAssetUrlMap;
+  /** storageKey → readUrl for legacy layers (key never used as img src). */
+  storageKeyUrls?: BrandAssetUrlMap;
+  onAssetLoadError?: (assetId: string) => void;
+  /** Show dashed safe-area guide (default true). */
+  showSafeArea?: boolean;
 }
 
 export function AdCanvas({
@@ -48,6 +59,10 @@ export function AdCanvas({
   className,
   motionPreview = null,
   interactionLocked = false,
+  assetUrls,
+  storageKeyUrls,
+  onAssetLoadError,
+  showSafeArea = true,
 }: AdCanvasProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<{
@@ -140,11 +155,12 @@ export function AdCanvas({
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
         >
-          {/* Safe-area guide */}
-          <div
-            className="pointer-events-none absolute inset-[5%] border border-dashed border-white/25 z-[100]"
-            aria-hidden
-          />
+          {showSafeArea ? (
+            <div
+              className="pointer-events-none absolute inset-[5%] border border-dashed border-white/25 z-[100]"
+              aria-hidden
+            />
+          ) : null}
           {layers.map((layer) => {
             const motion = motionPreview?.[layer.id];
             if (layer.visible === false && !motion) return null;
@@ -184,7 +200,12 @@ export function AdCanvas({
                   onSelectLayer(layer.id);
                 }}
               >
-                <LayerVisual layer={layer} />
+                <LayerVisual
+                  layer={layer}
+                  assetUrls={assetUrls}
+                  storageKeyUrls={storageKeyUrls}
+                  onAssetLoadError={onAssetLoadError}
+                />
                 {selected && !layer.locked && !interactionLocked && onResizeLayer && (
                   <div
                     className="absolute -right-1.5 -bottom-1.5 h-3.5 w-3.5 rounded-sm bg-primary border border-background cursor-se-resize z-[1]"
@@ -210,7 +231,19 @@ export function AdCanvas({
   );
 }
 
-function LayerVisual({ layer }: { layer: AdSceneLayer }) {
+function LayerVisual({
+  layer,
+  assetUrls,
+  storageKeyUrls,
+  onAssetLoadError,
+}: {
+  layer: AdSceneLayer;
+  assetUrls?: BrandAssetUrlMap;
+  storageKeyUrls?: BrandAssetUrlMap;
+  onAssetLoadError?: (assetId: string) => void;
+}) {
+  const [failed, setFailed] = useState(false);
+
   if (layer.type === "text") {
     const t = layer as Extract<AdSceneLayer, { type: "text" }>;
     return (
@@ -263,7 +296,10 @@ function LayerVisual({ layer }: { layer: AdSceneLayer }) {
   if (layer.type === "image" || layer.type === "logo") {
     const img = layer as Extract<AdSceneLayer, { type: "image" | "logo" }>;
     const presence = inspectLayerAsset(img);
-    if (presence.missing) {
+    // Never use storageKey as an image source — only authorized readUrls.
+    const url = resolveLayerAssetUrl(assetUrls, storageKeyUrls, img);
+
+    if (presence.missing && !url) {
       return (
         <div
           className="w-full h-full bg-muted/80 border border-dashed border-amber-500/70 flex flex-col items-center justify-center gap-1 px-2 text-center"
@@ -280,24 +316,43 @@ function LayerVisual({ layer }: { layer: AdSceneLayer }) {
         </div>
       );
     }
-    if (img.storageKey) {
+
+    if (!url || failed) {
       return (
         <div
-          className="w-full h-full bg-muted flex items-center justify-center text-xs text-muted-foreground"
-          title={img.storageKey}
+          className="w-full h-full bg-muted/90 border border-dashed border-amber-500/50 flex flex-col items-center justify-center gap-1 px-2 text-center"
           role="img"
-          aria-label={`${presence.label} asset reference`}
+          aria-label={
+            img.assetId
+              ? `${presence.label} unavailable`
+              : `${presence.label} (no browser URL)`
+          }
         >
-          Asset
+          <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+            {img.assetId ? "Image unavailable" : presence.label}
+          </span>
+          <span className="text-[9px] text-muted-foreground leading-tight">
+            {img.assetId
+              ? "Refresh Brand Kit link"
+              : "Authorized preview requires assetId"}
+          </span>
         </div>
       );
     }
+
     return (
-      <div
-        className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-950"
-        role="img"
-        aria-label={`${presence.label} (asset id only)`}
-        title={img.assetId || presence.label}
+      <img
+        src={url}
+        alt=""
+        className="w-full h-full pointer-events-none"
+        style={{
+          objectFit: img.objectFit ?? (layer.type === "logo" ? "contain" : "cover"),
+        }}
+        draggable={false}
+        onError={() => {
+          setFailed(true);
+          if (img.assetId) onAssetLoadError?.(img.assetId);
+        }}
       />
     );
   }

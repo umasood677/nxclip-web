@@ -20,7 +20,13 @@ import { Button } from "../../components/ui/button";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Badge } from "../../components/ui/badge";
 import { SEO } from "../../components/SEO";
-import { adStudioApi } from "../../services/apiClient";
+import { adStudioApi, brandApi } from "../../services/apiClient";
+import type { BrandKitSummary } from "../BrandKits/lib/brandKitTypes";
+import {
+  buildBrandAssetUrlMap,
+  buildBrandAssetUrlMapByStorageKey,
+} from "./canvas/brandAssetUrls";
+import { sanitizeSceneGraphForClient } from "./canvas/sanitizeSceneGraph";
 import { isAdStudioAnimatedEnabled } from "./lib/adStudioAnimatedFlag";
 import { AdCanvas } from "./components/AdCanvas";
 import { BrandPanel } from "./components/BrandPanel";
@@ -68,7 +74,9 @@ export default function AdStudioEditor() {
   const [name, setName] = useState("Creative");
   const [projectId, setProjectId] = useState<string | null>(null);
   const [brandSnapshot, setBrandSnapshot] = useState<BrandSnapshotView | null>(null);
+  const [brandKit, setBrandKit] = useState<BrandKitSummary | null>(null);
   const [graph, setGraph] = useState<AdSceneGraph | null>(null);
+  const [originalGraph, setOriginalGraph] = useState<AdSceneGraph | null>(null);
   const [currentVersion, setCurrentVersion] = useState(1);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(0.45);
@@ -95,12 +103,39 @@ export default function AdStudioEditor() {
     saveStateRef.current = saveState;
   }, [saveState]);
 
+  const refreshBrandKit = useCallback(async (projectIdHint?: string | null) => {
+    const pid = projectIdHint ?? projectId;
+    if (!pid) {
+      setBrandKit(null);
+      return;
+    }
+    try {
+      const project = await adStudioApi.getProject(pid);
+      const kitId = project?.brandKitId as string | undefined;
+      if (!kitId) {
+        setBrandKit(null);
+        return;
+      }
+      const kit = (await brandApi.getKit(kitId)) as BrandKitSummary;
+      setBrandKit(kit);
+    } catch {
+      // Preview falls back to missing-asset UI; export still hydrates server-side.
+    }
+  }, [projectId]);
+
+  const originalGraphRef = useRef<AdSceneGraph | null>(null);
+
   const reloadCreative = useCallback(async () => {
     if (!creativeId) return;
     const creative = await adStudioApi.getCreative(creativeId);
     setName(creative.name);
     setProjectId(creative.projectId ?? null);
-    setGraph(creative.sceneGraph as AdSceneGraph);
+    const loaded = creative.sceneGraph as AdSceneGraph;
+    setGraph(loaded);
+    if (!originalGraphRef.current) {
+      originalGraphRef.current = structuredClone(loaded);
+      setOriginalGraph(originalGraphRef.current);
+    }
     setBrandSnapshot(normalizeBrandSnapshot(creative.brandSnapshot));
     setCurrentVersion(creative.currentVersion ?? 1);
     setSaveState("saved");
@@ -108,7 +143,8 @@ export default function AdStudioEditor() {
     setFuture([]);
     editEpochRef.current = 0;
     dragBaselineRef.current = null;
-  }, [creativeId]);
+    await refreshBrandKit(creative.projectId ?? null);
+  }, [creativeId, refreshBrandKit]);
 
   useEffect(() => {
     if (!creativeId) return;
@@ -148,6 +184,22 @@ export default function AdStudioEditor() {
     [graph, selectedLayerId],
   );
 
+  const assetUrls = useMemo(() => buildBrandAssetUrlMap(brandKit), [brandKit]);
+  const storageKeyUrls = useMemo(
+    () => buildBrandAssetUrlMapByStorageKey(brandKit),
+    [brandKit],
+  );
+
+  const restoreOriginalComposition = () => {
+    const original = originalGraphRef.current ?? originalGraph;
+    if (!original || !graph) return;
+    setHistory((h) => [...h.slice(-29), graph]);
+    setFuture([]);
+    setGraph(structuredClone(original));
+    markDirty();
+    toast.success("Restored original generated composition (unsaved)");
+  };
+
   const undo = () => {
     if (!graph || !history.length) return;
     const prev = history[history.length - 1]!;
@@ -176,7 +228,8 @@ export default function AdStudioEditor() {
       setSaveState("saving");
       try {
         const updated = await adStudioApi.updateCreative(creativeId, {
-          sceneGraph: snapshot,
+          // Strip private keys from client payload; server rehydrates storageKeys.
+          sceneGraph: sanitizeSceneGraphForClient(snapshot) ?? snapshot,
           changeSummary: opts?.silent ? "Autosave" : "Editor save",
           expectedVersion,
         });
@@ -487,6 +540,16 @@ export default function AdStudioEditor() {
           >
             Redo
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={restoreOriginalComposition}
+            disabled={!originalGraph && !originalGraphRef.current}
+            title="Restore the composition loaded when this editor session opened"
+          >
+            Restore original
+          </Button>
           <select
             className="h-8 rounded-md border border-input bg-background px-2 text-xs"
             aria-label="Canvas format"
@@ -621,6 +684,12 @@ export default function AdStudioEditor() {
           onMoveLayer={liveMove}
           onResizeLayer={previewMode ? undefined : liveResize}
           onTransformEnd={commitTransform}
+          assetUrls={assetUrls}
+          storageKeyUrls={storageKeyUrls}
+          onAssetLoadError={() => {
+            void refreshBrandKit();
+          }}
+          showSafeArea
         />
 
         <Card className="w-72 xl:w-80 shrink-0 h-full glass border-border flex flex-col min-w-0">
@@ -696,6 +765,12 @@ export default function AdStudioEditor() {
             onMoveLayer={liveMove}
             onResizeLayer={liveResize}
             onTransformEnd={commitTransform}
+            assetUrls={assetUrls}
+            storageKeyUrls={storageKeyUrls}
+            onAssetLoadError={() => {
+              void refreshBrandKit();
+            }}
+            showSafeArea
           />
         )}
         {mobileTab === "layers" && (

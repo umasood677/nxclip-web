@@ -36,6 +36,41 @@ export function buildBrandAssetUrlMap(
   return out;
 }
 
+/**
+ * Optional secondary index: private storageKey → readUrl for legacy layers
+ * that only have storageKey. Never expose the key to <img src>.
+ * Uses runtime kit payload when the API includes storageKey for owners.
+ */
+export function buildBrandAssetUrlMapByStorageKey(
+  brand?: BrandKitSummary | null,
+): BrandAssetUrlMap {
+  const out: Record<string, string> = {};
+  for (const asset of brand?.assets ?? []) {
+    if (!asset?.id || !isReady(asset)) continue;
+    const url = typeof asset.readUrl === "string" ? asset.readUrl.trim() : "";
+    if (!url || !/^https?:\/\//i.test(url) || url.startsWith("brands/")) continue;
+    const key = (asset as { storageKey?: string }).storageKey?.trim();
+    if (key && !/^https?:\/\//i.test(key)) {
+      out[key] = url;
+    }
+  }
+  return out;
+}
+
+export function resolveLayerAssetUrl(
+  assetUrls: BrandAssetUrlMap | undefined,
+  storageKeyUrls: BrandAssetUrlMap | undefined,
+  layer: { assetId?: string; storageKey?: string },
+): string | null {
+  const byId = resolveAssetUrl(assetUrls, layer.assetId);
+  if (byId) return byId;
+  const key = layer.storageKey?.trim();
+  if (!key || /^https?:\/\//i.test(key)) return null;
+  const byKey = storageKeyUrls?.[key];
+  if (byKey && /^https?:\/\//i.test(byKey)) return byKey;
+  return null;
+}
+
 export type BoundSlotAsset = {
   assetId: string;
   role: string;
