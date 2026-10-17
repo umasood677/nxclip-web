@@ -1,8 +1,22 @@
 import React, { useMemo, useRef, useState } from "react";
 import { cn } from "../../../lib/utils";
 import { resolveAdFontFamily } from "../lib/adFonts";
+import { inspectLayerAsset, missingAssetMessage } from "../lib/motionAssets";
 import { sortLayers } from "../lib/sceneGraph";
 import type { AdSceneGraph, AdSceneLayer } from "../types";
+
+export type AdCanvasMotionPreview = Record<
+  string,
+  {
+    x: number;
+    y: number;
+    opacity: number;
+    rotation: number;
+    scaleX: number;
+    scaleY: number;
+    hidden?: boolean;
+  }
+>;
 
 interface AdCanvasProps {
   graph: AdSceneGraph;
@@ -14,6 +28,13 @@ interface AdCanvasProps {
   onTransformEnd?: () => void;
   zoom: number;
   className?: string;
+  /**
+   * Optional per-layer motion overrides (Phase 4B-C live preview).
+   * When unset, static scene graph 1.0 rendering is unchanged.
+   */
+  motionPreview?: AdCanvasMotionPreview | null;
+  /** Disable drag/resize while scrubbing/playing motion. */
+  interactionLocked?: boolean;
 }
 
 export function AdCanvas({
@@ -25,6 +46,8 @@ export function AdCanvas({
   onTransformEnd,
   zoom,
   className,
+  motionPreview = null,
+  interactionLocked = false,
 }: AdCanvasProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<{
@@ -46,7 +69,7 @@ export function AdCanvas({
   const { width, height, backgroundColor } = graph.canvas;
 
   const onPointerDown = (e: React.PointerEvent, layer: AdSceneLayer) => {
-    if (layer.locked || layer.visible === false) return;
+    if (interactionLocked || layer.locked || layer.visible === false) return;
     e.stopPropagation();
     onSelectLayer(layer.id);
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
@@ -123,24 +146,37 @@ export function AdCanvas({
             aria-hidden
           />
           {layers.map((layer) => {
-            if (layer.visible === false) return null;
+            const motion = motionPreview?.[layer.id];
+            if (layer.visible === false && !motion) return null;
+            if (motion?.hidden) return null;
             const selected = layer.id === selectedLayerId;
+            const x = motion?.x ?? layer.x;
+            const y = motion?.y ?? layer.y;
+            const opacity = motion?.opacity ?? layer.opacity ?? 1;
+            const rotation = motion?.rotation ?? layer.rotation ?? 0;
+            const scaleX = motion?.scaleX ?? 1;
+            const scaleY = motion?.scaleY ?? 1;
+            const transformParts = [
+              scaleX !== 1 || scaleY !== 1 ? `scale(${scaleX}, ${scaleY})` : null,
+              rotation ? `rotate(${rotation}deg)` : null,
+            ].filter(Boolean);
             return (
               <div
                 key={layer.id}
                 className={cn(
                   "absolute select-none",
-                  layer.locked ? "cursor-default" : "cursor-move",
+                  interactionLocked || layer.locked ? "cursor-default" : "cursor-move",
                   selected && "ring-2 ring-primary ring-offset-1 ring-offset-transparent",
                 )}
                 style={{
-                  left: layer.x,
-                  top: layer.y,
+                  left: x,
+                  top: y,
                   width: layer.width,
                   height: layer.height,
                   zIndex: layer.zIndex,
-                  opacity: layer.opacity ?? 1,
-                  transform: layer.rotation ? `rotate(${layer.rotation}deg)` : undefined,
+                  opacity,
+                  transform: transformParts.length ? transformParts.join(" ") : undefined,
+                  transformOrigin: "top left",
                 }}
                 onPointerDown={(e) => onPointerDown(e, layer)}
                 onClick={(e) => {
@@ -149,7 +185,7 @@ export function AdCanvas({
                 }}
               >
                 <LayerVisual layer={layer} />
-                {selected && !layer.locked && onResizeLayer && (
+                {selected && !layer.locked && !interactionLocked && onResizeLayer && (
                   <div
                     className="absolute -right-1.5 -bottom-1.5 h-3.5 w-3.5 rounded-sm bg-primary border border-background cursor-se-resize z-[1]"
                     onPointerDown={(e) => {
@@ -226,17 +262,44 @@ function LayerVisual({ layer }: { layer: AdSceneLayer }) {
   }
   if (layer.type === "image" || layer.type === "logo") {
     const img = layer as Extract<AdSceneLayer, { type: "image" | "logo" }>;
+    const presence = inspectLayerAsset(img);
+    if (presence.missing) {
+      return (
+        <div
+          className="w-full h-full bg-muted/80 border border-dashed border-amber-500/70 flex flex-col items-center justify-center gap-1 px-2 text-center"
+          role="img"
+          aria-label={missingAssetMessage(img)}
+          title={missingAssetMessage(img)}
+        >
+          <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+            Missing {presence.kind}
+          </span>
+          <span className="text-[9px] text-muted-foreground leading-tight">
+            Re-link from Brand Kit — no substitute image
+          </span>
+        </div>
+      );
+    }
     if (img.storageKey) {
       return (
         <div
           className="w-full h-full bg-muted flex items-center justify-center text-xs text-muted-foreground"
           title={img.storageKey}
+          role="img"
+          aria-label={`${presence.label} asset reference`}
         >
           Asset
         </div>
       );
     }
-    return <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-950" />;
+    return (
+      <div
+        className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-950"
+        role="img"
+        aria-label={`${presence.label} (asset id only)`}
+        title={img.assetId || presence.label}
+      />
+    );
   }
   return <div className="w-full h-full border border-dashed border-white/20" />;
 }

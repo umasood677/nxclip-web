@@ -6,6 +6,15 @@ import { measureImageFile } from "../lib/imageDimensions";
 import { isSourceUpload } from "../lib/isReferenceAsset";
 import { STORAGE_KEYS, GATEWAY_CONFIG } from "../constants";
 import { getRefreshToken, clearPersistedUser } from "./auth/authService";
+import { isAdStudioAnimatedEnabled } from "../pages/AdStudio/lib/adStudioAnimatedFlag";
+
+function requireAdStudioAnimatedEnabled(): void {
+  if (!isAdStudioAnimatedEnabled()) {
+    throw new Error(
+      "Animated Ad Studio is disabled (VITE_AD_STUDIO_ANIMATED is not enabled)",
+    );
+  }
+}
 
 // Interface for API Gateway responses and errors
 export interface ApiResponse<T = unknown> {
@@ -2987,4 +2996,59 @@ export const adStudioApi = {
     }),
   downloadRenderJobUrl: (jobId: string): string =>
     `/ad-studio/render-jobs/${jobId}/download`,
+
+  /** Animated Ad Studio (Phase 4A APIs / 4B UI) — gated by VITE_AD_STUDIO_ANIMATED */
+  listMotionPresets: async (): Promise<{ items: any[] }> => {
+    requireAdStudioAnimatedEnabled();
+    return performApiRequest("/ad-studio/motion-presets", { method: "GET" });
+  },
+  animateCreative: async (
+    staticCreativeId: string,
+    body: Record<string, unknown> = {},
+  ): Promise<any> => {
+    requireAdStudioAnimatedEnabled();
+    return performApiRequest(`/ad-studio/creatives/${staticCreativeId}/animate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  },
+  getAnimated: async (id: string): Promise<any> => {
+    requireAdStudioAnimatedEnabled();
+    return performApiRequest(`/ad-studio/animated/${id}`, { method: "GET" });
+  },
+  updateAnimated: async (id: string, body: Record<string, unknown>): Promise<any> => {
+    requireAdStudioAnimatedEnabled();
+    return performApiRequest(`/ad-studio/animated/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  },
+  listAnimatedVersions: async (id: string): Promise<{ items: any[] }> => {
+    requireAdStudioAnimatedEnabled();
+    return performApiRequest(`/ad-studio/animated/${id}/versions`, { method: "GET" });
+  },
+  restoreAnimatedVersion: async (
+    id: string,
+    body: { version: number },
+  ): Promise<any> => {
+    requireAdStudioAnimatedEnabled();
+    return performApiRequest(`/ad-studio/animated/${id}/restore`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  },
+  applyMotionPreset: async (
+    id: string,
+    body: { presetId: string; durationMs?: number; expectedVersion?: number },
+  ): Promise<any> => {
+    requireAdStudioAnimatedEnabled();
+    return performApiRequest(`/ad-studio/animated/${id}/apply-preset`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  },
 };

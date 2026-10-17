@@ -23,6 +23,7 @@ import { identityApi } from "./services/apiClient";
 import { getPersistedUser, setPersistedUser, useAuthToken } from "./services/auth/authService";
 import { contentPlanFromOnboarding, isRenewingWeekPlan } from "./lib/weekPlan";
 import { creatorFieldsFromIdentityMe } from "./lib/onboardingSnapshot";
+import { isAdStudioAnimatedEnabled } from "./pages/AdStudio/lib/adStudioAnimatedFlag";
 
 const PageLoader = () => {
   return (
@@ -69,6 +70,12 @@ const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
 const ImageStudio = lazy(() => import("./pages/ImageStudio/ImageStudio"));
 const AdStudio = lazy(() => import("./pages/AdStudio/AdStudio"));
 const AdStudioEditor = lazy(() => import("./pages/AdStudio/AdStudioEditor"));
+const AnimatedAdStudioEditor = lazy(
+  () => import("./pages/AdStudio/AnimatedAdStudioEditor"),
+);
+const AnimatedAdStudioUnavailable = lazy(
+  () => import("./pages/AdStudio/AnimatedAdStudioUnavailable"),
+);
 const BrandKits = lazy(() => import("./pages/BrandKits/BrandKits"));
 const BrandKitEditor = lazy(() => import("./pages/BrandKits/BrandKitEditor"));
 const Analytics = lazy(() => import("./pages/Analytics/Analytics"));
@@ -410,6 +417,16 @@ export default function App() {
                     <Route path="/create/image" element={<ImageStudio />} />
                     <Route path="/image-studio" element={<ImageStudio />} />
                     <Route path="/create/ad" element={<AdStudio />} />
+                    <Route
+                      path="/create/ad/animated/:animatedId"
+                      element={
+                        isAdStudioAnimatedEnabled() ? (
+                          <AnimatedAdStudioEditor />
+                        ) : (
+                          <AnimatedAdStudioUnavailable />
+                        )
+                      }
+                    />
                     <Route path="/create/ad/:creativeId" element={<AdStudioEditor />} />
                     <Route path="/brands" element={<BrandKits />} />
                     <Route path="/brands/:brandId" element={<BrandKitEditor />} />

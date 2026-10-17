@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   ArrowLeft,
+  Clapperboard,
   Download,
   History,
   Layers,
@@ -20,6 +21,7 @@ import { ScrollArea } from "../../components/ui/scroll-area";
 import { Badge } from "../../components/ui/badge";
 import { SEO } from "../../components/SEO";
 import { adStudioApi } from "../../services/apiClient";
+import { isAdStudioAnimatedEnabled } from "./lib/adStudioAnimatedFlag";
 import { AdCanvas } from "./components/AdCanvas";
 import { BrandPanel } from "./components/BrandPanel";
 import { ExportPanel } from "./components/ExportPanel";
@@ -75,6 +77,7 @@ export default function AdStudioEditor() {
   const [previewMode, setPreviewMode] = useState(false);
   const [sideTab, setSideTab] = useState<SideTab>("properties");
   const [mobileTab, setMobileTab] = useState<"canvas" | SideTab | "layers">("canvas");
+  const [animating, setAnimating] = useState(false);
   /** Monotonic token so in-flight saves never clobber newer local edits. */
   const editEpochRef = useRef(0);
   const graphRef = useRef<AdSceneGraph | null>(null);
@@ -276,6 +279,33 @@ export default function AdStudioEditor() {
   const goProjects = () => {
     if (!confirmLeave()) return;
     navigate("/create/ad");
+  };
+
+  const animateThisAd = async () => {
+    if (!creativeId) return;
+    if (!isAdStudioAnimatedEnabled()) {
+      toast.message("Animated Ad Studio is not enabled in this environment");
+      return;
+    }
+    if (saveState === "dirty" || saveState === "saving") {
+      const ok = window.confirm(
+        "Save the static creative before animating? Unsaved edits will not be in the animated copy unless you save first.\n\nOK = save then animate · Cancel = abort",
+      );
+      if (!ok) return;
+      await persist();
+    }
+    setAnimating(true);
+    try {
+      const animated = await adStudioApi.animateCreative(creativeId, {
+        durationMs: 15_000,
+      });
+      toast.success("Animated derivative created — static original unchanged");
+      navigate(`/create/ad/animated/${animated.id}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not create animated ad");
+    } finally {
+      setAnimating(false);
+    }
   };
 
   const liveMove = (id: string, x: number, y: number) => {
@@ -514,6 +544,23 @@ export default function AdStudioEditor() {
           >
             {previewMode ? "Exit preview" : "Preview"}
           </Button>
+          {isAdStudioAnimatedEnabled() ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              disabled={animating || !creativeId}
+              onClick={() => void animateThisAd()}
+              title="Create an animated derivative (keeps this static creative)"
+            >
+              {animating ? (
+                <Loader2 size={14} className="mr-1 animate-spin" />
+              ) : (
+                <Clapperboard size={14} className="mr-1" />
+              )}
+              Animate This Ad
+            </Button>
+          ) : null}
           <Button
             type="button"
             size="sm"
