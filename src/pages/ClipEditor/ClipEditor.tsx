@@ -545,8 +545,16 @@ export default function ClipEditor() {
             setComposeSources(compose.sources);
             setComposeTransitions(compose.transitions ?? []);
           }
-          if (typeof spec.voiceVolume === "number") setClipVolume(Math.min(1, Math.max(0, spec.voiceVolume)));
-          if (typeof spec.bgmVolume === "number") setMusicVolume(Math.min(1, Math.max(0, spec.bgmVolume)));
+          if (typeof spec.voiceVolume === "number") {
+            const vv = Math.min(1, Math.max(0, spec.voiceVolume));
+            setClipVolume(vv);
+            setIsClipMuted(vv <= 0);
+          }
+          if (typeof spec.bgmVolume === "number") {
+            const bv = Math.min(1, Math.max(0, spec.bgmVolume));
+            setMusicVolume(bv);
+            setIsMusicMuted(bv <= 0);
+          }
           if (typeof spec.masterVolume === "number") setMasterVolume(Math.min(1.5, Math.max(0, spec.masterVolume)));
           if (spec.captions?.topText) setTopText(spec.captions.topText);
           if (spec.captions?.bottomText) setBottomText(spec.captions.bottomText);
@@ -2034,8 +2042,10 @@ export default function ClipEditor() {
       title,
       description,
       bgmTrackId: selectedTrackId || undefined,
-      voiceVolume: clipVolume,
-      bgmVolume: musicVolume,
+      // Persist mute buttons as silence so Final Render matches Studio preview
+      // (commentary+Foley only when SRC/BGM are muted).
+      voiceVolume: isClipMuted ? 0 : clipVolume,
+      bgmVolume: isMusicMuted ? 0 : musicVolume,
       masterVolume: Math.min(1.5, masterVolume),
       captions: {
         topText: topText || undefined,
@@ -2091,7 +2101,9 @@ export default function ClipEditor() {
     description,
     selectedTrackId,
     clipVolume,
+    isClipMuted,
     musicVolume,
+    isMusicMuted,
     masterVolume,
     topText,
     bottomText,
@@ -2262,14 +2274,9 @@ export default function ClipEditor() {
       };
 
       // Match media-worker inline FFmpeg budget (up to ~6 min) + callback latency.
+      // Progress UI is RenderLayerProgressBanner — no competing Sonner loading toast.
       const pollUntilDone = async (maxMs = 360_000) => {
-        toast.loading(
-          opts?.loadingMessage ?? "Burning layers into the MP4…",
-          {
-            id: toastId,
-            description: "Open the top status card for layer-by-layer progress.",
-          },
-        );
+        toast.dismiss(toastId);
         const started = Date.now();
         while (Date.now() - started < maxMs) {
           await new Promise((r) => setTimeout(r, 3000));
@@ -2678,12 +2685,10 @@ export default function ClipEditor() {
       // say queued/processing — reuse/poll would hang on the same dead job again.
       await ensurePolishedRender({
         toastId: "save-render",
-        loadingMessage: "Saving edit and rendering clip…",
         force: true,
       });
       setRenderStatus("completed");
       finishRenderLayerProgress(true);
-      toast.loading("Loading final preview…", { id: "save-render" });
       await loadRenderPreview();
       toast.success("Final render ready — play it below, then Publish or Download", {
         id: "save-render",
@@ -2875,7 +2880,7 @@ export default function ClipEditor() {
         if (isRenderingRef.current) return;
         setIsRendering(true);
         beginRenderLayerProgress();
-        toast.loading("Finishing render in progress…", { id: "save-render" });
+        toast.dismiss("save-render");
 
         const started = Date.now();
         while (!cancelled && Date.now() - started < 90_000) {
@@ -3657,6 +3662,11 @@ export default function ClipEditor() {
                     queueMicrotask(() => {
                       syncingFromSrcRef.current = false;
                     });
+                  }}
+                  onMusicMuteChange={(muted) => {
+                    setIsMusicMuted(Boolean(muted));
+                    if (muted) setMusicVolume(0);
+                    else setMusicVolume((v) => (v <= 0 ? 0.22 : v));
                   }}
                   onRegisterOriginalSync={(api) => {
                     soundOriginalSyncRef.current = api;
@@ -4502,6 +4512,12 @@ export default function ClipEditor() {
                     queueMicrotask(() => {
                       syncingFromSrcRef.current = false;
                     });
+                  }}
+                  onMusicMuteChange={(muted) => {
+                    if (editsLocked) return;
+                    setIsMusicMuted(Boolean(muted));
+                    if (muted) setMusicVolume(0);
+                    else setMusicVolume((v) => (v <= 0 ? 0.22 : v));
                   }}
                   onRegisterOriginalSync={(api) => {
                     soundOriginalSyncRef.current = api;
@@ -5413,10 +5429,11 @@ export default function ClipEditor() {
                           </p>
                           {(soundDesignOwnsOriginal || soundDesignOwnsAmbience) && (
                             <p className="mt-2 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1.5 text-[10px] leading-relaxed text-emerald-800 dark:text-emerald-100/90">
-                              AI Sound Design is active: Original Clip syncs with the{" "}
-                              <span className="font-semibold">SRC</span> bar.{" "}
-                              <span className="font-semibold">AMB</span> is ambience on the Sound
-                              timeline — Polish BGM stays separate and does not stack on Final Render.
+                              AI Sound Design is active: mute{" "}
+                              <span className="font-semibold">SRC</span> +{" "}
+                              <span className="font-semibold">BGM</span> on the Sound timeline (or
+                              Original Clip + Music here) for commentary+Foley only.{" "}
+                              <span className="font-semibold">AMB</span> is separate ambience.
                             </p>
                           )}
                         </div>

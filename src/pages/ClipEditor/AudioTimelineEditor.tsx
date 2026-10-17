@@ -164,6 +164,35 @@ function defaultSpanMs(type: TimelineEdlItem["type"]): number {
   return 1200;
 }
 
+/** Keep clip length when retiming so commentary is not crushed near the keep-window end. */
+function itemSpanMs(item: TimelineEdlItem): number {
+  const fallback = defaultSpanMs(item.type);
+  if (typeof item.endMs === "number" && Number.isFinite(item.endMs)) {
+    return Math.max(180, item.endMs - item.startMs);
+  }
+  return fallback;
+}
+
+function fitStartForSpan(startMs: number, spanMs: number, widthMs: number): {
+  startMs: number;
+  endMs: number;
+  clipped: boolean;
+} {
+  const span = Math.max(180, spanMs);
+  let start = Math.max(0, Math.round(startMs));
+  let end = start + span;
+  let clipped = false;
+  if (end > widthMs) {
+    start = Math.max(0, widthMs - span);
+    end = start + span;
+    if (end > widthMs) {
+      end = widthMs;
+      clipped = true;
+    }
+  }
+  return { startMs: start, endMs: end, clipped };
+}
+
 type GainBarProps = {
   item: TimelineEdlItem;
   disabled?: boolean;
@@ -301,6 +330,7 @@ export function AudioTimelineEditor({
   const [dragId, setDragId] = useState<string | null>(null);
   const [draft, setDraft] = useState<TimelineEdlItem[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const dragSpanRef = useRef(0);
   const widthMs = Math.max(1000, durationMs);
   const view = draft || items;
   const railW = comfortable ? "w-[5.5rem]" : "w-[4.75rem]";
@@ -348,8 +378,25 @@ export function AudioTimelineEditor({
     if (disabled || dragId !== id) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = Math.min(Math.max(0, e.clientX - rect.left), rect.width);
-    const startMs = Math.round((x / rect.width) * widthMs);
-    patchLocal(id, { startMs });
+    const rawStart = Math.round((x / rect.width) * widthMs);
+    const span = dragSpanRef.current || 180;
+    const fitted = fitStartForSpan(rawStart, span, widthMs);
+    patchLocal(id, { startMs: fitted.startMs, endMs: fitted.endMs });
+  };
+
+  const commitSelectedStartSec = (rawSec: string) => {
+    if (!selected || disabled) return;
+    const sec = Number(rawSec);
+    if (!Number.isFinite(sec)) return;
+    const span = itemSpanMs(selected);
+    const fitted = fitStartForSpan(Math.round(sec * 1000), span, widthMs);
+    commit(
+      view.map((it) =>
+        it.id === selected.id
+          ? { ...it, startMs: fitted.startMs, endMs: fitted.endMs }
+          : it,
+      ),
+    );
   };
 
   const activeLayers = LAYER_ORDER.filter((layer) => {
@@ -662,6 +709,7 @@ export function AudioTimelineEditor({
                           onPointerDown={(e) => {
                             if (disabled) return;
                             e.currentTarget.setPointerCapture(e.pointerId);
+                            dragSpanRef.current = itemSpanMs(item);
                             setDragId(item.id);
                             setSelectedId(item.id);
                             setDraft(view);
@@ -712,6 +760,25 @@ export function AudioTimelineEditor({
             <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wide text-white/70">
               {LAYER_META[selected.type].short}
             </span>
+            <label className="inline-flex items-center gap-1 text-white/55">
+              Start
+              <input
+                type="number"
+                min={0}
+                step={0.1}
+                disabled={disabled}
+                className="h-6 w-16 rounded border border-white/15 bg-black/40 px-1 font-mono text-[10px] text-white"
+                defaultValue={(selected.startMs / 1000).toFixed(1)}
+                key={`start-${selected.id}-${selected.startMs}`}
+                onBlur={(e) => commitSelectedStartSec(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur();
+                  }
+                }}
+              />
+              <span className="text-white/35">s</span>
+            </label>
             <span className="font-mono tabular-nums text-white/40">
               {formatClock(selected.startMs)}
               {selected.endMs != null ? ` → ${formatClock(selected.endMs)}` : ""}
@@ -728,6 +795,13 @@ export function AudioTimelineEditor({
                 }
               >
                 {hasPlayableHint(selected) ? "Voice ready" : "Voice pending — tap ▶ or Retry TTS"}
+              </span>
+            ) : null}
+            {selected.type === "voice" &&
+            typeof selected.endMs === "number" &&
+            selected.endMs > widthMs - 20 ? (
+              <span className="text-amber-200/90">
+                Line reaches clip end — drag earlier or shorten so it is not cut off
               </span>
             ) : null}
             {onPreviewClip &&
@@ -750,13 +824,14 @@ export function AudioTimelineEditor({
             {clipDetailLabel(selected)}
           </p>
           <p className="text-[9px] text-white/30">
-            Full line shown here · notes stay short · ▶ previews audio · drag to retime
+            Drag the note (keeps length) or set Start · mute SRC/AMB/BGM rails for VO+Foley only · ▶
+            to preview
           </p>
         </div>
       ) : (
         <p className="border-t border-white/8 px-3 py-1.5 text-[9px] text-white/30">
-          Select a Commentary / Foley note to read the full line · ▶ to preview · Original &amp;
-          Ambience use the level slider · Save &amp; Render for Final Preview
+          Mute Original / Ambience / Music rails for commentary+Foley only · drag VO/SFX to place ·
+          Save &amp; Render for Final Preview
         </p>
       )}
     </div>

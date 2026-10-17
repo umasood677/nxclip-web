@@ -226,6 +226,8 @@ type Props = {
   initialSoundDesign?: PersistedSoundDesign | null;
   /** SRC gain ↔ Polish Original live sync. */
   onOriginalLevelChange?: (linear: number, muted: boolean) => void;
+  /** BGM rail mute ↔ Polish Music mute (commentary+Foley-only mixes). */
+  onMusicMuteChange?: (muted: boolean) => void;
   /** Parent registers a setter so Polish Original can drive SRC. */
   onRegisterOriginalSync?: (api: {
     setFromLinear: (linear: number, muted: boolean) => void;
@@ -258,6 +260,7 @@ export function SoundDesignPanel({
   reviewHostEl,
   initialSoundDesign,
   onOriginalLevelChange,
+  onMusicMuteChange,
   onRegisterOriginalSync,
 }: Props) {
   const [mode, setMode] = useState<SoundDesignMode>("auto");
@@ -317,6 +320,10 @@ export function SoundDesignPanel({
         const muted = orig.enabled === false;
         onOriginalLevelChange(muted ? 0 : gainDbToLinear(orig.gainDb), muted);
       }
+      const music = edl.find((it) => it.type === "music");
+      if (music && onMusicMuteChange) {
+        onMusicMuteChange(music.enabled === false);
+      }
     }
     const keepMs = Math.max(1000, Math.round(Math.max(0.5, durationSec) * 1000));
     const summary = planSummaryFromState(sd, keepMs);
@@ -325,7 +332,7 @@ export function SoundDesignPanel({
     if (rec?.summary || sd.audioStoryPlan || edl.length) {
       setAnalyzed(true);
     }
-  }, [contentId, initialSoundDesign, onOriginalLevelChange, durationSec]);
+  }, [contentId, initialSoundDesign, onOriginalLevelChange, onMusicMuteChange, durationSec]);
 
   const keepDurationMs = Math.max(1000, Math.round(Math.max(0.5, durationSec) * 1000));
 
@@ -623,9 +630,14 @@ export function SoundDesignPanel({
 
   const notifyOriginalLevel = (items: TimelineEdlItem[]) => {
     const orig = items.find((it) => it.type === "original");
-    if (!orig || !onOriginalLevelChange) return;
-    const muted = orig.enabled === false;
-    onOriginalLevelChange(muted ? 0 : gainDbToLinear(orig.gainDb), muted);
+    if (orig && onOriginalLevelChange) {
+      const muted = orig.enabled === false;
+      onOriginalLevelChange(muted ? 0 : gainDbToLinear(orig.gainDb), muted);
+    }
+    const music = items.find((it) => it.type === "music");
+    if (music && onMusicMuteChange) {
+      onMusicMuteChange(music.enabled === false);
+    }
   };
 
   const applyEdlLocal = async (items: TimelineEdlItem[]) => {
@@ -1127,7 +1139,8 @@ export function SoundDesignPanel({
                       </p>
                     ) : null}
                     <p className="mt-0.5 text-[10px] text-white/40">
-                      Tap ▶ on each Commentary / Foley note to hear what will burn into Final Render.
+                      Mute SRC + BGM rails for commentary+Foley only · drag VO (keeps length) or set
+                      Start · ▶ to preview before Final Render.
                     </p>
                     {ttsDeferred || voiceNeedsTts ? (
                       <p className="mt-0.5 text-[10px] text-amber-200/70">
