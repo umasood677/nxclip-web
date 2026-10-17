@@ -2,6 +2,10 @@
 
 Canonical source: content-service `ad-motion-scene-graph.ts` + contracts `AdMotionSceneGraphDto`.
 
+**Phase 4C-A:** Deterministic evaluation and frame-time formula live in backend
+`@nxclip/contracts` (`ad-motion-evaluate.ts`). Keep this file’s `motionEvaluate.ts`
+algorithmically identical (default easing `easeOut`, inactive → opacity 0).
+
 ## Schema
 
 - `schemaVersion: "2.0"`, `kind: "animated"`
