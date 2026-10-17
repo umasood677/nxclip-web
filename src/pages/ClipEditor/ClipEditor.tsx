@@ -486,7 +486,6 @@ export default function ClipEditor() {
   // Load real clip media for this content id (F6 Phase 0 foundation).
   useEffect(() => {
     if (!id) return;
-    setCanonicalTypographyRaw(undefined);
     let cancelled = false;
     let objectUrl: string | null = null;
     (async () => {
