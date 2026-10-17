@@ -4,10 +4,10 @@ import { Badge } from "../../../components/ui/badge";
 import { cn } from "../../../lib/utils";
 import type { BrandKitSummary } from "../../BrandKits/CreateBrandKitDialog";
 import type { AdBriefFormState } from "../lib/adStudioLabels";
+import { ConceptTemplatePreview } from "../canvas/ConceptTemplatePreview";
 import { resolveConceptVisualStyle } from "../lib/conceptVisual";
 import type { AdConcept } from "../types";
 import { BriefLivePreview } from "./BriefLivePreview";
-import { ConceptMockup } from "./ConceptMockup";
 
 export type ConceptPreviewState =
   | "loading"
@@ -102,7 +102,7 @@ export function ConceptLivePreview({
             </Badge>
           </div>
         </div>
-        <ConceptMockup
+        <ConceptTemplatePreview
           concept={concept}
           brand={brand}
           outputFormat={form.outputFormat}

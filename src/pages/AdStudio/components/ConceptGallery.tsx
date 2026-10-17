@@ -14,8 +14,8 @@ import { Skeleton } from "../../../components/ui/skeleton";
 import { cn } from "../../../lib/utils";
 import type { BrandKitSummary } from "../../BrandKits/CreateBrandKitDialog";
 import type { AdConcept } from "../types";
+import { ConceptTemplatePreview } from "../canvas/ConceptTemplatePreview";
 import { resolveConceptPalette, resolveConceptVisualStyle } from "../lib/conceptVisual";
-import { ConceptMockup } from "./ConceptMockup";
 
 type Props = {
   concepts: AdConcept[];
@@ -165,7 +165,7 @@ export function ConceptGallery({
               )}
             >
               <div className="flex gap-3">
-                <ConceptMockup
+                <ConceptTemplatePreview
                   concept={concept}
                   brand={brand}
                   outputFormat={outputFormat}
@@ -262,7 +262,7 @@ export function ConceptGallery({
                 <DialogDescription>{details.creativeDirection}</DialogDescription>
               </DialogHeader>
               <div className="flex flex-col sm:flex-row gap-4">
-                <ConceptMockup
+                <ConceptTemplatePreview
                   concept={details}
                   brand={brand}
                   outputFormat={outputFormat}

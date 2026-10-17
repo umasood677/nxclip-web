@@ -64,6 +64,9 @@ export interface AdSceneGraph {
   schemaVersion: string;
   canvas: AdSceneCanvas;
   layers: AdSceneLayer[];
+  /** Optional provenance from TemplateEngine (UX-2A.2). */
+  templateId?: string;
+  layoutFamily?: string;
 }
 
 /** Mirrors @nxclip/contracts ConceptLayoutFamily (UX-2A.1). */
@@ -98,6 +101,13 @@ export interface AdConcept {
   composition: string;
   /** Server-authoritative layout family when present (UX-2A.1). */
   layoutFamily?: ConceptLayoutFamily;
+  /** Optional template id when templates V1 experience is active (UX-2A.2). */
+  templateId?: string;
+  /**
+   * Optional server-authored AdSceneGraph 1.0.
+   * When present, SceneStage prefers this over FE preview composition.
+   */
+  sceneGraph?: AdSceneGraph;
   colorRecommendations: string[];
   typographyRecommendations: string[];
   platformSuitability: string[];
