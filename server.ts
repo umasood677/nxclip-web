@@ -705,12 +705,71 @@ async function startServer() {
         }
       });
 
-      // Pass media signed-URL redirects straight to the browser (no Auth header on GCS).
+      // content-service media returns 302 → GCS signed URL. Browser fetch cannot
+      // follow that cross-origin (GCS has no CORS for our SPA origin / preflight).
+      // Stream GCS bytes same-origin WITHOUT forwarding Authorization (GCS 403).
       const redirectStatuses = new Set([301, 302, 303, 307, 308]);
       if (redirectStatuses.has(response.status)) {
-        const location = response.headers.location || response.headers.Location;
+        const rawLocation = response.headers.location || response.headers.Location;
+        const location = rawLocation
+          ? Array.isArray(rawLocation)
+            ? String(rawLocation[0])
+            : String(rawLocation)
+          : "";
+        const isGcsSigned =
+          /^https:\/\/storage\.googleapis\.com\//i.test(location) ||
+          /^https:\/\/[^/]+\.storage\.googleapis\.com\//i.test(location);
+        if (
+          location &&
+          isGcsSigned &&
+          (req.method === "GET" || req.method === "HEAD")
+        ) {
+          try {
+            const rangeHeader = req.headers.range;
+            const gcsRes = await axios({
+              method: req.method as any,
+              url: location,
+              responseType: "arraybuffer",
+              maxRedirects: 5,
+              validateStatus: () => true,
+              headers: {
+                ...(typeof rangeHeader === "string" && rangeHeader
+                  ? { Range: rangeHeader }
+                  : {}),
+              },
+            });
+            // Drop redirect headers already copied from upstream 302.
+            res.removeHeader("Location");
+            const gcsPass = [
+              "content-type",
+              "content-length",
+              "content-range",
+              "accept-ranges",
+              "etag",
+              "last-modified",
+              "cache-control",
+            ];
+            for (const key of gcsPass) {
+              const value = gcsRes.headers[key];
+              if (value !== undefined) {
+                res.setHeader(key, Array.isArray(value) ? value.join(", ") : String(value));
+              }
+            }
+            if (req.method === "HEAD") {
+              return res.status(gcsRes.status).end();
+            }
+            return res.status(gcsRes.status).send(Buffer.from(gcsRes.data));
+          } catch (gcsErr: any) {
+            console.error("[Gateway Proxy] GCS signed-URL fetch failed:", gcsErr?.message || gcsErr);
+            return sendErrorResponse(
+              502,
+              "Media storage fetch failed after signed redirect",
+              "BAD_GATEWAY",
+            );
+          }
+        }
         if (location) {
-          res.setHeader("Location", Array.isArray(location) ? location[0] : String(location));
+          res.setHeader("Location", location);
           return res.status(response.status).end();
         }
       }

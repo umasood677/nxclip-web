@@ -33,11 +33,11 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useParams, useNavigate } from "react-router-dom";
 import {
   contentApi,
-  resolveBaseGatewayUrl,
   type SocialPlatform,
 } from "../../services/apiClient";
 import { SocialPublishTargets } from "../../components/social/SocialPublishTargets";
 import { getAccessToken } from "../../services/auth/authService";
+import { buildGatewayProxyUrl } from "../../lib/authenticatedMediaUrl";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { cn, safeStringify } from "../../lib/utils";
@@ -825,16 +825,13 @@ export default function ClipEditor() {
         // Always load the original master for editing. Feed/detail use the polished
         // render by default once burn-in completes — without variant=master Studio
         // would show the burned MP4 and feel like edits "didn't apply" on re-open.
-        const token = getAccessToken();
-        const mediaUrl = `${resolveBaseGatewayUrl()}/content/${id}/media?variant=master`;
+        // Same-origin gateway-proxy streams GCS after signed redirect (avoids browser CORS).
+        const mediaUrl = buildGatewayProxyUrl(`/content/${id}/media?variant=master`);
         let lastErr: unknown;
         for (let attempt = 0; attempt < 4; attempt++) {
           if (cancelled) return;
           try {
-            const res = await fetch(mediaUrl, {
-              cache: "no-store",
-              headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-            });
+            const res = await fetch(mediaUrl, { cache: "no-store" });
             if (!res.ok) throw new Error(`Media ${res.status}`);
             const blob = await res.blob();
             if (!blob || blob.size < 64) throw new Error("Media empty");
@@ -919,12 +916,10 @@ export default function ClipEditor() {
   /** Fetch completed render into the polish preview player. */
   const loadRenderPreview = useCallback(async () => {
     if (!id) return;
-    const token = getAccessToken();
-    const mediaUrl = `${resolveBaseGatewayUrl()}/content/${id}/media?variant=render&_=${Date.now()}`;
-    const res = await fetch(mediaUrl, {
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      cache: "no-store",
-    });
+    const mediaUrl = buildGatewayProxyUrl(
+      `/content/${id}/media?variant=render&_=${Date.now()}`,
+    );
+    const res = await fetch(mediaUrl, { cache: "no-store" });
     if (!res.ok) throw new Error(`Render preview failed (${res.status})`);
     const blob = await res.blob();
     if (!blob || blob.size < 64) throw new Error("Render preview empty");
@@ -2427,12 +2422,10 @@ export default function ClipEditor() {
 
       if (opts?.download) {
         toast.loading("Preparing download…", { id: toastId });
-        const token = getAccessToken();
-        const mediaUrl = `${resolveBaseGatewayUrl()}/content/${id}/media?variant=render&_=${Date.now()}`;
-        const res = await fetch(mediaUrl, {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-          cache: "no-store",
-        });
+        const mediaUrl = buildGatewayProxyUrl(
+          `/content/${id}/media?variant=render&_=${Date.now()}`,
+        );
+        const res = await fetch(mediaUrl, { cache: "no-store" });
         if (!res.ok) throw new Error(`Download failed (${res.status})`);
         const blob = await res.blob();
         const objectUrl = URL.createObjectURL(blob);
@@ -2623,13 +2616,11 @@ export default function ClipEditor() {
             ready = true;
             toast.success("Animation ready — loading preview");
             // Trigger media reload by clearing then re-setting via navigation params
-            const token = getAccessToken();
-            const mediaUrl = `${resolveBaseGatewayUrl()}/content/${id}/media?variant=master`;
+            const mediaUrl = buildGatewayProxyUrl(
+              `/content/${id}/media?variant=master`,
+            );
             try {
-              const res = await fetch(mediaUrl, {
-                cache: "no-store",
-                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-              });
+              const res = await fetch(mediaUrl, { cache: "no-store" });
               if (res.ok) {
                 const blob = await res.blob();
                 if (blob.size >= 64) {
@@ -2727,12 +2718,10 @@ export default function ClipEditor() {
     triggerHaptic("medium");
     try {
       toast.loading("Preparing download…", { id: "render-clip" });
-      const token = getAccessToken();
-      const mediaUrl = `${resolveBaseGatewayUrl()}/content/${id}/media?variant=render&_=${Date.now()}`;
-      const res = await fetch(mediaUrl, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        cache: "no-store",
-      });
+      const mediaUrl = buildGatewayProxyUrl(
+        `/content/${id}/media?variant=render&_=${Date.now()}`,
+      );
+      const res = await fetch(mediaUrl, { cache: "no-store" });
       if (!res.ok) throw new Error(`Download failed (${res.status})`);
       const blob = await res.blob();
       const objectUrl = URL.createObjectURL(blob);
