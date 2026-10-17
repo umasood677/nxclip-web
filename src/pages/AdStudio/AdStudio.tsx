@@ -17,6 +17,10 @@ import {
   type AdBriefFormState,
 } from "./lib/adStudioLabels";
 import type { FeaturedExample } from "./lib/exampleCreatives";
+import {
+  readSelectedConceptId,
+  writeSelectedConceptId,
+} from "./lib/selectedConceptStorage";
 import type { AdConcept } from "./types";
 import "../ImageStudio/components/image-edit-fonts.css";
 
@@ -38,9 +42,11 @@ export default function AdStudio() {
   const [concepts, setConcepts] = useState<AdConcept[]>([]);
   const [selectedConceptId, setSelectedConceptId] = useState<string | null>(null);
   const [conceptsLoading, setConceptsLoading] = useState(false);
+  const [conceptsError, setConceptsError] = useState<string | null>(null);
   const [conceptImages, setConceptImages] = useState<Record<string, string>>({});
   const [creatives, setCreatives] = useState<any[]>([]);
   const [generationSource, setGenerationSource] = useState<string | null>(null);
+  const [savingBrief, setSavingBrief] = useState(false);
   const [createBrandOpen, setCreateBrandOpen] = useState(false);
   const [importBrandOpen, setImportBrandOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<BrandKitSummary | null>(null);
@@ -63,6 +69,58 @@ export default function AdStudio() {
       toast.error(e instanceof Error ? e.message : "Could not update project brand");
     }
   }, []);
+
+  const buildBriefPayload = useCallback(
+    (state: AdBriefFormState) => ({
+      productOrService: state.productOrService.trim(),
+      advertisingObjective: state.advertisingObjective,
+      targetAudience: state.targetAudience.trim(),
+      coreMessage: state.coreMessage.trim(),
+      desiredTone: state.desiredTone.trim(),
+      platform: state.platform,
+      outputFormat: state.outputFormat,
+      cta: state.cta.trim() || "Learn more",
+    }),
+    [],
+  );
+
+  /** Sync brief (+ name / brand) so regenerate uses the form the user sees. */
+  const syncProjectBrief = useCallback(
+    async (pid: string, state: AdBriefFormState = form) => {
+      const updated = await adStudioApi.updateProject(pid, {
+        name: state.name.trim() || undefined,
+        brandKitId: state.brandKitId || undefined,
+        clearBrandKit: !state.brandKitId || undefined,
+        brief: buildBriefPayload(state),
+      });
+      setProjects((prev) =>
+        prev.map((p) => (p.id === pid ? { ...p, ...updated } : p)),
+      );
+      return updated;
+    },
+    [buildBriefPayload, form],
+  );
+
+  const saveBrief = useCallback(async () => {
+    if (!projectId) return;
+    setSavingBrief(true);
+    try {
+      await syncProjectBrief(projectId);
+      toast.success("Brief saved");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save brief");
+    } finally {
+      setSavingBrief(false);
+    }
+  }, [projectId, syncProjectBrief]);
+
+  const selectConcept = useCallback(
+    (conceptId: string) => {
+      setSelectedConceptId(conceptId);
+      if (projectId) writeSelectedConceptId(projectId, conceptId);
+    },
+    [projectId],
+  );
 
   const selectBrand = useCallback(
     (id: string) => {
@@ -187,11 +245,15 @@ export default function AdStudio() {
     }
     setBusy(true);
     setConceptsLoading(true);
+    setConceptsError(null);
     try {
+      await syncProjectBrief(projectId);
       const res = await adStudioApi.generateConcepts(projectId, { conceptCount: 4 });
       const next = (res.concepts ?? []) as AdConcept[];
       setConcepts(next);
-      setSelectedConceptId(next[0]?.conceptId ?? null);
+      const pick = next[0]?.conceptId ?? null;
+      setSelectedConceptId(pick);
+      writeSelectedConceptId(projectId, pick);
       setGenerationSource(res.generationSource ?? res.provider ?? null);
       if (res.generationSource === "heuristic" || /heuristic/i.test(res.provider ?? "")) {
         toast.message("Concepts ready (heuristic)", {
@@ -201,7 +263,10 @@ export default function AdStudio() {
         toast.success("Concepts generated");
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Concept generation failed");
+      const message =
+        e instanceof Error ? e.message : "Concept generation failed";
+      setConceptsError(message);
+      toast.error(message);
     } finally {
       setConceptsLoading(false);
       setBusy(false);
@@ -271,6 +336,8 @@ export default function AdStudio() {
         desiredTone: brief.desiredTone ?? prev.desiredTone,
       }));
     }
+    setConceptsError(null);
+    setConceptsLoading(true);
     try {
       const [listed, creativeList] = await Promise.all([
         adStudioApi.listConcepts(id),
@@ -278,12 +345,23 @@ export default function AdStudio() {
       ]);
       const next = (listed.concepts ?? []) as AdConcept[];
       setConcepts(next);
-      setSelectedConceptId(next[0]?.conceptId ?? null);
+      const stored = readSelectedConceptId(id);
+      const pick =
+        (stored && next.some((c) => c.conceptId === stored) ? stored : null) ??
+        next[0]?.conceptId ??
+        null;
+      setSelectedConceptId(pick);
+      if (pick) writeSelectedConceptId(id, pick);
       setGenerationSource(listed.generationSource ?? listed.provider ?? null);
       setCreatives(creativeList.items ?? []);
-    } catch {
+    } catch (e) {
       setConcepts([]);
       setCreatives([]);
+      setConceptsError(
+        e instanceof Error ? e.message : "Failed to load project concepts",
+      );
+    } finally {
+      setConceptsLoading(false);
     }
   };
 
@@ -422,13 +500,16 @@ export default function AdStudio() {
           onBack={() => setView("home")}
           busy={busy}
           conceptsLoading={conceptsLoading}
+          conceptsError={conceptsError}
           projectId={projectId}
           canCreate={canCreateProject}
           onCreateProject={() => void createProject()}
           onGenerateConcepts={() => void generateConcepts()}
+          onSaveBrief={() => void saveBrief()}
+          savingBrief={savingBrief}
           concepts={concepts}
           selectedConceptId={selectedConceptId}
-          onSelectConcept={setSelectedConceptId}
+          onSelectConcept={selectConcept}
           generationSource={generationSource}
           conceptImages={conceptImages}
           creatives={creatives}

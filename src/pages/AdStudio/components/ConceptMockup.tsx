@@ -18,6 +18,8 @@ type Props = {
   imageUrl?: string | null;
   className?: string;
   compact?: boolean;
+  /** Large workspace preview (UX-1 live panel) */
+  hero?: boolean;
 };
 
 export function ConceptMockup({
@@ -27,12 +29,13 @@ export function ConceptMockup({
   imageUrl,
   className,
   compact,
+  hero,
 }: Props) {
   const format = formatForAspect(outputFormat);
   const style = resolveConceptVisualStyle(concept, brand);
   const logo = brandLogoUrl(brand);
-  const maxH = compact ? 200 : 280;
-  const maxW = compact ? 160 : 220;
+  const maxH = hero ? 460 : compact ? 200 : 280;
+  const maxW = hero ? 340 : compact ? 160 : 220;
   const scale = Math.min(maxW / format.width, maxH / format.height);
   const width = Math.round(format.width * scale);
   const height = Math.round(format.height * scale);
