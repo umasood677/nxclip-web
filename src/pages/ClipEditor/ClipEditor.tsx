@@ -30,6 +30,8 @@ import {
 } from "lucide-react";
 import { SocialPlatformIcon } from "../../components/social/SocialPlatformIcon";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { CanonicalCaptionPreview } from './CanonicalCaptionPreview';
+import { validateTypographyLayout } from '../../lib/clipTypography/layoutContract';
 import { useSearchParams, useParams, useNavigate } from "react-router-dom";
 import {
   contentApi,
@@ -272,6 +274,7 @@ export default function ClipEditor() {
   const soundOriginalSyncRef = useRef<{
     setFromLinear: (linear: number, muted: boolean) => void;
   } | null>(null);
+  const soundMusicSyncRef = useRef<{ setMuted: (muted: boolean) => void } | null>(null);
   const syncingFromSrcRef = useRef(false);
   const [isPolishing, setIsPolishing] = useState(false);
   const [polishProgress, setPolishProgress] = useState(0);
@@ -330,6 +333,8 @@ export default function ClipEditor() {
   const [bottomOverlay, setBottomOverlay] = useState(DEFAULT_BOTTOM_CAPTION_PCT);
   const [memeCaptionStyle, setMemeCaptionStyle] = useState("kinetic_hormozi");
   const [captionFontId, setCaptionFontId] = useState<ClipCaptionFontId>(CLIP_CAPTION_FONT_DEFAULT);
+  const [canonicalTypographyRaw,setCanonicalTypographyRaw] = useState<unknown>(undefined);
+  const canonicalTypography = useMemo(() => { try { return canonicalTypographyRaw == null ? undefined : validateTypographyLayout(canonicalTypographyRaw); } catch { return undefined; } },[canonicalTypographyRaw]);
   const [captionTextColor, setCaptionTextColor] = useState("#FFFFFF");
   const previewPlaybackGenRef = useRef(0);
   const [hooks, setHooks] = useState<Array<{ text: string; startMs: number; durationMs: number; styleId?: string }>>([]);
@@ -485,6 +490,7 @@ export default function ClipEditor() {
   // Load real clip media for this content id (F6 Phase 0 foundation).
   useEffect(() => {
     if (!id) return;
+    setCanonicalTypographyRaw(undefined);
     let cancelled = false;
     let objectUrl: string | null = null;
     (async () => {
@@ -522,6 +528,7 @@ export default function ClipEditor() {
           }
         }
         const spec = item.clipEditSpec;
+        setCanonicalTypographyRaw(spec?.extras?.canonicalTypography ?? undefined);
         const isAnimate =
           Boolean(spec?.animate) ||
           Boolean(spec?.sourceContentId) ||
@@ -780,6 +787,7 @@ export default function ClipEditor() {
           if (savedData) {
             try {
               const parsed = JSON.parse(savedData);
+              setCanonicalTypographyRaw(parsed.canonicalTypography ?? undefined);
               if (typeof parsed.trimStart === "number") setTrimStart(parsed.trimStart);
               if (typeof parsed.trimEnd === "number") setTrimEnd(parsed.trimEnd);
               if (parsed.selectedTrackId) setSelectedTrackId(parsed.selectedTrackId);
@@ -2080,6 +2088,7 @@ export default function ClipEditor() {
         : undefined,
       creatorContext: prompt ? sanitizeCreatorContext(prompt) || undefined : undefined,
       extras: {
+        ...(canonicalTypographyRaw === undefined ? {} : {canonicalTypography:canonicalTypographyRaw}),
         hashtags: hashtags.length ? hashtags : undefined,
         // Always send transitions (incl. []) so clearing them invalidates prior burn-in.
         transitions: appliedTransitions,
@@ -2111,6 +2120,7 @@ export default function ClipEditor() {
     bottomOverlay,
     memeCaptionStyle,
     captionFontId,
+    canonicalTypographyRaw,
     captionTextColor,
     hooks,
     silenceEnabled,
@@ -2780,10 +2790,11 @@ export default function ClipEditor() {
       bottomOverlay,
       memeCaptionStyle,
       captionFontId,
+      canonicalTypography:canonicalTypographyRaw,
       updatedAt: new Date().toISOString()
     };
     safeLocalStorage.setItem(`nexaclip_editor_autosave:${id}`, safeStringify(data));
-  }, [id, trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId]);
+  }, [id, trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, canonicalTypographyRaw]);
 
   // Periodic autosave every 30 seconds (local + server blueprint)
   useEffect(() => {
@@ -3671,6 +3682,9 @@ export default function ClipEditor() {
                   onRegisterOriginalSync={(api) => {
                     soundOriginalSyncRef.current = api;
                   }}
+                  onRegisterMusicSync={(api) => {
+                    soundMusicSyncRef.current = api;
+                  }}
                 />
               </div>
             </aside>
@@ -3774,7 +3788,10 @@ export default function ClipEditor() {
               />
 
               {/* AI Coach / caption live preview — drag to reposition (same as Polish) */}
+              {!editsLocked && canonicalTypography ? <CanonicalCaptionPreview plan={canonicalTypography} timeMs={Math.max(0,(currentTime-trimStart)*1000)} /> : null}
+              {canonicalTypographyRaw != null && !canonicalTypography ? <div role="alert" className="absolute bottom-2 text-xs">Saved typography layout is invalid. Export requires repair.</div> : null}
               {!editsLocked &&
+              canonicalTypographyRaw == null &&
               (topText || hooks[0]?.text) &&
               coachOverlayOnCut(currentTime, coachTextCuts) ? (
                 <DraggableCaptionOverlay
@@ -3789,6 +3806,7 @@ export default function ClipEditor() {
                 />
               ) : null}
               {!editsLocked &&
+              canonicalTypographyRaw == null &&
               bottomText &&
               coachOverlayOnCut(currentTime, coachTextCuts) ? (
                 <DraggableCaptionOverlay
@@ -4522,6 +4540,9 @@ export default function ClipEditor() {
                   onRegisterOriginalSync={(api) => {
                     soundOriginalSyncRef.current = api;
                   }}
+                  onRegisterMusicSync={(api) => {
+                    soundMusicSyncRef.current = api;
+                  }}
                 />
               </div>
             ) : null}
@@ -4693,7 +4714,9 @@ export default function ClipEditor() {
                 </div>
                 
                 {/* Caption overlays only for live preview — final render already has them burned in */}
+                {!showingFinalRender && !editsLocked && canonicalTypography ? <CanonicalCaptionPreview plan={canonicalTypography} timeMs={Math.max(0,(currentTime-trimStart)*1000)} /> : null}
                 {!showingFinalRender &&
+                canonicalTypographyRaw == null &&
                 !editsLocked &&
                 (topText || hooks[0]?.text) &&
                 coachOverlayOnCut(currentTime, coachTextCuts) ? (
@@ -4709,6 +4732,7 @@ export default function ClipEditor() {
                   />
                 ) : null}
                 {!showingFinalRender &&
+                canonicalTypographyRaw == null &&
                 !editsLocked &&
                 bottomText &&
                 coachOverlayOnCut(currentTime, coachTextCuts) ? (
@@ -5429,10 +5453,11 @@ export default function ClipEditor() {
                           </p>
                           {(soundDesignOwnsOriginal || soundDesignOwnsAmbience) && (
                             <p className="mt-2 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1.5 text-[10px] leading-relaxed text-emerald-800 dark:text-emerald-100/90">
-                              AI Sound Design is active: mute{" "}
-                              <span className="font-semibold">SRC</span> +{" "}
-                              <span className="font-semibold">BGM</span> on the Sound timeline (or
-                              Original Clip + Music here) for commentary+Foley only.{" "}
+                              Sound Design owns the mix: mute{" "}
+                              <span className="font-semibold">Original Clip</span> (SRC) and{" "}
+                              <span className="font-semibold">Music</span> (BGM) here or on the
+                              Sound timeline for commentary+Foley only. Final Output is master
+                              level — it does not strip VO/Foley.{" "}
                               <span className="font-semibold">AMB</span> is separate ambience.
                             </p>
                           )}
@@ -5537,9 +5562,15 @@ export default function ClipEditor() {
                               <Button 
                                 variant="ghost"
                                 size="icon-sm"
-                                onClick={() => setIsMusicMuted(!isMusicMuted)}
+                                onClick={() => {
+                                  const next = !isMusicMuted;
+                                  setIsMusicMuted(next);
+                                  if (next) setMusicVolume(0);
+                                  else setMusicVolume((v) => (v <= 0 ? 0.22 : v));
+                                  soundMusicSyncRef.current?.setMuted(next);
+                                }}
                                 className="hover:bg-muted rounded-md"
-                                disabled={!selectedTrackId}
+                                disabled={!selectedTrackId && !soundDesignMixActive}
                               >
                                 {isMusicMuted || musicVolume === 0 ? <VolumeX size={14} className="text-destructive" /> : <Volume2 size={14} />}
                               </Button>
@@ -5553,15 +5584,17 @@ export default function ClipEditor() {
                             onValueChange={(v) => {
                               const val = Array.isArray(v) ? v[0] : v;
                               setMusicVolume(val);
-                              if (isMusicMuted) setIsMusicMuted(false);
+                              const muted = val <= 0.0001;
+                              if (isMusicMuted !== muted) setIsMusicMuted(muted);
+                              soundMusicSyncRef.current?.setMuted(muted);
                             }}
                             className="w-full"
-                            disabled={!selectedTrackId}
+                            disabled={!selectedTrackId && !soundDesignMixActive}
                           />
-                          {soundDesignOwnsAmbience ? (
+                          {soundDesignOwnsAmbience || soundDesignMixActive ? (
                             <p className="text-[10px] text-muted-foreground leading-relaxed">
-                              AMB on the Sound timeline is ambient bed (room/crowd). This BGM slider
-                              is Coach underscore music only — it does not change AMB.
+                              Mute here (or BGM on the Sound timeline) for commentary+Foley only.
+                              AMB is ambient bed — separate from this Music slider.
                             </p>
                           ) : null}
                         </div>

@@ -66,6 +66,14 @@ const DEFAULT_COMPONENTS: SoundDesignComponents = {
   preserveImportantOriginalAudio: true,
 };
 
+/** Google Neural2 commentary voices — 1 man + 2 women. */
+const COMMENTARY_VOICES = [
+  { id: "en-US-Neural2-J", label: "Man — Broadcast" },
+  { id: "en-US-Neural2-F", label: "Woman — Clear" },
+  { id: "en-US-Neural2-C", label: "Woman — Warm" },
+] as const;
+type CommentaryVoiceId = (typeof COMMENTARY_VOICES)[number]["id"];
+
 function estimateCredits(opts: {
   analyze: boolean;
   plan: boolean;
@@ -161,7 +169,7 @@ type EdlLike = {
 /** Gain beds always sit on the keep window; timed clips must intersect it. */
 function edlItemInKeepWindow(item: EdlLike, durationMs: number): boolean {
   const t = item.type;
-  if (t === "original" || t === "ambience") return true;
+  if (t === "original" || t === "ambience" || t === "music") return true;
   if (typeof item.startMs !== "number" || !Number.isFinite(item.startMs)) return false;
   const start = item.startMs;
   const end =
@@ -232,6 +240,8 @@ type Props = {
   onRegisterOriginalSync?: (api: {
     setFromLinear: (linear: number, muted: boolean) => void;
   }) => void;
+  /** Parent registers a setter so Polish Music mute drives the BGM rail. */
+  onRegisterMusicSync?: (api: { setMuted: (muted: boolean) => void }) => void;
 };
 
 function gainDbToLinear(db: number): number {
@@ -262,6 +272,7 @@ export function SoundDesignPanel({
   onOriginalLevelChange,
   onMusicMuteChange,
   onRegisterOriginalSync,
+  onRegisterMusicSync,
 }: Props) {
   const [mode, setMode] = useState<SoundDesignMode>("auto");
   const [components, setComponents] = useState<SoundDesignComponents>(DEFAULT_COMPONENTS);
@@ -270,6 +281,8 @@ export function SoundDesignPanel({
   /** True when commentary was planned but TTS upload/EDL step failed (Foley still usable). */
   const [ttsDeferred, setTtsDeferred] = useState(false);
   const [premiumVoice, setPremiumVoice] = useState(false);
+  const [commentaryVoiceId, setCommentaryVoiceId] =
+    useState<CommentaryVoiceId>("en-US-Neural2-J");
   const [analyzed, setAnalyzed] = useState(false);
   const [recommendation, setRecommendation] = useState<{
     summary: string;
@@ -311,6 +324,15 @@ export function SoundDesignPanel({
         lightTouchOnly: Boolean(rec.lightTouchOnly),
         suggestedMode: rec.suggestedMode ? String(rec.suggestedMode) : undefined,
       });
+    }
+    const planVoice = (sd.audioStoryPlan as { commentary?: { voiceId?: string } } | undefined)
+      ?.commentary?.voiceId;
+    if (
+      planVoice === "en-US-Neural2-J" ||
+      planVoice === "en-US-Neural2-F" ||
+      planVoice === "en-US-Neural2-C"
+    ) {
+      setCommentaryVoiceId(planVoice);
     }
     const edl = toTimelineItems(Array.isArray(sd.audioEdl) ? sd.audioEdl : []);
     if (edl.length) {
@@ -490,6 +512,7 @@ export function SoundDesignPanel({
       try {
         const tts = await contentApi.synthesizeSoundDesign(contentId, {
           durationSec: Math.max(0.5, durationSec),
+          voiceId: commentaryVoiceId,
           ...(segId ? { segmentIds: [segId] } : {}),
         });
         const edl = (tts.audioEdl as unknown[]) || [];
@@ -545,6 +568,7 @@ export function SoundDesignPanel({
     try {
       const tts = await contentApi.synthesizeSoundDesign(contentId, {
         durationSec: Math.max(0.5, durationSec),
+        voiceId: commentaryVoiceId,
       });
       const edl = (tts.audioEdl as unknown[]) || [];
       const items = toTimelineItems(edl);
@@ -713,6 +737,47 @@ export function SoundDesignPanel({
     });
   }, [onRegisterOriginalSync, contentId, durationSec]);
 
+  // Polish Music mute → BGM rail
+  useEffect(() => {
+    if (!onRegisterMusicSync) return;
+    onRegisterMusicSync({
+      setMuted: (muted) => {
+        setTimeline((prev) => {
+          const idx = prev.findIndex((it) => it.type === "music");
+          if (idx < 0) {
+            onMusicMuteChange?.(muted);
+            return prev;
+          }
+          const next = [...prev];
+          const cur = next[idx]!;
+          next[idx] = { ...cur, enabled: !muted };
+          onMusicMuteChange?.(muted);
+          void (async () => {
+            if (!contentId) return;
+            try {
+              await contentApi.patchSoundDesignEdl(contentId, {
+                audioEdl: next.map((it) => ({
+                  id: it.id,
+                  type: it.type,
+                  startMs: it.startMs,
+                  endMs: it.endMs,
+                  gainDb: it.gainDb,
+                  enabled: it.enabled,
+                  assetId: it.assetId,
+                  metadata: it.metadata,
+                })),
+                durationMs: Math.max(1000, Math.round(durationSec * 1000)),
+              });
+            } catch {
+              /* polish mute stays local */
+            }
+          })();
+          return next;
+        });
+      },
+    });
+  }, [onRegisterMusicSync, onMusicMuteChange, contentId, durationSec]);
+
   const planAndApply = async () => {
     if (!contentId) return;
     if (!analyzed) {
@@ -728,6 +793,7 @@ export function SoundDesignPanel({
         mode,
         components,
         durationSec: Math.max(0.5, durationSec),
+        voiceId: commentaryVoiceId,
       });
       const foley = res.audioStoryPlan?.foleyEvents?.filter((f) => f.enabled).length ?? 0;
       const voice = res.audioStoryPlan?.commentary?.segments?.length ?? 0;
@@ -746,6 +812,7 @@ export function SoundDesignPanel({
         try {
           const tts = await contentApi.synthesizeSoundDesign(contentId, {
             durationSec: Math.max(0.5, durationSec),
+            voiceId: commentaryVoiceId,
           });
           edl = (tts.audioEdl as unknown[]) || edl;
           setTtsDeferred(false);
@@ -980,6 +1047,31 @@ export function SoundDesignPanel({
 
           {analyzed && (
             <>
+              <div className="space-y-2">
+                <p className="text-[11px] font-medium text-white/80">Commentary voice</p>
+                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+                  {COMMENTARY_VOICES.map((v) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      disabled={disabled || Boolean(busy)}
+                      onClick={() => setCommentaryVoiceId(v.id)}
+                      className={cn(
+                        "rounded-lg border px-2 py-1.5 text-left text-[11px] font-medium transition-colors",
+                        commentaryVoiceId === v.id
+                          ? "border-emerald-400/50 bg-emerald-500/15 text-emerald-50"
+                          : "border-white/10 bg-black/30 text-white/65 hover:border-white/25 hover:text-white/90",
+                      )}
+                    >
+                      {v.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-white/35">
+                  Pick before Apply. Change later with Retry TTS to regenerate lines.
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <p className="text-[11px] font-medium text-white/80">Recommended path</p>
                 <Button

@@ -1582,6 +1582,7 @@ export const contentApi = {
       mode?: string;
       components?: Record<string, boolean>;
       durationSec: number;
+      voiceId?: string;
     },
   ): Promise<{
     provider: string;
@@ -1626,7 +1627,7 @@ export const contentApi = {
 
   synthesizeSoundDesign: async (
     id: string,
-    body?: { segmentIds?: string[]; durationSec?: number },
+    body?: { segmentIds?: string[]; durationSec?: number; voiceId?: string },
   ): Promise<{
     provider: string;
     synthesized: number;

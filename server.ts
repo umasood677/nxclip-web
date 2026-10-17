@@ -644,15 +644,22 @@ async function startServer() {
       // Avoid passing body for GET/HEAD or empty requests
       const hasBody = req.method !== "GET" && req.method !== "HEAD" && req.body && Object.keys(req.body).length > 0;
 
+      // Do not follow upstream redirects. content-service media returns 302 → GCS
+      // signed URL; if axios follows with Authorization, GCS responds 403.
+      const axiosProxyOpts = {
+        method: req.method as any,
+        headers: headersToForward,
+        data: hasBody ? req.body : undefined,
+        responseType: "arraybuffer" as const,
+        maxRedirects: 0,
+        validateStatus: () => true, // Forward all status codes to client rather than throwing
+      };
+
       let response;
       try {
         response = await axios({
           url: finalDestinationUrl,
-          method: req.method as any,
-          headers: headersToForward,
-          data: hasBody ? req.body : undefined,
-          responseType: "arraybuffer",
-          validateStatus: () => true, // Forward all status codes to client rather than throwing
+          ...axiosProxyOpts,
         });
       } catch (axiosError: any) {
         // Catch network and resolution errors (e.g., DNS ENOTFOUND, ECONNREFUSED, ETIMEDOUT)
@@ -672,11 +679,7 @@ async function startServer() {
           console.log(`[Gateway Proxy] Retrying forwarding ${req.method} request to: ${fallbackUrl}`);
           response = await axios({
             url: fallbackUrl,
-            method: req.method as any,
-            headers: headersToForward,
-            data: hasBody ? req.body : undefined,
-            responseType: "arraybuffer",
-            validateStatus: () => true,
+            ...axiosProxyOpts,
           });
         } else {
           throw axiosError;
@@ -701,6 +704,16 @@ async function startServer() {
           res.setHeader(key, Array.isArray(value) ? value.join(", ") : (value as any));
         }
       });
+
+      // Pass media signed-URL redirects straight to the browser (no Auth header on GCS).
+      const redirectStatuses = new Set([301, 302, 303, 307, 308]);
+      if (redirectStatuses.has(response.status)) {
+        const location = response.headers.location || response.headers.Location;
+        if (location) {
+          res.setHeader("Location", Array.isArray(location) ? location[0] : String(location));
+          return res.status(response.status).end();
+        }
+      }
 
       const contentType = String(response.headers["content-type"] || "");
       const isJson = contentType.includes("application/json");
