@@ -36,7 +36,6 @@ import {
   type SocialPlatform,
 } from "../../services/apiClient";
 import { SocialPublishTargets } from "../../components/social/SocialPublishTargets";
-import { getAccessToken } from "../../services/auth/authService";
 import { buildGatewayProxyUrl } from "../../lib/authenticatedMediaUrl";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
