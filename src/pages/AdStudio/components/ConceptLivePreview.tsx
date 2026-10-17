@@ -93,9 +93,14 @@ export function ConceptLivePreview({
             </Badge>
             <span className="text-sm font-semibold truncate">{concept.title}</span>
           </div>
-          <Badge variant="outline" className="text-[10px] shrink-0">
-            {style.moodLabel}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+            <Badge variant="outline" className="text-[10px]">
+              {style.layoutLabel}
+            </Badge>
+            <Badge variant="secondary" className="text-[10px]">
+              {style.moodLabel}
+            </Badge>
+          </div>
         </div>
         <ConceptMockup
           concept={concept}

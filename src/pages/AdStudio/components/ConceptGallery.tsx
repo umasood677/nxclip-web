@@ -190,6 +190,9 @@ export function ConceptGallery({
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Badge variant="secondary">{concept.cta}</Badge>
                     <Badge variant="outline" className="text-[10px]">
+                      {style.layoutLabel}
+                    </Badge>
+                    <Badge variant="secondary" className="text-[10px]">
                       {style.moodLabel}
                     </Badge>
                   </div>
@@ -283,6 +286,12 @@ export function ConceptGallery({
                       Composition
                     </div>
                     <p className="text-muted-foreground">{details.composition}</p>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide">
+                      Layout
+                    </div>
+                    <p>{detailsStyle.layoutLabel}</p>
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground uppercase tracking-wide">

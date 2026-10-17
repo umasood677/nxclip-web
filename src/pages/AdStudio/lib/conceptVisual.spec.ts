@@ -69,8 +69,33 @@ describe("conceptVisual", () => {
   it("builds visual style with brand-aware mood for Zoe campaign", () => {
     const style = resolveConceptVisualStyle(zoeConcept, brand);
     assert.equal(style.layout, "diagonal-luxury");
+    assert.equal(style.layoutLabel, "Luxury editorial");
     assert.match(style.background, /linear-gradient/);
     assert.ok(style.moodLabel.length > 0);
     assert.equal(brandInitials("ZoeArtisan"), "ZO");
+  });
+
+  it("prefers server layoutFamily over composition heuristics", () => {
+    const forced: AdConcept = {
+      ...zoeConcept,
+      layoutFamily: "top-banner",
+      composition: "luxury dark matte burgundy velvet",
+    };
+    assert.equal(resolveConceptLayout(forced), "top-banner");
+    assert.equal(
+      resolveConceptVisualStyle(forced, brand).layoutLabel,
+      "Bold banner",
+    );
+  });
+
+  it("ignores unsupported layoutFamily and falls back to legacy inference", () => {
+    const legacy: AdConcept = {
+      ...zoeConcept,
+      layoutFamily: "not-real" as AdConcept["layoutFamily"],
+      composition: "centered hero spotlight",
+      creativeDirection: "clean hero center focus",
+      title: "Hero Center",
+    };
+    assert.equal(resolveConceptLayout(legacy), "centered-hero");
   });
 });

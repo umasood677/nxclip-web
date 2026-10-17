@@ -66,6 +66,26 @@ export interface AdSceneGraph {
   layers: AdSceneLayer[];
 }
 
+/** Mirrors @nxclip/contracts ConceptLayoutFamily (UX-2A.1). */
+export const CONCEPT_LAYOUT_FAMILIES = [
+  "centered-hero",
+  "bottom-stack",
+  "left-editorial",
+  "top-banner",
+  "diagonal-luxury",
+] as const;
+
+export type ConceptLayoutFamily = (typeof CONCEPT_LAYOUT_FAMILIES)[number];
+
+export const CONCEPT_LAYOUT_FAMILY_LABELS: Record<ConceptLayoutFamily, string> =
+  {
+    "centered-hero": "Centered hero",
+    "bottom-stack": "Product-led stack",
+    "left-editorial": "Editorial split",
+    "top-banner": "Bold banner",
+    "diagonal-luxury": "Luxury editorial",
+  };
+
 export interface AdConcept {
   conceptId: string;
   title: string;
@@ -76,6 +96,8 @@ export interface AdConcept {
   visualPrompt: string;
   negativePrompt?: string;
   composition: string;
+  /** Server-authoritative layout family when present (UX-2A.1). */
+  layoutFamily?: ConceptLayoutFamily;
   colorRecommendations: string[];
   typographyRecommendations: string[];
   platformSuitability: string[];

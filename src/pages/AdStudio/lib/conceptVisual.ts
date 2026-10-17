@@ -1,16 +1,12 @@
 import type { BrandKitSummary } from "../../BrandKits/CreateBrandKitDialog";
-import type { AdConcept } from "../types";
-import { AD_FORMATS } from "../types";
+import type { AdConcept, ConceptLayoutFamily } from "../types";
+import { AD_FORMATS, CONCEPT_LAYOUT_FAMILY_LABELS } from "../types";
 
-export type ConceptLayoutId =
-  | "centered-hero"
-  | "bottom-stack"
-  | "left-editorial"
-  | "top-banner"
-  | "diagonal-luxury";
+/** @deprecated Prefer ConceptLayoutFamily — kept as alias for local call sites. */
+export type ConceptLayoutId = ConceptLayoutFamily;
 
 export type ConceptVisualStyle = {
-  layout: ConceptLayoutId;
+  layout: ConceptLayoutFamily;
   background: string;
   accent: string;
   text: string;
@@ -21,9 +17,11 @@ export type ConceptVisualStyle = {
   headingSizeScale: number;
   align: "left" | "center" | "right";
   moodLabel: string;
+  /** Human-readable canonical layout family label */
+  layoutLabel: string;
 };
 
-const LAYOUTS: ConceptLayoutId[] = [
+const LAYOUTS: ConceptLayoutFamily[] = [
   "centered-hero",
   "bottom-stack",
   "left-editorial",
@@ -54,8 +52,19 @@ function isLight(hex: string): boolean {
   return (r * 299 + g * 587 + b * 114) / 1000 > 155;
 }
 
-/** Infer layout from concept composition text + stable concept id. */
-export function resolveConceptLayout(concept: AdConcept): ConceptLayoutId {
+function isConceptLayoutFamily(value: unknown): value is ConceptLayoutFamily {
+  return typeof value === "string" && (LAYOUTS as string[]).includes(value);
+}
+
+/**
+ * Prefer server-authoritative layoutFamily (UX-2A.1).
+ * Legacy inference (regex + stable hash) only when absent/unsupported.
+ */
+export function resolveConceptLayout(concept: AdConcept): ConceptLayoutFamily {
+  if (isConceptLayoutFamily(concept.layoutFamily)) {
+    return concept.layoutFamily;
+  }
+
   const blob = `${concept.composition ?? ""} ${concept.creativeDirection ?? ""} ${concept.title ?? ""}`.toLowerCase();
   // Luxury / product-led cues first so beauty campaigns aren't flattened to generic editorial.
   if (/luxury|dark|matte|premium|cinematic|burgundy|velvet/.test(blob)) {
@@ -111,6 +120,7 @@ export function resolveConceptVisualStyle(
   brand?: BrandKitSummary | null,
 ): ConceptVisualStyle {
   const layout = resolveConceptLayout(concept);
+  const layoutLabel = CONCEPT_LAYOUT_FAMILY_LABELS[layout];
   const palette = resolveConceptPalette(concept, brand);
   const bg = layout === "diagonal-luxury" || layout === "bottom-stack"
     ? palette.background
@@ -126,18 +136,11 @@ export function resolveConceptVisualStyle(
   const moodLabel =
     moodFromDirection && moodFromDirection.length < 48
       ? moodFromDirection
-      : layout === "diagonal-luxury"
-        ? "Luxury editorial"
-        : layout === "left-editorial"
-          ? "Editorial asymmetry"
-          : layout === "bottom-stack"
-            ? "Product-led"
-            : layout === "top-banner"
-              ? "Bold banner"
-              : "Centered hero";
+      : layoutLabel;
 
   return {
     layout,
+    layoutLabel,
     background:
       layout === "diagonal-luxury"
         ? `linear-gradient(155deg, ${palette.background} 0%, ${palette.secondary} 48%, ${palette.primary}55 100%)`
