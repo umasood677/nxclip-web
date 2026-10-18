@@ -1,0 +1,530 @@
+{
+  "fontconfig": "Already verified in real renderer logs; skip redundant fc-match subprocesses here",
+  "results": [
+    {
+      "id": "bebas-neue-400-normal-short-title",
+      "assSha256": "feca4ad1771477c756b0e1bae2c7e65af34d7c72148fd9ce1cb137ff879560d4",
+      "identical": true
+    },
+    {
+      "id": "bebas-neue-400-normal-multiline",
+      "assSha256": "557938196a6336e5167b6ade78a25939fe43a58eb68ce42989511d23cc3147c4",
+      "identical": true
+    },
+    {
+      "id": "bebas-neue-400-normal-long-wrap",
+      "assSha256": "379cbac314b451ef897938d198d3e15376e358ea711011792422dc2c48d79ac5",
+      "identical": true
+    },
+    {
+      "id": "bebas-neue-400-normal-bold-display",
+      "assSha256": "80f6eec1c7b37d203fc871fe76e52a185bdc0ca800ad0005c2d9c4c1b6c98dae",
+      "identical": true
+    },
+    {
+      "id": "bebas-neue-400-normal-stroke-shadow",
+      "assSha256": "5763ce9c4f830fc178df62d20c0411b9aa81d5158255fc86e28fbe30d2b08b9b",
+      "identical": true
+    },
+    {
+      "id": "bebas-neue-400-normal-mixed-symbols",
+      "assSha256": "20450dd2c08371b8c7872f3383a4363a52ce0180fabbfa4ff0637c8d4056b51f",
+      "identical": true
+    },
+    {
+      "id": "bebas-neue-400-normal-letter-spacing",
+      "assSha256": "22dcb28a8200d8ce7630aa6813398834638b823716ef22551182c0af6eb6be9b",
+      "identical": true
+    },
+    {
+      "id": "anton-400-normal-short-title",
+      "assSha256": "fd74a26b311741bf098ad2a3778ab94bcc3747278df3d224fb43815023f42186",
+      "identical": true
+    },
+    {
+      "id": "anton-400-normal-multiline",
+      "assSha256": "e42569305f67465065479ec911dccf92e448877532dde4ed8b6a9584cfc06beb",
+      "identical": true
+    },
+    {
+      "id": "anton-400-normal-long-wrap",
+      "assSha256": "aa5ba1f442325e43a500fe04fe82bf59eaae610eb65e4d001f8d45f8df02c944",
+      "identical": true
+    },
+    {
+      "id": "anton-400-normal-bold-display",
+      "assSha256": "225fe3151e73d9717cdd7d4432a4cdc000487d8b1ef947dc96a6fc990b808221",
+      "identical": true
+    },
+    {
+      "id": "anton-400-normal-stroke-shadow",
+      "assSha256": "55f8ff8836cb6c00434170a10d520a797a9a8d2f2dfc5e282d106ef080629a07",
+      "identical": true
+    },
+    {
+      "id": "anton-400-normal-mixed-symbols",
+      "assSha256": "5798a92f2eddb3f90721eab267661a573ac2e2a363ae17e7890667728854a341",
+      "identical": true
+    },
+    {
+      "id": "anton-400-normal-letter-spacing",
+      "assSha256": "302a631bb9610c3d5078a57be48cdcf289582ecf2f7e03e2aeeca62719fd527e",
+      "identical": true
+    },
+    {
+      "id": "archivo-black-400-normal-short-title",
+      "assSha256": "fd2bda2cc2fe77e1bacf0b02ba8c3c03a9ccfb16fd1022585627cc5384fbaadd",
+      "identical": true
+    },
+    {
+      "id": "archivo-black-400-normal-multiline",
+      "assSha256": "6bd88373b06f9809d44194d88809c110ba17de1ef72aeb4c4b09f385887517b9",
+      "identical": true
+    },
+    {
+      "id": "archivo-black-400-normal-long-wrap",
+      "assSha256": "0350a0dc12d10f564d623715ebc2f4be60e7ff6cb49d786d310c05c577aea957",
+      "identical": true
+    },
+    {
+      "id": "archivo-black-400-normal-bold-display",
+      "assSha256": "eaa46fa141570d00542b89426104b59303ed634be234aba37920f29ec8baa4f6",
+      "identical": true
+    },
+    {
+      "id": "archivo-black-400-normal-stroke-shadow",
+      "assSha256": "52fd5aa8cc88c4da110868cd37de38c9b7df769e3fe1ef065a397bd7745b8c45",
+      "identical": true
+    },
+    {
+      "id": "archivo-black-400-normal-mixed-symbols",
+      "assSha256": "adf8644395ced4abe9e145d4e292620042499dc4cad4bfe0106aeede27bd335b",
+      "identical": true
+    },
+    {
+      "id": "archivo-black-400-normal-letter-spacing",
+      "assSha256": "b7466b21e580f700da8aa1aee5b0b5500ba916cdbd32bbaf2517103486e453f6",
+      "identical": true
+    },
+    {
+      "id": "montserrat-800-normal-short-title",
+      "assSha256": "8526f5040415ac306cb3ebaf1ab2e8a468af121ef4193d2bf8d857a3806aef09",
+      "identical": true
+    },
+    {
+      "id": "montserrat-800-normal-multiline",
+      "assSha256": "362f26b5dd1e14bed8641f7c1ca0ebe2b25954aa4d0fddb6b63c883422c57f58",
+      "identical": true
+    },
+    {
+      "id": "montserrat-800-normal-long-wrap",
+      "assSha256": "822cc4e15bd8c803e7397c2dde4270098cb4a8e0ffee38c5e76b0369c8bb3164",
+      "identical": true
+    },
+    {
+      "id": "montserrat-800-normal-bold-display",
+      "assSha256": "b5e9b2bb352dc354d2e93f731eba5dbdb677d07612a9afe791b8d32bb4781ad3",
+      "identical": true
+    },
+    {
+      "id": "montserrat-800-normal-stroke-shadow",
+      "assSha256": "788adb292fb9667dbe2cb5e7ffc579fb824dea244328d22529f79a9e11539c81",
+      "identical": true
+    },
+    {
+      "id": "montserrat-800-normal-mixed-symbols",
+      "assSha256": "239ecba5961ff6f837e2bac34a823ead4c1eaaed72d432d978467b733e8bc30c",
+      "identical": true
+    },
+    {
+      "id": "montserrat-800-normal-letter-spacing",
+      "assSha256": "e2d930ba29a16077bab9bf7b4bdfeaef5e1a6095c5a188edb84d5d8d23a0ea19",
+      "identical": true
+    },
+    {
+      "id": "montserrat-900-normal-short-title",
+      "assSha256": "829c295af565114af981301db429a83fa1614b03cc60e01fe73e8baac8ed02b8",
+      "identical": true
+    },
+    {
+      "id": "montserrat-900-normal-multiline",
+      "assSha256": "76b7f0759a096af3250435462e4574a47571ad15e8e1ee2bcee51672cee37534",
+      "identical": true
+    },
+    {
+      "id": "montserrat-900-normal-long-wrap",
+      "assSha256": "67ae62eee7b501b4ce45bc512ba5162465d4363502ba83e393e29e74c6aa863e",
+      "identical": true
+    },
+    {
+      "id": "montserrat-900-normal-bold-display",
+      "assSha256": "3fccdc6a379792518b98dffd2a19f0c52f2ce8be7625d80475b1d44d2bcdbb44",
+      "identical": true
+    },
+    {
+      "id": "montserrat-900-normal-stroke-shadow",
+      "assSha256": "2109147c1640f5190241a6c7e23ab492b55716257e7948039b71e165a2b0c296",
+      "identical": true
+    },
+    {
+      "id": "montserrat-900-normal-mixed-symbols",
+      "assSha256": "11791623f07f0d4233c586bb12e85817f7db88439b37b33b76d8de41df4079f7",
+      "identical": true
+    },
+    {
+      "id": "montserrat-900-normal-letter-spacing",
+      "assSha256": "4868d04b52b1f66db52377afac3a192f7c7abbaf6d456dd64c320ab6990e6943",
+      "identical": true
+    },
+    {
+      "id": "poppins-700-normal-short-title",
+      "assSha256": "d4cfa4e948c75ef452e11757602d9abb35e7660a72261f08f0d2eb21eb7dc71e",
+      "identical": true
+    },
+    {
+      "id": "poppins-700-normal-multiline",
+      "assSha256": "0d2fe824d86cd607ae572c8785cd885061add799f0aa5a444fef8f6c5b84798e",
+      "identical": true
+    },
+    {
+      "id": "poppins-700-normal-long-wrap",
+      "assSha256": "7bad04ebd635ed9b46df2366179f0b6495acbf8fbf0d322a9a1a6e73bfdf5dc4",
+      "identical": true
+    },
+    {
+      "id": "poppins-700-normal-bold-display",
+      "assSha256": "a1443430a752411172ca330300b2b30a5ffccfcb50af563e07214dc1989ea52b",
+      "identical": true
+    },
+    {
+      "id": "poppins-700-normal-stroke-shadow",
+      "assSha256": "653f23d5192942e547c3b4d262b4794cad25aaa26539a429ea080c911c8b76a4",
+      "identical": true
+    },
+    {
+      "id": "poppins-700-normal-mixed-symbols",
+      "assSha256": "a1c852803e1d669fb8e8bb3d45046111d42ded1511c76bbd863a6446071c239d",
+      "identical": true
+    },
+    {
+      "id": "poppins-700-normal-letter-spacing",
+      "assSha256": "b420da0dc22e4d03d25cc01b7d742239e2d9251a54a96710cf78efa80c26041e",
+      "identical": true
+    },
+    {
+      "id": "poppins-900-normal-short-title",
+      "assSha256": "a2bb9a76b9ff82ce96c825622e9ba6072ec32551ac50b074f405d212236a9021",
+      "identical": true
+    },
+    {
+      "id": "poppins-900-normal-multiline",
+      "assSha256": "5744e0566757f35a8fb26c5fbd332df6132cc75dab7ccb8f00872745ee3d5908",
+      "identical": true
+    },
+    {
+      "id": "poppins-900-normal-long-wrap",
+      "assSha256": "cc75dabe63beb72cb012bbc7faef228ebcc8dc5e89caaea5a112db23cacb3b3d",
+      "identical": true
+    },
+    {
+      "id": "poppins-900-normal-bold-display",
+      "assSha256": "2bcfc81d0be33daa9655f49f9b69935d96b624c49a9d0a2cd273d287773dfab2",
+      "identical": true
+    },
+    {
+      "id": "poppins-900-normal-stroke-shadow",
+      "assSha256": "0c1d172dfb019efbcf30daaf5b677d520b8d599c3f47700e4a0d3dfe30e3b4a5",
+      "identical": true
+    },
+    {
+      "id": "poppins-900-normal-mixed-symbols",
+      "assSha256": "b101d5eb301f7d229a3b6c5f43db77d94730207ce9db13a379f9b7c6049ec1de",
+      "identical": true
+    },
+    {
+      "id": "poppins-900-normal-letter-spacing",
+      "assSha256": "fa8604109cdf8da43db4e42e63b5b6b9a1c6357f3eda5a3fc72800f3d37297ea",
+      "identical": true
+    },
+    {
+      "id": "inter-700-normal-short-title",
+      "assSha256": "12af5914ebec9211081af106fb6acea75649b9c79c3ab1e05ba4d619de3caa4c",
+      "identical": true
+    },
+    {
+      "id": "inter-700-normal-multiline",
+      "assSha256": "56ca2110c4bb8dc5a77855349c405e65dfaddbb5550fc238ef9c8896ba16f7e1",
+      "identical": true
+    },
+    {
+      "id": "inter-700-normal-long-wrap",
+      "assSha256": "e0f302dee7b018378eb5f99343732d8ed24f844326bec2b5a66e1b9f93b46d6b",
+      "identical": true
+    },
+    {
+      "id": "inter-700-normal-bold-display",
+      "assSha256": "0196337eaf8c7fcf2bfce640939a0a174a0188fedc68e310aeea723425eb96ac",
+      "identical": true
+    },
+    {
+      "id": "inter-700-normal-stroke-shadow",
+      "assSha256": "91125ec9fd3f64e7e73baa4603dda45ab339c81f4f94719fde71dae406105b67",
+      "identical": true
+    },
+    {
+      "id": "inter-700-normal-mixed-symbols",
+      "assSha256": "f54933d3b74e3c5b6852f52c272e4c6e2867743c42f14388787b2039e2178d6c",
+      "identical": true
+    },
+    {
+      "id": "inter-700-normal-letter-spacing",
+      "assSha256": "92250e705ea8db2cce63f4c6f88647cee3819b3a2656e5c9f05774e7db90a40b",
+      "identical": true
+    },
+    {
+      "id": "inter-900-normal-short-title",
+      "assSha256": "39b05e469a8919972514e19cf83d66944805bcc4ae83a1f91ff585382ef2670e",
+      "identical": true
+    },
+    {
+      "id": "inter-900-normal-multiline",
+      "assSha256": "8180bb8a73c29ec5570b00e891f43dcedc399fb3204a1462181f7c725e21e101",
+      "identical": true
+    },
+    {
+      "id": "inter-900-normal-long-wrap",
+      "assSha256": "eed2df9b7e6343155d3cf0f1d511823c49e8296dfa6cea4cd6eaaec9eb8121bf",
+      "identical": true
+    },
+    {
+      "id": "inter-900-normal-bold-display",
+      "assSha256": "c47c21e08f828cbeefd8a1a65c0c1df9ae2aff58a5009d96086dbd194d0fbfe9",
+      "identical": true
+    },
+    {
+      "id": "inter-900-normal-stroke-shadow",
+      "assSha256": "abd0d76908256b88bec0fba2af76a486221cf1c866a8ba7dfd5d0ae693463bb5",
+      "identical": true
+    },
+    {
+      "id": "inter-900-normal-mixed-symbols",
+      "assSha256": "7adbdddab57a527d5655cab50795eab3e43cc9a88a0638c0a81c1beee49e2ecf",
+      "identical": true
+    },
+    {
+      "id": "inter-900-normal-letter-spacing",
+      "assSha256": "914b765f33233a2e8aae4664afa1acfdd25b67052a8dc4de40625786f333349a",
+      "identical": true
+    },
+    {
+      "id": "playfair-display-700-normal-short-title",
+      "assSha256": "65e0529f268a719f0d8502cfc2aa4450dd8755c71ea7d1d602d03e163f332caa",
+      "identical": true
+    },
+    {
+      "id": "playfair-display-700-normal-multiline",
+      "assSha256": "5ebf07a21f67bf74fff70aa4a5e47a33710617d4eb026a1e52774d625f09ad09",
+      "identical": true
+    },
+    {
+      "id": "playfair-display-700-normal-long-wrap",
+      "assSha256": "3ae239cf7bbfd3b61d3b542fbb34afd262e76a724a19a9526f6f3166375215dc",
+      "identical": true
+    },
+    {
+      "id": "playfair-display-700-normal-bold-display",
+      "assSha256": "16d8e13da70344188839e6cba09fe69bfdc90f913b3f353c1ffb3b07c52c71fb",
+      "identical": true
+    },
+    {
+      "id": "playfair-display-700-normal-stroke-shadow",
+      "assSha256": "240de45c2a90854fb7f4b8b137560064f793b562bc663cc3a4f058bc4eb6e7b6",
+      "identical": true
+    },
+    {
+      "id": "playfair-display-700-normal-mixed-symbols",
+      "assSha256": "9e513dcb5e63ca6968f8256ed05c19d937d1ea381aeab323b1a190c60f16e623",
+      "identical": true
+    },
+    {
+      "id": "playfair-display-700-normal-letter-spacing",
+      "assSha256": "c3e4c1672f33f9990f89d9a17d90bd6f334817028ad4da6f4ed62b805501df5b",
+      "identical": true
+    },
+    {
+      "id": "playfair-display-400-italic-short-title",
+      "assSha256": "6f22ab06c098ad7292cb998ee4ac2c20b8eeed792f7c9d67c5a003a1c1d3ba8d",
+      "identical": true
+    },
+    {
+      "id": "playfair-display-400-italic-multiline",
+      "assSha256": "cd05b2e7eedf052ba5b23df7f9737f78621f2e0bb90c8966ae59bb014e2754d5",
+      "identical": true
+    },
+    {
+      "id": "playfair-display-400-italic-long-wrap",
+      "assSha256": "a8a332dd2bf5eb50e0fe72ef650debfe1f464244e9d1ffc3060450a7b2771683",
+      "identical": true
+    },
+    {
+      "id": "playfair-display-400-italic-bold-display",
+      "assSha256": "29bd2d0b306f4f6ab9f1387ea74774335b8bbac747a175c40ce618a1cc8ea519",
+      "identical": true
+    },
+    {
+      "id": "playfair-display-400-italic-stroke-shadow",
+      "assSha256": "1ab8f7fd4ace4b6d2d5969e0818c024aba6ada65a43a37c2be7a5340627b0e20",
+      "identical": true
+    },
+    {
+      "id": "playfair-display-400-italic-mixed-symbols",
+      "assSha256": "9418af5639e140cf71248fa069bfcda655958cfcb023c5770cb1dc3302b0827d",
+      "identical": true
+    },
+    {
+      "id": "playfair-display-400-italic-letter-spacing",
+      "assSha256": "7d6209997eeea542fa74be52a0451d585f693a605d4e35e261f85bae312c5cb5",
+      "identical": true
+    },
+    {
+      "id": "plus-jakarta-sans-700-normal-short-title",
+      "assSha256": "8c03c21639a38080c51b6ef95bdb2eba4154ed21ca382e01c2c690647dbddc84",
+      "identical": true
+    },
+    {
+      "id": "plus-jakarta-sans-700-normal-multiline",
+      "assSha256": "838d6da272551857769a739c431701b2752e26b8367a0c421c7af62805a9b5a8",
+      "identical": true
+    },
+    {
+      "id": "plus-jakarta-sans-700-normal-long-wrap",
+      "assSha256": "c446e1fa7f4535695f12b73ec2a5f90da6e6345e4e36642a0ad0dca1803ad59c",
+      "identical": true
+    },
+    {
+      "id": "plus-jakarta-sans-700-normal-bold-display",
+      "assSha256": "8363a7a4524f63bbc338a6bae418e8f564008ea486c7244c24cea800f89a30a5",
+      "identical": true
+    },
+    {
+      "id": "plus-jakarta-sans-700-normal-stroke-shadow",
+      "assSha256": "a373efc98313016edfbf2ba8bd60540af6eb7c835ba1c07eeea1cc06bb3cc5ec",
+      "identical": true
+    },
+    {
+      "id": "plus-jakarta-sans-700-normal-mixed-symbols",
+      "assSha256": "b7b9f34bf59dbb68aca2aff35401d5829a64a97849d0381edd797e58205c6d7e",
+      "identical": true
+    },
+    {
+      "id": "plus-jakarta-sans-700-normal-letter-spacing",
+      "assSha256": "e8da77c312898e5ecacc2dd4ff7a498ee9c01a51a66b08e52caf96da0757f370",
+      "identical": true
+    },
+    {
+      "id": "plus-jakarta-sans-800-normal-short-title",
+      "assSha256": "e1618ef00f56576b5a1c7f5c2718b4e3cf878f9a116f320d81cc1ca7864a7d28",
+      "identical": true
+    },
+    {
+      "id": "plus-jakarta-sans-800-normal-multiline",
+      "assSha256": "9b4b432bd64b99af94c6b8e0b45b56cb718bf6bcea76f1cdc1069ea118362018",
+      "identical": true
+    },
+    {
+      "id": "plus-jakarta-sans-800-normal-long-wrap",
+      "assSha256": "97090ec7a24af0084f7f2d1da9aa9673de4603cb1e19e97e08d38642249d96c3",
+      "identical": true
+    },
+    {
+      "id": "plus-jakarta-sans-800-normal-bold-display",
+      "assSha256": "f7ab7195802ba7968773144a4acc6aeac9177828687ac71e24dd946d6a44972b",
+      "identical": true
+    },
+    {
+      "id": "plus-jakarta-sans-800-normal-stroke-shadow",
+      "assSha256": "b5dcafc9418778b77cc1eeca882dbe36c88a5f212fcee566fb4bf7008e5e60fc",
+      "identical": true
+    },
+    {
+      "id": "plus-jakarta-sans-800-normal-mixed-symbols",
+      "assSha256": "261a53dd9f528de391d39befa5b6b1eabca5f9588442133fe32a104662544f38",
+      "identical": true
+    },
+    {
+      "id": "plus-jakarta-sans-800-normal-letter-spacing",
+      "assSha256": "0fa784b0beccac0fc8e504e44569b4949eb9ab50c2a6ef4c97d0f7eab629c948",
+      "identical": true
+    },
+    {
+      "id": "caveat-700-normal-short-title",
+      "assSha256": "aea8c47baf5f30d3020987f02219c6cfc8ef906b71eff46e99b7fa4e420434a0",
+      "identical": true
+    },
+    {
+      "id": "caveat-700-normal-multiline",
+      "assSha256": "ee33dce913040a497bb29d0f5d22ffdede5c6e4e096725dbb7f0614a29647c08",
+      "identical": true
+    },
+    {
+      "id": "caveat-700-normal-long-wrap",
+      "assSha256": "0b02ec9f39bb288bcd3d58566a97c3a92e78dacb7f63bb95f04a0515b2b0706f",
+      "identical": true
+    },
+    {
+      "id": "caveat-700-normal-bold-display",
+      "assSha256": "50a7bc7426fc53bbf5e86b5f951915cdc5ba96fbadacba990928e6285f9976ac",
+      "identical": true
+    },
+    {
+      "id": "caveat-700-normal-stroke-shadow",
+      "assSha256": "d4b579cfc58b4507502eb73ed065e26f80eda6279a01cb8a16f4e74cc84e01c4",
+      "identical": true
+    },
+    {
+      "id": "caveat-700-normal-mixed-symbols",
+      "assSha256": "d51d2c2d95fc41fb9371f230652f871782f0ea9bc39c955cdaa433ff2d2b7bed",
+      "identical": true
+    },
+    {
+      "id": "caveat-700-normal-letter-spacing",
+      "assSha256": "7eee2144633e2a38ce5de2cda460a9bda12408a1bd4d7761c292d1fbad12832d",
+      "identical": true
+    },
+    {
+      "id": "jetbrains-mono-700-normal-short-title",
+      "assSha256": "0b6df8c66e385dac7dd075b2a41465b3ea7fcc2ecb1d515936d35108370bf6ab",
+      "identical": true
+    },
+    {
+      "id": "jetbrains-mono-700-normal-multiline",
+      "assSha256": "c453da1ac8bcf18855c346b194ab28807382d3e3552cb39a36ce31270879e582",
+      "identical": true
+    },
+    {
+      "id": "jetbrains-mono-700-normal-long-wrap",
+      "assSha256": "a9d2f3ef94cc65d32988ff9d3b7472b6b93c02addc6af94ad5293e9e0ff40f9c",
+      "identical": true
+    },
+    {
+      "id": "jetbrains-mono-700-normal-bold-display",
+      "assSha256": "751a6a6c8bb0f9724b354048c8a845a71efed73fa40c1634f6144b7d4a7c04f6",
+      "identical": true
+    },
+    {
+      "id": "jetbrains-mono-700-normal-stroke-shadow",
+      "assSha256": "a0471ff0d9ad65af23327fbcb40d8aab930b3dd27989ac360fdf11f30d7914c6",
+      "identical": true
+    },
+    {
+      "id": "jetbrains-mono-700-normal-mixed-symbols",
+      "assSha256": "4b969e1304d4c5b591c0dfd1ad6e4918f1f8c6059f487545f81187891acfe9ce",
+      "identical": true
+    },
+    {
+      "id": "jetbrains-mono-700-normal-letter-spacing",
+      "assSha256": "c0a87db81afa3c598af1982ac51dad72895605484fedd9904ebcc747febf5cd0",
+      "identical": true
+    }
+  ]
+}

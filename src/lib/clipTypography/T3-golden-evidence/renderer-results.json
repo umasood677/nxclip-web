@@ -1,0 +1,950 @@
+{
+  "ffmpeg": "ffmpeg version 5.1.9-0+deb12u1 Copyright (c) 2000-2026 the FFmpeg developers",
+  "results": [
+    {
+      "id": "bebas-neue-400-normal-short-title",
+      "faceId": "bebas-neue-400-normal",
+      "sha256": "6a551eadf480338307742c674fed45d1b5373a18fe7f1a1c91be9f7b249d04e4",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5c06c7014c40] fontselect: (NxClipT2Face01, 400, 0) -> NxClipT2Face01, 0, NxClipT2Face01"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "bebas-neue-400-normal-multiline",
+      "faceId": "bebas-neue-400-normal",
+      "sha256": "8aa146349346a6a5429dfc39129ac87cd499dbe4622cc365ddae8bd84e6071c6",
+      "selections": [
+        "[Parsed_ass_0 @ 0x6230c321ec40] fontselect: (NxClipT2Face01, 400, 0) -> NxClipT2Face01, 0, NxClipT2Face01"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "bebas-neue-400-normal-long-wrap",
+      "faceId": "bebas-neue-400-normal",
+      "sha256": "306d54d5bf8ae7f3b82813e0aafea503c84e5a38b38fc622027bb7674a82511a",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5dc22f311c40] fontselect: (NxClipT2Face01, 400, 0) -> NxClipT2Face01, 0, NxClipT2Face01"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "bebas-neue-400-normal-bold-display",
+      "faceId": "bebas-neue-400-normal",
+      "sha256": "107abe9d39333690ab3cd59770f1de3896e2ea22b25b352644c2129fcc4a07a0",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5c0af3f26c40] fontselect: (NxClipT2Face01, 400, 0) -> NxClipT2Face01, 0, NxClipT2Face01"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "bebas-neue-400-normal-stroke-shadow",
+      "faceId": "bebas-neue-400-normal",
+      "sha256": "299a22f42e180f6ac0d5e51cd475eb7817a80cd9fb0713fa25a841e9adc87450",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5821e70a2c40] fontselect: (NxClipT2Face01, 400, 0) -> NxClipT2Face01, 0, NxClipT2Face01"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "bebas-neue-400-normal-mixed-symbols",
+      "faceId": "bebas-neue-400-normal",
+      "sha256": "0aff14cdd8e448e9061d22fa4482dc136886546b142d8f4a8360490ce5c18b35",
+      "selections": [
+        "[Parsed_ass_0 @ 0x55fd5e89dc40] fontselect: (NxClipT2Face01, 400, 0) -> NxClipT2Face01, 0, NxClipT2Face01"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "bebas-neue-400-normal-letter-spacing",
+      "faceId": "bebas-neue-400-normal",
+      "sha256": "6ca6e87d13e854e48c152701625275d2e6c47ff3266a023eb0bdc34906f9d71e",
+      "selections": [
+        "[Parsed_ass_0 @ 0x62f526620c80] fontselect: (NxClipT2Face01, 400, 0) -> NxClipT2Face01, 0, NxClipT2Face01"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "anton-400-normal-short-title",
+      "faceId": "anton-400-normal",
+      "sha256": "9a8b466edc9eab28eb9e708a19ad1c3fd2823820bbd2f5f59872402d86928220",
+      "selections": [
+        "[Parsed_ass_0 @ 0x63780e453c40] fontselect: (NxClipT2Face02, 400, 0) -> NxClipT2Face02, 0, NxClipT2Face02"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "anton-400-normal-multiline",
+      "faceId": "anton-400-normal",
+      "sha256": "d160b582b3a579f5fb917182fec5398c4bef969667a9d22eb6450f41166b9a1a",
+      "selections": [
+        "[Parsed_ass_0 @ 0x608256421c40] fontselect: (NxClipT2Face02, 400, 0) -> NxClipT2Face02, 0, NxClipT2Face02"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "anton-400-normal-long-wrap",
+      "faceId": "anton-400-normal",
+      "sha256": "0fbc9b9bf0ce6b837f8c04229be2a5e891a9db3f5c46f237dfe22ab0843e3187",
+      "selections": [
+        "[Parsed_ass_0 @ 0x63ebee587c40] fontselect: (NxClipT2Face02, 400, 0) -> NxClipT2Face02, 0, NxClipT2Face02"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "anton-400-normal-bold-display",
+      "faceId": "anton-400-normal",
+      "sha256": "0c6e8df7dd5ed69d67cb14c84b330dc35d8b9bc210514a943986cb19dce6dda7",
+      "selections": [
+        "[Parsed_ass_0 @ 0x567808ff5c40] fontselect: (NxClipT2Face02, 400, 0) -> NxClipT2Face02, 0, NxClipT2Face02"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "anton-400-normal-stroke-shadow",
+      "faceId": "anton-400-normal",
+      "sha256": "016ec9df25a3674efbca6619a241001ed14eba0b2b64610c63ab057d925e2ddb",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5eefcce28c40] fontselect: (NxClipT2Face02, 400, 0) -> NxClipT2Face02, 0, NxClipT2Face02"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "anton-400-normal-mixed-symbols",
+      "faceId": "anton-400-normal",
+      "sha256": "bbfb313e9d7c16ad2228d9823573bb32a7e2461be452dabf73ee2d18fbd63f93",
+      "selections": [
+        "[Parsed_ass_0 @ 0x59340e5c7c40] fontselect: (NxClipT2Face02, 400, 0) -> NxClipT2Face02, 0, NxClipT2Face02"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "anton-400-normal-letter-spacing",
+      "faceId": "anton-400-normal",
+      "sha256": "4d3a1a65124aa4ce31503e0e8b911890ca88a330f57780990c1068ecb5651322",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5e59d94dcc40] fontselect: (NxClipT2Face02, 400, 0) -> NxClipT2Face02, 0, NxClipT2Face02"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "archivo-black-400-normal-short-title",
+      "faceId": "archivo-black-400-normal",
+      "sha256": "f79e79000a49e6d153ec636e1a115e45778b4a6ce3ebb39cd094b90ef87f620e",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5e1fe8cf6c80] fontselect: (NxClipT2Face03, 400, 0) -> NxClipT2Face03, 0, NxClipT2Face03"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "archivo-black-400-normal-multiline",
+      "faceId": "archivo-black-400-normal",
+      "sha256": "5e42f50530b036d74407bd0164eccfda8ad8655c4936c21fc989aba721357e4c",
+      "selections": [
+        "[Parsed_ass_0 @ 0x644a69051c40] fontselect: (NxClipT2Face03, 400, 0) -> NxClipT2Face03, 0, NxClipT2Face03"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "archivo-black-400-normal-long-wrap",
+      "faceId": "archivo-black-400-normal",
+      "sha256": "f70d624621f174f036d79e25fc620c834206baedc5ad6e12053c66d209dfb162",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5eddf2420c40] fontselect: (NxClipT2Face03, 400, 0) -> NxClipT2Face03, 0, NxClipT2Face03"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "archivo-black-400-normal-bold-display",
+      "faceId": "archivo-black-400-normal",
+      "sha256": "f2a4d15defa01b7bc285f95da9b1e5d568c35a00b0a1894054236eecb0e914bb",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5c90ad1fbc80] fontselect: (NxClipT2Face03, 400, 0) -> NxClipT2Face03, 0, NxClipT2Face03"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "archivo-black-400-normal-stroke-shadow",
+      "faceId": "archivo-black-400-normal",
+      "sha256": "be1018e0b0ae75cd57fc058ed1cc8d1031d5e21f676b22aea4469259bf02f5d4",
+      "selections": [
+        "[Parsed_ass_0 @ 0x596ec1c86c80] fontselect: (NxClipT2Face03, 400, 0) -> NxClipT2Face03, 0, NxClipT2Face03"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "archivo-black-400-normal-mixed-symbols",
+      "faceId": "archivo-black-400-normal",
+      "sha256": "29ff009fc3dd1a9a26c5836ea5f8d60fe7fe8260d64dd6640747ad31a3da6685",
+      "selections": [
+        "[Parsed_ass_0 @ 0x566277cc1c80] fontselect: (NxClipT2Face03, 400, 0) -> NxClipT2Face03, 0, NxClipT2Face03"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "archivo-black-400-normal-letter-spacing",
+      "faceId": "archivo-black-400-normal",
+      "sha256": "79659ba40392ca6b832904b75741c72a90d9e06465addfce28c5eb276e2a04e0",
+      "selections": [
+        "[Parsed_ass_0 @ 0x644219387c80] fontselect: (NxClipT2Face03, 400, 0) -> NxClipT2Face03, 0, NxClipT2Face03"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "montserrat-800-normal-short-title",
+      "faceId": "montserrat-800-normal",
+      "sha256": "797014ae9bd476e1ac9eb2cbbc53f9d69b245f389b5d9a07237dcc432c1276e8",
+      "selections": [
+        "[Parsed_ass_0 @ 0x55ea1dfdfc40] fontselect: (NxClipT2Face04, 400, 0) -> NxClipT2Face04, 0, NxClipT2Face04"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "montserrat-800-normal-multiline",
+      "faceId": "montserrat-800-normal",
+      "sha256": "c3688e35281311e18400a2a3af82a92b977efbe4706baaa7176d9243cbb0ebda",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5fa7a01bbc40] fontselect: (NxClipT2Face04, 400, 0) -> NxClipT2Face04, 0, NxClipT2Face04"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "montserrat-800-normal-long-wrap",
+      "faceId": "montserrat-800-normal",
+      "sha256": "32ebd217b47af7ee7ae372810120c64ccf494d0aa6d43b00a839e7ae319a2e12",
+      "selections": [
+        "[Parsed_ass_0 @ 0x583535fc1c40] fontselect: (NxClipT2Face04, 400, 0) -> NxClipT2Face04, 0, NxClipT2Face04"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "montserrat-800-normal-bold-display",
+      "faceId": "montserrat-800-normal",
+      "sha256": "408b7ff41851c8851610dc4bdf3b14798b123b5435bc80a864c6090f64110203",
+      "selections": [
+        "[Parsed_ass_0 @ 0x63bf757f3c40] fontselect: (NxClipT2Face04, 400, 0) -> NxClipT2Face04, 0, NxClipT2Face04"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "montserrat-800-normal-stroke-shadow",
+      "faceId": "montserrat-800-normal",
+      "sha256": "3cb4bf24da7bc756b0b8dd81ca010b16dc81e5051a1e4b279af6dc497f9e9607",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5ec869392c40] fontselect: (NxClipT2Face04, 400, 0) -> NxClipT2Face04, 0, NxClipT2Face04"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "montserrat-800-normal-mixed-symbols",
+      "faceId": "montserrat-800-normal",
+      "sha256": "39cc2845a0594a826e0f6138966be31351993a00fc63d4b18ad07a507f9292fa",
+      "selections": [
+        "[Parsed_ass_0 @ 0x58d207f43c40] fontselect: (NxClipT2Face04, 400, 0) -> NxClipT2Face04, 0, NxClipT2Face04"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "montserrat-800-normal-letter-spacing",
+      "faceId": "montserrat-800-normal",
+      "sha256": "d7789b8cbdcf37355eb8a29a7186a93c200a3b226b99de2045b8965919678e3f",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5fa3a71b9c80] fontselect: (NxClipT2Face04, 400, 0) -> NxClipT2Face04, 0, NxClipT2Face04"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "montserrat-900-normal-short-title",
+      "faceId": "montserrat-900-normal",
+      "sha256": "50a54428f1a0a80ce075a027300974e4703233e3c14e8ed504759c562cc468c5",
+      "selections": [
+        "[Parsed_ass_0 @ 0x62e49f09ec40] fontselect: (NxClipT2Face05, 400, 0) -> NxClipT2Face05, 0, NxClipT2Face05"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "montserrat-900-normal-multiline",
+      "faceId": "montserrat-900-normal",
+      "sha256": "3b3df09b7d87cde9f433ed5afec448d2f7b2c2ceeba90e73120c87630bf55ec8",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5f13f0459c40] fontselect: (NxClipT2Face05, 400, 0) -> NxClipT2Face05, 0, NxClipT2Face05"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "montserrat-900-normal-long-wrap",
+      "faceId": "montserrat-900-normal",
+      "sha256": "d5afdc3598a9c5bc5609c1017e1deb75b9289df0156a65a343f60cf89a25aa7c",
+      "selections": [
+        "[Parsed_ass_0 @ 0x64bc20d46c40] fontselect: (NxClipT2Face05, 400, 0) -> NxClipT2Face05, 0, NxClipT2Face05"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "montserrat-900-normal-bold-display",
+      "faceId": "montserrat-900-normal",
+      "sha256": "f4dc7246553091e39f5df1540a727dc0a6f1295db3befbe7f8a144cc4b3b4596",
+      "selections": [
+        "[Parsed_ass_0 @ 0x626001732c40] fontselect: (NxClipT2Face05, 400, 0) -> NxClipT2Face05, 0, NxClipT2Face05"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "montserrat-900-normal-stroke-shadow",
+      "faceId": "montserrat-900-normal",
+      "sha256": "f3cb093d56c3345a8783280269db411690326b9651d1fbc87d84e3a40de0f677",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5d8d1ad64c40] fontselect: (NxClipT2Face05, 400, 0) -> NxClipT2Face05, 0, NxClipT2Face05"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "montserrat-900-normal-mixed-symbols",
+      "faceId": "montserrat-900-normal",
+      "sha256": "6f971b981d877054f8e3267a9ae27162e67beab6abc4d3adfcd1a83413708637",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5580bff74c40] fontselect: (NxClipT2Face05, 400, 0) -> NxClipT2Face05, 0, NxClipT2Face05"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "montserrat-900-normal-letter-spacing",
+      "faceId": "montserrat-900-normal",
+      "sha256": "8fb10ff46093e82782ba40876436bed767c0bc788d4040f049d97a9a9853ecae",
+      "selections": [
+        "[Parsed_ass_0 @ 0x6355327a9c80] fontselect: (NxClipT2Face05, 400, 0) -> NxClipT2Face05, 0, NxClipT2Face05"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "poppins-700-normal-short-title",
+      "faceId": "poppins-700-normal",
+      "sha256": "1a8f7d9eccc2e00b6f4a6087015c0cfeab46b6cff3398f4e6d964c3b8c0e5bdb",
+      "selections": [
+        "[Parsed_ass_0 @ 0x55eb8b47fc40] fontselect: (NxClipT2Face06, 400, 0) -> NxClipT2Face06, 0, NxClipT2Face06"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "poppins-700-normal-multiline",
+      "faceId": "poppins-700-normal",
+      "sha256": "7fd76ab7ef9781dcb25bb958ac8e6aa35585888d874e6e06f12a9c521de92ca2",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5c012b51cc40] fontselect: (NxClipT2Face06, 400, 0) -> NxClipT2Face06, 0, NxClipT2Face06"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "poppins-700-normal-long-wrap",
+      "faceId": "poppins-700-normal",
+      "sha256": "ba1f3e692377d532afd8803cfebacbe9e4885b150d1d9a013b5dcb180394d0a1",
+      "selections": [
+        "[Parsed_ass_0 @ 0x62cacfc16c40] fontselect: (NxClipT2Face06, 400, 0) -> NxClipT2Face06, 0, NxClipT2Face06"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "poppins-700-normal-bold-display",
+      "faceId": "poppins-700-normal",
+      "sha256": "5452350ecde8cbfbe9235f687d59509e4e06b39b3d023a9be010e6e8b196364d",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5a8d7d081c40] fontselect: (NxClipT2Face06, 400, 0) -> NxClipT2Face06, 0, NxClipT2Face06"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "poppins-700-normal-stroke-shadow",
+      "faceId": "poppins-700-normal",
+      "sha256": "854fe2c6704130e1cb16f5d2a68b366982341d2af195bb69f28b244be1bbcdf7",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5b4613e3ec40] fontselect: (NxClipT2Face06, 400, 0) -> NxClipT2Face06, 0, NxClipT2Face06"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "poppins-700-normal-mixed-symbols",
+      "faceId": "poppins-700-normal",
+      "sha256": "78fa7b5cd4cdbffccedde0ea0d2d145b9ba7750691763ae0bf2f7a03152a7891",
+      "selections": [
+        "[Parsed_ass_0 @ 0x618888405c40] fontselect: (NxClipT2Face06, 400, 0) -> NxClipT2Face06, 0, NxClipT2Face06"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "poppins-700-normal-letter-spacing",
+      "faceId": "poppins-700-normal",
+      "sha256": "407b2bc2181ad6370f1e98cfb5044a93fdf3515a554e36121d859c646b4ba1a3",
+      "selections": [
+        "[Parsed_ass_0 @ 0x560dc260ac40] fontselect: (NxClipT2Face06, 400, 0) -> NxClipT2Face06, 0, NxClipT2Face06"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "poppins-900-normal-short-title",
+      "faceId": "poppins-900-normal",
+      "sha256": "b3da336351e0af9ce4ba3d11bc41fb642c1b9672412725d05d82d572d0f2cd25",
+      "selections": [
+        "[Parsed_ass_0 @ 0x61ef8880cc40] fontselect: (NxClipT2Face07, 400, 0) -> NxClipT2Face07, 0, NxClipT2Face07"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "poppins-900-normal-multiline",
+      "faceId": "poppins-900-normal",
+      "sha256": "6bb8c000c57a87d06fcc26c2e95ff287a4eef05dd47509cf65ba2c3e9ed8c3fa",
+      "selections": [
+        "[Parsed_ass_0 @ 0x62c0f4020c40] fontselect: (NxClipT2Face07, 400, 0) -> NxClipT2Face07, 0, NxClipT2Face07"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "poppins-900-normal-long-wrap",
+      "faceId": "poppins-900-normal",
+      "sha256": "a5ae920777c526db3d10a159c8ac4f61ef2488a5797f9916aa5460a1236c45d2",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5977b33bfc40] fontselect: (NxClipT2Face07, 400, 0) -> NxClipT2Face07, 0, NxClipT2Face07"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "poppins-900-normal-bold-display",
+      "faceId": "poppins-900-normal",
+      "sha256": "e115d5c7f6692eb0872bf0a7ea6e73213149ff519bc35742278a29c4966d560a",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5e731022bc40] fontselect: (NxClipT2Face07, 400, 0) -> NxClipT2Face07, 0, NxClipT2Face07"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "poppins-900-normal-stroke-shadow",
+      "faceId": "poppins-900-normal",
+      "sha256": "296364ae21962e03fed8ded014225d2124eb21176f2793a5a3b2893d7ab15d29",
+      "selections": [
+        "[Parsed_ass_0 @ 0x64acd8070c40] fontselect: (NxClipT2Face07, 400, 0) -> NxClipT2Face07, 0, NxClipT2Face07"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "poppins-900-normal-mixed-symbols",
+      "faceId": "poppins-900-normal",
+      "sha256": "9e2572c3d41b48685a84d2b318591015ed2b4712d7e6bb87306d114b06067577",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5c013bd4fc40] fontselect: (NxClipT2Face07, 400, 0) -> NxClipT2Face07, 0, NxClipT2Face07"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "poppins-900-normal-letter-spacing",
+      "faceId": "poppins-900-normal",
+      "sha256": "3910da676b0fe953c725bcc4678f46e6af2b64138249c5ad2c8f5a45dfd9a24f",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5d7b4c095c40] fontselect: (NxClipT2Face07, 400, 0) -> NxClipT2Face07, 0, NxClipT2Face07"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "inter-700-normal-short-title",
+      "faceId": "inter-700-normal",
+      "sha256": "84734528af82fedd8a079a60a4989329c181a5cdc23314a489caf917d053328a",
+      "selections": [
+        "[Parsed_ass_0 @ 0x62032e077c40] fontselect: (NxClipT2Face08, 400, 0) -> NxClipT2Face08, 0, NxClipT2Face08"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "inter-700-normal-multiline",
+      "faceId": "inter-700-normal",
+      "sha256": "47f208c8f3d84021b6f75cafe7cbd84f937037c5d4515ba72468dbdc1c35c0b6",
+      "selections": [
+        "[Parsed_ass_0 @ 0x592daeff0c40] fontselect: (NxClipT2Face08, 400, 0) -> NxClipT2Face08, 0, NxClipT2Face08"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "inter-700-normal-long-wrap",
+      "faceId": "inter-700-normal",
+      "sha256": "c84e7fd5fb15b1a36342703b4819a7ce22b1e2db49592bab7ac08cf0b074fe87",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5ad5b9720c40] fontselect: (NxClipT2Face08, 400, 0) -> NxClipT2Face08, 0, NxClipT2Face08"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "inter-700-normal-bold-display",
+      "faceId": "inter-700-normal",
+      "sha256": "a03407abc154e1f353bc2f89676ea8a267dad3f578d9390d4dfdbea6e53c2414",
+      "selections": [
+        "[Parsed_ass_0 @ 0x58ff977c9c40] fontselect: (NxClipT2Face08, 400, 0) -> NxClipT2Face08, 0, NxClipT2Face08"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "inter-700-normal-stroke-shadow",
+      "faceId": "inter-700-normal",
+      "sha256": "ac53d74491227e55c4928a3a22acb571511c947af1515f0801871131138044d1",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5878bff40c40] fontselect: (NxClipT2Face08, 400, 0) -> NxClipT2Face08, 0, NxClipT2Face08"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "inter-700-normal-mixed-symbols",
+      "faceId": "inter-700-normal",
+      "sha256": "28ff50d54d362e78821a9511e4d646bd84481f2e9cd6d739ff9281dcabb8b113",
+      "selections": [
+        "[Parsed_ass_0 @ 0x595bc20a7c40] fontselect: (NxClipT2Face08, 400, 0) -> NxClipT2Face08, 0, NxClipT2Face08"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "inter-700-normal-letter-spacing",
+      "faceId": "inter-700-normal",
+      "sha256": "2a2d9a2dbc9bac4ce1dd8aedb561e2520938c7aa4529d4c7b60a64f73e32191e",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5a92529dec40] fontselect: (NxClipT2Face08, 400, 0) -> NxClipT2Face08, 0, NxClipT2Face08"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "inter-900-normal-short-title",
+      "faceId": "inter-900-normal",
+      "sha256": "eab6ce6560cbec1e0fcf23baacb20587b9a1642cc2899c00e54a2cc901bd53fe",
+      "selections": [
+        "[Parsed_ass_0 @ 0x59305360cc40] fontselect: (NxClipT2Face09, 400, 0) -> NxClipT2Face09, 0, NxClipT2Face09"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "inter-900-normal-multiline",
+      "faceId": "inter-900-normal",
+      "sha256": "22a33b5a02fbab2103a46bcdae4fddc5cd4e70e79c90347d68914575dd319516",
+      "selections": [
+        "[Parsed_ass_0 @ 0x60f8980c5c40] fontselect: (NxClipT2Face09, 400, 0) -> NxClipT2Face09, 0, NxClipT2Face09"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "inter-900-normal-long-wrap",
+      "faceId": "inter-900-normal",
+      "sha256": "d8d96fd8cb058750f8af484d849e57972be0bec72e20eb4ed966ffc0c363f2ce",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5f3c3dd28c40] fontselect: (NxClipT2Face09, 400, 0) -> NxClipT2Face09, 0, NxClipT2Face09"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "inter-900-normal-bold-display",
+      "faceId": "inter-900-normal",
+      "sha256": "abe7bde2942e74e876f240573b766c67b3825d6fa83bdedfb6c1f29d6a4006be",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5c5b71d8fc40] fontselect: (NxClipT2Face09, 400, 0) -> NxClipT2Face09, 0, NxClipT2Face09"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "inter-900-normal-stroke-shadow",
+      "faceId": "inter-900-normal",
+      "sha256": "f2e0b3250d2311f3fb96bae2a0ac218cc93c5227f8b792ceea4b909a250bcb05",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5d3ec2af8c40] fontselect: (NxClipT2Face09, 400, 0) -> NxClipT2Face09, 0, NxClipT2Face09"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "inter-900-normal-mixed-symbols",
+      "faceId": "inter-900-normal",
+      "sha256": "7180f6da72aa4fa043cb8b72057bc73321f13caf6feea45dc3d23f4492997c8b",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5bf53148cc40] fontselect: (NxClipT2Face09, 400, 0) -> NxClipT2Face09, 0, NxClipT2Face09"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "inter-900-normal-letter-spacing",
+      "faceId": "inter-900-normal",
+      "sha256": "036f4af9cf109024b55502c34204ece43897edd9db4707500b9fd85838f2a5fd",
+      "selections": [
+        "[Parsed_ass_0 @ 0x56a554e6ec40] fontselect: (NxClipT2Face09, 400, 0) -> NxClipT2Face09, 0, NxClipT2Face09"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "playfair-display-700-normal-short-title",
+      "faceId": "playfair-display-700-normal",
+      "sha256": "007d9a41d1e38254339415ba14d052c60a483f6e3faa0475dfa4e2e9cff0b447",
+      "selections": [
+        "[Parsed_ass_0 @ 0x62d17e42dc80] fontselect: (NxClipT2Face10, 400, 0) -> NxClipT2Face10, 0, NxClipT2Face10"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "playfair-display-700-normal-multiline",
+      "faceId": "playfair-display-700-normal",
+      "sha256": "585992dc2dc741abfe8df179511668b3e302d28ecf45a80b2945c3fa2646ca26",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5ecf91c15c80] fontselect: (NxClipT2Face10, 400, 0) -> NxClipT2Face10, 0, NxClipT2Face10"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "playfair-display-700-normal-long-wrap",
+      "faceId": "playfair-display-700-normal",
+      "sha256": "6e7bb8a22111cfd14a97803cec7f3545bc022a6b8861e4779d2f4cdf791aafcf",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5c548d838c80] fontselect: (NxClipT2Face10, 400, 0) -> NxClipT2Face10, 0, NxClipT2Face10"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "playfair-display-700-normal-bold-display",
+      "faceId": "playfair-display-700-normal",
+      "sha256": "434813039871c52cf9e6ae483319367d1f96495d9541f881e90bd9e971f73568",
+      "selections": [
+        "[Parsed_ass_0 @ 0x647595533c80] fontselect: (NxClipT2Face10, 400, 0) -> NxClipT2Face10, 0, NxClipT2Face10"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "playfair-display-700-normal-stroke-shadow",
+      "faceId": "playfair-display-700-normal",
+      "sha256": "5ec342277c5e4eb342b139aee148dbd60738778a234e59101c0a99248d261fd3",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5d3d1fdb2c80] fontselect: (NxClipT2Face10, 400, 0) -> NxClipT2Face10, 0, NxClipT2Face10"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "playfair-display-700-normal-mixed-symbols",
+      "faceId": "playfair-display-700-normal",
+      "sha256": "19f56969d019ec7113192b31bfbbf6201136190667c097c8efd869dbca22ccf8",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5b143d12ac80] fontselect: (NxClipT2Face10, 400, 0) -> NxClipT2Face10, 0, NxClipT2Face10"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "playfair-display-700-normal-letter-spacing",
+      "faceId": "playfair-display-700-normal",
+      "sha256": "37221a39ce8fdf9c255140d730975995a0e548115cca55ebbb34452fa70e2b13",
+      "selections": [
+        "[Parsed_ass_0 @ 0x6022aee82c40] fontselect: (NxClipT2Face10, 400, 0) -> NxClipT2Face10, 0, NxClipT2Face10"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "playfair-display-400-italic-short-title",
+      "faceId": "playfair-display-400-italic",
+      "sha256": "342de731d5a93dadd88bb194338dead4fa92392d4f4b58fbf129021e3d8be7e0",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5cd5dd5c7c80] fontselect: (NxClipT2Face11, 400, 0) -> /fonts/faces/playfair-display-400-italic.ttf, 0, NxClipT2Face11"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "playfair-display-400-italic-multiline",
+      "faceId": "playfair-display-400-italic",
+      "sha256": "4eb117ecbaaf1fd8e249152451754ab24f634542355633a260c1db0619d4961d",
+      "selections": [
+        "[Parsed_ass_0 @ 0x55706057dc80] fontselect: (NxClipT2Face11, 400, 0) -> /fonts/faces/playfair-display-400-italic.ttf, 0, NxClipT2Face11"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "playfair-display-400-italic-long-wrap",
+      "faceId": "playfair-display-400-italic",
+      "sha256": "4ba583ef6ef7f12d10b9196983cc8f1c6281f45661f22dd310d6de7936ef0ca1",
+      "selections": [
+        "[Parsed_ass_0 @ 0x63716ae36c80] fontselect: (NxClipT2Face11, 400, 0) -> /fonts/faces/playfair-display-400-italic.ttf, 0, NxClipT2Face11"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "playfair-display-400-italic-bold-display",
+      "faceId": "playfair-display-400-italic",
+      "sha256": "8a1ce52ddb20f078e5193632a5aff9aedde7c267b0ce04bf033c8e85fc9066c8",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5dd455e22c80] fontselect: (NxClipT2Face11, 400, 0) -> /fonts/faces/playfair-display-400-italic.ttf, 0, NxClipT2Face11"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "playfair-display-400-italic-stroke-shadow",
+      "faceId": "playfair-display-400-italic",
+      "sha256": "ce30f07a6150db9e5b1aa3447874efc07e9d7493a99f223390cec2ad8fdd6686",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5d9d2cd10c80] fontselect: (NxClipT2Face11, 400, 0) -> /fonts/faces/playfair-display-400-italic.ttf, 0, NxClipT2Face11"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "playfair-display-400-italic-mixed-symbols",
+      "faceId": "playfair-display-400-italic",
+      "sha256": "6ead88409e3e74841ab77f0df233e8a9ea1b2d7a5b048ec54133ad914ce5e4cf",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5abd2007ec80] fontselect: (NxClipT2Face11, 400, 0) -> /fonts/faces/playfair-display-400-italic.ttf, 0, NxClipT2Face11"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "playfair-display-400-italic-letter-spacing",
+      "faceId": "playfair-display-400-italic",
+      "sha256": "190764b98c09e559a6fdea0be3b256db88d2fdbe70e4a2063b5ad8625a0f43b8",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5d955b226c40] fontselect: (NxClipT2Face11, 400, 0) -> /fonts/faces/playfair-display-400-italic.ttf, 0, NxClipT2Face11"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "plus-jakarta-sans-700-normal-short-title",
+      "faceId": "plus-jakarta-sans-700-normal",
+      "sha256": "b9d15abac69cefce114320e68984931306dc424692721ae2010f1e3e6ee7d6ec",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5cad1a860c80] fontselect: (NxClipT2Face12, 400, 0) -> NxClipT2Face12, 0, NxClipT2Face12"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "plus-jakarta-sans-700-normal-multiline",
+      "faceId": "plus-jakarta-sans-700-normal",
+      "sha256": "db43c89e491418d7ccacd1984c16eb37661b2746af8b5dc439c765c9b51d0af6",
+      "selections": [
+        "[Parsed_ass_0 @ 0x62784794ac80] fontselect: (NxClipT2Face12, 400, 0) -> NxClipT2Face12, 0, NxClipT2Face12"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "plus-jakarta-sans-700-normal-long-wrap",
+      "faceId": "plus-jakarta-sans-700-normal",
+      "sha256": "d9dfb99960c1381920dca5ae816e0a43d0443886865ac2dac1df732011e507ff",
+      "selections": [
+        "[Parsed_ass_0 @ 0x6457674b1c80] fontselect: (NxClipT2Face12, 400, 0) -> NxClipT2Face12, 0, NxClipT2Face12"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "plus-jakarta-sans-700-normal-bold-display",
+      "faceId": "plus-jakarta-sans-700-normal",
+      "sha256": "e8fc54798ccfb3b64a5685e9ec87b505a437891e9f6829ce63879151d8709d6c",
+      "selections": [
+        "[Parsed_ass_0 @ 0x567dbffb7c80] fontselect: (NxClipT2Face12, 400, 0) -> NxClipT2Face12, 0, NxClipT2Face12"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "plus-jakarta-sans-700-normal-stroke-shadow",
+      "faceId": "plus-jakarta-sans-700-normal",
+      "sha256": "7b749ca49030cbf5c130b678ec58e1c40579eb9311ca65977bfba230177f5e58",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5cb18fb5cc40] fontselect: (NxClipT2Face12, 400, 0) -> NxClipT2Face12, 0, NxClipT2Face12"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "plus-jakarta-sans-700-normal-mixed-symbols",
+      "faceId": "plus-jakarta-sans-700-normal",
+      "sha256": "dd2348a65db84751824347e641847be138ccb291037666f5b8de37216be2dfa9",
+      "selections": [
+        "[Parsed_ass_0 @ 0x56d80dd60c40] fontselect: (NxClipT2Face12, 400, 0) -> NxClipT2Face12, 0, NxClipT2Face12"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "plus-jakarta-sans-700-normal-letter-spacing",
+      "faceId": "plus-jakarta-sans-700-normal",
+      "sha256": "6579daea46372ca22ab84c8870e7ed5b2e00661f508f41a8d1db8080de3455ce",
+      "selections": [
+        "[Parsed_ass_0 @ 0x57ba75362c40] fontselect: (NxClipT2Face12, 400, 0) -> NxClipT2Face12, 0, NxClipT2Face12"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "plus-jakarta-sans-800-normal-short-title",
+      "faceId": "plus-jakarta-sans-800-normal",
+      "sha256": "a031bd685c8fde5e3e19f54cbc23dd91fe86ad53add86e5b9f609bc6c7a6292e",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5fbf0df18c80] fontselect: (NxClipT2Face13, 400, 0) -> NxClipT2Face13, 0, NxClipT2Face13"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "plus-jakarta-sans-800-normal-multiline",
+      "faceId": "plus-jakarta-sans-800-normal",
+      "sha256": "49999cec36c58ac6e4bd6db3767607659ce75f40450603c2535e50749e53b330",
+      "selections": [
+        "[Parsed_ass_0 @ 0x576b96d77c80] fontselect: (NxClipT2Face13, 400, 0) -> NxClipT2Face13, 0, NxClipT2Face13"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "plus-jakarta-sans-800-normal-long-wrap",
+      "faceId": "plus-jakarta-sans-800-normal",
+      "sha256": "4a7210c695d4157a0bb9a97ebf3f09c3569a0ef4173ba7047f8dac995fb21d28",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5ffa19b9cc80] fontselect: (NxClipT2Face13, 400, 0) -> NxClipT2Face13, 0, NxClipT2Face13"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "plus-jakarta-sans-800-normal-bold-display",
+      "faceId": "plus-jakarta-sans-800-normal",
+      "sha256": "a706da1a389da38e7090a29fa3a1c249de000b8f614bfc5c87c1846c517a921f",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5c6a701bbc80] fontselect: (NxClipT2Face13, 400, 0) -> NxClipT2Face13, 0, NxClipT2Face13"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "plus-jakarta-sans-800-normal-stroke-shadow",
+      "faceId": "plus-jakarta-sans-800-normal",
+      "sha256": "ac8a6dab0180eefc57ab43456c039313fca57ff9d519ef2f671ad7add50f3c9e",
+      "selections": [
+        "[Parsed_ass_0 @ 0x61da2493cc40] fontselect: (NxClipT2Face13, 400, 0) -> NxClipT2Face13, 0, NxClipT2Face13"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "plus-jakarta-sans-800-normal-mixed-symbols",
+      "faceId": "plus-jakarta-sans-800-normal",
+      "sha256": "65b988f2a4021b51fb936b2f53ad6ebb8ee9ade6e218e166992e591098e3fbf2",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5a6518ec3c40] fontselect: (NxClipT2Face13, 400, 0) -> NxClipT2Face13, 0, NxClipT2Face13"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "plus-jakarta-sans-800-normal-letter-spacing",
+      "faceId": "plus-jakarta-sans-800-normal",
+      "sha256": "dd8dd80791169365fc585a1fd63c50815390dc7b3bea51b3fd9c3ed684866857",
+      "selections": [
+        "[Parsed_ass_0 @ 0x62e4d6d7fc40] fontselect: (NxClipT2Face13, 400, 0) -> NxClipT2Face13, 0, NxClipT2Face13"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "caveat-700-normal-short-title",
+      "faceId": "caveat-700-normal",
+      "sha256": "06b9b3eb3309ef44b7d73984bbbd5232b4ab0686bd44b0aeab6046040317644d",
+      "selections": [
+        "[Parsed_ass_0 @ 0x64403b7bac40] fontselect: (NxClipT2Face14, 400, 0) -> NxClipT2Face14, 0, NxClipT2Face14"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "caveat-700-normal-multiline",
+      "faceId": "caveat-700-normal",
+      "sha256": "3b871a639846805065d76ad2d5f297367d6a0ae32fe8bd6d7ebf5f18b4149e52",
+      "selections": [
+        "[Parsed_ass_0 @ 0x594e3d9ebc40] fontselect: (NxClipT2Face14, 400, 0) -> NxClipT2Face14, 0, NxClipT2Face14"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "caveat-700-normal-long-wrap",
+      "faceId": "caveat-700-normal",
+      "sha256": "9862547711e8ba4389ad0ffe2f7df455f6149ac549140f6c70bcdaf82ea70d92",
+      "selections": [
+        "[Parsed_ass_0 @ 0x64665b95ac40] fontselect: (NxClipT2Face14, 400, 0) -> NxClipT2Face14, 0, NxClipT2Face14"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "caveat-700-normal-bold-display",
+      "faceId": "caveat-700-normal",
+      "sha256": "fd5ce021186263d8e8c1093f1bd5bd1979f0d1360fed57b94d8d9009a371b191",
+      "selections": [
+        "[Parsed_ass_0 @ 0x58a097d85c40] fontselect: (NxClipT2Face14, 400, 0) -> NxClipT2Face14, 0, NxClipT2Face14"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "caveat-700-normal-stroke-shadow",
+      "faceId": "caveat-700-normal",
+      "sha256": "06455395a0094f97b32d3d624b242f8b1e320848bc63e9dc156ce581543a20b7",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5ba48a051c40] fontselect: (NxClipT2Face14, 400, 0) -> NxClipT2Face14, 0, NxClipT2Face14"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "caveat-700-normal-mixed-symbols",
+      "faceId": "caveat-700-normal",
+      "sha256": "b9f90f1088c57ccd4cdeff1152e9bea796fbdf7f2ec94d133519021f696ac9f1",
+      "selections": [
+        "[Parsed_ass_0 @ 0x60d3276f9c40] fontselect: (NxClipT2Face14, 400, 0) -> NxClipT2Face14, 0, NxClipT2Face14"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "caveat-700-normal-letter-spacing",
+      "faceId": "caveat-700-normal",
+      "sha256": "dd0807a5f1a4030f84c84e3e58ad897228ef29195a1d585a7d0813ebcf5a2698",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5e4ae19a0c40] fontselect: (NxClipT2Face14, 400, 0) -> NxClipT2Face14, 0, NxClipT2Face14"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "jetbrains-mono-700-normal-short-title",
+      "faceId": "jetbrains-mono-700-normal",
+      "sha256": "fbc52b5300cd17be265601b11e2cc9320b2fdc13e84fe6bc701164d6924eb49e",
+      "selections": [
+        "[Parsed_ass_0 @ 0x593d668a3c80] fontselect: (NxClipT2Face15, 400, 0) -> NxClipT2Face15, 0, NxClipT2Face15"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "jetbrains-mono-700-normal-multiline",
+      "faceId": "jetbrains-mono-700-normal",
+      "sha256": "11179a9ef37661c949cf8433dd808a172bdef3eeabf6e00522cb5613513c1ffe",
+      "selections": [
+        "[Parsed_ass_0 @ 0x5a033b3d2c40] fontselect: (NxClipT2Face15, 400, 0) -> NxClipT2Face15, 0, NxClipT2Face15"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "jetbrains-mono-700-normal-long-wrap",
+      "faceId": "jetbrains-mono-700-normal",
+      "sha256": "dab9b6ee52eabbaeb6019e5b5a6e1d787f1b9a9355409a76c65997f121051b64",
+      "selections": [
+        "[Parsed_ass_0 @ 0x595e4ccc3c40] fontselect: (NxClipT2Face15, 400, 0) -> NxClipT2Face15, 0, NxClipT2Face15"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "jetbrains-mono-700-normal-bold-display",
+      "faceId": "jetbrains-mono-700-normal",
+      "sha256": "0b32b250b6fd75674b5eaea1b675d66ffaefa1762ebfd05ea8253379f029f840",
+      "selections": [
+        "[Parsed_ass_0 @ 0x64b5aea86c80] fontselect: (NxClipT2Face15, 400, 0) -> NxClipT2Face15, 0, NxClipT2Face15"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "jetbrains-mono-700-normal-stroke-shadow",
+      "faceId": "jetbrains-mono-700-normal",
+      "sha256": "e5470bf1ba121ce9df14b5e34faa013cf85ddc4f8fbaea444c80f56e9fe18693",
+      "selections": [
+        "[Parsed_ass_0 @ 0x63dd8a856c80] fontselect: (NxClipT2Face15, 400, 0) -> NxClipT2Face15, 0, NxClipT2Face15"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "jetbrains-mono-700-normal-mixed-symbols",
+      "faceId": "jetbrains-mono-700-normal",
+      "sha256": "a906009996c0255fe72bf6af40614a1fb8ce0091536ad22ae91719063cb491d8",
+      "selections": [
+        "[Parsed_ass_0 @ 0x63ffb5003c80] fontselect: (NxClipT2Face15, 400, 0) -> NxClipT2Face15, 0, NxClipT2Face15"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "jetbrains-mono-700-normal-letter-spacing",
+      "faceId": "jetbrains-mono-700-normal",
+      "sha256": "df1a0b54a09be0ba62ad38b75916d91ad0ab0ba25ef46568e09dcdcb379ae1eb",
+      "selections": [
+        "[Parsed_ass_0 @ 0x575318a20c80] fontselect: (NxClipT2Face15, 400, 0) -> NxClipT2Face15, 0, NxClipT2Face15"
+      ],
+      "exitCode": 0
+    }
+  ]
+}

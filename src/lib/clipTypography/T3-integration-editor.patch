@@ -1,0 +1,111 @@
+diff --git a/src/pages/ClipEditor/ClipEditor.tsx b/src/pages/ClipEditor/ClipEditor.tsx
+index 1183727..5ab3a2d 100644
+--- a/src/pages/ClipEditor/ClipEditor.tsx
++++ b/src/pages/ClipEditor/ClipEditor.tsx
+@@ -30,6 +30,8 @@ import {
+ } from "lucide-react";
+ import { SocialPlatformIcon } from "../../components/social/SocialPlatformIcon";
+ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
++import { ClipTypographyOverlay } from './ClipTypographyOverlay';
++import { editorTypography, typographyExtras } from '../../lib/clipTypography/editorTypography';
+ import { useSearchParams, useParams, useNavigate } from "react-router-dom";
+ import {
+   contentApi,
+@@ -331,6 +333,8 @@ export default function ClipEditor() {
+   const [bottomOverlay, setBottomOverlay] = useState(DEFAULT_BOTTOM_CAPTION_PCT);
+   const [memeCaptionStyle, setMemeCaptionStyle] = useState("kinetic_hormozi");
+   const [captionFontId, setCaptionFontId] = useState<ClipCaptionFontId>(CLIP_CAPTION_FONT_DEFAULT);
++  const [canonicalTypographyRaw, setCanonicalTypographyRaw] = useState<unknown>(undefined);
++  const canonicalTypography = useMemo(() => editorTypography(canonicalTypographyRaw), [canonicalTypographyRaw]);
+   const [captionTextColor, setCaptionTextColor] = useState("#FFFFFF");
+   const previewPlaybackGenRef = useRef(0);
+   const [hooks, setHooks] = useState<Array<{ text: string; startMs: number; durationMs: number; styleId?: string }>>([]);
+@@ -541,6 +545,7 @@ export default function ClipEditor() {
+   // Load real clip media for this content id (F6 Phase 0 foundation).
+   useEffect(() => {
+     if (!id) return;
++    setCanonicalTypographyRaw(undefined);
+     let cancelled = false;
+     let objectUrl: string | null = null;
+     (async () => {
+@@ -578,6 +583,7 @@ export default function ClipEditor() {
+           }
+         }
+         const spec = item.clipEditSpec;
++        setCanonicalTypographyRaw(spec?.extras?.canonicalTypography);
+         const isAnimate =
+           Boolean(spec?.animate) ||
+           Boolean(spec?.sourceContentId) ||
+@@ -836,6 +842,7 @@ export default function ClipEditor() {
+           if (savedData) {
+             try {
+               const parsed = JSON.parse(savedData);
++              setCanonicalTypographyRaw(parsed.canonicalTypography);
+               if (typeof parsed.trimStart === "number") setTrimStart(parsed.trimStart);
+               if (typeof parsed.trimEnd === "number") setTrimEnd(parsed.trimEnd);
+               if (parsed.selectedTrackId) setSelectedTrackId(parsed.selectedTrackId);
+@@ -2218,6 +2225,7 @@ export default function ClipEditor() {
+         : undefined,
+       creatorContext: prompt ? sanitizeCreatorContext(prompt) || undefined : undefined,
+       extras: {
++        ...typographyExtras(canonicalTypographyRaw),
+         hashtags: hashtags.length ? hashtags : undefined,
+         // Always send transitions (incl. []) so clearing them invalidates prior burn-in.
+         transitions: appliedTransitions,
+@@ -2249,6 +2257,7 @@ export default function ClipEditor() {
+     bottomOverlay,
+     memeCaptionStyle,
+     captionFontId,
++    canonicalTypographyRaw,
+     captionTextColor,
+     hooks,
+     silenceEnabled,
+@@ -2915,10 +2924,11 @@ export default function ClipEditor() {
+       bottomOverlay,
+       memeCaptionStyle,
+       captionFontId,
++      ...typographyExtras(canonicalTypographyRaw),
+       updatedAt: new Date().toISOString()
+     };
+     safeLocalStorage.setItem(`nexaclip_editor_autosave:${id}`, safeStringify(data));
+-  }, [id, trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId]);
++  }, [id, trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, canonicalTypographyRaw]);
+ 
+   // Periodic autosave every 30 seconds (local + server blueprint)
+   useEffect(() => {
+@@ -3922,7 +3932,9 @@ export default function ClipEditor() {
+               />
+ 
+               {/* AI Coach / caption live preview — drag to reposition (same as Polish) */}
++              <ClipTypographyOverlay raw={canonicalTypographyRaw} timeMs={Math.max(0, (currentTime-trimStart)*1000)} locked={editsLocked} />
+               {!editsLocked &&
++              !canonicalTypography.active &&
+               (topText || hooks[0]?.text) &&
+               coachOverlayOnCut(currentTime, coachTextCuts) ? (
+                 <DraggableCaptionOverlay
+@@ -3937,6 +3949,7 @@ export default function ClipEditor() {
+                 />
+               ) : null}
+               {!editsLocked &&
++              !canonicalTypography.active &&
+               bottomText &&
+               coachOverlayOnCut(currentTime, coachTextCuts) ? (
+                 <DraggableCaptionOverlay
+@@ -4854,7 +4867,9 @@ export default function ClipEditor() {
+                 </div>
+                 
+                 {/* Caption overlays only for live preview — final render already has them burned in */}
++                <ClipTypographyOverlay raw={canonicalTypographyRaw} timeMs={Math.max(0, (currentTime-trimStart)*1000)} locked={editsLocked} finalRender={showingFinalRender} />
+                 {!showingFinalRender &&
++                !canonicalTypography.active &&
+                 !editsLocked &&
+                 (topText || hooks[0]?.text) &&
+                 coachOverlayOnCut(currentTime, coachTextCuts) ? (
+@@ -4870,6 +4885,7 @@ export default function ClipEditor() {
+                   />
+                 ) : null}
+                 {!showingFinalRender &&
++                !canonicalTypography.active &&
+                 !editsLocked &&
+                 bottomText &&
+                 coachOverlayOnCut(currentTime, coachTextCuts) ? (

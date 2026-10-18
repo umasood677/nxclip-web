@@ -32,6 +32,20 @@ export interface ApiError {
 // Resolve dynamic API Gateway URL based on active environmental profiles (Best Practice 5)
 export function resolveBaseGatewayUrl(overrideEnv?: string): string {
   const apiEnv = overrideEnv || safeLocalStorage.getItem(STORAGE_KEYS.API_ENV) || "development";
+  const failClosed = ["1", "true", "yes", "on"].includes(
+    String(import.meta.env.VITE_FAIL_CLOSED_LOCAL || "").toLowerCase(),
+  );
+  const isLoopback = (u?: string) =>
+    Boolean(u && (u.includes("localhost") || u.includes("127.0.0.1")));
+
+  // Local isolation: never fall back to Cloud Run when fail-closed is enabled.
+  if (failClosed) {
+    const url = import.meta.env.VITE_API_GATEWAY_URL || import.meta.env.VITE_API_URL;
+    if (url && isLoopback(url)) return url.replace(/\/$/, "");
+    throw new Error(
+      "Fail-closed local API: set VITE_API_GATEWAY_URL to http://127.0.0.1:5000 (refusing Cloud Run fallback).",
+    );
+  }
   
   if (apiEnv === "staging") {
     const stagingUrl = import.meta.env.VITE_API_GATEWAY_URL_STAGING;

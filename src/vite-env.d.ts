@@ -5,6 +5,8 @@ interface ImportMetaEnv {
   readonly VITE_API_GATEWAY_URL?: string;
   readonly VITE_API_GATEWAY_URL_STAGING?: string;
   readonly VITE_API_GATEWAY_URL_PRODUCTION?: string;
+  /** Local isolation: when set, refuse Cloud Run fallback; require loopback gateway URL. */
+  readonly VITE_FAIL_CLOSED_LOCAL?: string;
   readonly VITE_INTERNAL_API_KEY?: string;
   readonly VITE_GOOGLE_CLIENT_ID?: string;
   readonly VITE_GOOGLE_OAUTH_CLIENT_ID?: string;

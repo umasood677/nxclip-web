@@ -1,0 +1,18 @@
+[Script Info]
+ScriptType: v4.00+
+Kerning: yes
+PlayResX: 1280
+PlayResY: 720
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Canonical0,NxClipT2Face07,74.004,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:01.00,Canonical0,,0,0,0,,{\an7\pos(109.93606567382812,132.32999999999998)\q2}A long wrapped caption
+Dialogue: 0,0:00:00.00,0:00:01.00,Canonical0,,0,0,0,,{\an7\pos(96.20208740234375,189.02999999999997)\q2}includes uppercase ABC,
+Dialogue: 0,0:00:00.00,0:00:01.00,Canonical0,,0,0,0,,{\an7\pos(172.34805297851562,245.72999999999996)\q2}lowercase letters,
+Dialogue: 0,0:00:00.00,0:00:01.00,Canonical0,,0,0,0,,{\an7\pos(164.05307006835938,302.43)\q2}punctuation!? and
+Dialogue: 0,0:00:00.00,0:00:01.00,Canonical0,,0,0,0,,{\an7\pos(86.18508911132812,359.13)\q2}numbers 0123456789 with
+Dialogue: 0,0:00:00.00,0:00:01.00,Canonical0,,0,0,0,,{\an7\pos(227.17904663085938,415.83)\q2}accents éñÅ.

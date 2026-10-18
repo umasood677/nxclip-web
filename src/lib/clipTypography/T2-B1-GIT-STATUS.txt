@@ -1,0 +1,41 @@
+Frontend D:/NxClip-Web
+master
+ M src/App.tsx
+ M src/pages/AdStudio/AdStudioEditor.tsx
+ M src/pages/AdStudio/components/AdCanvas.tsx
+ M src/services/apiClient.ts
+?? public/fonts/
+?? src/lib/clipTypography/
+?? src/pages/AdStudio/AnimatedAdStudioEditor.tsx
+?? src/pages/AdStudio/components/MotionInspector.tsx
+?? src/pages/AdStudio/components/MotionPlaybackControls.tsx
+?? src/pages/AdStudio/components/MotionPresetGallery.tsx
+?? src/pages/AdStudio/components/MotionTimeline.tsx
+?? src/pages/AdStudio/components/MotionVersionHistoryPanel.tsx
+?? src/pages/AdStudio/lib/motionAssets.spec.ts
+?? src/pages/AdStudio/lib/motionAssets.ts
+?? src/pages/AdStudio/lib/motionAutosave.spec.ts
+?? src/pages/AdStudio/lib/motionAutosave.ts
+?? src/pages/AdStudio/lib/motionContracts.md
+?? src/pages/AdStudio/lib/motionEvaluate.spec.ts
+?? src/pages/AdStudio/lib/motionEvaluate.ts
+?? src/pages/AdStudio/lib/motionHistory.ts
+?? src/pages/AdStudio/lib/motionKeyframeOps.spec.ts
+?? src/pages/AdStudio/lib/motionKeyframeOps.ts
+?? src/pages/AdStudio/lib/motionRaceGates.spec.ts
+?? src/pages/AdStudio/lib/motionRaceGates.ts
+?? src/pages/AdStudio/lib/motionTimeline.spec.ts
+?? src/pages/AdStudio/lib/motionTimeline.ts
+?? src/pages/AdStudio/lib/motionTypes.ts
+
+Backend D:/NxClip
+master
+ M docs/README.md
+ M docs/deploy/GCP-DEPLOYMENT.md
+ M docs/plans/ai-sound-design-sound-engine.md
+ M docs/product/README.md
+?? docs/architecture/animated-ad-studio-4b-a.md
+?? docs/architecture/animated-ad-studio-4b-b.md
+?? docs/architecture/animated-ad-studio-4b-c.md
+?? docs/architecture/animated-ad-studio-4b-d.md
+?? docs/commercial/

@@ -1,0 +1,10 @@
+NxClip font asset package 1.0.0
+Family: Plus Jakarta Sans
+License: OFL-1.1; see OFL.txt (unmodified source license).
+Google Fonts distribution revision: 47d54ca1ebb14fd864695f1d39dc734f39017c33
+Official project: https://github.com/tokotype/PlusJakartaSans
+
+Embedded copyright notices (preserved verbatim):
+Copyright 2020 The Plus Jakarta Sans Project Authors (https://github.com/tokotype/PlusJakartaSans)
+
+Original source binaries and first-party browser subsets are independently versioned. No binary conversion or weight/style synthesis was performed by NxClip. See font-source-lock.json for per-file URLs and checksums.

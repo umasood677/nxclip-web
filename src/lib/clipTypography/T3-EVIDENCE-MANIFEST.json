@@ -1,0 +1,3057 @@
+[
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\anton-400-normal-metrics.png",
+    "bytes": 7346,
+    "sha256": "ace35d6bff42e16cb5ad9b6a8b10d99bc9f2b89f57aae0d38dc376842b571e02"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\anton-400-normal.ass",
+    "bytes": 578,
+    "sha256": "4b0b4e4cdbebda03e81df0ea0d1d9ed2765b8c520b94b48b2f8d3d710f5101de"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\anton-400-normal.log",
+    "bytes": 6926,
+    "sha256": "9b9754e3ea6eb0463dac58a04a351626914ab3941f4a4a71c0a42f7b011ee232"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\anton-400-normal.png",
+    "bytes": 28085,
+    "sha256": "8122bc219c16895ec292c509a8ddf1a01b63df3a94187fbfa7b5ee6188cda0bf"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\archivo-black-400-normal-metrics.png",
+    "bytes": 8718,
+    "sha256": "7e15a2408004b8ca497d86945fe140610fddeb9ff2e77b712fc6271f18dac2ad"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\archivo-black-400-normal.ass",
+    "bytes": 578,
+    "sha256": "0c1314c13dfc32ab00151b3e1551fd885f64d9f1963697081ea10497cf0873e4"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\archivo-black-400-normal.log",
+    "bytes": 6957,
+    "sha256": "10339c2d5e4777c760724152728a2a574fb9fdadc1d31966acca5f856ec547d9"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\archivo-black-400-normal.png",
+    "bytes": 29465,
+    "sha256": "01a578526956579b0365b1fe7ebf2623e3e6cc773189ecf33bc1169f47b2d7b0"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\baseline.json",
+    "bytes": 4929,
+    "sha256": "92fd9868b36ba1b7bfabb353460d1b798104722e7c1a6614f8f89047510d79a5"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\bebas-neue-400-normal-metrics.png",
+    "bytes": 7301,
+    "sha256": "de55f1fa657b5ca64e3f7c047d70597d56edbff2b2831d3ed0b4b59999974ba3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\bebas-neue-400-normal.ass",
+    "bytes": 578,
+    "sha256": "bfbf05876b7099c8aae25d8b339049a0906ca362b428dc5afcacc04f6a10ea77"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\bebas-neue-400-normal.log",
+    "bytes": 6947,
+    "sha256": "5bb4f24e2a9e9ebb08648ff8c58d35faada7905720ef41f80b2b1098d9ba092d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\bebas-neue-400-normal.png",
+    "bytes": 26515,
+    "sha256": "c194a6317a11337c452281aaae70256fdc22035a0576f24936fc46ecf9f1b047"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\caveat-700-normal-metrics.png",
+    "bytes": 8514,
+    "sha256": "0f72684a1f713aac1fff957158ed7757afa66f3eb2c7ecf63b51fde6c8f65c25"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\caveat-700-normal.ass",
+    "bytes": 578,
+    "sha256": "a1a65526922456e431c5a2c4da95760c06a2829b3fd26085836d95a867f3a108"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\caveat-700-normal.log",
+    "bytes": 6930,
+    "sha256": "f448d06b59ce88351f8564056ced9959a962c8a5e8ac18ac757502d066a911d4"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\caveat-700-normal.png",
+    "bytes": 29919,
+    "sha256": "46c5c6e2fcdcfbc13872ee85bfca202aa7e19c704005835690494107123d1227"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\inter-700-normal-metrics.png",
+    "bytes": 8445,
+    "sha256": "9fcb2a3c6de70f3d59bc692e29ee2dab4640e6d9324ba8656322cc89e51bdd99"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\inter-700-normal.ass",
+    "bytes": 578,
+    "sha256": "ecfc1abddc98501a78165fe818016b9c5805b352a0e316ffd8783a338ecfd118"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\inter-700-normal.log",
+    "bytes": 6925,
+    "sha256": "801167254f173842b918e59044e5e5d40ce46b559c8c6da8a29dc05a028a124b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\inter-700-normal.png",
+    "bytes": 29867,
+    "sha256": "13713c3274a6570d8759d92407b31c8453371c19c43d90f6469015ca80ab1076"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\inter-900-normal-metrics.png",
+    "bytes": 8417,
+    "sha256": "998f50067523940547a2ee4d2e04bf581df91975a700dae98c00bd28c8c44f05"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\inter-900-normal.ass",
+    "bytes": 578,
+    "sha256": "f721610d6646ee3e097534165111bab9c7ef26f740835c59a74bb97a6a95c72c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\inter-900-normal.log",
+    "bytes": 6925,
+    "sha256": "136996288c91c92066b1341a5ef0f37f20743696894fc97207dc09304416b194"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\inter-900-normal.png",
+    "bytes": 29871,
+    "sha256": "24333841eb81e004ef90d794dc6f9020f5a105541d7a6379a1f4e75f276155b6"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\jetbrains-mono-700-normal-metrics.png",
+    "bytes": 8817,
+    "sha256": "ff044e5a70de0eac0b7c22d21d81836ac3f48a4357efdcbc701a055dd0bf2582"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\jetbrains-mono-700-normal.ass",
+    "bytes": 578,
+    "sha256": "afb158942c6d7846c84eae866e261b735eadcd29587cdbb45d560adf65e3e0cc"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\jetbrains-mono-700-normal.log",
+    "bytes": 6962,
+    "sha256": "71c5a5eca245b988a750808690d4a950674fbc24693d1f68fb01c7a508cc3b51"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\jetbrains-mono-700-normal.png",
+    "bytes": 28641,
+    "sha256": "313081a876b42c23329b90c8ff31e0e9ccb29d6d4da330ed983ae6deb7153fa8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\montserrat-800-normal-metrics.png",
+    "bytes": 8004,
+    "sha256": "7a5360dcf27baf11dd73efc117833fb2077f2113e6d7e69771b37c2c2f38dcfc"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\montserrat-800-normal.ass",
+    "bytes": 578,
+    "sha256": "a88ecf57c25ddee8d9a4bb593873fd6d92c285098ac51895c2d957e7874a28e6"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\montserrat-800-normal.log",
+    "bytes": 6944,
+    "sha256": "460029a60ea1392d93265c260bbfd79f7ad30f0734b05c1fd0ea7f8cf8d18df8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\montserrat-800-normal.png",
+    "bytes": 30348,
+    "sha256": "3e6597fe0c21be9aa97ff6996dd63a2609fc0f9c7be632576273e511cac11337"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\montserrat-900-normal-metrics.png",
+    "bytes": 7832,
+    "sha256": "d7d5b60a1e3a6e07a93bfa3dba61e41ee4879edb83d7169f7e7805d3e9e4bd20"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\montserrat-900-normal.ass",
+    "bytes": 578,
+    "sha256": "6acf22b0ef152690726fa58641712ce6078e73fc0dbd71d986598315f37114dc"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\montserrat-900-normal.log",
+    "bytes": 6946,
+    "sha256": "ac5cc05eedde9b587a7ac0fb89d5477648e9a22c130137c0a83d1d609c6e6a1f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\montserrat-900-normal.png",
+    "bytes": 29895,
+    "sha256": "cb93caa62cb8513a28130b9814c0d9933981a87153b8c113b25afd5d064555b3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-anton-400-normal-metrics.png",
+    "bytes": 10072,
+    "sha256": "1f40efbf097aacd33f891512df2a0aafcfd94a2199d6721045bccbfd2a571d25"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-anton-400-normal.ass",
+    "bytes": 616,
+    "sha256": "0f69fda2f232ba64f0535bad5f6d66a1542ef6e3a4d8338fe87583f42e7068b1"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-anton-400-normal.log",
+    "bytes": 6982,
+    "sha256": "a71fefb4b39ae1993b592ab67a5653a2da20ddf07aec2c8a0f2051741c25f521"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-anton-400-normal.png",
+    "bytes": 28106,
+    "sha256": "ee76574edec0e6a5537f02e273491056de43db5c83e01d39ea7ff05a2201f4d4"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-archivo-black-400-normal-metrics.png",
+    "bytes": 10137,
+    "sha256": "e56fcb7434273f25ff8500f5e112a53cb5d0ceeab178e08d85cda68d64a2b257"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-archivo-black-400-normal.ass",
+    "bytes": 604,
+    "sha256": "462901549c18da78b09e0d1d45bda85faf7e4ac6a6fc5528a8437d5674edce72"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-archivo-black-400-normal.log",
+    "bytes": 7008,
+    "sha256": "313f0745f94cd1cf5dc4c7cdf509024031c29a0b3fc3eccc286fcec40a34e956"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-archivo-black-400-normal.png",
+    "bytes": 29462,
+    "sha256": "7fe6af886bfc130c29552d9ff2ee0bb809f5902391994c3ca5938247ee9c950d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-bebas-neue-400-normal-metrics.png",
+    "bytes": 8257,
+    "sha256": "c599c0fa0d66fd590626b714aa7fa89f865e4dfb6d6be9f5d8250bfe5c54101e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-bebas-neue-400-normal.ass",
+    "bytes": 601,
+    "sha256": "6d66a2124cfa114528e6827c97c3c651b3ee88e945aaef2d186dd2b576a9c709"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-bebas-neue-400-normal.log",
+    "bytes": 6992,
+    "sha256": "6026af39c178a101a4cd39fb2ddc5e4426ddde94a617415adac5bf44dbb71d4e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-bebas-neue-400-normal.png",
+    "bytes": 26522,
+    "sha256": "e97f8cbce93438a06d72e85c620fa5e619889ef6c96c0ccb760327839a563edb"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-caveat-700-normal-metrics.png",
+    "bytes": 9854,
+    "sha256": "a0ad3fea13dd60ed54485055b4442e1cb539bde1940fc7fad67610a0b82ac738"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-caveat-700-normal.ass",
+    "bytes": 605,
+    "sha256": "11561650cd35fe934746e48a7d99f10b4c891a0a7660dcf81c9e9e60dd536924"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-caveat-700-normal.log",
+    "bytes": 6978,
+    "sha256": "77e6327434e9fcf7ba52b63de8fb5cf01687ff4454ca78548e28c695e28d78c7"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-caveat-700-normal.png",
+    "bytes": 29964,
+    "sha256": "549b9526e01017690670074422130be2d191196d01821c8ab2d1d0743eb9a8bb"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-inter-700-normal-metrics.png",
+    "bytes": 10021,
+    "sha256": "f92fe59a6ab820994c044193429adad2fb794cf89b15886960e6e095c50c703a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-inter-700-normal.ass",
+    "bytes": 619,
+    "sha256": "152fa58047410824611acdd858016eb7aa2094fa39ebbbd8c5dbba32241200a2"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-inter-700-normal.log",
+    "bytes": 6985,
+    "sha256": "c50ce89ec1f991ed32f81b8b9e5a3a6d9ad3fae41704216887a896a191a0c995"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-inter-700-normal.png",
+    "bytes": 29906,
+    "sha256": "4bcfc7c69dc0224db4393426e2a97ff9b44abbfce39994a0ca4bfbedba8098b6"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-inter-900-normal-metrics.png",
+    "bytes": 10213,
+    "sha256": "b6cb282bf293fdd73950b14b7471c2538cea425e1eb6bfb852c74534047274d9"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-inter-900-normal.ass",
+    "bytes": 619,
+    "sha256": "474d2bea07a60c0deaf85b8ba0fdfdb271036ed2e4aaeec50b45909f18177a60"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-inter-900-normal.log",
+    "bytes": 6986,
+    "sha256": "3d0da35f605f968723c5977b0d43ed3f0bd671940deca5df658ca8833641471f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-inter-900-normal.png",
+    "bytes": 29887,
+    "sha256": "bdbbe2d1cfe0e8a551c2efea7a3514edbc3667f91ebf210125d1b24ded4696fe"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-jetbrains-mono-700-normal-metrics.png",
+    "bytes": 10082,
+    "sha256": "3e196b91a770c193d1920f9b46451abf540a17efa7ccb89f3b4c52acb0648e71"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-jetbrains-mono-700-normal.ass",
+    "bytes": 615,
+    "sha256": "5a25f4450e3abaf60c88ee448da9d9fe3125f0260fe9d9bc31d6025ae11d49d6"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-jetbrains-mono-700-normal.log",
+    "bytes": 7011,
+    "sha256": "45939285625e782765f8c70e25ccd1782683013780d10b2a85cc489f6056ff97"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-jetbrains-mono-700-normal.png",
+    "bytes": 28658,
+    "sha256": "1dad1d4b2bda327041d9cf930d30f84b15165827a569c89dee476e4e4e98b3e2"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-montserrat-800-normal-metrics.png",
+    "bytes": 10143,
+    "sha256": "c387a2562017d29ecf3bd4d0a2de838e306a67a5203d00c523d2936470da121b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-montserrat-800-normal.ass",
+    "bytes": 605,
+    "sha256": "bb98fe36256344e92dce69c5c776de8b2a103bb0635eaa3e0ba8e8436ad59f70"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-montserrat-800-normal.log",
+    "bytes": 6996,
+    "sha256": "2fb7b9c5fad3dcb3e83826bdbf1bf2c5aece4c11323b83200c7ee1d33e49d4db"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-montserrat-800-normal.png",
+    "bytes": 30362,
+    "sha256": "3dbe8c651bf54f17c42d6f809eca8093cf6500e6769b5b439b0e7dc78d09bf3b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-montserrat-900-normal-metrics.png",
+    "bytes": 10035,
+    "sha256": "1dc4b08ef40c1bc3232bd6d4f25e61349564c16de708ea6e05d9256e1c4423f7"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-montserrat-900-normal.ass",
+    "bytes": 605,
+    "sha256": "c5f788351d1ee00d40ab68f6d7e3e1bdac4c10aabebd1b2be93dc96d720ca9b3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-montserrat-900-normal.log",
+    "bytes": 6996,
+    "sha256": "66c20f2a6237ec88606392f05e4f07f882fcfa9acb4c0b268e8d813ab2926693"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-montserrat-900-normal.png",
+    "bytes": 29922,
+    "sha256": "99f25d7f0b30556bafec11cf71230c9a135ff0cc5cb1cacc9a42350641676696"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-playfair-display-400-italic-metrics.png",
+    "bytes": 11572,
+    "sha256": "612ae65416131fe7d5e4cabe74646152bb025b55684a5a4ca2c67eedbd69df9d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-playfair-display-400-italic.ass",
+    "bytes": 604,
+    "sha256": "e63a994eae99615c38ab7bcea10b7785b1936fecea2631faf6640a3d912833cf"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-playfair-display-400-italic.log",
+    "bytes": 7050,
+    "sha256": "00427089e89bf73409d096f23fd0446960521ab7e5d0733c8c04e297e1414e56"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-playfair-display-400-italic.png",
+    "bytes": 31446,
+    "sha256": "b28677f70e32c20db7032c5be1a8d69580fb8bd6ae698d0474f76cf598840b87"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-playfair-display-700-normal-metrics.png",
+    "bytes": 10637,
+    "sha256": "b411e42effefca28bcc58ac552ae4605f6468c40ebce795207642b3503645eea"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-playfair-display-700-normal.ass",
+    "bytes": 604,
+    "sha256": "5bd0948bd1bd0bbee14a75b71f621da10e91f00d62f67a68c0c0105ff101db1c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-playfair-display-700-normal.log",
+    "bytes": 7019,
+    "sha256": "5a2e7faebd5121278182d1f4f935d3ea348561007ccd243b391b84eb96b23c40"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-playfair-display-700-normal.png",
+    "bytes": 30383,
+    "sha256": "a215937e39cdb5296dcddfbf03f8389c0ba794aefd72c838db2d50f52ca83f31"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-plus-jakarta-sans-700-normal-metrics.png",
+    "bytes": 9921,
+    "sha256": "4ca2c89c8100fcb395be635ccc21dc3ba0bda308864e1da2809f92727911de7f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-plus-jakarta-sans-700-normal.ass",
+    "bytes": 605,
+    "sha256": "8b1bf54ca8c87604ddb6525acaa57abde5d5552d76d31c97124d1a4ba06c6dca"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-plus-jakarta-sans-700-normal.log",
+    "bytes": 7023,
+    "sha256": "2292352d0fd8fcfbbd29be41caee4c83d7c3b9bd2da60e0efc1f44be1d1f4451"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-plus-jakarta-sans-700-normal.png",
+    "bytes": 30050,
+    "sha256": "141e42774e3edbb81ae092b8d7a5e3e49fc9a4288dfe12262d3c21cf32991452"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-plus-jakarta-sans-800-normal-metrics.png",
+    "bytes": 10064,
+    "sha256": "4947de046175bd277ceefb56c2b541d7eb15c25bef0da6f50dc7b7fefc59b9e7"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-plus-jakarta-sans-800-normal.ass",
+    "bytes": 605,
+    "sha256": "481552b0a5f59d3d3690cc22c6bb16a17ecc1546069c351e2608e6754336f397"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-plus-jakarta-sans-800-normal.log",
+    "bytes": 7024,
+    "sha256": "c739e8895437b88634c272543cb5b305e9599153d43f05a7c73adb52139e4d3d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-plus-jakarta-sans-800-normal.png",
+    "bytes": 29011,
+    "sha256": "ce0dc93703763d60d03cd55f8c3158790554b4d1cffdf088e33163edb329e6d7"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-poppins-700-normal-metrics.png",
+    "bytes": 10062,
+    "sha256": "41eb2e95c5ee4975a8fbf4f81b32c1bf38e4c6f2d81fadd6b42039a8d3f1d2df"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-poppins-700-normal.ass",
+    "bytes": 604,
+    "sha256": "dbd6c8bb01873eda8716779bfc8fdbf21001f05c5856605e7cea3306f39dd34e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-poppins-700-normal.log",
+    "bytes": 6984,
+    "sha256": "ee62fa3591f546326be6af9438287e8b9e9a2479276ac6e04e81826ff4e8e5e5"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-poppins-700-normal.png",
+    "bytes": 30053,
+    "sha256": "1d19ebf0dfa90c0a09b1b1103079169f5e9e0b8b78739b59647bd414d8291244"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-poppins-900-normal-metrics.png",
+    "bytes": 9543,
+    "sha256": "2a1065db4db6a7de352f799aa8fe7004f26f7ca27695ca1abf09ecd2adc23101"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-poppins-900-normal.ass",
+    "bytes": 604,
+    "sha256": "1022193c8e91fdc0ca95a260f7410c7b9cd2a9fb5ba4748c1914a50a5033937f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-poppins-900-normal.log",
+    "bytes": 6980,
+    "sha256": "29622c819e2f217ef281faac4b1467340b3ef6914a769bdfd63215ae6f204d2e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-poppins-900-normal.png",
+    "bytes": 29135,
+    "sha256": "9e60c29cf640f57345295371192d195f30cdd03a893718c1846f5ff042c71f2d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\normalized-runtime.json",
+    "bytes": 7873,
+    "sha256": "ebeb6a6c9b0bee2c58b58cfb46e395e7f408acc961eff18dfcf7cb9c340bbc34"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\playfair-display-400-italic-metrics.png",
+    "bytes": 9027,
+    "sha256": "6db34b2ed08b0023923feb6b357399222de588c35e4de030d2f6c1a5cdcd4209"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\playfair-display-400-italic.ass",
+    "bytes": 578,
+    "sha256": "227be1acc6a34ea4fd629deed4640a9816ff4f7a182ada6422273835fa7304d8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\playfair-display-400-italic.log",
+    "bytes": 6999,
+    "sha256": "84a655497d705eb001eba1e01555529487894aaa434b19309f1e066085bcea0d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\playfair-display-400-italic.png",
+    "bytes": 31475,
+    "sha256": "04151c5e51710510610f51ec7cb82e2b4f6bc106f17555be62b67686698864d3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\playfair-display-700-normal-metrics.png",
+    "bytes": 8741,
+    "sha256": "9d16a49cce50a5127d7362a38baff0d8fcfe5b8f83ce53bf59401faeb80efb92"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\playfair-display-700-normal.ass",
+    "bytes": 578,
+    "sha256": "4824ab7d33c701babf52ef8c8b76462bf3b68d5e90e93c2c793202d626baea0e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\playfair-display-700-normal.log",
+    "bytes": 6969,
+    "sha256": "48f4b91e2ba3aae874bdbba9f9cf8139f4e6e00579164b04beff26e45c3465b9"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\playfair-display-700-normal.png",
+    "bytes": 30342,
+    "sha256": "a2e3eaaf2d6d6ff63e29289938513953e5aeeffd38df786b9da652e17ae7aadd"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\plus-jakarta-sans-700-normal-metrics.png",
+    "bytes": 7876,
+    "sha256": "df053944d91cc0146d7b4538f90fab54fa87c96cb79c129a8b07e7670378f2f1"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\plus-jakarta-sans-700-normal.ass",
+    "bytes": 578,
+    "sha256": "646b5188f964cdf1ccff90687ca2d9892dc8d87751dc3652c5be84ef777f6d85"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\plus-jakarta-sans-700-normal.log",
+    "bytes": 6976,
+    "sha256": "ded241dc439ed3d6826e93dbaffd5edddcffdb1da84c1201d0a363dd0c0d68c5"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\plus-jakarta-sans-700-normal.png",
+    "bytes": 30066,
+    "sha256": "57cf2af4a29b55d3e2ff48638c5dd37002b1e6761becd70314d5a17fe9d9f260"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\plus-jakarta-sans-800-normal-metrics.png",
+    "bytes": 7667,
+    "sha256": "20a0c3c6e6dc9e4f2f6423c0aca2b5eecff0280ea488227d45518686718b7962"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\plus-jakarta-sans-800-normal.ass",
+    "bytes": 578,
+    "sha256": "fc8abc6f9f57e4e47dca6653972ffe3219ff7d93a6aedcb8d0936f253695d4cf"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\plus-jakarta-sans-800-normal.log",
+    "bytes": 6973,
+    "sha256": "b5a24cc0452ef3ea28a635e686deb9f0fb013b54436869a30e0616060fafdfe0"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\plus-jakarta-sans-800-normal.png",
+    "bytes": 28996,
+    "sha256": "50f018f42f37581e4ac894874bc4b637173a34d351deb9620abd5f1d0a99838d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\poppins-700-normal-metrics.png",
+    "bytes": 7701,
+    "sha256": "cd7dc0a66fe4f4e054e9af0a290d782cb9a073e1c73a17de8daf50144e1d62c3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\poppins-700-normal.ass",
+    "bytes": 578,
+    "sha256": "d3285a7be04cee04e9a689b66f26b9f5b8f76cd48427f7abb4f25c22fb149f3b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\poppins-700-normal.log",
+    "bytes": 6932,
+    "sha256": "cee59cebca1012501bea8c6a09c6914e55a1022ccd62934f5d5e331a7bbf9397"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\poppins-700-normal.png",
+    "bytes": 30100,
+    "sha256": "e86b35e3ca5f81bba33b84425dd4e01ef720530d220791a7ee7124a8ab595103"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\poppins-900-normal-metrics.png",
+    "bytes": 7470,
+    "sha256": "51f0ce6e0e0d5f98bd4412baa3803399e6675790b793b76de1604929ccd02108"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\poppins-900-normal.ass",
+    "bytes": 578,
+    "sha256": "a8f9210878db2d960e91304b2bf80d818bb05ea37b758913077487a9f54c162a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\poppins-900-normal.log",
+    "bytes": 6933,
+    "sha256": "7b113c40d5bb4948e5dc048a8da6404f3ef7bb1e9a269bb443d58297b6fbccab"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\poppins-900-normal.png",
+    "bytes": 29114,
+    "sha256": "9e06c74c47da4ca92c46cbf4d393d0afa86273abb8b3e8aabc403a094faaa4e7"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\results-normalized.json",
+    "bytes": 5186,
+    "sha256": "d11d822b7b35384a860ea4091995eb33282dc67f7b4a5a87494f58a8aebec155"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\results.json",
+    "bytes": 5274,
+    "sha256": "6c46068b3304d820679babbf33692e1f03b1b4d77840fbafcbb043f6a95fe8f7"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-evidence\\runtime.json",
+    "bytes": 7858,
+    "sha256": "a04be0abfccfb82715cbd814c62ced56cff6087aa80cad44e834fe8c44a7a459"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-bold-display-browser.png",
+    "bytes": 31168,
+    "sha256": "61de1c2f044cb647450afa94645e7980fc894da8fc27cdaed8c0ebd363d6cedc"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-bold-display.ass",
+    "bytes": 672,
+    "sha256": "225fe3151e73d9717cdd7d4432a4cdc000487d8b1ef947dc96a6fc990b808221"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-bold-display.log",
+    "bytes": 6976,
+    "sha256": "e7b38d5012ff1c4f5dc02192bbf7de9f3645d1c38a8c8c174a3288da14cd1a08"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-bold-display.png",
+    "bytes": 12067,
+    "sha256": "0c6e8df7dd5ed69d67cb14c84b330dc35d8b9bc210514a943986cb19dce6dda7"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-letter-spacing-browser.png",
+    "bytes": 26786,
+    "sha256": "8f9d31680e64ed73167716a1825ab3e393592e965735d7a4c09b36447fdf18a9"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-letter-spacing.ass",
+    "bytes": 676,
+    "sha256": "302a631bb9610c3d5078a57be48cdcf289582ecf2f7e03e2aeeca62719fd527e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-letter-spacing.log",
+    "bytes": 6984,
+    "sha256": "32fbfa5999946d8b02856e738ae3891cdac02aac8b9da7ff8ff66d4dcf7acc5d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-letter-spacing.png",
+    "bytes": 9125,
+    "sha256": "4d3a1a65124aa4ce31503e0e8b911890ca88a330f57780990c1068ecb5651322"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-long-wrap-browser.png",
+    "bytes": 60533,
+    "sha256": "8865f5b8cfe3397f59aca495cafffd0d6c4188bbb542272a1029bd4477ee1893"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-long-wrap.ass",
+    "bytes": 1085,
+    "sha256": "aa5ba1f442325e43a500fe04fe82bf59eaae610eb65e4d001f8d45f8df02c944"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-long-wrap.log",
+    "bytes": 6969,
+    "sha256": "4f22432b75c69979065c88b676c0cc1266776e59c27d7ae208d3e2fb7d279127"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-long-wrap.png",
+    "bytes": 36937,
+    "sha256": "0fbc9b9bf0ce6b837f8c04229be2a5e891a9db3f5c46f237dfe22ab0843e3187"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-mixed-symbols-browser.png",
+    "bytes": 29304,
+    "sha256": "f7bb8363b17399dc40603431443cf8a6bca505fe7409423e5e2f1245b7c63626"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-mixed-symbols.ass",
+    "bytes": 701,
+    "sha256": "5798a92f2eddb3f90721eab267661a573ac2e2a363ae17e7890667728854a341"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-mixed-symbols.log",
+    "bytes": 6984,
+    "sha256": "122ec753e39c274ae957b80120c0f6c701e3d39253f33c816b2c60336a934a7b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-mixed-symbols.png",
+    "bytes": 10612,
+    "sha256": "bbfb313e9d7c16ad2228d9823573bb32a7e2461be452dabf73ee2d18fbd63f93"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-multiline-browser.png",
+    "bytes": 32775,
+    "sha256": "0e097b06d4f4981dcf3864d3508af78dcb499a1d01c7841ace90fc26967d3580"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-multiline.ass",
+    "bytes": 781,
+    "sha256": "e42569305f67465065479ec911dccf92e448877532dde4ed8b6a9584cfc06beb"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-multiline.log",
+    "bytes": 6968,
+    "sha256": "5c4aca97089ef0ad668fc6960da00c5e93bd93c6cdeaf06a8ff788d75a5fef74"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-multiline.png",
+    "bytes": 13119,
+    "sha256": "d160b582b3a579f5fb917182fec5398c4bef969667a9d22eb6450f41166b9a1a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-short-title-browser.png",
+    "bytes": 28631,
+    "sha256": "36c8a6ca88e2e70b1d864c754e28ca43a333f6b7f99c83a29a61bb4e06b2a5ec"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-short-title.ass",
+    "bytes": 694,
+    "sha256": "fd74a26b311741bf098ad2a3778ab94bcc3747278df3d224fb43815023f42186"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-short-title.log",
+    "bytes": 6975,
+    "sha256": "e3db4badc6102430e116d4be7808595bee3217877c08fffd42e44e770d743028"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-short-title.png",
+    "bytes": 10146,
+    "sha256": "9a8b466edc9eab28eb9e708a19ad1c3fd2823820bbd2f5f59872402d86928220"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-stroke-shadow-browser.png",
+    "bytes": 36075,
+    "sha256": "332934d729425e7176dac3783d9303c2e708dfa7ad3a0371707ca0eef76f2a87"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-stroke-shadow.ass",
+    "bytes": 698,
+    "sha256": "55f8ff8836cb6c00434170a10d520a797a9a8d2f2dfc5e282d106ef080629a07"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-stroke-shadow.log",
+    "bytes": 6983,
+    "sha256": "c1bb38ad2b81a2ce4bc9fc6f784b1aacaba547431c3dc45b52dbc746c229c91d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\anton-400-normal-stroke-shadow.png",
+    "bytes": 14677,
+    "sha256": "016ec9df25a3674efbca6619a241001ed14eba0b2b64610c63ab057d925e2ddb"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-bold-display-browser.png",
+    "bytes": 33683,
+    "sha256": "292537c0a050ada47077af93f46349b1281596efc198e4faf062ae638ec685d3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-bold-display.ass",
+    "bytes": 684,
+    "sha256": "eaa46fa141570d00542b89426104b59303ed634be234aba37920f29ec8baa4f6"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-bold-display.log",
+    "bytes": 7005,
+    "sha256": "04325e5f47a7e10621c1836d1e813570790876d28e9465b64fedf35ec745a338"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-bold-display.png",
+    "bytes": 13214,
+    "sha256": "f2a4d15defa01b7bc285f95da9b1e5d568c35a00b0a1894054236eecb0e914bb"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-letter-spacing-browser.png",
+    "bytes": 28462,
+    "sha256": "69cab4195da279af77fb71b57693d1023e20f96afef82eaf7077142b1bc085cf"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-letter-spacing.ass",
+    "bytes": 664,
+    "sha256": "b7466b21e580f700da8aa1aee5b0b5500ba916cdbd32bbaf2517103486e453f6"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-letter-spacing.log",
+    "bytes": 7007,
+    "sha256": "6a99a1e54b35062dc27afc7d4174d41194ece4eb17b521d48fa71cc9e4190bc9"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-letter-spacing.png",
+    "bytes": 9431,
+    "sha256": "79659ba40392ca6b832904b75741c72a90d9e06465addfce28c5eb276e2a04e0"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-long-wrap-browser.png",
+    "bytes": 71275,
+    "sha256": "215192dbca4132c87c897e5a53edaaec8b45a8dcef3d50ea73d2bf1f733c02be"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-long-wrap.ass",
+    "bytes": 1272,
+    "sha256": "0350a0dc12d10f564d623715ebc2f4be60e7ff6cb49d786d310c05c577aea957"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-long-wrap.log",
+    "bytes": 6993,
+    "sha256": "b2f6355a1be68acd30deb11a3a700914768ca402fd2536c6badf90a31a684b1a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-long-wrap.png",
+    "bytes": 41168,
+    "sha256": "f70d624621f174f036d79e25fc620c834206baedc5ad6e12053c66d209dfb162"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-mixed-symbols-browser.png",
+    "bytes": 30854,
+    "sha256": "6c3e125da3592774dc4936213a1c152be92477a1766df3155902eabad3da0f46"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-mixed-symbols.ass",
+    "bytes": 691,
+    "sha256": "adf8644395ced4abe9e145d4e292620042499dc4cad4bfe0106aeede27bd335b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-mixed-symbols.log",
+    "bytes": 7008,
+    "sha256": "4e5898e41a23a2685acfb9b254dddd044dfa4602ed7488e20b0157f7f16cf670"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-mixed-symbols.png",
+    "bytes": 10849,
+    "sha256": "29ff009fc3dd1a9a26c5836ea5f8d60fe7fe8260d64dd6640747ad31a3da6685"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-multiline-browser.png",
+    "bytes": 32323,
+    "sha256": "26ec53de1a4000e1bb02a9f80a1a91cdcc44bfd4c9edf54eb7c759e1d946c526"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-multiline.ass",
+    "bytes": 763,
+    "sha256": "6bd88373b06f9809d44194d88809c110ba17de1ef72aeb4c4b09f385887517b9"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-multiline.log",
+    "bytes": 6992,
+    "sha256": "f8a129c4e131a6dbd3e5d770ed0cb312d15b59bbd9503de781f2aa8893a64726"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-multiline.png",
+    "bytes": 12947,
+    "sha256": "5e42f50530b036d74407bd0164eccfda8ad8655c4936c21fc989aba721357e4c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-short-title-browser.png",
+    "bytes": 29381,
+    "sha256": "89dfe6e01d5a15398302e325d9f7e773d2166a65321edf8c5db38bd2054facef"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-short-title.ass",
+    "bytes": 685,
+    "sha256": "fd2bda2cc2fe77e1bacf0b02ba8c3c03a9ccfb16fd1022585627cc5384fbaadd"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-short-title.log",
+    "bytes": 7000,
+    "sha256": "aece79dbe8d317b74b4080988e3117c2f72f349e4e7c44a80839019622ea9091"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-short-title.png",
+    "bytes": 10385,
+    "sha256": "f79e79000a49e6d153ec636e1a115e45778b4a6ce3ebb39cd094b90ef87f620e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-stroke-shadow-browser.png",
+    "bytes": 38518,
+    "sha256": "f2bf9196602fa2fa2b86710aaaab90c334c29d515dbfc9dd062a2a7bc6d3a0e8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-stroke-shadow.ass",
+    "bytes": 689,
+    "sha256": "52fd5aa8cc88c4da110868cd37de38c9b7df769e3fe1ef065a397bd7745b8c45"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-stroke-shadow.log",
+    "bytes": 7010,
+    "sha256": "ab5a0c4a36f59367e8fca77f5318a108b9587aaf3f95c3965201088bf8ff8d09"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\archivo-black-400-normal-stroke-shadow.png",
+    "bytes": 14902,
+    "sha256": "be1018e0b0ae75cd57fc058ed1cc8d1031d5e21f676b22aea4469259bf02f5d4"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-bold-display-browser.png",
+    "bytes": 29654,
+    "sha256": "0a358472aeaee7d10944c369f99159c256a4bebba723afb098a9b9eb4274c124"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-bold-display.ass",
+    "bytes": 681,
+    "sha256": "80f6eec1c7b37d203fc871fe76e52a185bdc0ca800ad0005c2d9c4c1b6c98dae"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-bold-display.log",
+    "bytes": 6992,
+    "sha256": "825360edf45efb9a7550c720bfb72127121fa69ce784d1c99333df0e453b51c2"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-bold-display.png",
+    "bytes": 10625,
+    "sha256": "107abe9d39333690ab3cd59770f1de3896e2ea22b25b352644c2129fcc4a07a0"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-letter-spacing-browser.png",
+    "bytes": 26098,
+    "sha256": "0b0ab521268eeb90056627ff82a1a2355042f9150720350d278e3d214edfb803"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-letter-spacing.ass",
+    "bytes": 661,
+    "sha256": "22dcb28a8200d8ce7630aa6813398834638b823716ef22551182c0af6eb6be9b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-letter-spacing.log",
+    "bytes": 6996,
+    "sha256": "a360110b8472fbac67416edc918d19b97a014fc1e2962858e484777e8d940f3b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-letter-spacing.png",
+    "bytes": 7967,
+    "sha256": "6ca6e87d13e854e48c152701625275d2e6c47ff3266a023eb0bdc34906f9d71e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-long-wrap-browser.png",
+    "bytes": 55596,
+    "sha256": "ded6d6a309a13cab5224fb8cde2f8f3637284fd200468d265e84a6785b94d6ce"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-long-wrap.ass",
+    "bytes": 1100,
+    "sha256": "379cbac314b451ef897938d198d3e15376e358ea711011792422dc2c48d79ac5"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-long-wrap.log",
+    "bytes": 6981,
+    "sha256": "9656b33921040ff6036230aac73b1c4796a7cd081d8b2aa80f847856729baf1f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-long-wrap.png",
+    "bytes": 30926,
+    "sha256": "306d54d5bf8ae7f3b82813e0aafea503c84e5a38b38fc622027bb7674a82511a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-mixed-symbols-browser.png",
+    "bytes": 27456,
+    "sha256": "c022395b05358fe5942588a8a8ec2bc15f55e5d85ebbd30c2af5350838e3e415"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-mixed-symbols.ass",
+    "bytes": 688,
+    "sha256": "20450dd2c08371b8c7872f3383a4363a52ce0180fabbfa4ff0637c8d4056b51f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-mixed-symbols.log",
+    "bytes": 6992,
+    "sha256": "663203dd9f545ab3a1a3f3ad3cd16f3dd32723a34754c9ccb8a9645f32a3570e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-mixed-symbols.png",
+    "bytes": 8942,
+    "sha256": "0aff14cdd8e448e9061d22fa4482dc136886546b142d8f4a8360490ce5c18b35"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-multiline-browser.png",
+    "bytes": 30147,
+    "sha256": "890eb056464ebc9281a71817d8b5c0991e7236ecb2685d0d91eca400f8f59f1b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-multiline.ass",
+    "bytes": 772,
+    "sha256": "557938196a6336e5167b6ade78a25939fe43a58eb68ce42989511d23cc3147c4"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-multiline.log",
+    "bytes": 6980,
+    "sha256": "5b40ef05675f984d20760dcf7275c0cfb69e9c064c242c1e0da671d980b2ca86"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-multiline.png",
+    "bytes": 11001,
+    "sha256": "8aa146349346a6a5429dfc39129ac87cd499dbe4622cc365ddae8bd84e6071c6"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-short-title-browser.png",
+    "bytes": 27568,
+    "sha256": "8aed164cde4de9eae51e54eef9f8742897466c76c8e4137f6277fec373215205"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-short-title.ass",
+    "bytes": 682,
+    "sha256": "feca4ad1771477c756b0e1bae2c7e65af34d7c72148fd9ce1cb137ff879560d4"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-short-title.log",
+    "bytes": 6984,
+    "sha256": "cd27de6eb4b79e0f9921e7c541a929d49beb9da5f65852e3dba79a9b2748f6d3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-short-title.png",
+    "bytes": 9080,
+    "sha256": "6a551eadf480338307742c674fed45d1b5373a18fe7f1a1c91be9f7b249d04e4"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-stroke-shadow-browser.png",
+    "bytes": 33516,
+    "sha256": "25853840d1a34e6bd5b0b5caf255647f0aca4340e7a0382990a367b972ef81d0"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-stroke-shadow.ass",
+    "bytes": 687,
+    "sha256": "5763ce9c4f830fc178df62d20c0411b9aa81d5158255fc86e28fbe30d2b08b9b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-stroke-shadow.log",
+    "bytes": 6996,
+    "sha256": "106faf96958d026e823278428072739d64b9e0e4a59ce09ca9518fc00ab8974e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\bebas-neue-400-normal-stroke-shadow.png",
+    "bytes": 12646,
+    "sha256": "299a22f42e180f6ac0d5e51cd475eb7817a80cd9fb0713fa25a841e9adc87450"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\browser-results.json",
+    "bytes": 14885,
+    "sha256": "099b8965631cd32f45e681bd04914456788c3f7390071898b0164d65bdc737f9"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-bold-display-browser.png",
+    "bytes": 39324,
+    "sha256": "c72ba5d13a806ba23bea9c57f18721d26017e62ba79119d4cb33f5566c239b2b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-bold-display.ass",
+    "bytes": 685,
+    "sha256": "50a7bc7426fc53bbf5e86b5f951915cdc5ba96fbadacba990928e6285f9976ac"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-bold-display.log",
+    "bytes": 6978,
+    "sha256": "5186a719397153a2ed0717f26141221b7d94c813b00795137166cc62b7bdeaf6"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-bold-display.png",
+    "bytes": 15786,
+    "sha256": "fd5ce021186263d8e8c1093f1bd5bd1979f0d1360fed57b94d8d9009a371b191"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-letter-spacing-browser.png",
+    "bytes": 30353,
+    "sha256": "dda47401a360d53f4796861e9846145810603e8a2317c671357da52fd01cd744"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-letter-spacing.ass",
+    "bytes": 676,
+    "sha256": "7eee2144633e2a38ce5de2cda460a9bda12408a1bd4d7761c292d1fbad12832d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-letter-spacing.log",
+    "bytes": 6986,
+    "sha256": "6424850eb6924600dc294d34adfe04f9d3a8bf74eecc88f99f3fbba826a7579d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-letter-spacing.png",
+    "bytes": 10026,
+    "sha256": "dd0807a5f1a4030f84c84e3e58ad897228ef29195a1d585a7d0813ebcf5a2698"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-long-wrap-browser.png",
+    "bytes": 69548,
+    "sha256": "795dd333ca8cd69fb498edef99bee9d07a92b66fa865d915a871502ff84ae7b7"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-long-wrap.ass",
+    "bytes": 1107,
+    "sha256": "0b02ec9f39bb288bcd3d58566a97c3a92e78dacb7f63bb95f04a0515b2b0706f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-long-wrap.log",
+    "bytes": 6965,
+    "sha256": "e8bf76862c116b83adb0d789f490bd2031a74303a9f3b5a93f780dbfc3b12e3e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-long-wrap.png",
+    "bytes": 36058,
+    "sha256": "9862547711e8ba4389ad0ffe2f7df455f6149ac549140f6c70bcdaf82ea70d92"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-mixed-symbols-browser.png",
+    "bytes": 30226,
+    "sha256": "fa60363e1cfa3ddcb586e0c515450bebf5a55fca7c81de65168aa598e5969136"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-mixed-symbols.ass",
+    "bytes": 698,
+    "sha256": "d51d2c2d95fc41fb9371f230652f871782f0ea9bc39c955cdaa433ff2d2b7bed"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-mixed-symbols.log",
+    "bytes": 6980,
+    "sha256": "fa2166cb2cfec0caef1e8adfa7c135a15284a0ebcc3e1f2a1ff3f0ee869442ff"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-mixed-symbols.png",
+    "bytes": 10076,
+    "sha256": "b9f90f1088c57ccd4cdeff1152e9bea796fbdf7f2ec94d133519021f696ac9f1"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-multiline-browser.png",
+    "bytes": 35470,
+    "sha256": "e6d51a6b04b2a221e261c79e5d8a181fd953c46d0c534bb51a2e2f24245ca1f8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-multiline.ass",
+    "bytes": 787,
+    "sha256": "ee33dce913040a497bb29d0f5d22ffdede5c6e4e096725dbb7f0614a29647c08"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-multiline.log",
+    "bytes": 6964,
+    "sha256": "599101c3df11dd0abdbcb4038607654c22f418098308f07445135a292fd1b07e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-multiline.png",
+    "bytes": 13353,
+    "sha256": "3b871a639846805065d76ad2d5f297367d6a0ae32fe8bd6d7ebf5f18b4149e52"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-short-title-browser.png",
+    "bytes": 30409,
+    "sha256": "f6561cf574f055c137e5ab30860f40fc4ef0e2f21befaa58259beb07f99e8463"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-short-title.ass",
+    "bytes": 697,
+    "sha256": "aea8c47baf5f30d3020987f02219c6cfc8ef906b71eff46e99b7fa4e420434a0"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-short-title.log",
+    "bytes": 6974,
+    "sha256": "dc4adfa6bcaec291ed85b957df4673dec0b9dbddd3c33d0da0503ff7e3ce9805"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-short-title.png",
+    "bytes": 10066,
+    "sha256": "06b9b3eb3309ef44b7d73984bbbd5232b4ab0686bd44b0aeab6046040317644d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-stroke-shadow-browser.png",
+    "bytes": 38360,
+    "sha256": "8774670899fe9dace1047f7ae9640371a48623ba320d630c70164fc6fe3d56f2"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-stroke-shadow.ass",
+    "bytes": 701,
+    "sha256": "d4b579cfc58b4507502eb73ed065e26f80eda6279a01cb8a16f4e74cc84e01c4"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-stroke-shadow.log",
+    "bytes": 6979,
+    "sha256": "a893cf847e8150032ef2c3e0e801ab159f2e09680aed76eda0bed5f01113addc"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\caveat-700-normal-stroke-shadow.png",
+    "bytes": 14747,
+    "sha256": "06455395a0094f97b32d3d624b242f8b1e320848bc63e9dc156ce581543a20b7"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\cold-bebas-neue-400-normal-short-title-browser.png",
+    "bytes": 27568,
+    "sha256": "8aed164cde4de9eae51e54eef9f8742897466c76c8e4137f6277fec373215205"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\cold-results.json",
+    "bytes": 86,
+    "sha256": "c25b28b6cc262d3572b318631f67c0b2f3173d9a6dfda1558c15233107b62437"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\comparison-before-kerning.json",
+    "bytes": 37123,
+    "sha256": "82fc5b0d108f556e4c67cc035a689b8549c857acc7992046eaa842f9ac439817"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\comparison-offline.json",
+    "bytes": 78966,
+    "sha256": "5309bdb478bd0d0691db795a2d4f1713623322b7d765023beaee589390af7888"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\comparison.json",
+    "bytes": 36544,
+    "sha256": "6a0249ec2f220a5123a6987197a8c86a728956ffa3b6f6e768902d93b96a3104"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\coverage-results.json",
+    "bytes": 448,
+    "sha256": "27e16f51e764f9b6a6f70fbb7bc3d6eef5d2f3d4622a2446de5d6cc32c4c6c8a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\current-source-ass-verification.json",
+    "bytes": 18403,
+    "sha256": "5795ebe041b73da041bb17b56e6e24ca0fd498763f2b5c686a16e2b393628067"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\disabled-results.json",
+    "bytes": 64,
+    "sha256": "8d0f1ce36f6a01f0248bf11dddbb448476401e80ffd1d075ad8f0107192e78b6"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\failure-results.json",
+    "bytes": 218,
+    "sha256": "bd4822a2e543c4c10ce5c1912f33f1c6209ee11050a0ab33c25f3faeb98c9633"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\fixtures.json",
+    "bytes": 58882,
+    "sha256": "d06bbf3679d70dbb9b2f8a8db1302f921a9eac3c01d419bb9cae74d82c58ac93"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-bold-display-browser.png",
+    "bytes": 34136,
+    "sha256": "510e252975b2e3aa5641c066032623fc057f952ed0cfe8ac6c93d98982cdc1e8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-bold-display.ass",
+    "bytes": 681,
+    "sha256": "0196337eaf8c7fcf2bfce640939a0a174a0188fedc68e310aeea723425eb96ac"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-bold-display.log",
+    "bytes": 6975,
+    "sha256": "14298c630634098b29042dc25979dffa8d5a8f70a15b42d4062c799e59fab10e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-bold-display.png",
+    "bytes": 14014,
+    "sha256": "a03407abc154e1f353bc2f89676ea8a267dad3f578d9390d4dfdbea6e53c2414"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-letter-spacing-browser.png",
+    "bytes": 29422,
+    "sha256": "198bea60cc1c2cedbae5d61caf5dd0b21b500998b08ad3cc1dcb228df61f8874"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-letter-spacing.ass",
+    "bytes": 679,
+    "sha256": "92250e705ea8db2cce63f4c6f88647cee3819b3a2656e5c9f05774e7db90a40b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-letter-spacing.log",
+    "bytes": 6983,
+    "sha256": "1e336852a4bf7b537177ca596bb00e7177e163ba6328264190babe3848e3d460"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-letter-spacing.png",
+    "bytes": 9744,
+    "sha256": "2a2d9a2dbc9bac4ce1dd8aedb561e2520938c7aa4529d4c7b60a64f73e32191e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-long-wrap-browser.png",
+    "bytes": 76880,
+    "sha256": "6a8ab4cc5b85fcc28235b84f0a016ef80c957ea721390568e1b2a5ade37a94cb"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-long-wrap.ass",
+    "bytes": 1290,
+    "sha256": "e0f302dee7b018378eb5f99343732d8ed24f844326bec2b5a66e1b9f93b46d6b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-long-wrap.log",
+    "bytes": 6968,
+    "sha256": "7618930e748177bdf797fe5c7b7c9cbc9bcf8aad8d04d20c3c9492cd03464bd0"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-long-wrap.png",
+    "bytes": 42334,
+    "sha256": "c84e7fd5fb15b1a36342703b4819a7ce22b1e2db49592bab7ac08cf0b074fe87"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-mixed-symbols-browser.png",
+    "bytes": 32005,
+    "sha256": "b2d90c1e93ba1ff2fbd1ed85531f3304e011af683773a1366e4e1aaae774aa18"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-mixed-symbols.ass",
+    "bytes": 704,
+    "sha256": "f54933d3b74e3c5b6852f52c272e4c6e2867743c42f14388787b2039e2178d6c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-mixed-symbols.log",
+    "bytes": 6985,
+    "sha256": "6d242d4e46af26388e30711dbed8eea6426f8c55e2213f47d74d33b26bb9b02a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-mixed-symbols.png",
+    "bytes": 11521,
+    "sha256": "28ff50d54d362e78821a9511e4d646bd84481f2e9cd6d739ff9281dcabb8b113"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-multiline-browser.png",
+    "bytes": 34189,
+    "sha256": "7b0ef5b5dfa3af3e42980438f99e23a2fbdeb9a7df5158358c7fc98a623300e4"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-multiline.ass",
+    "bytes": 786,
+    "sha256": "56ca2110c4bb8dc5a77855349c405e65dfaddbb5550fc238ef9c8896ba16f7e1"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-multiline.log",
+    "bytes": 6966,
+    "sha256": "c8c2b3840cb68dfa97e1287a8926f106c727818367129c8c680989176021a0a8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-multiline.png",
+    "bytes": 13058,
+    "sha256": "47f208c8f3d84021b6f75cafe7cbd84f937037c5d4515ba72468dbdc1c35c0b6"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-short-title-browser.png",
+    "bytes": 30632,
+    "sha256": "de05e20b45da08f2d016ec45706c0bf8b4bfddad16293d7051adeebf033b1c7c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-short-title.ass",
+    "bytes": 697,
+    "sha256": "12af5914ebec9211081af106fb6acea75649b9c79c3ab1e05ba4d619de3caa4c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-short-title.log",
+    "bytes": 6976,
+    "sha256": "c234457c40c59a70ff86ebf528c7ece4857b2f925de7903ff2ca2b16f6f6f9a3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-short-title.png",
+    "bytes": 10554,
+    "sha256": "84734528af82fedd8a079a60a4989329c181a5cdc23314a489caf917d053328a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-stroke-shadow-browser.png",
+    "bytes": 39408,
+    "sha256": "80742725205baf185c8bc567f71e7d315dedd49c3502e2f6653f6302a3f42daa"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-stroke-shadow.ass",
+    "bytes": 702,
+    "sha256": "91125ec9fd3f64e7e73baa4603dda45ab339c81f4f94719fde71dae406105b67"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-stroke-shadow.log",
+    "bytes": 6983,
+    "sha256": "10418680b3bc55fb5c78257d3a1960221b641e4a4b0779bc0aa8ea1c3f148003"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-700-normal-stroke-shadow.png",
+    "bytes": 15709,
+    "sha256": "ac53d74491227e55c4928a3a22acb571511c947af1515f0801871131138044d1"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-bold-display-browser.png",
+    "bytes": 34195,
+    "sha256": "65f935a25ac525d51e6beba5c0379a8bd71a487730f71fb9b209d08a056feb03"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-bold-display.ass",
+    "bytes": 679,
+    "sha256": "c47c21e08f828cbeefd8a1a65c0c1df9ae2aff58a5009d96086dbd194d0fbfe9"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-bold-display.log",
+    "bytes": 6976,
+    "sha256": "4c8e5dc039767d10b7d60206d42074a456aa080c405c6e025bbe8a14bd25e523"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-bold-display.png",
+    "bytes": 13261,
+    "sha256": "abe7bde2942e74e876f240573b766c67b3825d6fa83bdedfb6c1f29d6a4006be"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-letter-spacing-browser.png",
+    "bytes": 29098,
+    "sha256": "14ca36081b8fd2d660d6697276df7bcf4916524275d703e748f1b00420bf9f68"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-letter-spacing.ass",
+    "bytes": 679,
+    "sha256": "914b765f33233a2e8aae4664afa1acfdd25b67052a8dc4de40625786f333349a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-letter-spacing.log",
+    "bytes": 6985,
+    "sha256": "b9bc757c06977f002e3f1ce452ccd09167b3442aedd6b693f4c195537e4779b2"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-letter-spacing.png",
+    "bytes": 9544,
+    "sha256": "036f4af9cf109024b55502c34204ece43897edd9db4707500b9fd85838f2a5fd"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-long-wrap-browser.png",
+    "bytes": 74488,
+    "sha256": "7e4a832c480aa65926af10338047ae283fbcdeca098501c70f31001cba4541f1"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-long-wrap.ass",
+    "bytes": 1297,
+    "sha256": "eed2df9b7e6343155d3cf0f1d511823c49e8296dfa6cea4cd6eaaec9eb8121bf"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-long-wrap.log",
+    "bytes": 6969,
+    "sha256": "578a6cf655bf9ec4cec4bc7f06a5f8d4caf71094cc00af3f959736d736e091f8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-long-wrap.png",
+    "bytes": 42626,
+    "sha256": "d8d96fd8cb058750f8af484d849e57972be0bec72e20eb4ed966ffc0c363f2ce"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-mixed-symbols-browser.png",
+    "bytes": 32468,
+    "sha256": "bd469e78918076022b3782241d0ec78afb21ae023ffa1a9d3d68b4dffbf70a90"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-mixed-symbols.ass",
+    "bytes": 703,
+    "sha256": "7adbdddab57a527d5655cab50795eab3e43cc9a88a0638c0a81c1beee49e2ecf"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-mixed-symbols.log",
+    "bytes": 6985,
+    "sha256": "ecbb3d50e1a696c72f95e50d35c6903686b2bea7fd0b0703d7e50cc3ae4e28ce"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-mixed-symbols.png",
+    "bytes": 11556,
+    "sha256": "7180f6da72aa4fa043cb8b72057bc73321f13caf6feea45dc3d23f4492997c8b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-multiline-browser.png",
+    "bytes": 34556,
+    "sha256": "29d2adb7096ab20956dabef183a0f1da51a044c23119af1b335176b0975d42fe"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-multiline.ass",
+    "bytes": 786,
+    "sha256": "8180bb8a73c29ec5570b00e891f43dcedc399fb3204a1462181f7c725e21e101"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-multiline.log",
+    "bytes": 6968,
+    "sha256": "a656f94816b9fad6d1bdb33dba868f6e08a1dca90b4a6a7916997d39ad9ba3fe"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-multiline.png",
+    "bytes": 13339,
+    "sha256": "22a33b5a02fbab2103a46bcdae4fddc5cd4e70e79c90347d68914575dd319516"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-short-title-browser.png",
+    "bytes": 30063,
+    "sha256": "23ad2398fbbdfd536ddeb357b8bc60276f353bc6a5742d079ac8bf66cbd57e19"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-short-title.ass",
+    "bytes": 691,
+    "sha256": "39b05e469a8919972514e19cf83d66944805bcc4ae83a1f91ff585382ef2670e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-short-title.log",
+    "bytes": 6975,
+    "sha256": "1316f5448eab9e85559f7a1a78ab38fe85f526df57cbdc04b8ac0b0c2a9ad055"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-short-title.png",
+    "bytes": 10184,
+    "sha256": "eab6ce6560cbec1e0fcf23baacb20587b9a1642cc2899c00e54a2cc901bd53fe"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-stroke-shadow-browser.png",
+    "bytes": 38477,
+    "sha256": "d702129aaa6c7a537bcbec22d09a3628e5ac03545689f6cbb9e318b8192efddc"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-stroke-shadow.ass",
+    "bytes": 694,
+    "sha256": "abd0d76908256b88bec0fba2af76a486221cf1c866a8ba7dfd5d0ae693463bb5"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-stroke-shadow.log",
+    "bytes": 6985,
+    "sha256": "1c53c3d30a694b9c2f62555a76b2827f9f50d92b834e4276ef9f06e167a8c62f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\inter-900-normal-stroke-shadow.png",
+    "bytes": 15071,
+    "sha256": "f2e0b3250d2311f3fb96bae2a0ac218cc93c5227f8b792ceea4b909a250bcb05"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-bold-display-browser.png",
+    "bytes": 33261,
+    "sha256": "13b0ae7a6d75fa50a3f53e3d0062c2feaece187a42c2b6c7236816c8a265b2af"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-bold-display.ass",
+    "bytes": 681,
+    "sha256": "751a6a6c8bb0f9724b354048c8a845a71efed73fa40c1634f6144b7d4a7c04f6"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-bold-display.log",
+    "bytes": 7007,
+    "sha256": "4b9126657d7c08e48a319eb1fd6e285ada9ccfdc6717b6faad9690fb7c64459e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-bold-display.png",
+    "bytes": 12777,
+    "sha256": "0b32b250b6fd75674b5eaea1b675d66ffaefa1762ebfd05ea8253379f029f840"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-letter-spacing-browser.png",
+    "bytes": 27773,
+    "sha256": "dc718bec9612cb80a0be2f3bad328a464513f88e7d86ea716b7db79519ea586a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-letter-spacing.ass",
+    "bytes": 663,
+    "sha256": "c0a87db81afa3c598af1982ac51dad72895605484fedd9904ebcc747febf5cd0"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-letter-spacing.log",
+    "bytes": 7013,
+    "sha256": "f554666c677eaa2d7a30e1295faeee44dbbbabfda8d00d813e1222824633a521"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-letter-spacing.png",
+    "bytes": 9214,
+    "sha256": "df1a0b54a09be0ba62ad38b75916d91ad0ab0ba25ef46568e09dcdcb379ae1eb"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-long-wrap-browser.png",
+    "bytes": 72229,
+    "sha256": "817917522807cedbc895a4e1cb05e25acb6e9967923f28da94e2cb3854789476"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-long-wrap.ass",
+    "bytes": 1298,
+    "sha256": "a9d2f3ef94cc65d32988ff9d3b7472b6b93c02addc6af94ad5293e9e0ff40f9c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-long-wrap.log",
+    "bytes": 6996,
+    "sha256": "9b33bdd94e85068d8d6d93ee6cb4da1e59c2dbed7b9bf41e87fa0a80bb109458"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-long-wrap.png",
+    "bytes": 41388,
+    "sha256": "dab9b6ee52eabbaeb6019e5b5a6e1d787f1b9a9355409a76c65997f121051b64"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-mixed-symbols-browser.png",
+    "bytes": 31501,
+    "sha256": "6130c3b3afc888bfa6571f8d94fe909e4aedfea3955617097179a62d712e58ed"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-mixed-symbols.ass",
+    "bytes": 691,
+    "sha256": "4b969e1304d4c5b591c0dfd1ad6e4918f1f8c6059f487545f81187891acfe9ce"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-mixed-symbols.log",
+    "bytes": 7011,
+    "sha256": "69043b0fe7e9574b94fb12fe0d2818063816ccfd739e59947e66ca50c47fb4c9"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-mixed-symbols.png",
+    "bytes": 11327,
+    "sha256": "a906009996c0255fe72bf6af40614a1fb8ce0091536ad22ae91719063cb491d8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-multiline-browser.png",
+    "bytes": 34424,
+    "sha256": "40fcfdff97b2fc76a7e36bcb915b0e74c5bb98f66f9e31093fa1ffaa7e88ffae"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-multiline.ass",
+    "bytes": 774,
+    "sha256": "c453da1ac8bcf18855c346b194ab28807382d3e3552cb39a36ce31270879e582"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-multiline.log",
+    "bytes": 6995,
+    "sha256": "3bdd3899acc7536440cbeeeaa43ab94a46f1bd7f2fab0ac2aec05be56448d345"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-multiline.png",
+    "bytes": 13517,
+    "sha256": "11179a9ef37661c949cf8433dd808a172bdef3eeabf6e00522cb5613513c1ffe"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-short-title-browser.png",
+    "bytes": 29782,
+    "sha256": "1930399f19e92b5c0473caa6cbac84d1ab0950e70bf20bdfd4f2f392af24a2cb"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-short-title.ass",
+    "bytes": 683,
+    "sha256": "0b6df8c66e385dac7dd075b2a41465b3ea7fcc2ecb1d515936d35108370bf6ab"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-short-title.log",
+    "bytes": 7002,
+    "sha256": "7265a3bbb387abf9a2fbab5c3d225c647b1193ba1cc8bdb2bb0d39a769c9829a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-short-title.png",
+    "bytes": 10282,
+    "sha256": "fbc52b5300cd17be265601b11e2cc9320b2fdc13e84fe6bc701164d6924eb49e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-stroke-shadow-browser.png",
+    "bytes": 39110,
+    "sha256": "371d56ae97959917f2773c784ee685a42da4cb002ac9e5534c0df8628d5ca568"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-stroke-shadow.ass",
+    "bytes": 688,
+    "sha256": "a0471ff0d9ad65af23327fbcb40d8aab930b3dd27989ac360fdf11f30d7914c6"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-stroke-shadow.log",
+    "bytes": 7011,
+    "sha256": "3cd9324631128c12e404853db404c887a0c7c6730b822766107fe762a2ab1e73"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\jetbrains-mono-700-normal-stroke-shadow.png",
+    "bytes": 15842,
+    "sha256": "e5470bf1ba121ce9df14b5e34faa013cf85ddc4f8fbaea444c80f56e9fe18693"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\anton-after.ass",
+    "bytes": 1064,
+    "sha256": "1596272999732b1cfe9ce80920fd3dba3c3239edfa90930a513a9b31578a6e9f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\anton-after.log",
+    "bytes": 6146,
+    "sha256": "1e20b1cfdcd54307e175d86c7288d776ab59de2071d284da7210317090591399"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\anton-after.png",
+    "bytes": 25125,
+    "sha256": "c67f828eb4969162f659cd6a3e495308c82032f0b5ef82a72e021c42b286dccc"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\anton-before.ass",
+    "bytes": 1064,
+    "sha256": "1596272999732b1cfe9ce80920fd3dba3c3239edfa90930a513a9b31578a6e9f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\anton-before.log",
+    "bytes": 6151,
+    "sha256": "da32377a2ae9fc6096a837c54ff7dbc49ffb879fa822f297f6282ab3ae7cb80d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\anton-before.png",
+    "bytes": 25125,
+    "sha256": "c67f828eb4969162f659cd6a3e495308c82032f0b5ef82a72e021c42b286dccc"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\arial-after.ass",
+    "bytes": 1064,
+    "sha256": "0bc73b34152d0ff5fb57530d01f2ae5d45ebb0f8b78b1ad79a755f6e45fbd9c8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\arial-after.log",
+    "bytes": 6150,
+    "sha256": "997b49603e547fa782fce123c1a9ba8b0816ec1bf17ad6d1711063e15b3979d0"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\arial-after.png",
+    "bytes": 35345,
+    "sha256": "d9d7d955dedbda624932365634be3a18b5f47b3b2eb16096de4cd985c847f660"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\arial-before.ass",
+    "bytes": 1064,
+    "sha256": "0bc73b34152d0ff5fb57530d01f2ae5d45ebb0f8b78b1ad79a755f6e45fbd9c8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\arial-before.log",
+    "bytes": 6151,
+    "sha256": "17d9ef025dd0e25700b19aac5a49bba80d51c0a2c4ee4cd7bfb5b096a7dc50a5"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\arial-before.png",
+    "bytes": 35345,
+    "sha256": "d9d7d955dedbda624932365634be3a18b5f47b3b2eb16096de4cd985c847f660"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\arial_black-after.ass",
+    "bytes": 1084,
+    "sha256": "649e0b9b90f417ffc9f3ea751e1b62a720af78b8f67cc69d30b7c6d5b908a324"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\arial_black-after.log",
+    "bytes": 6237,
+    "sha256": "9d1d69867d50f1b01d340c3c6c7f5a3c436650a25989e17920e8b515179d74ba"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\arial_black-after.png",
+    "bytes": 38967,
+    "sha256": "805818422d17ed7a3ba05ac403740435cd13a3bf18a16940d9f89fb0b2569da4"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\arial_black-before.ass",
+    "bytes": 1084,
+    "sha256": "649e0b9b90f417ffc9f3ea751e1b62a720af78b8f67cc69d30b7c6d5b908a324"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\arial_black-before.log",
+    "bytes": 6243,
+    "sha256": "06a6e18cb8193b163a3b72edfb1c09b81bf62e8ce159f31008ee5796ea18b8b6"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\arial_black-before.png",
+    "bytes": 38967,
+    "sha256": "805818422d17ed7a3ba05ac403740435cd13a3bf18a16940d9f89fb0b2569da4"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\bebas_neue-after.ass",
+    "bytes": 1084,
+    "sha256": "43314bbf662ec00fe1c8b864dd8fee8cff3172815925fa4f75be87e03f5fab96"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\bebas_neue-after.log",
+    "bytes": 6200,
+    "sha256": "e9f609d064f2f54a55daa87eedaf27638ac81934a6cf4c850c8513e3e335ae28"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\bebas_neue-after.png",
+    "bytes": 28454,
+    "sha256": "5800169faf47b14607412c1caeb630748af23aba5c3404a0edb972165d786b37"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\bebas_neue-before.ass",
+    "bytes": 1084,
+    "sha256": "43314bbf662ec00fe1c8b864dd8fee8cff3172815925fa4f75be87e03f5fab96"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\bebas_neue-before.log",
+    "bytes": 6204,
+    "sha256": "690dc100090f45d323390ff5798159a40ea9894bb1daf90a5e551f132cfbbf79"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\bebas_neue-before.png",
+    "bytes": 28454,
+    "sha256": "5800169faf47b14607412c1caeb630748af23aba5c3404a0edb972165d786b37"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\impact-after.ass",
+    "bytes": 1064,
+    "sha256": "1596272999732b1cfe9ce80920fd3dba3c3239edfa90930a513a9b31578a6e9f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\impact-after.log",
+    "bytes": 6151,
+    "sha256": "d689fe62672de76eebd169fec0d5fd71eb0d182af65abe43c07553bc9ec0f5fa"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\impact-after.png",
+    "bytes": 25125,
+    "sha256": "c67f828eb4969162f659cd6a3e495308c82032f0b5ef82a72e021c42b286dccc"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\impact-before.ass",
+    "bytes": 1064,
+    "sha256": "1596272999732b1cfe9ce80920fd3dba3c3239edfa90930a513a9b31578a6e9f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\impact-before.log",
+    "bytes": 6158,
+    "sha256": "f9d762b61081e24f04183375bee600573d1e92c9afd314ac481b35cb45c59b68"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\impact-before.png",
+    "bytes": 25125,
+    "sha256": "c67f828eb4969162f659cd6a3e495308c82032f0b5ef82a72e021c42b286dccc"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\inter_bold-after.ass",
+    "bytes": 1064,
+    "sha256": "0bc73b34152d0ff5fb57530d01f2ae5d45ebb0f8b78b1ad79a755f6e45fbd9c8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\inter_bold-after.log",
+    "bytes": 6168,
+    "sha256": "c8076527c56b8bbf5c2bbd3d37a6bcea1f0877b55db8500c62ad82fa0cdb145d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\inter_bold-after.png",
+    "bytes": 35345,
+    "sha256": "d9d7d955dedbda624932365634be3a18b5f47b3b2eb16096de4cd985c847f660"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\inter_bold-before.ass",
+    "bytes": 1064,
+    "sha256": "0bc73b34152d0ff5fb57530d01f2ae5d45ebb0f8b78b1ad79a755f6e45fbd9c8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\inter_bold-before.log",
+    "bytes": 6172,
+    "sha256": "bd76742dfe6fa26ccc943d7885972f0d233eeb81a3126e885a0a193ef14e985c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\inter_bold-before.png",
+    "bytes": 35345,
+    "sha256": "d9d7d955dedbda624932365634be3a18b5f47b3b2eb16096de4cd985c847f660"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\montserrat_black-after.ass",
+    "bytes": 1084,
+    "sha256": "649e0b9b90f417ffc9f3ea751e1b62a720af78b8f67cc69d30b7c6d5b908a324"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\montserrat_black-after.log",
+    "bytes": 6257,
+    "sha256": "a927d41ee9e5700ae23aa88e32d0bb75bef43ca36d7eecf3c3b53ca0abf00c35"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\montserrat_black-after.png",
+    "bytes": 38967,
+    "sha256": "805818422d17ed7a3ba05ac403740435cd13a3bf18a16940d9f89fb0b2569da4"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\montserrat_black-before.ass",
+    "bytes": 1084,
+    "sha256": "649e0b9b90f417ffc9f3ea751e1b62a720af78b8f67cc69d30b7c6d5b908a324"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\montserrat_black-before.log",
+    "bytes": 6265,
+    "sha256": "b861eb7be223c92e9eef7b0686fca3a92f187aa11b2f0a011d3fef43cc165255"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\montserrat_black-before.png",
+    "bytes": 38967,
+    "sha256": "805818422d17ed7a3ba05ac403740435cd13a3bf18a16940d9f89fb0b2569da4"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\legacy\\results.json",
+    "bytes": 1708,
+    "sha256": "c166321db4e728a9283904fce693a732d244ec8631db371c33d8c9d5a2bdcbfc"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-bold-display-browser.png",
+    "bytes": 33832,
+    "sha256": "c66c8188bb8863dca33c96721c773965af4b005c4787cd18127ab318c136be0f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-bold-display.ass",
+    "bytes": 686,
+    "sha256": "b5e9b2bb352dc354d2e93f731eba5dbdb677d07612a9afe791b8d32bb4781ad3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-bold-display.log",
+    "bytes": 6993,
+    "sha256": "57768c57632fc24599ea99c9a105aac65fb467f018b56681de7a9c65bb81dc52"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-bold-display.png",
+    "bytes": 13493,
+    "sha256": "408b7ff41851c8851610dc4bdf3b14798b123b5435bc80a864c6090f64110203"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-letter-spacing-browser.png",
+    "bytes": 29253,
+    "sha256": "69b5a189756a5e41853d43e2b8b96b0113d49c7f88ac91c5d00f72844951a2db"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-letter-spacing.ass",
+    "bytes": 665,
+    "sha256": "e2d930ba29a16077bab9bf7b4bdfeaef5e1a6095c5a188edb84d5d8d23a0ea19"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-letter-spacing.log",
+    "bytes": 6996,
+    "sha256": "9beeee3db8464391b89794994d49bd4ad53f8cf091610394ef0b5ea9b404543e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-letter-spacing.png",
+    "bytes": 9421,
+    "sha256": "d7789b8cbdcf37355eb8a29a7186a93c200a3b226b99de2045b8965919678e3f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-long-wrap-browser.png",
+    "bytes": 76758,
+    "sha256": "d29f4c613d8f882049738777a5967b3f39730b90e79b92fea34b4ff955282bbb"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-long-wrap.ass",
+    "bytes": 1293,
+    "sha256": "822cc4e15bd8c803e7397c2dde4270098cb4a8e0ffee38c5e76b0369c8bb3164"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-long-wrap.log",
+    "bytes": 6980,
+    "sha256": "060476cfecb21dc42d6d153df525c63a75601ac8533d67f44b20da404fae0e58"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-long-wrap.png",
+    "bytes": 42240,
+    "sha256": "32ebd217b47af7ee7ae372810120c64ccf494d0aa6d43b00a839e7ae319a2e12"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-mixed-symbols-browser.png",
+    "bytes": 32208,
+    "sha256": "73640df64af693d0e1e632749439e353f848ea7e36bd368444236dd8dfd05f96"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-mixed-symbols.ass",
+    "bytes": 693,
+    "sha256": "239ecba5961ff6f837e2bac34a823ead4c1eaaed72d432d978467b733e8bc30c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-mixed-symbols.log",
+    "bytes": 6995,
+    "sha256": "f8cd5b577ec78c770612604beb7606e56ae792bda38628828c34ddd9fc017aa1"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-mixed-symbols.png",
+    "bytes": 11546,
+    "sha256": "39cc2845a0594a826e0f6138966be31351993a00fc63d4b18ad07a507f9292fa"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-multiline-browser.png",
+    "bytes": 34640,
+    "sha256": "5ed8df352f735dcfaf02f8ef11fb7b4cf7441bffd3ca7f3c96d787b5e99db2ff"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-multiline.ass",
+    "bytes": 776,
+    "sha256": "362f26b5dd1e14bed8641f7c1ca0ebe2b25954aa4d0fddb6b63c883422c57f58"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-multiline.log",
+    "bytes": 6980,
+    "sha256": "891b5a52722138b469d4472f571dac1cc47dea88f9fed089d78dd7acc811af13"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-multiline.png",
+    "bytes": 13305,
+    "sha256": "c3688e35281311e18400a2a3af82a92b977efbe4706baaa7176d9243cbb0ebda"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-short-title-browser.png",
+    "bytes": 30665,
+    "sha256": "ea8713f576f4201062c1a37d58b0529405abaf10c1514dfcb66d00e614f186b0"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-short-title.ass",
+    "bytes": 685,
+    "sha256": "8526f5040415ac306cb3ebaf1ab2e8a468af121ef4193d2bf8d857a3806aef09"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-short-title.log",
+    "bytes": 6988,
+    "sha256": "c338987786038c3232441986665d789f9db2e14cda652934430dced6d05a8d7e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-short-title.png",
+    "bytes": 10496,
+    "sha256": "797014ae9bd476e1ac9eb2cbbc53f9d69b245f389b5d9a07237dcc432c1276e8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-stroke-shadow-browser.png",
+    "bytes": 39120,
+    "sha256": "88c1b6f8e287d518871005250bd5849e92451d5aea32aedf6cbab8189c21defc"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-stroke-shadow.ass",
+    "bytes": 690,
+    "sha256": "788adb292fb9667dbe2cb5e7ffc579fb824dea244328d22529f79a9e11539c81"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-stroke-shadow.log",
+    "bytes": 6996,
+    "sha256": "8749c7d5530b235ff824f007a911adf38b324c743972909232f3219efe3b455d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-800-normal-stroke-shadow.png",
+    "bytes": 15204,
+    "sha256": "3cb4bf24da7bc756b0b8dd81ca010b16dc81e5051a1e4b279af6dc497f9e9607"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-bold-display-browser.png",
+    "bytes": 33881,
+    "sha256": "e3bfbd84c5ad5ad5b3c1b25f00a470613e9f07e1d6dbb275bf1b4dbc51b4002d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-bold-display.ass",
+    "bytes": 683,
+    "sha256": "3fccdc6a379792518b98dffd2a19f0c52f2ce8be7625d80475b1d44d2bcdbb44"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-bold-display.log",
+    "bytes": 6995,
+    "sha256": "14ee9b1ecfb9126cfdc819787f5c5d837a86f089f3cebfd593b148510af60bfe"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-bold-display.png",
+    "bytes": 13338,
+    "sha256": "f4dc7246553091e39f5df1540a727dc0a6f1295db3befbe7f8a144cc4b3b4596"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-letter-spacing-browser.png",
+    "bytes": 29049,
+    "sha256": "91ed93dba2ad51a4283d753e1c32e7cdc2a99e80656bc1a75689afec7dc6aad0"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-letter-spacing.ass",
+    "bytes": 665,
+    "sha256": "4868d04b52b1f66db52377afac3a192f7c7abbaf6d456dd64c320ab6990e6943"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-letter-spacing.log",
+    "bytes": 6997,
+    "sha256": "9670871ad19d3932ee40ede71fc9bb667f8416d293ee686d3243a9ed49299511"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-letter-spacing.png",
+    "bytes": 9336,
+    "sha256": "8fb10ff46093e82782ba40876436bed767c0bc788d4040f049d97a9a9853ecae"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-long-wrap-browser.png",
+    "bytes": 75607,
+    "sha256": "3a0098b39f6097c436b696998cd17d68f165049e944f09aeb9099c6cae193954"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-long-wrap.ass",
+    "bytes": 1293,
+    "sha256": "67ae62eee7b501b4ce45bc512ba5162465d4363502ba83e393e29e74c6aa863e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-long-wrap.log",
+    "bytes": 6981,
+    "sha256": "4b8f2d17082db64524b6aea11acc5d96526219dff561b2ded9f40341645a9f8f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-long-wrap.png",
+    "bytes": 41802,
+    "sha256": "d5afdc3598a9c5bc5609c1017e1deb75b9289df0156a65a343f60cf89a25aa7c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-mixed-symbols-browser.png",
+    "bytes": 32206,
+    "sha256": "e12ef9d442d313df0193102b910f281ac534fa77d877c48fd0b22e21cdab8ed2"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-mixed-symbols.ass",
+    "bytes": 693,
+    "sha256": "11791623f07f0d4233c586bb12e85817f7db88439b37b33b76d8de41df4079f7"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-mixed-symbols.log",
+    "bytes": 6996,
+    "sha256": "9c9c2e2bc915106609a922a1697922aa8b6d496820decf81365d8bba3e3311c5"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-mixed-symbols.png",
+    "bytes": 11444,
+    "sha256": "6f971b981d877054f8e3267a9ae27162e67beab6abc4d3adfcd1a83413708637"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-multiline-browser.png",
+    "bytes": 33752,
+    "sha256": "3aa62fa7fe3174fbe0a8bb4dfb90eac91a8a2b77fbffa6c160708528dbeb4c41"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-multiline.ass",
+    "bytes": 776,
+    "sha256": "76b7f0759a096af3250435462e4574a47571ad15e8e1ee2bcee51672cee37534"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-multiline.log",
+    "bytes": 6980,
+    "sha256": "9c313dec84fd09ef2b128f73cc75386b7d37ba778b11af9bce8c4dd1ecf32097"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-multiline.png",
+    "bytes": 13021,
+    "sha256": "3b3df09b7d87cde9f433ed5afec448d2f7b2c2ceeba90e73120c87630bf55ec8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-short-title-browser.png",
+    "bytes": 30244,
+    "sha256": "09b89c7c0e0c19376a78de7f4b555267f75f6b7ff3853979e7b13468fa065553"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-short-title.ass",
+    "bytes": 679,
+    "sha256": "829c295af565114af981301db429a83fa1614b03cc60e01fe73e8baac8ed02b8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-short-title.log",
+    "bytes": 6988,
+    "sha256": "b8c569871841af8d7f3089450ac09a5e3ab5f2fba29494bdf8557398153500b3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-short-title.png",
+    "bytes": 10319,
+    "sha256": "50a54428f1a0a80ce075a027300974e4703233e3c14e8ed504759c562cc468c5"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-stroke-shadow-browser.png",
+    "bytes": 37079,
+    "sha256": "e9dfacd3a0c943ea56d130843118149043f664c576a412d0edbf69da9b0b3189"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-stroke-shadow.ass",
+    "bytes": 690,
+    "sha256": "2109147c1640f5190241a6c7e23ab492b55716257e7948039b71e165a2b0c296"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-stroke-shadow.log",
+    "bytes": 7000,
+    "sha256": "a3d9bc807b9f59c04c85d413023b3d79cfd44826e22dcd9f8eab9e533e92a993"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\montserrat-900-normal-stroke-shadow.png",
+    "bytes": 14963,
+    "sha256": "f3cb093d56c3345a8783280269db411690326b9651d1fbc87d84e3a40de0f677"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-bold-display-browser.png",
+    "bytes": 38524,
+    "sha256": "1fb2518ef110c727855e40c9ee1121aa18e78a467b41bcfbbc4472eaa8fb36ba"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-bold-display.ass",
+    "bytes": 684,
+    "sha256": "29bd2d0b306f4f6ab9f1387ea74774335b8bbac747a175c40ce618a1cc8ea519"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-bold-display.log",
+    "bytes": 7045,
+    "sha256": "4c11e57cb9a87a1ce66387b1c8437832c96f3d93a6662adc7f97bf3764a2d49a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-bold-display.png",
+    "bytes": 16943,
+    "sha256": "8a1ce52ddb20f078e5193632a5aff9aedde7c267b0ce04bf033c8e85fc9066c8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-letter-spacing-browser.png",
+    "bytes": 30242,
+    "sha256": "d15f12ddd5b45c1912e450fbdc6043498a7586817884ce7fe2dcea637ce7e544"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-letter-spacing.ass",
+    "bytes": 664,
+    "sha256": "7d6209997eeea542fa74be52a0451d585f693a605d4e35e261f85bae312c5cb5"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-letter-spacing.log",
+    "bytes": 7055,
+    "sha256": "122de11a77521dcefc2388b35d547855d9beccee82f338a81d31b2b315edaff7"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-letter-spacing.png",
+    "bytes": 10651,
+    "sha256": "190764b98c09e559a6fdea0be3b256db88d2fdbe70e4a2063b5ad8625a0f43b8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-long-wrap-browser.png",
+    "bytes": 89297,
+    "sha256": "dc94c1a5aad13f412a2e226ede30b661ddc9d7a7e48b60701d5734eb412860e0"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-long-wrap.ass",
+    "bytes": 1176,
+    "sha256": "a8a332dd2bf5eb50e0fe72ef650debfe1f464244e9d1ffc3060450a7b2771683"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-long-wrap.log",
+    "bytes": 7034,
+    "sha256": "7da52341c6e979d387dd015394d297bb5ae5bbf685525a2499c3b559fd7e9217"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-long-wrap.png",
+    "bytes": 50787,
+    "sha256": "4ba583ef6ef7f12d10b9196983cc8f1c6281f45661f22dd310d6de7936ef0ca1"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-mixed-symbols-browser.png",
+    "bytes": 32392,
+    "sha256": "c355ccd022d8167cddb75d06972c246b594761f0d1932645d9d00a39f5bec5f7"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-mixed-symbols.ass",
+    "bytes": 692,
+    "sha256": "9418af5639e140cf71248fa069bfcda655958cfcb023c5770cb1dc3302b0827d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-mixed-symbols.log",
+    "bytes": 7051,
+    "sha256": "74259712a217cc5cff30c1a345085f965a814839975466fb6fb60bd3b43898d6"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-mixed-symbols.png",
+    "bytes": 11936,
+    "sha256": "6ead88409e3e74841ab77f0df233e8a9ea1b2d7a5b048ec54133ad914ce5e4cf"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-multiline-browser.png",
+    "bytes": 38252,
+    "sha256": "774f21469e32b56d44f4c2500bac224c3533cbf434d5b2db05ddd98480858c88"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-multiline.ass",
+    "bytes": 764,
+    "sha256": "cd05b2e7eedf052ba5b23df7f9737f78621f2e0bb90c8966ae59bb014e2754d5"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-multiline.log",
+    "bytes": 7033,
+    "sha256": "cc2b0744f3a590d34dfb03eee618ce99ddd3e7a6d6a44ca5f8d55ce0f7ac3dd0"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-multiline.png",
+    "bytes": 17189,
+    "sha256": "4eb117ecbaaf1fd8e249152451754ab24f634542355633a260c1db0619d4961d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-short-title-browser.png",
+    "bytes": 32791,
+    "sha256": "a3c80c26ed4b978c365c1b9a55a149d14c43d926a63e4e89bbfd006c516e7394"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-short-title.ass",
+    "bytes": 684,
+    "sha256": "6f22ab06c098ad7292cb998ee4ac2c20b8eeed792f7c9d67c5a003a1c1d3ba8d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-short-title.log",
+    "bytes": 7043,
+    "sha256": "ca3ded0c57722989f03f9603534f70649b3c4e9ebdab064d14ff79445ee85f3a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-short-title.png",
+    "bytes": 12181,
+    "sha256": "342de731d5a93dadd88bb194338dead4fa92392d4f4b58fbf129021e3d8be7e0"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-stroke-shadow-browser.png",
+    "bytes": 42156,
+    "sha256": "3298a17bfd71d7350e3cb961c5e90e3c027b0d35a20d223175468cb86cacee06"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-stroke-shadow.ass",
+    "bytes": 690,
+    "sha256": "1ab8f7fd4ace4b6d2d5969e0818c024aba6ada65a43a37c2be7a5340627b0e20"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-stroke-shadow.log",
+    "bytes": 7049,
+    "sha256": "6414d8f703c780d8b4769ae89c74fe2a35d9b303a63769b716f376261bcb6c41"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-400-italic-stroke-shadow.png",
+    "bytes": 17787,
+    "sha256": "ce30f07a6150db9e5b1aa3447874efc07e9d7493a99f223390cec2ad8fdd6686"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-bold-display-browser.png",
+    "bytes": 36352,
+    "sha256": "989eab269101638d75035e331c72afec360be001fc63f67f506ceaef0e592094"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-bold-display.ass",
+    "bytes": 685,
+    "sha256": "16d8e13da70344188839e6cba09fe69bfdc90f913b3f353c1ffb3b07c52c71fb"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-bold-display.log",
+    "bytes": 7017,
+    "sha256": "8a688a013ce8e8c787850368e018ddd1ecc0c15a10f7779714c4d1f1629113aa"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-bold-display.png",
+    "bytes": 15701,
+    "sha256": "434813039871c52cf9e6ae483319367d1f96495d9541f881e90bd9e971f73568"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-letter-spacing-browser.png",
+    "bytes": 29707,
+    "sha256": "454786a33d8e3c88bf44ba2d09de40604039f5e4e0f91f4f1f0229a14cd1d1bc"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-letter-spacing.ass",
+    "bytes": 664,
+    "sha256": "c3e4c1672f33f9990f89d9a17d90bd6f334817028ad4da6f4ed62b805501df5b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-letter-spacing.log",
+    "bytes": 7023,
+    "sha256": "125b10c52a623254e174bfcc219bb76bbe2588df6eaf7be2382b873c78af0f32"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-letter-spacing.png",
+    "bytes": 10448,
+    "sha256": "37221a39ce8fdf9c255140d730975995a0e548115cca55ebbb34452fa70e2b13"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-long-wrap-browser.png",
+    "bytes": 76106,
+    "sha256": "fe4eddf3e966c9ee7544bc52bfa0c1c0d4c3df04f409b2764932aba40d831562"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-long-wrap.ass",
+    "bytes": 1174,
+    "sha256": "3ae239cf7bbfd3b61d3b542fbb34afd262e76a724a19a9526f6f3166375215dc"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-long-wrap.log",
+    "bytes": 7006,
+    "sha256": "94439b52d117ab57348d240fe4d282621f34d71ff303a17c4924f3462b4ce0e2"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-long-wrap.png",
+    "bytes": 44413,
+    "sha256": "6e7bb8a22111cfd14a97803cec7f3545bc022a6b8861e4779d2f4cdf791aafcf"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-mixed-symbols-browser.png",
+    "bytes": 32213,
+    "sha256": "48397c8d722db16302adaed9d62d79e9f213a25f630c73905f9eb3c92ff5dc35"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-mixed-symbols.ass",
+    "bytes": 691,
+    "sha256": "9e513dcb5e63ca6968f8256ed05c19d937d1ea381aeab323b1a190c60f16e623"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-mixed-symbols.log",
+    "bytes": 7017,
+    "sha256": "6773600f9ebb45bfd32f41b8624654934ba4b5b504e88e51b14c23ba1bbb7aa3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-mixed-symbols.png",
+    "bytes": 11862,
+    "sha256": "19f56969d019ec7113192b31bfbbf6201136190667c097c8efd869dbca22ccf8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-multiline-browser.png",
+    "bytes": 35190,
+    "sha256": "8ab12e667d91057e3237412144d4a140abf2a729a022bfd1bb0cf7308c610fca"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-multiline.ass",
+    "bytes": 764,
+    "sha256": "5ebf07a21f67bf74fff70aa4a5e47a33710617d4eb026a1e52774d625f09ad09"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-multiline.log",
+    "bytes": 7003,
+    "sha256": "50470e3a0209916e48ddc8966d4a6a8ef1dfdd62bee5bcd4775f7effed59174a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-multiline.png",
+    "bytes": 14445,
+    "sha256": "585992dc2dc741abfe8df179511668b3e302d28ecf45a80b2945c3fa2646ca26"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-short-title-browser.png",
+    "bytes": 30755,
+    "sha256": "3d985f9ccb10b5717c1ff370597f06d228d52c0640b22df2c06b2fadb2e730fd"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-short-title.ass",
+    "bytes": 684,
+    "sha256": "65e0529f268a719f0d8502cfc2aa4450dd8755c71ea7d1d602d03e163f332caa"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-short-title.log",
+    "bytes": 7013,
+    "sha256": "468249d119b336a6bd0b755fcf2a139637852bb6329f25b0435a7d9afb2ac57c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-short-title.png",
+    "bytes": 10898,
+    "sha256": "007d9a41d1e38254339415ba14d052c60a483f6e3faa0475dfa4e2e9cff0b447"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-stroke-shadow-browser.png",
+    "bytes": 40213,
+    "sha256": "e2d36654ec27c7409a3bbbb8491eef262eb46a16a41e59198aa062da09315568"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-stroke-shadow.ass",
+    "bytes": 689,
+    "sha256": "240de45c2a90854fb7f4b8b137560064f793b562bc663cc3a4f058bc4eb6e7b6"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-stroke-shadow.log",
+    "bytes": 7019,
+    "sha256": "ef7806a9dd2403f0b29e6817ca3920f36ec16693eabbd7e2e1bb1ad480975d4c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\playfair-display-700-normal-stroke-shadow.png",
+    "bytes": 16685,
+    "sha256": "5ec342277c5e4eb342b139aee148dbd60738778a234e59101c0a99248d261fd3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-bold-display-browser.png",
+    "bytes": 35431,
+    "sha256": "5d49b8afa683ab15b7b6370906894252013b560d6d91b52523db71bc87225aec"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-bold-display.ass",
+    "bytes": 686,
+    "sha256": "8363a7a4524f63bbc338a6bae418e8f564008ea486c7244c24cea800f89a30a5"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-bold-display.log",
+    "bytes": 7021,
+    "sha256": "52155c120fcff585e647393dba9443af70f50291c0527763ad95aa2450c7e778"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-bold-display.png",
+    "bytes": 13459,
+    "sha256": "e8fc54798ccfb3b64a5685e9ec87b505a437891e9f6829ce63879151d8709d6c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-letter-spacing-browser.png",
+    "bytes": 29420,
+    "sha256": "0803b2b0d8cd255faba6e07e562f33fbb52143a394c017e7995644a927c3bd97"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-letter-spacing.ass",
+    "bytes": 665,
+    "sha256": "e8da77c312898e5ecacc2dd4ff7a498ee9c01a51a66b08e52caf96da0757f370"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-letter-spacing.log",
+    "bytes": 7024,
+    "sha256": "f824de2250b4e7af754f1ddf5c0340d96f05e1ab953c54db99d9116d976ebdf8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-letter-spacing.png",
+    "bytes": 9332,
+    "sha256": "6579daea46372ca22ab84c8870e7ed5b2e00661f508f41a8d1db8080de3455ce"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-long-wrap-browser.png",
+    "bytes": 77147,
+    "sha256": "a9e25f59f52e5522f1d1e9149f980a872cd0ab7dd4e9b9ede26495b5b5d0f946"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-long-wrap.ass",
+    "bytes": 1280,
+    "sha256": "c446e1fa7f4535695f12b73ec2a5f90da6e6345e4e36642a0ad0dca1803ad59c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-long-wrap.log",
+    "bytes": 7010,
+    "sha256": "a6f60471ecffe20ae61dffbb919864e8d967612b51771f93551cfe28cad95063"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-long-wrap.png",
+    "bytes": 42151,
+    "sha256": "d9dfb99960c1381920dca5ae816e0a43d0443886865ac2dac1df732011e507ff"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-mixed-symbols-browser.png",
+    "bytes": 31829,
+    "sha256": "e892b172ba1a3866ee0535310683fa8ba0a210de18386ebacefde253d1cc6dc2"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-mixed-symbols.ass",
+    "bytes": 693,
+    "sha256": "b7b9f34bf59dbb68aca2aff35401d5829a64a97849d0381edd797e58205c6d7e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-mixed-symbols.log",
+    "bytes": 7023,
+    "sha256": "77979f1187ccc9506a05fae99ca2ecc325c4c6bc7c6b1768d36d7c78682f124c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-mixed-symbols.png",
+    "bytes": 11152,
+    "sha256": "dd2348a65db84751824347e641847be138ccb291037666f5b8de37216be2dfa9"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-multiline-browser.png",
+    "bytes": 35080,
+    "sha256": "156ad9daf6feae1f85f775e4d2b3f3045c5e45a2753974de738c3ed405b7db27"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-multiline.ass",
+    "bytes": 776,
+    "sha256": "838d6da272551857769a739c431701b2752e26b8367a0c421c7af62805a9b5a8"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-multiline.log",
+    "bytes": 7010,
+    "sha256": "87af956d715adb15744dec2d013fa32668cbf84014feba9805a7ba792b023532"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-multiline.png",
+    "bytes": 13273,
+    "sha256": "db43c89e491418d7ccacd1984c16eb37661b2746af8b5dc439c765c9b51d0af6"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-short-title-browser.png",
+    "bytes": 30847,
+    "sha256": "e82d71d2c963964681d155b91a7771ac3d2e7d93fe16b58727fcccbdc7f89adb"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-short-title.ass",
+    "bytes": 686,
+    "sha256": "8c03c21639a38080c51b6ef95bdb2eba4154ed21ca382e01c2c690647dbddc84"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-short-title.log",
+    "bytes": 7017,
+    "sha256": "7258b3037e38cbe0ff36feee8a91e7499fafd22b8cc26c39f5493875d493cbcd"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-short-title.png",
+    "bytes": 10314,
+    "sha256": "b9d15abac69cefce114320e68984931306dc424692721ae2010f1e3e6ee7d6ec"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-stroke-shadow-browser.png",
+    "bytes": 39282,
+    "sha256": "0c4359a926b34caae2fb040410a4e81ab8d070dc1c6470b8e1371e148af00687"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-stroke-shadow.ass",
+    "bytes": 690,
+    "sha256": "a373efc98313016edfbf2ba8bd60540af6eb7c835ba1c07eeea1cc06bb3cc5ec"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-stroke-shadow.log",
+    "bytes": 7024,
+    "sha256": "e4a5c04a818e847a19fe408736b0f36258160710493a873ef3da494c331d04ab"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-700-normal-stroke-shadow.png",
+    "bytes": 15419,
+    "sha256": "7b749ca49030cbf5c130b678ec58e1c40579eb9311ca65977bfba230177f5e58"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-bold-display-browser.png",
+    "bytes": 35278,
+    "sha256": "a665c6f29f923665ca55a0e4c61378b97092f30c7364bc24646711eee04e0d5a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-bold-display.ass",
+    "bytes": 683,
+    "sha256": "f7ab7195802ba7968773144a4acc6aeac9177828687ac71e24dd946d6a44972b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-bold-display.log",
+    "bytes": 7023,
+    "sha256": "b35a36430f678bc99fe41384921ed01cd96260cc4c138bffd05dc5bd88d54d4e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-bold-display.png",
+    "bytes": 13925,
+    "sha256": "a706da1a389da38e7090a29fa3a1c249de000b8f614bfc5c87c1846c517a921f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-letter-spacing-browser.png",
+    "bytes": 29350,
+    "sha256": "f2d59307b2de365ed206e9a402df56ebd57f5ff541c85ba048931d6dbd73f43c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-letter-spacing.ass",
+    "bytes": 665,
+    "sha256": "0fa784b0beccac0fc8e504e44569b4949eb9ab50c2a6ef4c97d0f7eab629c948"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-letter-spacing.log",
+    "bytes": 7025,
+    "sha256": "10c9e242ab13b49ae4c0e21b3d09f90cd73d2a97f8d5c5f09943a5af336fe678"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-letter-spacing.png",
+    "bytes": 9663,
+    "sha256": "dd8dd80791169365fc585a1fd63c50815390dc7b3bea51b3fd9c3ed684866857"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-long-wrap-browser.png",
+    "bytes": 74225,
+    "sha256": "218e96599736a19d6d5666549b43a3f1b37c659b4020ee985688cd10595f15d9"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-long-wrap.ass",
+    "bytes": 1283,
+    "sha256": "97090ec7a24af0084f7f2d1da9aa9673de4603cb1e19e97e08d38642249d96c3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-long-wrap.log",
+    "bytes": 7013,
+    "sha256": "674beba69e0b91f3b74b7c253a287421ec77452a09b98456cecb4665844c1b57"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-long-wrap.png",
+    "bytes": 40586,
+    "sha256": "4a7210c695d4157a0bb9a97ebf3f09c3569a0ef4173ba7047f8dac995fb21d28"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-mixed-symbols-browser.png",
+    "bytes": 31509,
+    "sha256": "25068808504057703e30f363982766011185e291176b37d0812d7dee5be4a97b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-mixed-symbols.ass",
+    "bytes": 692,
+    "sha256": "261a53dd9f528de391d39befa5b6b1eabca5f9588442133fe32a104662544f38"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-mixed-symbols.log",
+    "bytes": 7025,
+    "sha256": "71f64dfe94234eec7c8a0ba99a2f4863c2fde37dc701f484da3dfcbee1b7c640"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-mixed-symbols.png",
+    "bytes": 11090,
+    "sha256": "65b988f2a4021b51fb936b2f53ad6ebb8ee9ade6e218e166992e591098e3fbf2"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-multiline-browser.png",
+    "bytes": 34387,
+    "sha256": "a73d3aa0922b8eb5b97c5d04c08c7851143820931da1d41a6f3bdd3d6705bffb"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-multiline.ass",
+    "bytes": 776,
+    "sha256": "9b4b432bd64b99af94c6b8e0b45b56cb718bf6bcea76f1cdc1069ea118362018"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-multiline.log",
+    "bytes": 7009,
+    "sha256": "ad9876869558487f0be8ecbf34dd0777941869d419593c1a5929e895e9871979"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-multiline.png",
+    "bytes": 13049,
+    "sha256": "49999cec36c58ac6e4bd6db3767607659ce75f40450603c2535e50749e53b330"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-short-title-browser.png",
+    "bytes": 30477,
+    "sha256": "01201e01be2f686b87851899e08cd4c51ac087311a7da7be95916b8d032d222a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-short-title.ass",
+    "bytes": 683,
+    "sha256": "e1618ef00f56576b5a1c7f5c2718b4e3cf878f9a116f320d81cc1ca7864a7d28"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-short-title.log",
+    "bytes": 7015,
+    "sha256": "015e6f1efba56745d0735e0e553ff30a4c7be678823a46e2db34a44dc83ad1a3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-short-title.png",
+    "bytes": 10550,
+    "sha256": "a031bd685c8fde5e3e19f54cbc23dd91fe86ad53add86e5b9f609bc6c7a6292e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-stroke-shadow-browser.png",
+    "bytes": 39416,
+    "sha256": "6506e4d07a8a1ddf14194d38cbbb5e392f00d48f50fa2d92e601ab8d43dc90d5"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-stroke-shadow.ass",
+    "bytes": 689,
+    "sha256": "b5dcafc9418778b77cc1eeca882dbe36c88a5f212fcee566fb4bf7008e5e60fc"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-stroke-shadow.log",
+    "bytes": 7026,
+    "sha256": "b146fa838d380562730e71219b18acb92a6cef9c6e9883bb20e6041d36565a11"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\plus-jakarta-sans-800-normal-stroke-shadow.png",
+    "bytes": 15630,
+    "sha256": "ac8a6dab0180eefc57ab43456c039313fca57ff9d519ef2f671ad7add50f3c9e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-bold-display-browser.png",
+    "bytes": 33823,
+    "sha256": "b38e4aa12ca39d9c25250b653f6fea35d12023776ebf4d9e2e5d1d8e3e9484c7"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-bold-display.ass",
+    "bytes": 686,
+    "sha256": "a1443430a752411172ca330300b2b30a5ffccfcb50af563e07214dc1989ea52b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-bold-display.log",
+    "bytes": 6981,
+    "sha256": "b555aafafb1071753b41efb5eb4e105494d7c2b53ab384b9767b1640ef2d1094"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-bold-display.png",
+    "bytes": 13533,
+    "sha256": "5452350ecde8cbfbe9235f687d59509e4e06b39b3d023a9be010e6e8b196364d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-letter-spacing-browser.png",
+    "bytes": 28866,
+    "sha256": "cf00d5654efeb033ecc941a828d1c0f49d4a44a28a51417ecabf719fe7b5a6f9"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-letter-spacing.ass",
+    "bytes": 676,
+    "sha256": "b420da0dc22e4d03d25cc01b7d742239e2d9251a54a96710cf78efa80c26041e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-letter-spacing.log",
+    "bytes": 6983,
+    "sha256": "072913f04110c04883a9414552035e7fc3c7a08b8b512646612322158eca42a9"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-letter-spacing.png",
+    "bytes": 9395,
+    "sha256": "407b2bc2181ad6370f1e98cfb5044a93fdf3515a554e36121d859c646b4ba1a3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-long-wrap-browser.png",
+    "bytes": 75115,
+    "sha256": "8fabe9968a0b369fc9a4fe41afd3726bdf341b50678e02a0a377422d4f97f56c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-long-wrap.ass",
+    "bytes": 1289,
+    "sha256": "7bad04ebd635ed9b46df2366179f0b6495acbf8fbf0d322a9a1a6e73bfdf5dc4"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-long-wrap.log",
+    "bytes": 6971,
+    "sha256": "7575d2766834df954afb25135a8104701b2f9a29922abd7eb323bc7976b4cf08"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-long-wrap.png",
+    "bytes": 41486,
+    "sha256": "ba1f3e692377d532afd8803cfebacbe9e4885b150d1d9a013b5dcb180394d0a1"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-mixed-symbols-browser.png",
+    "bytes": 31683,
+    "sha256": "267eb6af23c4dbe94012143c0b7724a88f0b18f7385bdc608d3bc042ffe31b37"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-mixed-symbols.ass",
+    "bytes": 701,
+    "sha256": "a1c852803e1d669fb8e8bb3d45046111d42ded1511c76bbd863a6446071c239d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-mixed-symbols.log",
+    "bytes": 6983,
+    "sha256": "8b0ebd05e8ad7ba804cb21bdd06b7c7ecda6c9cf1a69784b7680e45b0d1a7beb"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-mixed-symbols.png",
+    "bytes": 11023,
+    "sha256": "78fa7b5cd4cdbffccedde0ea0d2d145b9ba7750691763ae0bf2f7a03152a7891"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-multiline-browser.png",
+    "bytes": 34452,
+    "sha256": "3bc927252fa302748423b239248e1eef86b17a701f609c21981c0bc70c700eb9"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-multiline.ass",
+    "bytes": 787,
+    "sha256": "0d2fe824d86cd607ae572c8785cd885061add799f0aa5a444fef8f6c5b84798e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-multiline.log",
+    "bytes": 6969,
+    "sha256": "3080b67ca8cc538154460db42cdff873883a26e7259170612770bc414ceea00d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-multiline.png",
+    "bytes": 13229,
+    "sha256": "7fd76ab7ef9781dcb25bb958ac8e6aa35585888d874e6e06f12a9c521de92ca2"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-short-title-browser.png",
+    "bytes": 30459,
+    "sha256": "4be10998c07fb6562a04d7439ec68eeda2f2cdf440a1590cae794772ce5b4355"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-short-title.ass",
+    "bytes": 695,
+    "sha256": "d4cfa4e948c75ef452e11757602d9abb35e7660a72261f08f0d2eb21eb7dc71e"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-short-title.log",
+    "bytes": 6978,
+    "sha256": "fdea9082c6c19fca8f11cb0a03e5ba89b515d9c44a755928f7081946cff1a32d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-short-title.png",
+    "bytes": 10360,
+    "sha256": "1a8f7d9eccc2e00b6f4a6087015c0cfeab46b6cff3398f4e6d964c3b8c0e5bdb"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-stroke-shadow-browser.png",
+    "bytes": 38382,
+    "sha256": "84e5af10d909652fa37758b5f81137a1139de205a7a8d6e15a90d7c4a515c46f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-stroke-shadow.ass",
+    "bytes": 701,
+    "sha256": "653f23d5192942e547c3b4d262b4794cad25aaa26539a429ea080c911c8b76a4"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-stroke-shadow.log",
+    "bytes": 6986,
+    "sha256": "37121d83129772d1ba0c8d216284a7705b965361e6cfb22a8163056fe18070fa"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-700-normal-stroke-shadow.png",
+    "bytes": 15388,
+    "sha256": "854fe2c6704130e1cb16f5d2a68b366982341d2af195bb69f28b244be1bbcdf7"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-bold-display-browser.png",
+    "bytes": 33768,
+    "sha256": "975e8ceb7bd9b5438d06909006a0c7996b6e923440855fd35c29f6f25e58a61b"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-bold-display.ass",
+    "bytes": 684,
+    "sha256": "2bcfc81d0be33daa9655f49f9b69935d96b624c49a9d0a2cd273d287773dfab2"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-bold-display.log",
+    "bytes": 6980,
+    "sha256": "b4ff4c6919b8b4e3c938ac6336a4116306e48e4b1a6672fc2fa12d06d638e60a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-bold-display.png",
+    "bytes": 13160,
+    "sha256": "e115d5c7f6692eb0872bf0a7ea6e73213149ff519bc35742278a29c4966d560a"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-letter-spacing-browser.png",
+    "bytes": 28475,
+    "sha256": "5216ddd71a7cc412fae02d6bde00fb9e0519ccd44783e21afd5873b26eb07a47"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-letter-spacing.ass",
+    "bytes": 676,
+    "sha256": "fa8604109cdf8da43db4e42e63b5b6b9a1c6357f3eda5a3fc72800f3d37297ea"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-letter-spacing.log",
+    "bytes": 6986,
+    "sha256": "9030b40db5f7c8aefbac1f2c441e4642c7ddb67040c4c5f79335d26d88636d35"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-letter-spacing.png",
+    "bytes": 9134,
+    "sha256": "3910da676b0fe953c725bcc4678f46e6af2b64138249c5ad2c8f5a45dfd9a24f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-long-wrap-browser.png",
+    "bytes": 71821,
+    "sha256": "8eb5c0af5df9cd52c27e2dae6ef94097a657e1b33a92a1348a8999cadaf8c87f"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-long-wrap.ass",
+    "bytes": 1291,
+    "sha256": "cc75dabe63beb72cb012bbc7faef228ebcc8dc5e89caaea5a112db23cacb3b3d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-long-wrap.log",
+    "bytes": 6970,
+    "sha256": "4278bf99a27a150f8d31d59e14a5cd931b1a51e61a5fa8c1bba6ae69311fe6e4"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-long-wrap.png",
+    "bytes": 40514,
+    "sha256": "a5ae920777c526db3d10a159c8ac4f61ef2488a5797f9916aa5460a1236c45d2"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-mixed-symbols-browser.png",
+    "bytes": 31096,
+    "sha256": "65ea80c5187585a2c7daeb4130f996f73e1a21f54eeca99f70c6b701bfd904bd"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-mixed-symbols.ass",
+    "bytes": 700,
+    "sha256": "b101d5eb301f7d229a3b6c5f43db77d94730207ce9db13a379f9b7c6049ec1de"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-mixed-symbols.log",
+    "bytes": 6984,
+    "sha256": "368c93a48ad527081149dc3a49cf650e38ba1bcb0ee7564b13a1b21ab13f9bcb"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-mixed-symbols.png",
+    "bytes": 10984,
+    "sha256": "9e2572c3d41b48685a84d2b318591015ed2b4712d7e6bb87306d114b06067577"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-multiline-browser.png",
+    "bytes": 33650,
+    "sha256": "033898727697cf1ae2d284ffa9937c9f935dedc82c0c0079279dc77e74493b22"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-multiline.ass",
+    "bytes": 787,
+    "sha256": "5744e0566757f35a8fb26c5fbd332df6132cc75dab7ccb8f00872745ee3d5908"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-multiline.log",
+    "bytes": 6968,
+    "sha256": "4abbc869854801ebff4946a393b46f631562fd25e92af98a6015907eee8fb7ed"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-multiline.png",
+    "bytes": 12803,
+    "sha256": "6bb8c000c57a87d06fcc26c2e95ff287a4eef05dd47509cf65ba2c3e9ed8c3fa"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-short-title-browser.png",
+    "bytes": 29914,
+    "sha256": "b270f60078d7cfe31d2868e7c23d7b3814e19b10b827a987bfd58a1197ca2dc3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-short-title.ass",
+    "bytes": 697,
+    "sha256": "a2bb9a76b9ff82ce96c825622e9ba6072ec32551ac50b074f405d212236a9021"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-short-title.log",
+    "bytes": 6977,
+    "sha256": "8b00553f5b3340c7c8d0f6b99bf73ce775c88274d1279231d2f64d6b85d0fa41"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-short-title.png",
+    "bytes": 10145,
+    "sha256": "b3da336351e0af9ce4ba3d11bc41fb642c1b9672412725d05d82d572d0f2cd25"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-stroke-shadow-browser.png",
+    "bytes": 37733,
+    "sha256": "b1c922fe88d9b7abdcab0b25e21435aee53e6c3848d0f4da1afcff6baecf58ea"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-stroke-shadow.ass",
+    "bytes": 702,
+    "sha256": "0c1d172dfb019efbcf30daaf5b677d520b8d599c3f47700e4a0d3dfe30e3b4a5"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-stroke-shadow.log",
+    "bytes": 6984,
+    "sha256": "6bdb0450decfb7460405b590bcab56e9442ce813a25121691f5d31952dc0bd1c"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\poppins-900-normal-stroke-shadow.png",
+    "bytes": 14312,
+    "sha256": "296364ae21962e03fed8ded014225d2124eb21176f2793a5a3b2893d7ab15d29"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-golden-evidence\\renderer-results.json",
+    "bytes": 37665,
+    "sha256": "c78d6a3b3701c2ebd364c44d1ce01c0486aa6b9d41bab94029df1f28f6163636"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-reconciliation-evidence\\candidate-server.log",
+    "bytes": 49,
+    "sha256": "cfaffe6bcbe5d619bd1e412c73e7a2027807ecd3f428ea37b7ee747c43babae3"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-reconciliation-evidence\\candidate-vite.log",
+    "bytes": 20586,
+    "sha256": "14d1b99e5f8ee40fe2e917c221c7eaf2ebfc0ae22adbb80648d74103c89fab8d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-reconciliation-evidence\\committed-server.log",
+    "bytes": 50,
+    "sha256": "97b0be20b2f3e1105f1b709241816a50e79b387c546e339098aedd23b1d1795d"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-reconciliation-evidence\\committed-vite.log",
+    "bytes": 20374,
+    "sha256": "bc5ceda0e2888e0deb9c10a6c00a700977c4da0f876d23558463aa78eb7cda98"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-integration-evidence\\backend-build-nx-initial.log",
+    "bytes": 2069,
+    "sha256": "e381a86d0f9434f69d327cf4a58b3444bbc876723f6c0f74508c616ea0bd9cb1"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-integration-evidence\\backend-build.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-integration-evidence\\server.log",
+    "bytes": 39,
+    "sha256": "956cad17e71bc098c21daf46dde45b52cccdaa637219117ac95d2be485f70d58"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-integration-evidence\\vite.log",
+    "bytes": 18572,
+    "sha256": "db44a1b7db897ac7117af61ea5da8008284b961edad00e262de4a3baa11095b7"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-final-validation-evidence\\frontend-tests.log",
+    "bytes": 10286,
+    "sha256": "6930dbc7388b4ed2b427d8fe1ffc2b4055cce85ba20b7d1892463150e19865d2"
+  },
+  {
+    "path": "D:\\NxClip-Web\\src\\lib\\clipTypography\\T3-final-validation-evidence\\worker-tests.log",
+    "bytes": 1470,
+    "sha256": "49b2da34d3cf9860b53e559a478fa8e53a485adea86a15d197cbea4020d10acf"
+  },
+  {
+    "path": "D:\\NxClip\\apps\\media-worker\\src\\render\\application\\typography-fixtures\\legacy-baseline.json",
+    "bytes": 150825,
+    "sha256": "ab32000efb8d36edc1840da2a1e2accfa03bd0376744780dfe99dd94181fbf34"
+  }
+]

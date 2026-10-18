@@ -1,0 +1,16 @@
+[Script Info]
+ScriptType: v4.00+
+Kerning: yes
+PlayResX: 1280
+PlayResY: 720
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Canonical0,NxClipT2Face02,72.802734375,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:01.00,Canonical0,,0,0,0,,{\an7\pos(93.93408203125,121.01953125)\q2}A long wrapped caption includes
+Dialogue: 0,0:00:00.00,0:00:01.00,Canonical0,,0,0,0,,{\an7\pos(81.0859375,177.71953125)\q2}uppercase ABC, lowercase letters,
+Dialogue: 0,0:00:00.00,0:00:01.00,Canonical0,,0,0,0,,{\an7\pos(137.77978515625,234.41953124999998)\q2}punctuation!? and numbers
+Dialogue: 0,0:00:00.00,0:00:01.00,Canonical0,,0,0,0,,{\an7\pos(114.5546875,291.11953125)\q2}0123456789 with accents éñÅ.

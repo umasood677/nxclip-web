@@ -1,0 +1,411 @@
+Frontend
+master
+8fde972 fix(clip-studio): reset render progress to Prep for fresh and queued jobs
+ D dist/assets/AdStudio-fw7v9Ze9.js
+ D dist/assets/AdStudioEditor-Caw4Ecs6.js
+ D dist/assets/AdminPanel-D1n6RvsB.js
+ D dist/assets/Analytics-DfyiNNE4.js
+ D dist/assets/AreaChart-DM0GrVeR.js
+ D dist/assets/AuthenticatedMediaPreview-BRULSQ4N.js
+ D dist/assets/BillingCancelPage-C3-wmBov.js
+ D dist/assets/BillingSuccessPage-CX89xDXn.js
+ D dist/assets/BrandKitEditor-B9lsCJaG.js
+ D dist/assets/BrandKitImportDialog-DZiIxPJ1.js
+ D dist/assets/BrandKits-D3S_7q8c.js
+ D dist/assets/ClipEditor-DQF7DkaD.js
+ D dist/assets/ClipUpload-CXdbTt7t.js
+ D dist/assets/ConnectedSocialAccountAvatar-Bbm1C8by.js
+ D dist/assets/ContentLibrary-D-IWCzlG.js
+ D dist/assets/CreateHub-DjtKWdXc.js
+ D dist/assets/CreatorAvatar-BeGc4cNL.js
+ D dist/assets/CreatorCoach-W-XZ6VFq.js
+ D dist/assets/CreatorNicheTags-CxfNksZe.js
+ D dist/assets/Dashboard-XD3gGCSa.js
+ D dist/assets/DesignSystem-BniptP4v.js
+ D dist/assets/DevSuite-q1_p7ER2.js
+ D dist/assets/EditProfile-Dp171dO8.js
+ D dist/assets/EmptyState-y8tHV8DZ.js
+ D dist/assets/EventHighlight-hjVKvdJd.js
+ D dist/assets/Features-DGmItMJU.js
+ D dist/assets/FinalCTA-B6biNVNH.js
+ D dist/assets/Footer-DZ8f4JJC.js
+ D dist/assets/ForgotPassword-CoL0-nGE.js
+ D dist/assets/GoogleSignInButton-CRisTBHF.js
+ D dist/assets/Home-DFOPiFx9.js
+ D dist/assets/HomeFeed-6IX9Dm8q.js
+ D dist/assets/HomeV2-JgYUbCpt.js
+ D dist/assets/ImageStudio-DTbWI8MB.js
+ D dist/assets/JustifiedGallery-Me4J01BR.js
+ D dist/assets/Login-CnCCMmBt.js
+ D dist/assets/MediaTileSelectCheckbox-DhjqwU3o.js
+ D dist/assets/MigrationGuide-BVpuNDxo.js
+ D dist/assets/Notifications-XJtSmy_k.js
+ D dist/assets/Onboarding-Dy1qwHSh.js
+ D dist/assets/OwnProfile-ClsHqmwK.js
+ D dist/assets/PostCard-CGRhtACD.js
+ D dist/assets/PostDetail-DFv2-iB_.js
+ D dist/assets/Pricing-DM7P6FGg.js
+ D dist/assets/Pricing-DsfmtWFy.js
+ D dist/assets/PublicPostView-1XO7Hgqe.js
+ D dist/assets/PwaInstallPrompt-DkNlBcJx.js
+ D dist/assets/SEO-DC8g3zhx.js
+ D dist/assets/Settings-Ci5aqVBY.js
+ D dist/assets/Signup-BmQruDBK.js
+ D dist/assets/SocialDisconnectDialog-5VMaCqhr.js
+ D dist/assets/SocialPlatformIcon-BKMYE1Tq.js
+ D dist/assets/SocialPublishTargets-BbfhRxW3.js
+ D dist/assets/StatusPill-C5BfYJoa.js
+ D dist/assets/TiktokIcon-C18a0-RP.js
+ D dist/assets/UpgradePage-Bglb1J1R.js
+ D dist/assets/UserProfile-DDGaiUSb.js
+ D dist/assets/VerifyEmail-vOslcobk.js
+ D dist/assets/WeekPlanGrid-C3GpDCaJ.js
+ D dist/assets/WeekPlanPage-CqZWfMM9.js
+ D dist/assets/WorkspaceExportDialog-B6zcruGQ.js
+ D dist/assets/accordion-CX_Vcwx4.js
+ D dist/assets/activity-BvUSGsVq.js
+ D dist/assets/alert-BZX0co2Y.js
+ D dist/assets/arrow-left-Crxm5RKP.js
+ D dist/assets/arrow-right-8pufoQ-o.js
+ D dist/assets/arrow-up-right-CdwLO46j.js
+ D dist/assets/aspectRatio-qp4sv-LT.js
+ D dist/assets/authenticatedMediaUrl-CtNF0E3x.js
+ D dist/assets/avatar-BxFDf-5X.js
+ D dist/assets/billingService-ydYY2llm.js
+ D dist/assets/brain-circuit-C_A2MIbI.js
+ D dist/assets/calendar-B0m3OB5g.js
+ D dist/assets/calendar-clock-4GKO34CG.js
+ D dist/assets/calendar-days-bGr1DJ1I.js
+ D dist/assets/card--fVHBgxz.js
+ D dist/assets/chart-line-CWWYuJgq.js
+ D dist/assets/chevron-down-CA0agFqX.js
+ D dist/assets/chevron-up-Dt5nbGrm.js
+ D dist/assets/circle-check-28CT_FvQ.js
+ D dist/assets/circle-x-B6DJEoq6.js
+ D dist/assets/clock-C85gvsWL.js
+ D dist/assets/code-C1gqz562.js
+ D dist/assets/compass-BqMhnOQ-.js
+ D dist/assets/copy--pF0YMhE.js
+ D dist/assets/database-CqS9mSI3.js
+ D dist/assets/downloadContentMedia-qbJ233q2.js
+ D dist/assets/ellipsis-DUctiRju.js
+ D dist/assets/external-link-X1X3Dtyc.js
+ D dist/assets/eye-BqfrENWR.js
+ D dist/assets/eye-off-0BjebYGr.js
+ D dist/assets/facebook-CHIsHYst.js
+ D dist/assets/file-pen-AUouQOPb.js
+ D dist/assets/flame-CO13HQe1.js
+ D dist/assets/form-field-kNEduIrI.js
+ D dist/assets/funnel-DNIaujwT.js
+ D dist/assets/gamepad-2-B3P_oG3B.js
+ D dist/assets/heart-B2mWHdor.js
+ D dist/assets/history-DOb7Uezl.js
+ D dist/assets/image-plus-CZkpYvPI.js
+ D dist/assets/index-Dd0mAtZj.js
+ D dist/assets/index-IhvVKGCr.js
+ D dist/assets/index-q-GRbQ5-.css
+ D dist/assets/index.es-ox1dvcnp.js
+ D dist/assets/info-CvNAjYTR.js
+ D dist/assets/input-C_MwxM4n.js
+ D dist/assets/label-DLZu-mh4.js
+ D dist/assets/layers-DBAy5S4J.js
+ D dist/assets/link-2-CXdXb2gc.js
+ D dist/assets/list-DUx3xsSl.js
+ D dist/assets/lock-Do_2kyKu.js
+ D dist/assets/mail-DZj52aqU.js
+ D dist/assets/maximize-2-CN70IQzW.js
+ D dist/assets/mediaRatioStore-DOz3FurA.js
+ D dist/assets/minus-ClGpco-q.js
+ D dist/assets/music-DukEHs02.js
+ D dist/assets/network-C6aAQAib.js
+ D dist/assets/panels-top-left-Dri41YGo.js
+ D dist/assets/pause-CqEqnHL_.js
+ D dist/assets/pen-line-YB9TxeBt.js
+ D dist/assets/play-C0LbDGw1.js
+ D dist/assets/pricing-data-BnImB545.js
+ D dist/assets/radio-56oDfzpP.js
+ D dist/assets/rocket-BgW7DLSl.js
+ D dist/assets/rotate-ccw-BaRUamMG.js
+ D dist/assets/save-EXVmdZq5.js
+ D dist/assets/schemas-ZFx1TBhn.js
+ D dist/assets/scissors-C_8LIDTS.js
+ D dist/assets/select-wd5aIB35.js
+ D dist/assets/send-D3uGONIG.js
+ D dist/assets/separator-SEQaMeZW.js
+ D dist/assets/settings-2-CjQykbMW.js
+ D dist/assets/share-2-DUuHrAwE.js
+ D dist/assets/share-DyVcwIqz.js
+ D dist/assets/shield-alert-jzgB2DYC.js
+ D dist/assets/shield-b5WlYqyS.js
+ D dist/assets/skeleton-CqKXSHzH.js
+ D dist/assets/slider-DRjKGVu7.js
+ D dist/assets/sliders-vertical-D4fQw-LX.js
+ D dist/assets/socialConnect-BfvgjDdj.js
+ D dist/assets/sparkle-Dt-BneIc.js
+ D dist/assets/square-BTn__zRj.js
+ D dist/assets/table-cEcz6qPq.js
+ D dist/assets/tabs-Df7SSCPv.js
+ D dist/assets/target-COrWR5Hy.js
+ D dist/assets/terminal-BFsiuRR9.js
+ D dist/assets/textarea-qrvRLQ0t.js
+ D dist/assets/trending-down-Bqd5sNdQ.js
+ D dist/assets/trending-up-D_EAbTmd.js
+ D dist/assets/triangle-alert-kqMy9xZU.js
+ D dist/assets/type-DUsoD3vf.js
+ D dist/assets/types-CPH6Lybs.js
+ D dist/assets/upload-0yONzoM3.js
+ D dist/assets/useControlled-Bl6IUpyl.js
+ D dist/assets/useCreatorStudioContext-C0QM1ore.js
+ D dist/assets/useElementWidth-DGpkLlYD.js
+ D dist/assets/useField-DRFhtE6V.js
+ D dist/assets/useLocalStorage-BQ_9GgL8.js
+ D dist/assets/user-plus-CHX8WdsL.js
+ D dist/assets/users-CbiyGiXY.js
+ D dist/assets/weekPlanWorkflow-D32rgG9v.js
+ D dist/assets/wifi-D3UnvIMc.js
+ D dist/assets/zoom-in-Bo74DBe4.js
+ D dist/assets/zoom-out-CWbSp8lo.js
+ M dist/index.html
+ M dist/server.cjs
+ M src/pages/ClipEditor/ClipEditor.tsx
+?? .tmp/
+?? dist/assets/AdStudio-0L0_014N.js
+?? dist/assets/AdStudioEditor-BcBf1MNU.js
+?? dist/assets/AdminPanel-CZzGMnKw.js
+?? dist/assets/Analytics-BbSrJA1b.js
+?? dist/assets/AnimatedAdStudioEditor-CO3Xxrrn.js
+?? dist/assets/AnimatedAdStudioUnavailable-CAXIMXV9.js
+?? dist/assets/AreaChart-wYWrZI-v.js
+?? dist/assets/AuthenticatedMediaPreview-CPdohYgk.js
+?? dist/assets/BillingCancelPage-BTcqPioD.js
+?? dist/assets/BillingSuccessPage-B8CMF208.js
+?? dist/assets/BrandKitEditor-BYwS40jy.js
+?? dist/assets/BrandKitImportDialog-DG9jYIf6.js
+?? dist/assets/BrandKits-Dy4k8xJN.js
+?? dist/assets/ClipEditor-tR7RtuZ5.js
+?? dist/assets/ClipUpload-DHugQonl.js
+?? dist/assets/ConnectedSocialAccountAvatar-l0PGz9A0.js
+?? dist/assets/ContentLibrary-8Ez_fBQy.js
+?? dist/assets/CreateHub-DAdChtiF.js
+?? dist/assets/CreatorAvatar-PeOSsCAe.js
+?? dist/assets/CreatorCoach-BicLVR7E.js
+?? dist/assets/CreatorNicheTags-8bDSxTlf.js
+?? dist/assets/Dashboard-DglmgZ5q.js
+?? dist/assets/DesignSystem-BSFOK6Jw.js
+?? dist/assets/DevSuite-BJ33o3cZ.js
+?? dist/assets/EditProfile-C5U5sE4v.js
+?? dist/assets/EmptyState-DbNv64SP.js
+?? dist/assets/EventHighlight-BF109-n-.js
+?? dist/assets/Features-viknBRP8.js
+?? dist/assets/FinalCTA-DXMRwznS.js
+?? dist/assets/Footer-B0CalY_W.js
+?? dist/assets/ForgotPassword-hF_sx7X_.js
+?? dist/assets/GoogleSignInButton-C-pa8vMP.js
+?? dist/assets/Home-6Ndm41NG.js
+?? dist/assets/HomeFeed-BD4kRlvU.js
+?? dist/assets/HomeV2-CjoI6jSA.js
+?? dist/assets/ImageStudio-Dg5Jo3mm.js
+?? dist/assets/JustifiedGallery-DUO-N3rL.js
+?? dist/assets/Login-DlX2S6V_.js
+?? dist/assets/MediaTileSelectCheckbox-DH-bNoCI.js
+?? dist/assets/MigrationGuide-BSjg5URw.js
+?? dist/assets/Notifications-deToTnYv.js
+?? dist/assets/Onboarding-CXRNrzT5.js
+?? dist/assets/OwnProfile-C6N9qa0l.js
+?? dist/assets/PostCard-dZS1I11e.js
+?? dist/assets/PostDetail-Bk9XlW8h.js
+?? dist/assets/Pricing-BHr7sF_t.js
+?? dist/assets/Pricing-BMuGKg6Y.js
+?? dist/assets/PublicPostView-CnZbPh0D.js
+?? dist/assets/PwaInstallPrompt-BQFsvE_y.js
+?? dist/assets/SEO-I33RID3r.js
+?? dist/assets/Settings-RX--55Ti.js
+?? dist/assets/Signup-GalINHZ1.js
+?? dist/assets/SocialDisconnectDialog-Cx1Jcpiz.js
+?? dist/assets/SocialPlatformIcon-w6ZgzbzH.js
+?? dist/assets/SocialPublishTargets-Dvaict6B.js
+?? dist/assets/StatusPill-DF9WeDZC.js
+?? dist/assets/TiktokIcon-CN8FMLT6.js
+?? dist/assets/UpgradePage-CUQf0xTF.js
+?? dist/assets/UserProfile-B7Ri2oBj.js
+?? dist/assets/VerifyEmail-D8NV9qHA.js
+?? dist/assets/WeekPlanGrid-DpN_fKfC.js
+?? dist/assets/WeekPlanPage-C5jI_hYO.js
+?? dist/assets/WorkspaceExportDialog-CsyHbj6p.js
+?? dist/assets/accordion-3WyQIN0y.js
+?? dist/assets/activity-CXjpFgOk.js
+?? dist/assets/alert-DG4e4fb9.js
+?? dist/assets/arrow-left-f0UL2fEw.js
+?? dist/assets/arrow-right-BIMghde9.js
+?? dist/assets/arrow-up-right-8qu7N0dn.js
+?? dist/assets/aspectRatio-Dvy_1RH2.js
+?? dist/assets/authenticatedMediaUrl-D498gYjy.js
+?? dist/assets/avatar-CJ2DbOwp.js
+?? dist/assets/billingService-DkoeNj4x.js
+?? dist/assets/brain-circuit-B84tnNQp.js
+?? dist/assets/brandSnapshot-Ba0B-OjH.js
+?? dist/assets/calendar-DZUWdywL.js
+?? dist/assets/calendar-clock-BmvNcs9v.js
+?? dist/assets/calendar-days-DsZA7HQY.js
+?? dist/assets/canonicalLayout-B-Fqzeps.js
+?? dist/assets/card-CZ0hAhKD.js
+?? dist/assets/chart-line-CKKASC6l.js
+?? dist/assets/chevron-down-DPIak9pb.js
+?? dist/assets/chevron-up-B_QIFTJK.js
+?? dist/assets/circle-check-BqwJphBJ.js
+?? dist/assets/circle-x-B0EdHcis.js
+?? dist/assets/clock-CKKoQw6j.js
+?? dist/assets/code-Bu93UYK0.js
+?? dist/assets/compass-BUHx6tFO.js
+?? dist/assets/copy--dCPIp3K.js
+?? dist/assets/database-Brq20M32.js
+?? dist/assets/downloadContentMedia-DxlvpA61.js
+?? dist/assets/ellipsis-De7fGtdo.js
+?? dist/assets/external-link-z6OtmMbi.js
+?? dist/assets/eye-BONRC0kU.js
+?? dist/assets/eye-off-DovbZwy1.js
+?? dist/assets/facebook-ISV830FV.js
+?? dist/assets/file-pen-Y3-ICdVO.js
+?? dist/assets/flame-D-i9cOgk.js
+?? dist/assets/form-field-CCp3zfel.js
+?? dist/assets/funnel-B479BTGK.js
+?? dist/assets/gamepad-2-CpVUP-M3.js
+?? dist/assets/heart-C-53LpGO.js
+?? dist/assets/history-BEUXKwgZ.js
+?? dist/assets/image-plus-Ddv3QIvk.js
+?? dist/assets/index-BOGDVmSU.js
+?? dist/assets/index-CJTIp_fJ.js
+?? dist/assets/index-DU-OvL0n.css
+?? dist/assets/index.es-BVojGiRY.js
+?? dist/assets/info-BYZUPX7e.js
+?? dist/assets/input-BDAnC2_f.js
+?? dist/assets/label-BY6_8Tm5.js
+?? dist/assets/layers-DBxb4Zu_.js
+?? dist/assets/link-2-DwJmY34O.js
+?? dist/assets/list-DNE7QMp5.js
+?? dist/assets/lock-BQ9krjOm.js
+?? dist/assets/mail-umiKnpLY.js
+?? dist/assets/maximize-2-DvM1kPww.js
+?? dist/assets/mediaRatioStore-Dv0Hou7w.js
+?? dist/assets/minus-C_LdqmMT.js
+?? dist/assets/music-yx8Ifcnr.js
+?? dist/assets/network-DE8YoXNb.js
+?? dist/assets/panels-top-left-N31Uv8K5.js
+?? dist/assets/pause-BcFLkQrJ.js
+?? dist/assets/pen-line-DRLU_ajo.js
+?? dist/assets/play-DtYaEyWM.js
+?? dist/assets/pricing-data-CoWGFJCY.js
+?? dist/assets/radio-BIiEdVxZ.js
+?? dist/assets/rocket-CkCuDiG9.js
+?? dist/assets/rotate-ccw-BKZv4-pW.js
+?? dist/assets/sanitizeSceneGraph-DpWu8-gi.js
+?? dist/assets/save-CnCSA0LV.js
+?? dist/assets/sceneGraph-CpgKVwDw.js
+?? dist/assets/schemas-C-KHQCyB.js
+?? dist/assets/scissors-BSW06lj_.js
+?? dist/assets/select-CfwAkQ9E.js
+?? dist/assets/send-wSKfghVK.js
+?? dist/assets/separator-LFaGrT3S.js
+?? dist/assets/settings-2-D6BOGji0.js
+?? dist/assets/share-2-pMwyLgdq.js
+?? dist/assets/share-DYP4UIEw.js
+?? dist/assets/shield-CTM2q8Kf.js
+?? dist/assets/shield-alert-ECD_yPf4.js
+?? dist/assets/skeleton-B7JcXqg9.js
+?? dist/assets/slider-LbJ-iC7r.js
+?? dist/assets/sliders-vertical-16ZseMpD.js
+?? dist/assets/socialConnect-DrfRSxvO.js
+?? dist/assets/sparkle-C5HhnaZM.js
+?? dist/assets/square-a2Wsma-O.js
+?? dist/assets/table-Dk_3i4cn.js
+?? dist/assets/tabs-Cqdwk-Zp.js
+?? dist/assets/target-CtoEK6Bd.js
+?? dist/assets/terminal-CBRUp4aI.js
+?? dist/assets/textarea-uE9arCOe.js
+?? dist/assets/trending-down-DJS0Vndr.js
+?? dist/assets/trending-up-DRUJtYMb.js
+?? dist/assets/triangle-alert-BiZmTMPg.js
+?? dist/assets/type-K8JDTkUU.js
+?? dist/assets/upload-BA1C7HCA.js
+?? dist/assets/useControlled-DlsEz0Aw.js
+?? dist/assets/useCreatorStudioContext-VD7qoGq3.js
+?? dist/assets/useElementWidth-Bvg30iSa.js
+?? dist/assets/useField-CIO7TNqb.js
+?? dist/assets/useLocalStorage-CWEyvt17.js
+?? dist/assets/user-plus-tTdhgGWN.js
+?? dist/assets/users-BfUbjiox.js
+?? dist/assets/weekPlanWorkflow-DcPgnvGQ.js
+?? dist/assets/wifi-12g46jJC.js
+?? dist/assets/zoom-in-D4JgEzT_.js
+?? dist/assets/zoom-out-2yYwA7ST.js
+?? dist/fonts/
+?? dist/sfx/
+?? public/fonts/
+?? src/lib/clipTypography/
+?? src/pages/ClipEditor/CanonicalCaptionPreview.tsx
+?? src/pages/ClipEditor/ClipTypographyOverlay.tsx
+
+Backend
+master
+846180d fix(sound-design): keep VO/Foley when original bed is muted
+ M .github/workflows/deploy-gcp.yml
+ M apps/content-service/src/ad-studio/ad-studio.module.ts
+ M apps/content-service/src/ad-studio/api/ad-studio.controller.ts
+ M apps/content-service/src/ad-studio/domain/ad-studio.enums.ts
+ M apps/content-service/src/ad-studio/exceptions/ad-studio.exceptions.ts
+ M apps/content-service/src/ad-studio/repositories/ad-studio.repository.ts
+ M apps/content-service/src/content/application/clip-studio.helpers.ts
+ M apps/content-service/src/content/application/content.service.ts
+ M apps/content-service/src/infrastructure/database/database.module.ts
+ M apps/media-worker/Dockerfile
+ M apps/media-worker/src/infrastructure/orchestration/orchestration.module.ts
+ M apps/media-worker/src/queue/api/internal-queue.controller.ts
+ M apps/media-worker/src/queue/application/render-dispatch.service.ts
+ M apps/media-worker/src/queue/dto/render-clip-queue.dto.ts
+ M apps/media-worker/src/queue/queue.module.ts
+ M apps/media-worker/src/render/application/ass-captions.spec.ts
+ M apps/media-worker/src/render/application/ass-captions.ts
+ M apps/media-worker/src/render/application/caption-fonts.ts
+ M apps/media-worker/src/render/application/ffmpeg-render.service.ts
+ M docs/README.md
+ M docs/deploy/GCP-DEPLOYMENT.md
+ M docs/plans/ai-sound-design-sound-engine.md
+ M docs/product/README.md
+ M libs/contracts/src/index.ts
+ M libs/contracts/src/lib/ad-animated-render.ts
+ M libs/contracts/src/lib/internal/index.ts
+ M libs/internal-clients/src/lib/content.client.ts
+ M libs/internal-clients/src/lib/media.client.ts
+?? .tmp/ad-studio.module.4cb.ts
+?? .tmp/ad-studio.module.head.ts
+?? .tmp/ffmpeg-render.service.ts.r1-plus-typography
+?? .tmp/gen-m3-fixtures.mts
+?? .tmp/t3-jest-integration/
+?? .tmp/t3-renderer/
+?? .tmp/t3-worker-build/
+?? .tmp/typography-worker-build/
+?? apps/content-service/src/ad-studio/api/internal-ad-studio.controller.ts
+?? apps/content-service/src/ad-studio/application/animated-ad-export.service.spec.ts
+?? apps/content-service/src/ad-studio/application/animated-ad-export.service.ts
+?? apps/content-service/src/ad-studio/domain/ad-animated-export-job.entity.ts
+?? apps/content-service/src/ad-studio/dto/animated-ad-export.dto.ts
+?? apps/content-service/src/content/application/canonical-typography.ts
+?? apps/content-service/src/infrastructure/database/migrations/017_ad_animated_export_jobs.sql
+?? apps/media-worker/assets/fonts/canonical/
+?? apps/media-worker/src/infrastructure/orchestration/ad-animated-export-callback.service.spec.ts
+?? apps/media-worker/src/infrastructure/orchestration/ad-animated-export-callback.service.ts
+?? apps/media-worker/src/render/application/animated-ad-frame-svg.ts
+?? apps/media-worker/src/render/application/animated-ad-render.service.spec.ts
+?? apps/media-worker/src/render/application/animated-ad-render.service.ts
+?? apps/media-worker/src/render/application/canonical-caption-fonts.spec.ts
+?? apps/media-worker/src/render/application/canonical-caption-fonts.ts
+?? apps/media-worker/src/render/application/canonical-typography-layout.spec.ts
+?? apps/media-worker/src/render/application/canonical-typography-layout.ts
+?? apps/media-worker/src/render/application/t3-legacy-compatibility.spec.ts
+?? apps/media-worker/src/render/application/typography-fixtures/
+?? apps/media-worker/tools/
+?? docs/architecture/animated-ad-studio-4c-b.md
+?? docs/commercial/
+?? docs/guides/ad-animated-export-e2e.md
+?? libs/contracts/src/lib/clip-typography-layout.spec.ts
+?? libs/contracts/src/lib/clip-typography-layout.ts

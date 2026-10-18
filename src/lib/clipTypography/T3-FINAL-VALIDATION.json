@@ -1,0 +1,99 @@
+{
+  "status": "INCOMPLETE — real non-production project workflow and Cursor release completion not verified",
+  "checkedAt": "2026-10-18T06:39:48.940Z",
+  "browser": {
+    "fresh": true,
+    "component": "current ClipTypographyOverlay -> CanonicalCaptionPreview",
+    "cases": 105,
+    "pass": 105,
+    "edgeTolerancePx": 2,
+    "unmatchedTolerance": 0.02,
+    "maxEdgePx": 2,
+    "maxUnmatched": 0.000715209198690617,
+    "coverage": {
+      "capturedAt": "2026-10-18T06:36:49.718Z",
+      "unsupported": [
+        {
+          "faceId": "poppins-700-normal",
+          "omegaRejected": true,
+          "error": "Error: Unsupported codepoint in poppins-700-normal"
+        },
+        {
+          "faceId": "poppins-900-normal",
+          "omegaRejected": true,
+          "error": "Error: Unsupported codepoint in poppins-900-normal"
+        },
+        {
+          "faceId": "caveat-700-normal",
+          "omegaRejected": true,
+          "error": "Error: Unsupported codepoint in caveat-700-normal"
+        }
+      ],
+      "supportedInterLoaded": true,
+      "silentFallback": false
+    },
+    "off": {
+      "defaultOffVerified": true,
+      "fontRequests": 0,
+      "canvasAbsent": true
+    },
+    "failure": {
+      "handled": true,
+      "alert": "Typography preview unavailable. Reload to retry.",
+      "detail": "Font HTTP 404: /fonts/clip-typography/1.1.0/faces/bebas-neue-400-normal.ttf",
+      "noFallbackSuccess": true,
+      "editorComponentSurvived": true
+    },
+    "cold": {
+      "handled": true,
+      "detail": null,
+      "noFallbackSuccess": true,
+      "editorComponentSurvived": true
+    }
+  },
+  "projectSaveReopen": {
+    "verified": false,
+    "writesAttempted": 0,
+    "reason": "Isolated stack unavailable: application ports 5000-5007 refused; content .env selects remote Neon PostgreSQL; configured Redis 6380 refused; frontend API resolver falls back to production. Stopped before persistence."
+  },
+  "regressions": {
+    "frontend": {
+      "tests": 41,
+      "exitCode": 0
+    },
+    "worker": {
+      "tests": 43,
+      "suites": 8,
+      "exitCode": 0
+    }
+  },
+  "builds": {
+    "frontend": [
+      {
+        "name": "vite",
+        "exitCode": 0
+      },
+      {
+        "name": "server",
+        "exitCode": 0
+      }
+    ],
+    "backend": [
+      {
+        "name": "clean source TypeScript emit: media-worker, content-service and imported packages",
+        "exitCode": 0
+      }
+    ]
+  },
+  "heads": {
+    "frontend": "8fde97222738360b55ba2d17e107f3914ab2c7ba",
+    "backend": "846180d5e760148a702e007e277f358e61ebe1de"
+  },
+  "cursorReleaseComplete": false,
+  "canonicalFlag": false,
+  "committed": false,
+  "pushed": false,
+  "deployed": false,
+  "dockerBuildStarted": false,
+  "localEnvironmentAudit": "T3-LOCAL-ENVIRONMENT.json"
+}

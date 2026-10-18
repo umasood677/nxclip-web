@@ -1,0 +1,323 @@
+{
+  "auditedAt": "2026-10-18T07:03:45.054Z",
+  "envFiles": [
+    {
+      "path": ".env",
+      "exists": true,
+      "endpoints": {
+        "FRONTEND_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "3000",
+          "local": true,
+          "cloudRun": false
+        },
+        "POSTGRES_HOST": {
+          "hostname": "localhost",
+          "local": true
+        },
+        "DB_URL": {
+          "scheme": "postgresql:",
+          "hostname": "localhost",
+          "port": "5432",
+          "local": true,
+          "cloudRun": false
+        },
+        "REDIS_URL": {
+          "scheme": "redis:",
+          "hostname": "localhost",
+          "port": "6380",
+          "local": true,
+          "cloudRun": false
+        },
+        "PGADMIN_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "5050",
+          "local": true,
+          "cloudRun": false
+        }
+      },
+      "settings": {
+        "NODE_ENV": "development",
+        "POSTGRES_PORT": "5432"
+      },
+      "credentialVariableNames": [
+        "POSTGRES_PASSWORD",
+        "PGADMIN_DEFAULT_PASSWORD",
+        "JWT_PRIVATE_KEY",
+        "INTERNAL_API_KEY",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "AWS_SECRET_ACCESS_KEY",
+        "ANTHROPIC_API_KEY",
+        "OPENAI_API_KEY",
+        "FIREBASE_PRIVATE_KEY"
+      ]
+    },
+    {
+      "path": "infrastructure/docker/.env",
+      "exists": true,
+      "endpoints": {},
+      "settings": {
+        "POSTGRES_PORT": "5432",
+        "REDIS_PORT": "6380"
+      },
+      "credentialVariableNames": [
+        "POSTGRES_PASSWORD",
+        "PGADMIN_DEFAULT_PASSWORD"
+      ]
+    },
+    {
+      "path": "apps/api-gateway/.env",
+      "exists": true,
+      "endpoints": {
+        "FRONTEND_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "3000",
+          "local": true,
+          "cloudRun": false
+        },
+        "IDENTITY_SERVICE_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "5001",
+          "local": true,
+          "cloudRun": false
+        },
+        "CONTENT_SERVICE_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "5002",
+          "local": true,
+          "cloudRun": false
+        },
+        "FEED_SERVICE_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "5003",
+          "local": true,
+          "cloudRun": false
+        },
+        "AI_SERVICE_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "5004",
+          "local": true,
+          "cloudRun": false
+        },
+        "ANALYTICS_SERVICE_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "5005",
+          "local": true,
+          "cloudRun": false
+        },
+        "NOTIFICATION_SERVICE_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "5006",
+          "local": true,
+          "cloudRun": false
+        }
+      },
+      "settings": {
+        "PORT": "5000",
+        "NODE_ENV": "development"
+      },
+      "credentialVariableNames": [
+        "INTERNAL_API_KEY"
+      ]
+    },
+    {
+      "path": "apps/content-service/.env",
+      "exists": true,
+      "endpoints": {
+        "FRONTEND_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "3000",
+          "local": true,
+          "cloudRun": false
+        },
+        "DB_URL": {
+          "scheme": "postgresql:",
+          "hostname": "ep-purple-sound-adv378g8-pooler.c-2.us-east-1.aws.neon.tech",
+          "port": null,
+          "local": false,
+          "cloudRun": false
+        },
+        "AI_SERVICE_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "5004",
+          "local": true,
+          "cloudRun": false
+        },
+        "FEED_SERVICE_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "5003",
+          "local": true,
+          "cloudRun": false
+        },
+        "ANALYTICS_SERVICE_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "5005",
+          "local": true,
+          "cloudRun": false
+        },
+        "NOTIFICATION_SERVICE_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "5006",
+          "local": true,
+          "cloudRun": false
+        },
+        "STORAGE_BASE_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "5002",
+          "local": true,
+          "cloudRun": false
+        }
+      },
+      "settings": {
+        "PORT": "5002",
+        "NODE_ENV": "development",
+        "STORAGE_PROVIDER": "local"
+      },
+      "credentialVariableNames": [
+        "INTERNAL_API_KEY"
+      ]
+    },
+    {
+      "path": "apps/media-worker/.env",
+      "exists": false
+    },
+    {
+      "path": "apps/media-worker/.env.example",
+      "exists": true,
+      "endpoints": {
+        "CONTENT_SERVICE_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "5002",
+          "local": true,
+          "cloudRun": false
+        }
+      },
+      "settings": {
+        "PORT": "5007",
+        "NODE_ENV": "development",
+        "ALLOW_COPY_FALLBACK": "true"
+      },
+      "credentialVariableNames": [
+        "INTERNAL_API_KEY"
+      ]
+    },
+    {
+      "path": "apps/identity-service/.env",
+      "exists": true,
+      "endpoints": {
+        "FRONTEND_URL": {
+          "scheme": "http:",
+          "hostname": "localhost",
+          "port": "3000",
+          "local": true,
+          "cloudRun": false
+        }
+      },
+      "settings": {},
+      "credentialVariableNames": [
+        "JWT_PRIVATE_KEY",
+        "INTERNAL_API_KEY",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET"
+      ]
+    }
+  ],
+  "processEndpoints": {},
+  "listeners": [
+    {
+      "host": "127.0.0.1",
+      "port": 5000,
+      "reachable": false,
+      "error": "ECONNREFUSED"
+    },
+    {
+      "host": "127.0.0.1",
+      "port": 5001,
+      "reachable": false,
+      "error": "ECONNREFUSED"
+    },
+    {
+      "host": "127.0.0.1",
+      "port": 5002,
+      "reachable": false,
+      "error": "ECONNREFUSED"
+    },
+    {
+      "host": "127.0.0.1",
+      "port": 5003,
+      "reachable": false,
+      "error": "ECONNREFUSED"
+    },
+    {
+      "host": "127.0.0.1",
+      "port": 5004,
+      "reachable": false,
+      "error": "ECONNREFUSED"
+    },
+    {
+      "host": "127.0.0.1",
+      "port": 5005,
+      "reachable": false,
+      "error": "ECONNREFUSED"
+    },
+    {
+      "host": "127.0.0.1",
+      "port": 5006,
+      "reachable": false,
+      "error": "ECONNREFUSED"
+    },
+    {
+      "host": "127.0.0.1",
+      "port": 5007,
+      "reachable": false,
+      "error": "ECONNREFUSED"
+    },
+    {
+      "host": "127.0.0.1",
+      "port": 5432,
+      "reachable": true
+    },
+    {
+      "host": "127.0.0.1",
+      "port": 6379,
+      "reachable": true
+    },
+    {
+      "host": "127.0.0.1",
+      "port": 6380,
+      "reachable": false,
+      "error": "ECONNREFUSED"
+    }
+  ],
+  "frontend": {
+    "configuredAppRejectsLoopback": true,
+    "fallback": "production Cloud Run — NOT permitted for writes",
+    "validationOrigin": "http://127.0.0.1:4320",
+    "apiGuard": "All /api requests return local 503; no outbound proxy"
+  },
+  "startupHazards": [
+    "Content service DatabaseInitService invokes SQL migrations on startup.",
+    "Content service enables TypeORM synchronize outside production."
+  ],
+  "writesAttempted": 0,
+  "servicesStarted": [],
+  "migrationsRun": false,
+  "queuesUsed": false
+}

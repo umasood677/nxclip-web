@@ -1,0 +1,210 @@
+{
+  "releaseStatus": "INCOMPLETE — real non-production project workflow and Cursor release completion not verified",
+  "checks": [
+    {
+      "name": "Frontend registry/assets/loader/layout/comparator combined",
+      "result": "39/39 pass",
+      "exitCode": 0
+    },
+    {
+      "name": "Final PNG comparator tests",
+      "result": "3/3 pass",
+      "exitCode": 0
+    },
+    {
+      "name": "Worker typography combined six suites",
+      "result": "36/36 pass",
+      "exitCode": 0
+    },
+    {
+      "name": "Frozen legacy baseline regression",
+      "result": "8/8 pass; 64 ASS combinations unchanged",
+      "exitCode": 0
+    },
+    {
+      "name": "Shared layout and Ad contract suites",
+      "result": "38/38 pass",
+      "exitCode": 0
+    },
+    {
+      "name": "contracts:build --skip-nx-cache",
+      "result": "pass",
+      "exitCode": 0
+    },
+    {
+      "name": "media-worker:build --skip-nx-cache and dependencies",
+      "result": "pass",
+      "exitCode": 0
+    },
+    {
+      "name": "Worker TypeScript emit and content-service typecheck",
+      "result": "pass after rebuilding current contracts",
+      "exitCode": 0
+    },
+    {
+      "name": "Scoped frontend TypeScript and ESLint",
+      "result": "pass",
+      "exitCode": 0
+    },
+    {
+      "name": "Vite integrated lazy-loading production build",
+      "result": "pass; 4124 modules; ClipEditor approximately 237 KB",
+      "exitCode": 0
+    },
+    {
+      "name": "Latest final-source Vite build",
+      "result": "Output artifacts exist; terminal exit record unavailable after session expiry; not counted as an independently confirmed pass",
+      "exitCode": null
+    },
+    {
+      "name": "Whole frontend TypeScript",
+      "result": "Existing unrelated media prop/React namespace errors; no typography path errors",
+      "exitCode": 1
+    },
+    {
+      "name": "Actual FFmpeg/libass golden rendering",
+      "result": "105 frames rendered",
+      "exitCode": 0
+    },
+    {
+      "name": "Offline real-PNG golden comparison",
+      "result": "105/105 pass; maximum edge difference 2px; maximum unmatched foreground 0.071521%",
+      "exitCode": 0
+    },
+    {
+      "name": "Current generator versus rendered ASS",
+      "result": "105/105 byte-identical",
+      "exitCode": 0
+    },
+    {
+      "name": "Actual legacy FFmpeg frames",
+      "result": "7/7 pixel-identical",
+      "exitCode": 0
+    },
+    {
+      "name": "Real browser cold loading",
+      "result": "Pass; captured PNG hash equals warm reference",
+      "exitCode": null
+    },
+    {
+      "name": "Real browser HTTP 404 handling",
+      "result": "Pass; contained failure; no successful fallback",
+      "exitCode": null
+    },
+    {
+      "name": "Real browser default OFF",
+      "result": "Pass; zero font requests and no canvas",
+      "exitCode": null
+    },
+    {
+      "name": "Offline asset packaging",
+      "result": "15 faces; 35 files; 3066631 bytes",
+      "exitCode": 0
+    },
+    {
+      "name": "Scoped git diff --check",
+      "result": "pass",
+      "exitCode": 0
+    },
+    {
+      "name": "Reconciliation: committed-vite",
+      "result": "pass (exported source snapshot)",
+      "exitCode": 0
+    },
+    {
+      "name": "Reconciliation: committed-server",
+      "result": "pass (exported source snapshot)",
+      "exitCode": 0
+    },
+    {
+      "name": "Reconciliation: candidate-vite",
+      "result": "pass (exported source snapshot)",
+      "exitCode": 0
+    },
+    {
+      "name": "Reconciliation: candidate-server",
+      "result": "pass (exported source snapshot)",
+      "exitCode": 0
+    },
+    {
+      "name": "Reconciliation: component/transitive TypeScript",
+      "result": "pass with repository library set",
+      "exitCode": 0
+    },
+    {
+      "name": "Reconciliation: typography combined regression",
+      "result": "35/35 pass",
+      "exitCode": 0
+    },
+    {
+      "name": "Integrated: vite",
+      "result": "exported scoped source candidate",
+      "exitCode": 0
+    },
+    {
+      "name": "Integrated: server",
+      "result": "exported scoped source candidate",
+      "exitCode": 0
+    },
+    {
+      "name": "Integrated: clean source TypeScript emit: media-worker, content-service and imported packages",
+      "result": "exported scoped source candidate",
+      "exitCode": 0
+    },
+    {
+      "name": "Integrated: editor and Sound Design callbacks",
+      "result": "6/6 pass",
+      "exitCode": 0
+    },
+    {
+      "name": "Integrated: typography regression",
+      "result": "35/35 pass",
+      "exitCode": 0
+    },
+    {
+      "name": "Integrated: worker typography/audio/ducking",
+      "result": "43/43 pass",
+      "exitCode": 0
+    },
+    {
+      "name": "Integrated: fresh Docker worker frames against retained browser references",
+      "result": "105/105 pass; fresh integrated browser capture blocked",
+      "exitCode": 0
+    },
+    {
+      "name": "Final validation: fresh shared-overlay browser/worker comparison",
+      "result": "105/105; actual new browser captures",
+      "exitCode": 0
+    },
+    {
+      "name": "Final validation: frontend/editor/Sound Design/typography",
+      "result": "41/41",
+      "exitCode": 0
+    },
+    {
+      "name": "Final validation: worker/audio/ducking",
+      "result": "43/43",
+      "exitCode": 0
+    },
+    {
+      "name": "Final validation: frontend vite",
+      "result": "exported scoped candidate",
+      "exitCode": 0
+    },
+    {
+      "name": "Final validation: frontend server",
+      "result": "exported scoped candidate",
+      "exitCode": 0
+    },
+    {
+      "name": "Final validation: backend clean source TypeScript emit: media-worker, content-service and imported packages",
+      "result": "exported scoped candidate",
+      "exitCode": 0
+    }
+  ],
+  "blockers": [
+    "Actual existing-project save/reopen needs a non-production API, authenticated session and project. No production write was attempted.",
+    "Cursor current release completion and resulting master reconciliation are not confirmed. Explicit release approval is still required.",
+    "Other engines, complex scripts and aspect ratios remain uncertified."
+  ]
+}

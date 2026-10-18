@@ -1,0 +1,171 @@
+{
+  "image": "nxclip-media-worker:rc-head",
+  "ffmpeg": "ffmpeg version 5.1.9-0+deb12u1 Copyright (c) 2000-2026 the FFmpeg developers",
+  "results": [
+    {
+      "id": "bebas-neue-400-normal",
+      "sha256": "5115218408bea5fdeebea510d8811c84857f056402c1271a18da51c314dc0cb0",
+      "pngSha256": "de55f1fa657b5ca64e3f7c047d70597d56edbff2b2831d3ed0b4b59999974ba3",
+      "previousSha256": "de55f1fa657b5ca64e3f7c047d70597d56edbff2b2831d3ed0b4b59999974ba3",
+      "identicalToT2B2": true,
+      "selections": [
+        "[Parsed_ass_0 @ 0x5e793c0bf1c0] fontselect: (NxClipT2Face01, 400, 0) -> NxClipT2Face01, 0, NxClipT2Face01"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "anton-400-normal",
+      "sha256": "30bc8b8937a034a1cbd46ff8bc1199cb1870970ca134d065f67c60d97ae1061b",
+      "pngSha256": "ace35d6bff42e16cb5ad9b6a8b10d99bc9f2b89f57aae0d38dc376842b571e02",
+      "previousSha256": "ace35d6bff42e16cb5ad9b6a8b10d99bc9f2b89f57aae0d38dc376842b571e02",
+      "identicalToT2B2": true,
+      "selections": [
+        "[Parsed_ass_0 @ 0x605f7e729180] fontselect: (NxClipT2Face02, 400, 0) -> NxClipT2Face02, 0, NxClipT2Face02"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "archivo-black-400-normal",
+      "sha256": "8cceeb603c3553e352fc2ccae20de18de752f29d0d405def1b4ba3ffca729652",
+      "pngSha256": "7e15a2408004b8ca497d86945fe140610fddeb9ff2e77b712fc6271f18dac2ad",
+      "previousSha256": "7e15a2408004b8ca497d86945fe140610fddeb9ff2e77b712fc6271f18dac2ad",
+      "identicalToT2B2": true,
+      "selections": [
+        "[Parsed_ass_0 @ 0x5937a59701c0] fontselect: (NxClipT2Face03, 400, 0) -> NxClipT2Face03, 0, NxClipT2Face03"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "montserrat-800-normal",
+      "sha256": "07343975a78e242aeddbd77bc4e38301a9074ffe2bc38a9f2fcf97bd5c297631",
+      "pngSha256": "7a5360dcf27baf11dd73efc117833fb2077f2113e6d7e69771b37c2c2f38dcfc",
+      "previousSha256": "7a5360dcf27baf11dd73efc117833fb2077f2113e6d7e69771b37c2c2f38dcfc",
+      "identicalToT2B2": true,
+      "selections": [
+        "[Parsed_ass_0 @ 0x59c54a2cd1c0] fontselect: (NxClipT2Face04, 400, 0) -> NxClipT2Face04, 0, NxClipT2Face04"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "montserrat-900-normal",
+      "sha256": "99f8e50dbd142b083b4f20cd64f8b2441481a6c83cb559e6df6c325b7c7aae99",
+      "pngSha256": "d7d5b60a1e3a6e07a93bfa3dba61e41ee4879edb83d7169f7e7805d3e9e4bd20",
+      "previousSha256": "d7d5b60a1e3a6e07a93bfa3dba61e41ee4879edb83d7169f7e7805d3e9e4bd20",
+      "identicalToT2B2": true,
+      "selections": [
+        "[Parsed_ass_0 @ 0x5b5801d001c0] fontselect: (NxClipT2Face05, 400, 0) -> NxClipT2Face05, 0, NxClipT2Face05"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "poppins-700-normal",
+      "sha256": "97ce60d5a5fa9096104adb49062ae08657066451d5f6dfe2634d0838806dd4b5",
+      "pngSha256": "cd7dc0a66fe4f4e054e9af0a290d782cb9a073e1c73a17de8daf50144e1d62c3",
+      "previousSha256": "cd7dc0a66fe4f4e054e9af0a290d782cb9a073e1c73a17de8daf50144e1d62c3",
+      "identicalToT2B2": true,
+      "selections": [
+        "[Parsed_ass_0 @ 0x640d38e891c0] fontselect: (NxClipT2Face06, 400, 0) -> NxClipT2Face06, 0, NxClipT2Face06"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "poppins-900-normal",
+      "sha256": "e904b178b34b3e9234deacffd6e596908bd5dc50bbc3c16d60771318d62b3ebb",
+      "pngSha256": "51f0ce6e0e0d5f98bd4412baa3803399e6675790b793b76de1604929ccd02108",
+      "previousSha256": "51f0ce6e0e0d5f98bd4412baa3803399e6675790b793b76de1604929ccd02108",
+      "identicalToT2B2": true,
+      "selections": [
+        "[Parsed_ass_0 @ 0x57916241a1c0] fontselect: (NxClipT2Face07, 400, 0) -> NxClipT2Face07, 0, NxClipT2Face07"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "inter-700-normal",
+      "sha256": "f984343da0aa435e6f7ba8be1356c995526202a143a75f29cfe967047af51112",
+      "pngSha256": "9fcb2a3c6de70f3d59bc692e29ee2dab4640e6d9324ba8656322cc89e51bdd99",
+      "previousSha256": "9fcb2a3c6de70f3d59bc692e29ee2dab4640e6d9324ba8656322cc89e51bdd99",
+      "identicalToT2B2": true,
+      "selections": [
+        "[Parsed_ass_0 @ 0x5e7924be7180] fontselect: (NxClipT2Face08, 400, 0) -> NxClipT2Face08, 0, NxClipT2Face08"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "inter-900-normal",
+      "sha256": "0df532e1578974b66d4574de34aa80b7a3e0edc38f8b41787d778bbf7c1e05b0",
+      "pngSha256": "998f50067523940547a2ee4d2e04bf581df91975a700dae98c00bd28c8c44f05",
+      "previousSha256": "998f50067523940547a2ee4d2e04bf581df91975a700dae98c00bd28c8c44f05",
+      "identicalToT2B2": true,
+      "selections": [
+        "[Parsed_ass_0 @ 0x651f5508a180] fontselect: (NxClipT2Face09, 400, 0) -> NxClipT2Face09, 0, NxClipT2Face09"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "playfair-display-700-normal",
+      "sha256": "fe9dfb9067d0340c0743330a232b98aa9400db9c836c558cb8682766dff8639a",
+      "pngSha256": "9d16a49cce50a5127d7362a38baff0d8fcfe5b8f83ce53bf59401faeb80efb92",
+      "previousSha256": "9d16a49cce50a5127d7362a38baff0d8fcfe5b8f83ce53bf59401faeb80efb92",
+      "identicalToT2B2": true,
+      "selections": [
+        "[Parsed_ass_0 @ 0x6282560101c0] fontselect: (NxClipT2Face10, 400, 0) -> NxClipT2Face10, 0, NxClipT2Face10"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "playfair-display-400-italic",
+      "sha256": "02b7e538b39cda2ca6f1b442ea02e329d27bce0ffc19f49d866688b2e98e8ae3",
+      "pngSha256": "6db34b2ed08b0023923feb6b357399222de588c35e4de030d2f6c1a5cdcd4209",
+      "previousSha256": "6db34b2ed08b0023923feb6b357399222de588c35e4de030d2f6c1a5cdcd4209",
+      "identicalToT2B2": true,
+      "selections": [
+        "[Parsed_ass_0 @ 0x6545c81d31c0] fontselect: (NxClipT2Face11, 400, 0) -> /fonts/faces/playfair-display-400-italic.ttf, 0, NxClipT2Face11"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "plus-jakarta-sans-700-normal",
+      "sha256": "ee8e29abb55c985d3405c8d178ca26823db92d124bf6cdc833a199fae32b4ade",
+      "pngSha256": "df053944d91cc0146d7b4538f90fab54fa87c96cb79c129a8b07e7670378f2f1",
+      "previousSha256": "df053944d91cc0146d7b4538f90fab54fa87c96cb79c129a8b07e7670378f2f1",
+      "identicalToT2B2": true,
+      "selections": [
+        "[Parsed_ass_0 @ 0x5bb4fae431c0] fontselect: (NxClipT2Face12, 400, 0) -> NxClipT2Face12, 0, NxClipT2Face12"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "plus-jakarta-sans-800-normal",
+      "sha256": "b9ef5e867c229aa6abf742dee26f2379022678bc9e429e568fe0d5750f0161f4",
+      "pngSha256": "20a0c3c6e6dc9e4f2f6423c0aca2b5eecff0280ea488227d45518686718b7962",
+      "previousSha256": "20a0c3c6e6dc9e4f2f6423c0aca2b5eecff0280ea488227d45518686718b7962",
+      "identicalToT2B2": true,
+      "selections": [
+        "[Parsed_ass_0 @ 0x5c4a910751c0] fontselect: (NxClipT2Face13, 400, 0) -> NxClipT2Face13, 0, NxClipT2Face13"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "caveat-700-normal",
+      "sha256": "37a2d4532dedc7a0e98d63e895ea3f5a6ebcc4ba9e48b85c104a917cbeff35ba",
+      "pngSha256": "0f72684a1f713aac1fff957158ed7757afa66f3eb2c7ecf63b51fde6c8f65c25",
+      "previousSha256": "0f72684a1f713aac1fff957158ed7757afa66f3eb2c7ecf63b51fde6c8f65c25",
+      "identicalToT2B2": true,
+      "selections": [
+        "[Parsed_ass_0 @ 0x5f8b24dad180] fontselect: (NxClipT2Face14, 400, 0) -> NxClipT2Face14, 0, NxClipT2Face14"
+      ],
+      "exitCode": 0
+    },
+    {
+      "id": "jetbrains-mono-700-normal",
+      "sha256": "c37a0396d4fab9961edf681cf4811c9f190862dc177f9ddaba4210ca820cb6ce",
+      "pngSha256": "ff044e5a70de0eac0b7c22d21d81836ac3f48a4357efdcbc701a055dd0bf2582",
+      "previousSha256": "ff044e5a70de0eac0b7c22d21d81836ac3f48a4357efdcbc701a055dd0bf2582",
+      "identicalToT2B2": true,
+      "selections": [
+        "[Parsed_ass_0 @ 0x5afb87c1f1c0] fontselect: (NxClipT2Face15, 400, 0) -> NxClipT2Face15, 0, NxClipT2Face15"
+      ],
+      "exitCode": 0
+    }
+  ]
+}

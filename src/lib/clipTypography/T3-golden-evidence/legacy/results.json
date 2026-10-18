@@ -1,0 +1,46 @@
+{
+  "results": [
+    {
+      "id": "montserrat_black",
+      "beforeSha256": "805818422d17ed7a3ba05ac403740435cd13a3bf18a16940d9f89fb0b2569da4",
+      "afterSha256": "805818422d17ed7a3ba05ac403740435cd13a3bf18a16940d9f89fb0b2569da4",
+      "identical": true
+    },
+    {
+      "id": "anton",
+      "beforeSha256": "c67f828eb4969162f659cd6a3e495308c82032f0b5ef82a72e021c42b286dccc",
+      "afterSha256": "c67f828eb4969162f659cd6a3e495308c82032f0b5ef82a72e021c42b286dccc",
+      "identical": true
+    },
+    {
+      "id": "bebas_neue",
+      "beforeSha256": "5800169faf47b14607412c1caeb630748af23aba5c3404a0edb972165d786b37",
+      "afterSha256": "5800169faf47b14607412c1caeb630748af23aba5c3404a0edb972165d786b37",
+      "identical": true
+    },
+    {
+      "id": "inter_bold",
+      "beforeSha256": "d9d7d955dedbda624932365634be3a18b5f47b3b2eb16096de4cd985c847f660",
+      "afterSha256": "d9d7d955dedbda624932365634be3a18b5f47b3b2eb16096de4cd985c847f660",
+      "identical": true
+    },
+    {
+      "id": "impact",
+      "beforeSha256": "c67f828eb4969162f659cd6a3e495308c82032f0b5ef82a72e021c42b286dccc",
+      "afterSha256": "c67f828eb4969162f659cd6a3e495308c82032f0b5ef82a72e021c42b286dccc",
+      "identical": true
+    },
+    {
+      "id": "arial_black",
+      "beforeSha256": "805818422d17ed7a3ba05ac403740435cd13a3bf18a16940d9f89fb0b2569da4",
+      "afterSha256": "805818422d17ed7a3ba05ac403740435cd13a3bf18a16940d9f89fb0b2569da4",
+      "identical": true
+    },
+    {
+      "id": "arial",
+      "beforeSha256": "d9d7d955dedbda624932365634be3a18b5f47b3b2eb16096de4cd985c847f660",
+      "afterSha256": "d9d7d955dedbda624932365634be3a18b5f47b3b2eb16096de4cd985c847f660",
+      "identical": true
+    }
+  ]
+}

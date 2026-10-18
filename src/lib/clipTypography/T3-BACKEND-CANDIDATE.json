@@ -1,0 +1,709 @@
+{
+  "head": "846180d5e760148a702e007e277f358e61ebe1de",
+  "files": [
+    {
+      "path": "apps/content-service/src/content/application/canonical-typography.ts",
+      "sha256": "e2fa150cab1b49e843e0b4ba70cd03a113781eac880e7f898c5e1f9f7b6adaa2",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/content-service/src/content/application/clip-studio.helpers.ts",
+      "sha256": "30b0b6b271eebc75a10494d91d996e45cd636f8ddd177599ed899fa125212681",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/content-service/src/content/application/content.service.ts",
+      "sha256": "eb5e51d173fd8778a9099daf6924ed3d6f89fa82075d9ecccb5ea3d07886d83a",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/Dockerfile",
+      "sha256": "bb1876bbaed7a290cc190b9cbf575c3d10c1ca87fffdf43b0d208424ab32da9a",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/faces/anton-400-normal.ttf",
+      "sha256": "30bc8b8937a034a1cbd46ff8bc1199cb1870970ca134d065f67c60d97ae1061b",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/faces/archivo-black-400-normal.ttf",
+      "sha256": "8cceeb603c3553e352fc2ccae20de18de752f29d0d405def1b4ba3ffca729652",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/faces/bebas-neue-400-normal.ttf",
+      "sha256": "5115218408bea5fdeebea510d8811c84857f056402c1271a18da51c314dc0cb0",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/faces/caveat-700-normal.ttf",
+      "sha256": "37a2d4532dedc7a0e98d63e895ea3f5a6ebcc4ba9e48b85c104a917cbeff35ba",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/faces/inter-700-normal.ttf",
+      "sha256": "f984343da0aa435e6f7ba8be1356c995526202a143a75f29cfe967047af51112",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/faces/inter-900-normal.ttf",
+      "sha256": "0df532e1578974b66d4574de34aa80b7a3e0edc38f8b41787d778bbf7c1e05b0",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/faces/jetbrains-mono-700-normal.ttf",
+      "sha256": "c37a0396d4fab9961edf681cf4811c9f190862dc177f9ddaba4210ca820cb6ce",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/faces/montserrat-800-normal.ttf",
+      "sha256": "07343975a78e242aeddbd77bc4e38301a9074ffe2bc38a9f2fcf97bd5c297631",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/faces/montserrat-900-normal.ttf",
+      "sha256": "99f8e50dbd142b083b4f20cd64f8b2441481a6c83cb559e6df6c325b7c7aae99",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/faces/playfair-display-400-italic.ttf",
+      "sha256": "02b7e538b39cda2ca6f1b442ea02e329d27bce0ffc19f49d866688b2e98e8ae3",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/faces/playfair-display-700-normal.ttf",
+      "sha256": "fe9dfb9067d0340c0743330a232b98aa9400db9c836c558cb8682766dff8639a",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/faces/plus-jakarta-sans-700-normal.ttf",
+      "sha256": "ee8e29abb55c985d3405c8d178ca26823db92d124bf6cdc833a199fae32b4ade",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/faces/plus-jakarta-sans-800-normal.ttf",
+      "sha256": "b9ef5e867c229aa6abf742dee26f2379022678bc9e429e568fe0d5750f0161f4",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/faces/poppins-700-normal.ttf",
+      "sha256": "97ce60d5a5fa9096104adb49062ae08657066451d5f6dfe2634d0838806dd4b5",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/faces/poppins-900-normal.ttf",
+      "sha256": "e904b178b34b3e9234deacffd6e596908bd5dc50bbc3c16d60771318d62b3ebb",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/fonts.conf",
+      "sha256": "498b8f2a1cadc33abb5bd0ae9ee2c3cb767fa12bd2af806951c8e54619637698",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/anton-NOTICE.txt",
+      "sha256": "056bba59b34810dec53efc893be32600b40bc6cea1ce5bdbd6a7b1b5ecf9434c",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/anton-OFL.txt",
+      "sha256": "ee67e6ee22790b7929f1a3769ca2801d565c64b5a9096942c1adf5596de9c9e4",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/archivo-black-NOTICE.txt",
+      "sha256": "0f56926450ca43a41a691bef25ca70f512615dd62760e5b16c162571c3e4b72d",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/archivo-black-OFL.txt",
+      "sha256": "3173acd82f8c6159b5b1037b539fcbd4edff68e65c2ea8b9412b5a5ca97b08ff",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/bebas-neue-NOTICE.txt",
+      "sha256": "1634d649c4cc696674115ec31dbae8a1ed0af8ddd238ebb3264321ccc80a5aca",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/bebas-neue-OFL.txt",
+      "sha256": "72082f6cb4d04be2ecf7cc7d9e1e7d73787f0af8a5a278a47cade70c16b78341",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/caveat-NOTICE.txt",
+      "sha256": "03cc33891dc1ba98e52cc0949ea110c4e0021077c927df25d336afe0f58c24c6",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/caveat-OFL.txt",
+      "sha256": "1f9d81d094273d82f3898a1ee8b598a717d050ecbf5ff7bede105b704880157b",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/inter-NOTICE.txt",
+      "sha256": "b1116b80f43604996af82c3d6dbbd0435d5f77fe301d5f9839fd6f52c6ee2842",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/inter-OFL.txt",
+      "sha256": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/jetbrains-mono-NOTICE.txt",
+      "sha256": "5e8e42a7cd842cff3a172f2ce045a70505445fcb1759a2b6742e5d0af64cf22e",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/jetbrains-mono-OFL.txt",
+      "sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/montserrat-NOTICE.txt",
+      "sha256": "11f0162c6d20f7aa86cfb974af9356fa06166234abba5bceee6c4a455aaa0f07",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/montserrat-OFL.txt",
+      "sha256": "8b7141c03fa4f8d44e6345d5d4931709290f0f67875e452e95ac1fd3a027802e",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/playfair-display-NOTICE.txt",
+      "sha256": "f947b1a03d3f276c6adce6328333e478785466d657bea688c9cd4e1f9c693cf3",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/playfair-display-OFL.txt",
+      "sha256": "566be814f8e96e93dfa16101331557eb6b5467e9e03f627c0910fe93ca12300e",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/plus-jakarta-sans-NOTICE.txt",
+      "sha256": "41f36f52ab7f7fbc27b7c560a5ccbcba8b3525d5f67fd512fc5e04dbc0a471e2",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/plus-jakarta-sans-OFL.txt",
+      "sha256": "995c7199cab65954f545996326755daee7b63cc6b42b06c13da1f9502ab08a99",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/poppins-NOTICE.txt",
+      "sha256": "2a8982f70ea582ff38ea5a4d38f317bd93f31aa01fe4c1a3ede591d3ef45b5bb",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/licenses/poppins-OFL.txt",
+      "sha256": "6be04893d770899a015649c7aa3b582f871b272f8747a92b78b17c3e5c8b2573",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/manifest.json",
+      "sha256": "71f2f9a6aefa44af255f2dcf2a4702666c91b4fc5af51516c176cb977a5226ff",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/anton-400-normal-metrics.ass",
+      "sha256": "4b0b4e4cdbebda03e81df0ea0d1d9ed2765b8c520b94b48b2f8d3d710f5101de",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/anton-400-normal-metrics.png",
+      "sha256": "ace35d6bff42e16cb5ad9b6a8b10d99bc9f2b89f57aae0d38dc376842b571e02",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/anton-400-normal.ass",
+      "sha256": "7c3657d7aee10f6afc256033972b785c3cfcbd23a7add9ba2024cf8436ffa6ae",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/anton-400-normal.log",
+      "sha256": "8338bd18f5be76d563bcfab1004d8069c564a6b4bf643d103900acb1c1eccf8d",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/anton-400-normal.png",
+      "sha256": "221842e09a18e31f8d41851889df4e433424616d3cba6e39499b99b39e107298",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/archivo-black-400-normal-metrics.ass",
+      "sha256": "0c1314c13dfc32ab00151b3e1551fd885f64d9f1963697081ea10497cf0873e4",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/archivo-black-400-normal-metrics.png",
+      "sha256": "7e15a2408004b8ca497d86945fe140610fddeb9ff2e77b712fc6271f18dac2ad",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/archivo-black-400-normal.ass",
+      "sha256": "6f8eb14c5405d27854042822e683c3b9d90e89bb5360d36f7e84d76fb32cfeb2",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/archivo-black-400-normal.log",
+      "sha256": "e761e871616a7e863ae8827220428476ac0d0812e48d9401fab9f090d6d13c70",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/archivo-black-400-normal.png",
+      "sha256": "25646d1ae2e47a9e0cf80debd76caba6f1f342b7983a6823a5fa9b049b6dca45",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/bebas-neue-400-normal-metrics.ass",
+      "sha256": "bfbf05876b7099c8aae25d8b339049a0906ca362b428dc5afcacc04f6a10ea77",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/bebas-neue-400-normal-metrics.png",
+      "sha256": "de55f1fa657b5ca64e3f7c047d70597d56edbff2b2831d3ed0b4b59999974ba3",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/bebas-neue-400-normal.ass",
+      "sha256": "9553e088e5e17bdb15bdaa7c098aa217412c321618f67496c9cf3b3943f29eb9",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/bebas-neue-400-normal.log",
+      "sha256": "991113bdbbd1a0b13b9bc94eb1b082c178e41e75f14aca496c1a2b5294c40cf6",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/bebas-neue-400-normal.png",
+      "sha256": "6ab6132764433e4bbcbe6c3f62409a553c5fa28bd8b1822685256c74ef211de4",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/caveat-700-normal-metrics.ass",
+      "sha256": "a1a65526922456e431c5a2c4da95760c06a2829b3fd26085836d95a867f3a108",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/caveat-700-normal-metrics.png",
+      "sha256": "0f72684a1f713aac1fff957158ed7757afa66f3eb2c7ecf63b51fde6c8f65c25",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/caveat-700-normal.ass",
+      "sha256": "0360b570c5706727dcfd204f9d82908014fa90ca7babd5fde7881fa8edd6b3ce",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/caveat-700-normal.log",
+      "sha256": "7bdd2c6846de1257a46a988bec5db00d1895b8c8808c8f93643a379e6b799701",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/caveat-700-normal.png",
+      "sha256": "0ba99d6406e20b1b8242a654c7183e003d9186e0be35f53fc846f55276d51faa",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/inter-700-normal-metrics.ass",
+      "sha256": "ecfc1abddc98501a78165fe818016b9c5805b352a0e316ffd8783a338ecfd118",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/inter-700-normal-metrics.png",
+      "sha256": "9fcb2a3c6de70f3d59bc692e29ee2dab4640e6d9324ba8656322cc89e51bdd99",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/inter-700-normal.ass",
+      "sha256": "381a5a8fa417fbd9b7070c7b1211e89157ee8b0bd1c7172c05d5501e79d3e094",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/inter-700-normal.log",
+      "sha256": "94b57ef0f40842939d30a3d06c04a3f39a4a2615f054ef6c04cef676ac63eb1e",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/inter-700-normal.png",
+      "sha256": "c5bf5df9d96a5daf6dd2ee77de7f8f6218920565a0c8ae7a1c464fbde8ac6caf",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/inter-900-normal-metrics.ass",
+      "sha256": "f721610d6646ee3e097534165111bab9c7ef26f740835c59a74bb97a6a95c72c",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/inter-900-normal-metrics.png",
+      "sha256": "998f50067523940547a2ee4d2e04bf581df91975a700dae98c00bd28c8c44f05",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/inter-900-normal.ass",
+      "sha256": "d5645b3ad4f231e53fb2845d6dbe83ca7b655a859eca73ee7cf2767a27538cd9",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/inter-900-normal.log",
+      "sha256": "a0e9aa714db935023bae2212bd91cbe1dacfd114e47671298b617d6f78f8b54c",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/inter-900-normal.png",
+      "sha256": "dd4ebcfaa0fbc1235e2068dd913b03daae96d500ace119826b4216ecbaa7fd0d",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/jetbrains-mono-700-normal-metrics.ass",
+      "sha256": "afb158942c6d7846c84eae866e261b735eadcd29587cdbb45d560adf65e3e0cc",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/jetbrains-mono-700-normal-metrics.png",
+      "sha256": "ff044e5a70de0eac0b7c22d21d81836ac3f48a4357efdcbc701a055dd0bf2582",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/jetbrains-mono-700-normal.ass",
+      "sha256": "e7ef22aca804655590ab08fda5dd53470f1a7b60010325a31a54759a79d0cc9f",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/jetbrains-mono-700-normal.log",
+      "sha256": "b8b13b8a311c48f40ed3daccbfdf6279d762d28df0620eee59aae740911dbee2",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/jetbrains-mono-700-normal.png",
+      "sha256": "a0c2a47ab24bb74b515a41019101de13edbb816bfe75bb24d1db1968e482358c",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/montserrat-800-normal-metrics.ass",
+      "sha256": "a88ecf57c25ddee8d9a4bb593873fd6d92c285098ac51895c2d957e7874a28e6",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/montserrat-800-normal-metrics.png",
+      "sha256": "7a5360dcf27baf11dd73efc117833fb2077f2113e6d7e69771b37c2c2f38dcfc",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/montserrat-800-normal.ass",
+      "sha256": "605180b75c28efdf62b3857a6539a8165ccd95a9122e2bc379dfe12fd32b65d0",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/montserrat-800-normal.log",
+      "sha256": "16b9e2c8923cc6b4edd07359d014cd2d07346077b18ed6161935fdf3c8050e4b",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/montserrat-800-normal.png",
+      "sha256": "3cba1cf3e734539a539b696220f56f9be968ef41fbbf2b01cd080ba2b5194526",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/montserrat-900-normal-metrics.ass",
+      "sha256": "6acf22b0ef152690726fa58641712ce6078e73fc0dbd71d986598315f37114dc",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/montserrat-900-normal-metrics.png",
+      "sha256": "d7d5b60a1e3a6e07a93bfa3dba61e41ee4879edb83d7169f7e7805d3e9e4bd20",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/montserrat-900-normal.ass",
+      "sha256": "3a1e6cd3b7fc8daa2611b8943b7e5074fd647f15abd73d1afd7db8c712bb76a9",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/montserrat-900-normal.log",
+      "sha256": "576984e1b151d1b18d94d975ef75936e30b5b6f0d7842658737157b29735b256",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/montserrat-900-normal.png",
+      "sha256": "fdf6471783292f7d5e57dd483e842edd718893476e0d8349a8aa2c963aaa4fbf",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/playfair-display-400-italic-metrics.ass",
+      "sha256": "227be1acc6a34ea4fd629deed4640a9816ff4f7a182ada6422273835fa7304d8",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/playfair-display-400-italic-metrics.png",
+      "sha256": "6db34b2ed08b0023923feb6b357399222de588c35e4de030d2f6c1a5cdcd4209",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/playfair-display-400-italic.ass",
+      "sha256": "5821cdbd1fe218b145dcaf26c168e173770c254e7937c7de881bdf910688debd",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/playfair-display-400-italic.log",
+      "sha256": "3cb223dbd991cc0cfb366fbfb5551e774919cc38525c4bbf68d664579cdc45ed",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/playfair-display-400-italic.png",
+      "sha256": "6232a5692f9199e8f3d2a784406f1801334eb295fb852276e8c7ffa9ca531e0a",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/playfair-display-700-normal-metrics.ass",
+      "sha256": "4824ab7d33c701babf52ef8c8b76462bf3b68d5e90e93c2c793202d626baea0e",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/playfair-display-700-normal-metrics.png",
+      "sha256": "9d16a49cce50a5127d7362a38baff0d8fcfe5b8f83ce53bf59401faeb80efb92",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/playfair-display-700-normal.ass",
+      "sha256": "0f9989c5dcb93d4d64ca2c8b02660a9ae04ade22ea304e8c0f14c0e4a9ed208e",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/playfair-display-700-normal.log",
+      "sha256": "478de4bff8180b0c92a48bb029d6d8026c2d7a9c18aac5b00b24fa352da78b25",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/playfair-display-700-normal.png",
+      "sha256": "c6633eb29361b8e22ec8f6011271c7a1d70a153cdf00c4e789f511bbeb467bd7",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/plus-jakarta-sans-700-normal-metrics.ass",
+      "sha256": "646b5188f964cdf1ccff90687ca2d9892dc8d87751dc3652c5be84ef777f6d85",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/plus-jakarta-sans-700-normal-metrics.png",
+      "sha256": "df053944d91cc0146d7b4538f90fab54fa87c96cb79c129a8b07e7670378f2f1",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/plus-jakarta-sans-700-normal.ass",
+      "sha256": "4d1cec0befa5896d9e4dac73ed75789289728f467be9a4dc1e0d0f313b3c1a7f",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/plus-jakarta-sans-700-normal.log",
+      "sha256": "326831c82c99c51a5d1b01f2f9259bb877c72ea14b968898d92f14f0685b488f",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/plus-jakarta-sans-700-normal.png",
+      "sha256": "e3bb54f9c890ef35edee5a854c8d48048556b3838e0c72959c6dcc2642ec1410",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/plus-jakarta-sans-800-normal-metrics.ass",
+      "sha256": "fc8abc6f9f57e4e47dca6653972ffe3219ff7d93a6aedcb8d0936f253695d4cf",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/plus-jakarta-sans-800-normal-metrics.png",
+      "sha256": "20a0c3c6e6dc9e4f2f6423c0aca2b5eecff0280ea488227d45518686718b7962",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/plus-jakarta-sans-800-normal.ass",
+      "sha256": "f7b5f1e4da4e2e68ad3741a7e25801dbba2769c1ccf6ff6cc7c8dbbe6eb4c9d4",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/plus-jakarta-sans-800-normal.log",
+      "sha256": "94f52e478a19a558a7a78b29042d07e40fab6721b7500515cb057ed0e07f2299",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/plus-jakarta-sans-800-normal.png",
+      "sha256": "4e7920756b4ee9dd62e4a06681b489b9bd76eea3e90b2fa088d0894654d142ea",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/poppins-700-normal-metrics.ass",
+      "sha256": "d3285a7be04cee04e9a689b66f26b9f5b8f76cd48427f7abb4f25c22fb149f3b",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/poppins-700-normal-metrics.png",
+      "sha256": "cd7dc0a66fe4f4e054e9af0a290d782cb9a073e1c73a17de8daf50144e1d62c3",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/poppins-700-normal.ass",
+      "sha256": "ce1fbf0eb4b06a338b735455b58dbf5167d2e398fdf7dbc30bc7f241f61ea648",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/poppins-700-normal.log",
+      "sha256": "70bc10232bfc6e7490ba8b872f23672a0b8003a1033677ede7c4543b249dc540",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/poppins-700-normal.png",
+      "sha256": "3b28f5e22e09dd54e4065ed33f1f07b20e6c7c8bb8a38be2dfaf70a39716425e",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/poppins-900-normal-metrics.ass",
+      "sha256": "a8f9210878db2d960e91304b2bf80d818bb05ea37b758913077487a9f54c162a",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/poppins-900-normal-metrics.png",
+      "sha256": "51f0ce6e0e0d5f98bd4412baa3803399e6675790b793b76de1604929ccd02108",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/poppins-900-normal.ass",
+      "sha256": "a41f2f1d597c3764050a071825114912ced6015c2928d68ec2155e78908143c3",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/poppins-900-normal.log",
+      "sha256": "1dafd6756c5c4dcef09251470ffb1f0d567616720ea7ad8465a4bb58ddfe27f6",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/verification/poppins-900-normal.png",
+      "sha256": "7c64f20a7eb676913b8be5f986ae1bdfa7128591e8b383eacc94a78d618023f4",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/assets/fonts/canonical/1.0.0/worker-preflight.json",
+      "sha256": "62abc3d0b2731851e78ed90ac93bf69775a26a8ec0e820d3146d1c5deb420b1b",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/src/queue/dto/render-clip-queue.dto.ts",
+      "sha256": "0120166ee6453af8de61c36b0da0c311197d9b6e511626fe181afe6d2c7d4e2b",
+      "kind": "typography-only hunks"
+    },
+    {
+      "path": "apps/media-worker/src/render/application/ass-captions.spec.ts",
+      "sha256": "c4b933b51cca968a6dd76634f34e847ce179da558a97d6377a251b4e136487d0",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/src/render/application/ass-captions.ts",
+      "sha256": "dadd5e9543dd289475a739a01af9773de7ecda63cd9bb082bfc5a5667edf50ad",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/src/render/application/canonical-caption-fonts.spec.ts",
+      "sha256": "11c300ebd6996b23e39e35e6e7b7a9dc35955d17a6d288f4f717e55fd710f84b",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/src/render/application/canonical-caption-fonts.ts",
+      "sha256": "0f265a85ddf33b80d392dc308b116aafe5c2eace96e79aef67d7299e22f6f44b",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/src/render/application/canonical-typography-layout.spec.ts",
+      "sha256": "035e5ad7d2a23f182e2e5119fd96fcf2aa6da5af94f628373978b5008ff8ede1",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/src/render/application/canonical-typography-layout.ts",
+      "sha256": "f1b2e8151b59cf75ed4dc3042403e63302680d97b8754ea81718e8b3d3edc6dd",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/src/render/application/caption-fonts.ts",
+      "sha256": "c2946e428961447561b84e964ec81f3b07d0c9822f63cfd2af3594bc06d24fba",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/src/render/application/ffmpeg-render.service.ts",
+      "sha256": "82de80bbba08ebdb61084adefab27a80a144dd18cd73d7773f85be8cdcb65b61",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/src/render/application/t3-legacy-compatibility.spec.ts",
+      "sha256": "82e09b1f4abc710a14c85659468c070a5d583e6fe77f764a14504e7a8e3cb41a",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/src/render/application/typography-fixtures/legacy-baseline.json",
+      "sha256": "ab32000efb8d36edc1840da2a1e2accfa03bd0376744780dfe99dd94181fbf34",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/tools/typography/t3-baseline.cjs",
+      "sha256": "2257c29099ce66c22690c57e80291fade59da2e059c916fcca114fd09ef797d3",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/tools/typography/t3-font-metrics.json",
+      "sha256": "03ebfa159c86e4e7f9c48184c2e650514d947f7f76ac51f0e40212453554a911",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/tools/typography/t3-freeze-legacy.cjs",
+      "sha256": "1b6fa5a7e84919f800a337cd348c6cc72621a4b8f0f50f1a2b066b21afa182fc",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/tools/typography/t3-golden.cjs",
+      "sha256": "714b72c8c7c31f4a8077fa6b60b6289924cb40d346b0d08eeae1e340ee0f645e",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/tools/typography/t3-legacy.cjs",
+      "sha256": "08b1bc092366c4faebeefacd892c842fb813ca748117536782cf60e9cf2ca998",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/tools/typography/t3-verify-ass.cjs",
+      "sha256": "7ec17ba330e3a955d2dc0a0eaab2c5b95807c333cb2c6c6227073c8d84d84ad2",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "apps/media-worker/tools/typography/validate_fonts.py",
+      "sha256": "dbf427ca68a4eb26a4192a83bd8a21e3c66972dcb457d062494cc0cee99e4983",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "libs/contracts/src/index.ts",
+      "sha256": "3bf8178d534390fb2bca7d01d9b7998523a62777327a19434a9137cf2f940f25",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "libs/contracts/src/lib/clip-typography-layout.spec.ts",
+      "sha256": "5f77498e8a9f3eaeb1a9e66556e842f30b6b07c2b4efc09458e9dce7baa1b2b1",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "libs/contracts/src/lib/clip-typography-layout.ts",
+      "sha256": "f09206aa9888a08fc1266dbfc0760b6be968420e3c6ba8d057543ea3978136cb",
+      "kind": "typography source/assets"
+    },
+    {
+      "path": "libs/contracts/src/lib/internal/index.ts",
+      "sha256": "ffac9c7f6acc2930db3211b4c2910f9fdf0a12976e9213b826ff4b6fa244c299",
+      "kind": "typography-only hunks"
+    }
+  ],
+  "checks": [
+    {
+      "name": "clean source TypeScript emit: media-worker, content-service and imported packages",
+      "exitCode": 0
+    }
+  ],
+  "nxLimitation": "Initial Nx attempt exited 1: exported tree lacks physical pnpm .modules.yaml. No dependency installation or linking performed.",
+  "excludes": "Ad Studio 4C-B, Sound Design dirty changes, deployment, dependency manifests",
+  "patch": "T3-integration-backend.patch"
+}
