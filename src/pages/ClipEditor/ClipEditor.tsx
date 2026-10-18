@@ -46,6 +46,7 @@ import { composeSocialCaption } from "./composeSocialCaption";
 import { ComposeTimelinePanel } from "./ComposeTimelinePanel";
 import { ClipCoachPanel, type CoachPreviewPayload } from './ClipCoachPanel';
 import { SoundDesignPanel, type PersistedSoundDesign } from './SoundDesignPanel';
+import { isHttpAudioUrl, resolveSfxPreviewUrl } from "./sfxPreviewCatalog";
 import {
   RenderLayerProgressBanner,
   buildRenderLayers,
@@ -400,6 +401,61 @@ export default function ClipEditor() {
         (d as { enabled?: boolean }).enabled !== false,
     );
   }, [persistedSoundDesign]);
+  /** Live Studio mix for commentary/Foley (EDL is keep-window relative). */
+  const soundOverlayClips = useMemo(() => {
+    const edl = Array.isArray(persistedSoundDesign?.audioEdl)
+      ? persistedSoundDesign!.audioEdl!
+      : [];
+    const out: Array<{
+      id: string;
+      startMs: number;
+      endMs?: number;
+      url: string;
+      gain: number;
+    }> = [];
+    for (const raw of edl) {
+      if (!raw || typeof raw !== "object") continue;
+      const it = raw as {
+        id?: string;
+        type?: string;
+        startMs?: number;
+        endMs?: number;
+        enabled?: boolean;
+        assetId?: string;
+        sourceUrl?: string;
+        gainDb?: number;
+        metadata?: { type?: string };
+      };
+      if (!it.id || (it.type !== "voice" && it.type !== "foley")) continue;
+      if (it.enabled === false) continue;
+      const startMs = Number(it.startMs);
+      if (!Number.isFinite(startMs)) continue;
+      let url: string | null = null;
+      if (it.type === "foley") {
+        url =
+          resolveSfxPreviewUrl(it.assetId, it.metadata?.type, it.sourceUrl) ||
+          (isHttpAudioUrl(it.sourceUrl) ? it.sourceUrl! : null);
+      } else if (isHttpAudioUrl(it.sourceUrl)) {
+        url = it.sourceUrl!;
+      }
+      if (!url) continue;
+      const gainDb = typeof it.gainDb === "number" ? it.gainDb : 0;
+      const gain = Math.min(
+        1.5,
+        Math.max(0, Math.pow(10, Math.min(12, Math.max(-60, gainDb)) / 20)),
+      );
+      out.push({
+        id: String(it.id),
+        startMs,
+        endMs: typeof it.endMs === "number" ? it.endMs : undefined,
+        url,
+        gain,
+      });
+    }
+    return out;
+  }, [persistedSoundDesign]);
+  const soundOverlayAudiosRef = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const soundOverlayFiredRef = useRef<Set<string>>(new Set());
   const coachStitchIndexRef = useRef(0);
   /** True while playing the full Coach moment playlist (not a single Preview cut). */
   const coachStitchPlayRef = useRef(false);
@@ -1104,6 +1160,88 @@ export default function ClipEditor() {
     }
   }, []);
 
+  const stopSoundOverlays = useCallback(() => {
+    for (const audio of soundOverlayAudiosRef.current.values()) {
+      audio.pause();
+      try {
+        audio.currentTime = 0;
+      } catch {
+        /* ignore */
+      }
+    }
+    soundOverlayFiredRef.current.clear();
+  }, []);
+
+  /** Schedule commentary/Foley against the main video; ignore Original mute. */
+  const syncSoundOverlays = useCallback(
+    (playheadSec: number, playing: boolean) => {
+      if (showingFinalRenderRef.current || !soundOverlayClips.length) {
+        stopSoundOverlays();
+        return;
+      }
+      const master = isMasterMuted ? 0 : masterVolume;
+      if (master <= 0) {
+        for (const audio of soundOverlayAudiosRef.current.values()) {
+          audio.volume = 0;
+          audio.pause();
+        }
+        return;
+      }
+      if (!playing) {
+        for (const audio of soundOverlayAudiosRef.current.values()) {
+          audio.pause();
+        }
+        return;
+      }
+      const keepMs = Math.max(0, (playheadSec - trimStart) * 1000);
+      const activeIds = new Set<string>();
+      for (const clip of soundOverlayClips) {
+        const end = clip.endMs ?? clip.startMs + 60_000;
+        if (keepMs < clip.startMs - 60 || keepMs >= end) continue;
+        activeIds.add(clip.id);
+        let audio = soundOverlayAudiosRef.current.get(clip.id);
+        if (!audio) {
+          audio = new Audio();
+          audio.preload = "auto";
+          soundOverlayAudiosRef.current.set(clip.id, audio);
+        }
+        audio.volume = Math.min(1, clip.gain * master);
+        const needsStart =
+          !soundOverlayFiredRef.current.has(clip.id) || audio.paused;
+        if (!needsStart) continue;
+        if (audio.src !== clip.url) audio.src = clip.url;
+        const offsetSec = Math.max(0, (keepMs - clip.startMs) / 1000);
+        try {
+          audio.currentTime = offsetSec;
+        } catch {
+          /* ignore seek race */
+        }
+        soundOverlayFiredRef.current.add(clip.id);
+        void audio.play().catch(() => {
+          soundOverlayFiredRef.current.delete(clip.id);
+        });
+      }
+      for (const [id, audio] of soundOverlayAudiosRef.current) {
+        if (activeIds.has(id)) continue;
+        if (!audio.paused) audio.pause();
+        soundOverlayFiredRef.current.delete(id);
+      }
+    },
+    [
+      soundOverlayClips,
+      isMasterMuted,
+      masterVolume,
+      trimStart,
+      stopSoundOverlays,
+    ],
+  );
+
+  useEffect(() => () => stopSoundOverlays(), [stopSoundOverlays]);
+
+  useEffect(() => {
+    if (showingFinalRender) stopSoundOverlays();
+  }, [showingFinalRender, stopSoundOverlays]);
+
   const applyPreviewMix = useCallback(() => {
     const master = isMasterMuted ? 0 : masterVolume;
     const clip = isClipMuted ? 0 : clipVolume;
@@ -1115,6 +1253,7 @@ export default function ClipEditor() {
     const bgm = mixBgmRef.current;
     if (el) {
       el.volume = usedGraph ? 1 : Math.max(0, Math.min(1, master * clip));
+      // Original mute only silences the video bed — commentary/Foley overlays stay up.
       el.muted = isMasterMuted || isClipMuted || clip === 0 || master === 0;
     }
     if (bgm) {
@@ -1128,6 +1267,9 @@ export default function ClipEditor() {
         bgm.muted = isMusicMuted || isMasterMuted || music === 0 || master === 0;
       }
     }
+    if (el) {
+      syncSoundOverlays(el.currentTime || 0, !el.paused);
+    }
   }, [
     clipVolume,
     isClipMuted,
@@ -1136,6 +1278,7 @@ export default function ClipEditor() {
     musicVolume,
     isMusicMuted,
     selectedTrackId,
+    syncSoundOverlays,
   ]);
 
   // Coach mode / Audio picker changed the track — swap the underlay immediately.
@@ -2173,10 +2316,13 @@ export default function ClipEditor() {
       ),
     });
     renderProgressStartedAtRef.current = Date.now();
+    // Clear any prior completed/failed status so the tick estimator starts at Prep
+    // instead of flashing "Final encode" from the previous job.
+    setRenderStatus("queued");
     setRenderLayers(layers);
     setRenderLayerIndex(0);
     setRenderLayerPhase("running");
-    setRenderLayersExpanded(true);
+    setRenderLayersExpanded(false);
   }, [
     persistedSoundDesign,
     soundDesignMixActive,
@@ -3742,10 +3888,20 @@ export default function ClipEditor() {
                     if (t >= trimEnd - 0.05) {
                       e.currentTarget.currentTime = trimStart;
                       setCurrentTime(trimStart);
+                      soundOverlayFiredRef.current.clear();
+                      syncSoundOverlays(trimStart, true);
+                      return;
                     }
+                    syncSoundOverlays(t, !e.currentTarget.paused);
                   }}
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
+                  onPlay={(e) => {
+                    setIsPlaying(true);
+                    syncSoundOverlays(e.currentTarget.currentTime, true);
+                  }}
+                  onPause={() => {
+                    setIsPlaying(false);
+                    syncSoundOverlays(0, false);
+                  }}
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-muted/30 text-xs text-muted-foreground">
@@ -4588,18 +4744,28 @@ export default function ClipEditor() {
                         e.currentTarget.currentTime = start;
                         setCurrentTime(start);
                         transitionFiredKeysRef.current.clear();
+                        soundOverlayFiredRef.current.clear();
                         if (mixBgmRef.current) mixBgmRef.current.currentTime = 0;
+                        syncSoundOverlays(start, true);
+                        return;
                       }
+                      syncSoundOverlays(tNow, !e.currentTarget.paused);
                     }}
-                    onPlay={() => {
+                    onPlay={(e) => {
                       setIsPlaying(true);
                       setPreviewingTrackId(null);
                       transitionFiredKeysRef.current.clear();
-                      if (showingFinalRender) mixBgmRef.current?.pause();
+                      if (showingFinalRender) {
+                        mixBgmRef.current?.pause();
+                        stopSoundOverlays();
+                        return;
+                      }
+                      syncSoundOverlays(e.currentTarget.currentTime, true);
                     }}
                     onPause={() => {
                       setIsPlaying(false);
                       mixBgmRef.current?.pause();
+                      syncSoundOverlays(0, false);
                     }}
                   />
                   </div>
