@@ -34,10 +34,12 @@ import { ClipTypographyOverlay } from './ClipTypographyOverlay';
 import { CanonicalTypographyControls } from './CanonicalTypographyControls';
 import { editorTypography, typographyExtras } from '../../lib/clipTypography/editorTypography';
 import {
-  DEFAULT_CANONICAL_DRAFT,
-  buildLayoutFromDraft,
+  buildLayoutFromComposition,
+  createDefaultComposition,
   draftFromPlan,
-  type CanonicalAuthoringDraft,
+  getActiveLayer,
+  type CanonicalCompositionDraft,
+  type CanonicalLayerDraft,
 } from '../../lib/clipTypography/canonicalAuthoring';
 import { useCanonicalTypographyAuthorized } from '../../lib/clipTypography/useCanonicalTypographyAuthorized';
 import { useSearchParams, useParams, useNavigate } from "react-router-dom";
@@ -347,26 +349,35 @@ export default function ClipEditor() {
     () => editorTypography(canonicalTypographyRaw, t3Authorized),
     [canonicalTypographyRaw, t3Authorized],
   );
-  const [t3Draft, setT3Draft] = useState<CanonicalAuthoringDraft>(DEFAULT_CANONICAL_DRAFT);
+  const [t3Composition, setT3Composition] = useState<CanonicalCompositionDraft>(() =>
+    createDefaultComposition(5000),
+  );
+  const t3ActiveLayer = useMemo(() => getActiveLayer(t3Composition), [t3Composition]);
   const [t3LayoutBusy, setT3LayoutBusy] = useState(false);
   const [t3LayoutError, setT3LayoutError] = useState<string | null>(null);
   const t3RebuildSeq = useRef(0);
   const [captionTextColor, setCaptionTextColor] = useState("#FFFFFF");
+  const t3DurationMs = Math.max(1000, Math.round((trimEnd - trimStart) * 1000));
+  const t3PlayheadMs = Math.max(0, Math.round((currentTime - trimStart) * 1000));
 
-  const rebuildCanonicalFromDraft = useCallback(
-    async (draft: CanonicalAuthoringDraft) => {
+  const rebuildCanonicalFromComposition = useCallback(
+    async (draft: CanonicalCompositionDraft) => {
       if (!t3Authorized) return;
       const seq = ++t3RebuildSeq.current;
       setT3LayoutBusy(true);
       setT3LayoutError(null);
       try {
-        const plan = await buildLayoutFromDraft(draft, {
+        const plan = await buildLayoutFromComposition(draft, {
           aspect: '9:16',
-          startMs: 0,
-          endMs: Math.max(1000, Math.round((trimEnd - trimStart) * 1000)),
+          durationMs: Math.max(1000, Math.round((trimEnd - trimStart) * 1000)),
         });
         if (seq !== t3RebuildSeq.current) return;
         setCanonicalTypographyRaw(plan);
+        const primary = draft.layers.find((l) => l.text.trim()) ?? draft.layers[0];
+        if (primary?.text != null) {
+          setTopText(primary.text.slice(0, 50));
+          setBottomText('');
+        }
       } catch (err) {
         if (seq !== t3RebuildSeq.current) return;
         setT3LayoutError(err instanceof Error ? err.message : 'Typography layout failed');
@@ -377,15 +388,48 @@ export default function ClipEditor() {
     [t3Authorized, trimEnd, trimStart],
   );
 
-  const onT3DraftChange = useCallback(
-    (patch: Partial<CanonicalAuthoringDraft>) => {
-      setT3Draft((prev) => {
-        const next = { ...prev, ...patch };
-        void rebuildCanonicalFromDraft(next);
+  const onT3CompositionChange = useCallback(
+    (next: CanonicalCompositionDraft) => {
+      setT3Composition(next);
+      void rebuildCanonicalFromComposition(next);
+    },
+    [rebuildCanonicalFromComposition],
+  );
+
+  const onT3PatchActive = useCallback(
+    (patch: Partial<CanonicalLayerDraft>) => {
+      setT3Composition((prev) => {
+        const next: CanonicalCompositionDraft = {
+          ...prev,
+          layers: prev.layers.map((layer) =>
+            layer.id === prev.activeLayerId ? { ...layer, ...patch } : layer,
+          ),
+        };
+        void rebuildCanonicalFromComposition(next);
         return next;
       });
     },
-    [rebuildCanonicalFromDraft],
+    [rebuildCanonicalFromComposition],
+  );
+
+  const t3DragTimerRef = useRef<number | null>(null);
+  const onT3PositionChange = useCallback(
+    (patch: Pick<CanonicalLayerDraft, 'positionX' | 'verticalAnchor'>) => {
+      setT3Composition((prev) => {
+        const next: CanonicalCompositionDraft = {
+          ...prev,
+          layers: prev.layers.map((layer) =>
+            layer.id === prev.activeLayerId ? { ...layer, ...patch } : layer,
+          ),
+        };
+        if (t3DragTimerRef.current != null) window.clearTimeout(t3DragTimerRef.current);
+        t3DragTimerRef.current = window.setTimeout(() => {
+          void rebuildCanonicalFromComposition(next);
+        }, 48);
+        return next;
+      });
+    },
+    [rebuildCanonicalFromComposition],
   );
   const previewPlaybackGenRef = useRef(0);
   const [hooks, setHooks] = useState<Array<{ text: string; startMs: number; durationMs: number; styleId?: string }>>([]);
@@ -394,8 +438,9 @@ export default function ClipEditor() {
     Array<{ text: string; startMs: number; durationMs: number; styleId?: string }>
   >([]);
   const [selectedHookOptionIndex, setSelectedHookOptionIndex] = useState<number | null>(null);
+  // Opt-in: silence cuts only run on Final Render (not Studio play). Default off
   // so a 5s preview does not burn down to ~1s of "non-silent" audio.
-  const [silenceEnabled, setSilenceEnabled] = useState(true);
+  const [silenceEnabled, setSilenceEnabled] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isGeneratingHooks, setIsGeneratingHooks] = useState(false);
   const [transcriptPreview, setTranscriptPreview] = useState("");
@@ -639,13 +684,20 @@ export default function ClipEditor() {
           const rawLayout = spec?.extras?.canonicalTypography;
           setCanonicalTypographyRaw(rawLayout);
           const parsed = editorTypography(rawLayout, true);
+          const durationGuess = Math.max(
+            1000,
+            typeof spec?.outMs === 'number' && typeof spec?.inMs === 'number'
+              ? Math.round(spec.outMs - spec.inMs)
+              : Math.round((trimEnd - trimStart) * 1000),
+          );
           if (parsed.plan) {
-            setT3Draft(draftFromPlan(parsed.plan, String(spec?.captions?.topText || '')));
+            setT3Composition(
+              draftFromPlan(parsed.plan, String(spec?.captions?.topText || ''), durationGuess),
+            );
           } else {
-            setT3Draft({
-              ...DEFAULT_CANONICAL_DRAFT,
-              text: String(spec?.captions?.topText || ''),
-            });
+            setT3Composition(
+              createDefaultComposition(durationGuess, String(spec?.captions?.topText || '')),
+            );
           }
         }
         const isAnimate =
@@ -735,7 +787,9 @@ export default function ClipEditor() {
               }
             }
           }
-          if (spec.silence?.enabled === false) setSilenceEnabled(false);
+          if (typeof spec.silence?.enabled === "boolean") {
+            setSilenceEnabled(spec.silence.enabled);
+          }
           if (spec.transcript) {
             setTranscriptPreview(spec.transcript);
           } else if (Array.isArray(spec.transcriptWords) && spec.transcriptWords.length > 0) {
@@ -910,7 +964,15 @@ export default function ClipEditor() {
               {
                 const parsedLayout = editorTypography(parsed.canonicalTypography, true);
                 if (parsedLayout.plan) {
-                  setT3Draft(draftFromPlan(parsedLayout.plan, String(parsed.topText || '')));
+                  const durationGuess = Math.max(
+                    1000,
+                    Math.round(
+                      ((parsed.trimEnd ?? trimEnd) - (parsed.trimStart ?? trimStart)) * 1000,
+                    ),
+                  );
+                  setT3Composition(
+                    draftFromPlan(parsedLayout.plan, String(parsed.topText || ''), durationGuess),
+                  );
                 }
               }
               if (typeof parsed.trimStart === "number") setTrimStart(parsed.trimStart);
@@ -1330,7 +1392,7 @@ export default function ClipEditor() {
     const bgm = mixBgmRef.current;
     if (el) {
       el.volume = usedGraph ? 1 : Math.max(0, Math.min(1, master * clip));
-      // Original mute only silences the video bed — commentary/Foley overlays stay up.
+      // Original mute only silences the video bed â€” commentary/Foley overlays stay up.
       el.muted = isMasterMuted || isClipMuted || clip === 0 || master === 0;
     }
     if (bgm) {
@@ -4002,8 +4064,17 @@ export default function ClipEditor() {
                 sfx={transitionPreview?.sfx}
               />
 
-              {/* AI Coach / caption live preview â€” drag to reposition (same as Polish) */}
-              <ClipTypographyOverlay raw={canonicalTypographyRaw} timeMs={Math.max(0, (currentTime-trimStart)*1000)} locked={editsLocked} enabled={t3Authorized} />
+              {/* AI Coach / caption live preview — drag to reposition (same as Polish) */}
+              <ClipTypographyOverlay
+                raw={canonicalTypographyRaw}
+                timeMs={Math.max(0, (currentTime - trimStart) * 1000)}
+                locked={editsLocked}
+                enabled={t3Authorized}
+                interactive={t3Authorized && !editsLocked}
+                positionX={t3ActiveLayer.positionX}
+                verticalAnchor={t3ActiveLayer.verticalAnchor}
+                onPositionChange={onT3PositionChange}
+              />
               {!editsLocked &&
               !canonicalTypography.active &&
               (topText || hooks[0]?.text) &&
@@ -4937,8 +5008,18 @@ export default function ClipEditor() {
                   </div>
                 </div>
                 
-                {/* Caption overlays only for live preview â€” final render already has them burned in */}
-                <ClipTypographyOverlay raw={canonicalTypographyRaw} timeMs={Math.max(0, (currentTime-trimStart)*1000)} locked={editsLocked} finalRender={showingFinalRender} enabled={t3Authorized} />
+                {/* Caption overlays only for live preview — final render already has them burned in */}
+                <ClipTypographyOverlay
+                  raw={canonicalTypographyRaw}
+                  timeMs={Math.max(0, (currentTime - trimStart) * 1000)}
+                  locked={editsLocked}
+                  finalRender={showingFinalRender}
+                  enabled={t3Authorized}
+                  interactive={t3Authorized && !editsLocked && !showingFinalRender}
+                  positionX={t3ActiveLayer.positionX}
+                  verticalAnchor={t3ActiveLayer.verticalAnchor}
+                  onPositionChange={onT3PositionChange}
+                />
                 {!showingFinalRender &&
                 !canonicalTypography.active &&
                 !editsLocked &&
@@ -5401,9 +5482,23 @@ export default function ClipEditor() {
 
                       <div className="space-y-6">
                         <p className="text-[11px] text-muted-foreground leading-relaxed">
-                          {t("clip_editor.polish.meme.drag_hint")}
+                          {t3Authorized
+                            ? 'Add multiple text layers, set each layer’s font and timing on the timeline, then drag placement on the clip preview.'
+                            : t("clip_editor.polish.meme.drag_hint")}
                         </p>
                         <div className="space-y-4">
+                          {t3Authorized ? (
+                            <CanonicalTypographyControls
+                              draft={t3Composition}
+                              durationMs={t3DurationMs}
+                              playheadMs={t3PlayheadMs}
+                              busy={t3LayoutBusy}
+                              error={t3LayoutError}
+                              onChange={onT3CompositionChange}
+                              onPatchActive={onT3PatchActive}
+                            />
+                          ) : (
+                            <>
                           <div className="space-y-1.5">
                             <div className="flex items-center justify-between px-1">
                               <label className="text-[10px] font-bold text-muted-foreground">{t('clip_editor.polish.meme.top_text')}</label>
@@ -5554,15 +5649,8 @@ export default function ClipEditor() {
                               })}
                             </div>
                           </div>
-
-                          {t3Authorized ? (
-                            <CanonicalTypographyControls
-                              draft={t3Draft}
-                              busy={t3LayoutBusy}
-                              error={t3LayoutError}
-                              onChange={onT3DraftChange}
-                            />
-                          ) : null}
+                            </>
+                          )}
 
                           <div className="flex flex-wrap gap-2">
                             <Button
