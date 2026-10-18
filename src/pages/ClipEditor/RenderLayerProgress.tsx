@@ -104,9 +104,17 @@ export function estimateRenderLayerIndex(opts: {
 }): number {
   const count = Math.max(1, opts.layerCount);
   const status = String(opts.renderStatus || "").toLowerCase();
-  if (status === "queued") return 0;
-  if (status === "completed") return count - 1;
-  if (status === "failed") return Math.min(count - 1, 0);
+  // Fresh / queued / idle (or a stale "completed" from a prior job) always start
+  // at Prep. Landing on the last layer is reserved for finishRenderLayerProgress.
+  if (
+    !status ||
+    status === "queued" ||
+    status === "idle" ||
+    status === "completed" ||
+    status === "failed"
+  ) {
+    return 0;
+  }
 
   const elapsed = Math.max(0, (opts.nowMs ?? Date.now()) - opts.startedAtMs);
   // Hold the last layer (encode) until the job actually completes.
@@ -142,45 +150,42 @@ export function RenderLayerProgressBanner({
         ? safeIndex
         : safeIndex;
   const current = layers[safeIndex];
-  const remaining = Math.max(0, layers.length - doneCount - (phase === "running" ? 1 : 0));
+
+  const stepLabel =
+    phase === "completed"
+      ? `${layers.length}/${layers.length}`
+      : phase === "failed"
+        ? `${Math.min(safeIndex + 1, layers.length)}/${layers.length}`
+        : `${Math.min(doneCount + 1, layers.length)}/${layers.length}`;
 
   const header =
     phase === "completed"
-      ? `Render complete · ${layers.length}/${layers.length} layers`
+      ? `Ready · ${stepLabel}`
       : phase === "failed"
-        ? `Render stopped · ${current?.short || "layer"} failed`
-        : `Rendering · ${current?.short || "…"} · ${doneCount}/${layers.length} done`;
-
-  const sub =
-    phase === "running" && current
-      ? `${current.label} in progress${remaining > 0 ? ` · ${remaining} remaining` : ""} · edits locked`
-      : phase === "completed"
-        ? "Final MP4 ready — play it below."
-        : phase === "failed"
-          ? "Tap Save & Render to retry."
-          : null;
+        ? `Failed · ${current?.short || "layer"}`
+        : `${current?.short || "…"} · ${stepLabel}`;
 
   return (
     <div
       className={cn(
-        "sticky top-0 z-40 overflow-hidden rounded-xl border shadow-soft-lg backdrop-blur-md",
+        "sticky top-0 z-40 overflow-hidden rounded-md border shadow-sm backdrop-blur-md",
         phase === "completed"
-          ? "border-emerald-500/35 bg-emerald-500/10"
+          ? "border-emerald-500/30 bg-emerald-500/10"
           : phase === "failed"
-            ? "border-destructive/40 bg-destructive/10"
-            : "border-amber-500/35 bg-amber-500/10",
+            ? "border-destructive/35 bg-destructive/10"
+            : "border-amber-500/30 bg-amber-500/10",
         className,
       )}
     >
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+        className="flex w-full items-center gap-2 px-2.5 py-1 text-left transition-colors hover:bg-black/5 dark:hover:bg-white/5"
         aria-expanded={expanded}
       >
         <span
           className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+            "flex h-5 w-5 shrink-0 items-center justify-center rounded",
             phase === "completed"
               ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
               : phase === "failed"
@@ -189,29 +194,31 @@ export function RenderLayerProgressBanner({
           )}
         >
           {phase === "running" ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-3 w-3 animate-spin" />
           ) : phase === "completed" ? (
-            <Check className="h-4 w-4" />
+            <Check className="h-3 w-3" />
           ) : (
-            <X className="h-4 w-4" />
+            <X className="h-3 w-3" />
           )}
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-[12px] font-semibold text-foreground">{header}</span>
-          {sub ? (
-            <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">{sub}</span>
+        <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-foreground">
+          {header}
+          {phase === "running" ? (
+            <span className="ml-1.5 font-normal text-muted-foreground">
+              · edits locked
+            </span>
           ) : null}
         </span>
         <ChevronDown
           className={cn(
-            "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+            "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform",
             expanded && "rotate-180",
           )}
         />
       </button>
 
       {expanded ? (
-        <ul className="space-y-1 border-t border-border/60 px-3 py-2.5">
+        <ul className="flex flex-wrap gap-x-2 gap-y-0.5 border-t border-border/50 px-2.5 py-1">
           {layers.map((layer, i) => {
             const state =
               phase === "completed" || i < safeIndex
@@ -225,39 +232,26 @@ export function RenderLayerProgressBanner({
               <li
                 key={layer.id}
                 className={cn(
-                  "flex items-center gap-2 rounded-lg px-2 py-1.5 text-[11px]",
-                  state === "current" && "bg-amber-500/15",
-                  state === "failed" && "bg-destructive/10",
-                  state === "done" && "opacity-80",
-                  state === "pending" && "opacity-50",
+                  "inline-flex items-center gap-1 text-[10px]",
+                  state === "current" && "font-semibold text-amber-800 dark:text-amber-200",
+                  state === "failed" && "font-semibold text-destructive",
+                  state === "done" && "text-muted-foreground/80",
+                  state === "pending" && "text-muted-foreground/45",
                 )}
               >
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                  {state === "done" ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                  ) : state === "current" ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-700 dark:text-amber-300" />
-                  ) : state === "failed" ? (
-                    <X className="h-3.5 w-3.5 text-destructive" />
-                  ) : (
-                    <Circle className="h-3 w-3 text-muted-foreground" />
-                  )}
-                </span>
-                <span className="min-w-0 flex-1 font-medium text-foreground">
-                  {layer.label}
-                </span>
-                <span className="shrink-0 rounded bg-muted/60 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
-                  {layer.short}
-                </span>
-                <span className="w-16 shrink-0 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {state === "done"
-                    ? "Done"
-                    : state === "current"
-                      ? "Now"
-                      : state === "failed"
-                        ? "Failed"
-                        : "Queued"}
-                </span>
+                {state === "done" ? (
+                  <Check className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400" />
+                ) : state === "current" ? (
+                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                ) : state === "failed" ? (
+                  <X className="h-2.5 w-2.5 text-destructive" />
+                ) : (
+                  <Circle className="h-2 w-2" />
+                )}
+                <span>{layer.short}</span>
+                {i < layers.length - 1 ? (
+                  <span className="text-muted-foreground/30">·</span>
+                ) : null}
               </li>
             );
           })}
