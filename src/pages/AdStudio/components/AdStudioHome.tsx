@@ -19,6 +19,8 @@ import { AD_FORMATS } from "../types";
 import { FEATURED_EXAMPLES, type FeaturedExample } from "../lib/exampleCreatives";
 import { ExampleCreativeThumb } from "./BriefLivePreview";
 import { BrandKitPicker } from "./BrandKitPicker";
+import { TemplateGallery } from "./TemplateGallery";
+import type { AdSceneOutputFormatId, AdStudioTemplateId } from "../canvas/templateCatalog";
 
 export type RecentCreative = {
   id: string;
@@ -48,6 +50,12 @@ type Props = {
   onEditBrand: (kit: BrandKitSummary) => void;
   onImportBrand?: () => void;
   onRetryBrands?: () => void;
+  templatesV1Enabled?: boolean;
+  templateBusy?: boolean;
+  onUseTemplate?: (
+    templateId: AdStudioTemplateId,
+    format: AdSceneOutputFormatId,
+  ) => void;
 };
 
 export function AdStudioHome({
@@ -70,6 +78,9 @@ export function AdStudioHome({
   onEditBrand,
   onImportBrand,
   onRetryBrands,
+  templatesV1Enabled = false,
+  templateBusy = false,
+  onUseTemplate,
 }: Props) {
   const recentProjects = projects.slice(0, 6);
   const recentCreatives = creatives.slice(0, 6);
@@ -183,11 +194,19 @@ export function AdStudioHome({
         />
       </section>
 
+      {templatesV1Enabled && onUseTemplate ? (
+        <TemplateGallery
+          selectedFormat={selectedFormat}
+          busy={templateBusy}
+          onUseTemplate={onUseTemplate}
+        />
+      ) : null}
+
       {/* Featured examples */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold tracking-tight">Start from a template</h2>
+            <h2 className="text-sm font-semibold tracking-tight">Start from an example brief</h2>
             <p className="text-xs text-muted-foreground">
               Professionally designed examples — not your projects, not AI output.
             </p>

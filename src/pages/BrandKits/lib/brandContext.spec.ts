@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { normalizeBrandContext, seedBriefFromBrand } from "./brandContext";
+import {
+  applyBrandKitToBriefForm,
+  normalizeBrandContext,
+  seedBriefFromBrand,
+} from "./brandContext";
 import type { BrandKitSummary } from "./brandKitTypes";
 
 const zoe: BrandKitSummary = {
@@ -48,5 +52,35 @@ describe("brandContext", () => {
     assert.equal(seeded.targetAudience, "Luxury beauty consumers 25–45");
     assert.equal(seeded.coreMessage, undefined);
     assert.equal(seeded.name, "ZoeArtisan campaign");
+  });
+
+  it("clears stale brand seeds when switching kits", () => {
+    const other: BrandKitSummary = {
+      id: "other-1",
+      name: "OtherCo",
+      voice: {
+        signatureProduct: "Other SKU",
+        preferredCta: "Buy now",
+        tagline: "Other tagline",
+      },
+    };
+    const prior = {
+      brandKitId: "zoe-1",
+      name: "ZoeArtisan campaign",
+      productOrService: "Signature Red Matte Lipstick",
+      cta: "Shop the shade",
+      coreMessage: "Keep my message",
+      targetAudience: "Luxury beauty consumers 25–45",
+      desiredTone: "Editorial, intimate, precise",
+    };
+    const switched = {
+      ...prior,
+      ...applyBrandKitToBriefForm("zoe-1", "other-1", [zoe, other], prior),
+    };
+    assert.equal(switched.productOrService, "Other SKU");
+    assert.equal(switched.cta, "Buy now");
+    assert.equal(switched.coreMessage, "Keep my message");
+    assert.equal(switched.brandKitId, "other-1");
+    assert.deepEqual(switched.brandPreview?.paletteHex ?? [], []);
   });
 });

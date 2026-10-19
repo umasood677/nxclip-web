@@ -1757,6 +1757,54 @@ export default function ImageStudio() {
     }
   };
 
+  const hasPendingAdjust =
+    brightness !== 100 || contrast !== 100 || saturation !== 100;
+  const hasPendingText = editLayers.some(
+    (l) => l.type === "text" && (l.text || "").trim().length > 0,
+  );
+  const hasComposedTextLayers = Boolean(editBaseImage);
+
+  /** Central burn: adjustments (if dirty) then typography (if any text layers / prior compose). */
+  const handleApplyToImage = async () => {
+    if (!currentContentId || editToolsDisabled) return;
+    if (!hasPendingAdjust && !hasPendingText && !hasComposedTextLayers) {
+      toast.message("Nothing to apply", {
+        description: "Change Adjust sliders or add Typography text first.",
+      });
+      return;
+    }
+    setIsApplyingAdjust(true);
+    setIsApplyingCompose(true);
+    try {
+      if (hasPendingAdjust) {
+        const adjusted = await contentApi.editImage(currentContentId, {
+          op: "adjust",
+          brightness,
+          contrast,
+          saturation,
+        });
+        await applyEditResult(adjusted, "Adjust", "adjust");
+      }
+      if (hasPendingText || hasComposedTextLayers) {
+        const composed = await contentApi.editImage(currentContentId, {
+          op: "compose",
+          layers: editLayers,
+        });
+        await applyEditResult(composed, "Apply to Image", "compose");
+      } else if (hasPendingAdjust) {
+        toast.success("Adjustments applied to image");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Apply to Image failed", {
+        description: describeImageEditError(err),
+      });
+    } finally {
+      setIsApplyingAdjust(false);
+      setIsApplyingCompose(false);
+    }
+  };
+
   const handleAddTextLayer = () => {
     if (editToolsDisabled || editLayers.length >= 24) return;
     const id = `text-${Date.now()}`;
@@ -3006,6 +3054,10 @@ export default function ImageStudio() {
               handleApplyAdjust={handleApplyAdjust}
               isApplyingCompose={isApplyingCompose}
               handleApplyCompose={handleApplyCompose}
+              isApplyingToImage={isApplyingAdjust || isApplyingCompose}
+              handleApplyToImage={handleApplyToImage}
+              hasPendingAdjust={hasPendingAdjust}
+              hasPendingText={hasPendingText || hasComposedTextLayers}
               useCanonicalTypography={t3Authorized}
               editLayers={editLayers}
               selectedLayerId={selectedLayerId}
@@ -3195,6 +3247,10 @@ export default function ImageStudio() {
           handleApplyAdjust={handleApplyAdjust}
           isApplyingCompose={isApplyingCompose}
           handleApplyCompose={handleApplyCompose}
+          isApplyingToImage={isApplyingAdjust || isApplyingCompose}
+          handleApplyToImage={handleApplyToImage}
+          hasPendingAdjust={hasPendingAdjust}
+          hasPendingText={hasPendingText || hasComposedTextLayers}
           useCanonicalTypography={t3Authorized}
           editLayers={editLayers}
           selectedLayerId={selectedLayerId}

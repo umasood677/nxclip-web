@@ -10,6 +10,10 @@ export type CanonicalLayerDraft = {
   fill: string;
   outline: number;
   shadow: number;
+  /** Stroke / outline color (#RRGGBB). */
+  outlineColor: string;
+  /** Drop-shadow color (#RRGGBB). */
+  shadowColor: string;
   align: 'left' | 'center' | 'right';
   lineHeightRatio: number;
   letterSpacing: number;
@@ -38,6 +42,8 @@ export const DEFAULT_LAYER_DRAFT: Omit<CanonicalLayerDraft, 'id' | 'startMs' | '
   fill: '#FFFFFF',
   outline: 2,
   shadow: 4,
+  outlineColor: '#000000',
+  shadowColor: '#000000',
   align: 'center',
   lineHeightRatio: 1.25,
   letterSpacing: 0,
@@ -144,6 +150,16 @@ export function draftFromPlan(
       fill: layer.fill,
       outline: layer.outline,
       shadow: layer.shadow,
+      outlineColor:
+        typeof (layer as { outlineColor?: string }).outlineColor === 'string' &&
+        /^#[0-9a-fA-F]{6}$/.test((layer as { outlineColor: string }).outlineColor)
+          ? (layer as { outlineColor: string }).outlineColor
+          : '#000000',
+      shadowColor:
+        typeof (layer as { shadowColor?: string }).shadowColor === 'string' &&
+        /^#[0-9a-fA-F]{6}$/.test((layer as { shadowColor: string }).shadowColor)
+          ? (layer as { shadowColor: string }).shadowColor
+          : '#000000',
       align: layer.align,
       lineHeightRatio: layer.fontSize > 0 ? layer.lineHeight / layer.fontSize : 1.25,
       letterSpacing: layer.letterSpacing,
@@ -177,7 +193,8 @@ export async function buildLayoutFromComposition(
 
   const usable = draft.layers.filter((l) => l.text.trim().length > 0);
   const source = usable.length ? usable : draft.layers.slice(0, 1);
-  const primaryFace = source[0]?.faceId ?? CANONICAL_FACE_DEFAULT;
+  // Plan-level faceId is the first visible layer (v1 primary identity); each layer also carries its own face.
+  const primaryFace = source[0]?.faceId || CANONICAL_FACE_DEFAULT;
 
   const layers = source.map((layer, index) => {
     const text = layer.text.trim() || ' ';
@@ -194,6 +211,13 @@ export async function buildLayoutFromComposition(
     const startMs = Math.min(durationMs - 1, Math.max(0, Math.round(layer.startMs)));
     const endMs = Math.min(durationMs, Math.max(startMs + 1, Math.round(layer.endMs)));
     const id = /^[a-z0-9-]{1,64}$/.test(layer.id) ? layer.id : `caption-${index + 1}`;
+    const outlineColor = /^#[0-9a-fA-F]{6}$/.test(layer.outlineColor || '')
+      ? layer.outlineColor
+      : '#000000';
+    const shadowColor = /^#[0-9a-fA-F]{6}$/.test(layer.shadowColor || '')
+      ? layer.shadowColor
+      : '#000000';
+    const faceId = layer.faceId || CANONICAL_FACE_DEFAULT;
     return {
       id,
       startMs,
@@ -205,6 +229,9 @@ export async function buildLayoutFromComposition(
       fill: /^#[0-9a-fA-F]{6}$/.test(layer.fill) ? layer.fill : '#FFFFFF',
       outline: Math.min(16, Math.max(0, layer.outline)),
       shadow: Math.min(32, Math.max(0, layer.shadow)),
+      outlineColor,
+      shadowColor,
+      faceId,
       text,
       left,
       firstBaseline,
@@ -238,6 +265,8 @@ export async function buildLayoutFromDraft(
         fill: draft.fill,
         outline: draft.outline,
         shadow: draft.shadow,
+        outlineColor: draft.outlineColor || '#000000',
+        shadowColor: draft.shadowColor || '#000000',
         align: draft.align,
         lineHeightRatio: draft.lineHeightRatio,
         letterSpacing: draft.letterSpacing,

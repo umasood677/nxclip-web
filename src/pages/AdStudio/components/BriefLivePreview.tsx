@@ -17,11 +17,14 @@ type Props = {
 export function BriefLivePreview({ form, brand, className, compact }: Props) {
   const format = AD_FORMATS.find((f) => f.id === form.outputFormat) ?? AD_FORMATS[1];
   const ctx = useMemo(() => normalizeBrandContext(brand), [brand]);
-  const primary = ctx?.colors.primary ?? "#5257F1";
-  const secondary = ctx?.colors.secondary ?? "#0F172A";
+  const preview = form.brandPreview;
+  const primary =
+    preview?.paletteHex?.[0] ?? ctx?.colors.primary ?? "#5257F1";
+  const secondary =
+    preview?.paletteHex?.[1] ?? ctx?.colors.secondary ?? "#0F172A";
   const headingFont = ctx?.typography.headline ?? "Geist Variable";
   const bodyFont = ctx?.typography.body ?? "Geist Variable";
-  const logoUrl = ctx?.assets.logoUrl ?? null;
+  const logoUrl = preview?.logoUrl ?? ctx?.assets.logoUrl ?? null;
 
   const headline =
     form.coreMessage.trim() ||

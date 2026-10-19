@@ -1,4 +1,5 @@
 import type { AdSceneGraph, AdSceneLayer } from "../types";
+import { fontIdForBrandFamily } from "./adStudioFontId";
 import { updateLayer, setCanvasBackground } from "./sceneGraph";
 
 /** Immutable creative brand snapshot (metadata only — no signed URLs). */
@@ -123,7 +124,7 @@ export function applyBrandFontToSelection(
   if (!layer || layer.locked || layer.type !== "text") return graph;
   return updateLayer(graph, layerId, {
     fontFamily: family,
-    fontId: family.toLowerCase().includes("inter") ? "inter" : "montserrat",
+    fontId: fontIdForBrandFamily(family),
   } as Partial<AdSceneLayer>);
 }
 

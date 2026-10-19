@@ -18,6 +18,8 @@ import {
 } from "./ConceptLivePreview";
 import { ProjectDetailsDrawer } from "./ProjectDetailsDrawer";
 import type { AdConcept } from "../types";
+import { TemplateGallery } from "./TemplateGallery";
+import type { AdSceneOutputFormatId, AdStudioTemplateId } from "../canvas/templateCatalog";
 
 type Props = {
   form: AdBriefFormState;
@@ -49,6 +51,11 @@ type Props = {
   onOpenConcept: (conceptId: string) => void;
   onGenerateBackground: (conceptId: string) => void;
   onOpenCreative: (id: string) => void;
+  templatesV1Enabled?: boolean;
+  onUseTemplate?: (
+    templateId: AdStudioTemplateId,
+    format: AdSceneOutputFormatId,
+  ) => void;
 };
 
 /**
@@ -85,6 +92,8 @@ export function GuidedBriefComposer({
   onOpenConcept,
   onGenerateBackground,
   onOpenCreative,
+  templatesV1Enabled = false,
+  onUseTemplate,
 }: Props) {
   const [detailsOpen, setDetailsOpen] = useState(!projectId);
   const selectedBrand = brands.find((b) => b.id === form.brandKitId) ?? null;
@@ -197,6 +206,13 @@ export function GuidedBriefComposer({
       {/* Primary: gallery + live preview */}
       <div className="grid lg:grid-cols-12 gap-5 min-h-[calc(100vh-220px)]">
         <div className="lg:col-span-7 rounded-2xl border border-border glass p-5 space-y-4 order-2 lg:order-1">
+          {templatesV1Enabled && onUseTemplate ? (
+            <TemplateGallery
+              selectedFormat={form.outputFormat}
+              busy={busy}
+              onUseTemplate={onUseTemplate}
+            />
+          ) : null}
           <ConceptGallery
             concepts={concepts}
             brand={selectedBrand}

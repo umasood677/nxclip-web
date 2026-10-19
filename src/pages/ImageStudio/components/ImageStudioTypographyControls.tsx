@@ -13,8 +13,10 @@ import {
 import { CANONICAL_FACE_OPTIONS } from '../../../lib/clipTypography/canonicalFaces';
 import { CANONICAL_FILL_COLORS } from '../../ClipEditor/CanonicalTypographyControls';
 import {
+  cssFamilyForFaceId,
   faceIdToEditFontId,
   resolveLayerFaceId,
+  studioFontFamily,
 } from '../lib/imageStudioTypography';
 import type { ImageEditTextLayer } from '../types';
 import { cn } from '../../../lib/utils';
@@ -266,19 +268,45 @@ export function ImageStudioTypographyControls({
                 items={faceItems}
                 disabled={toolsLocked}
               >
-                <SelectTrigger className="h-10 w-full text-xs bg-muted/30 border-border/50 rounded-lg">
+                <SelectTrigger className="h-11 w-full text-xs bg-muted/30 border-border/50 rounded-lg">
                   <SelectValue>
-                    {(value: string | null) =>
-                      CANONICAL_FACE_OPTIONS.find((f) => f.id === value)?.label ?? 'Font'
-                    }
+                    {(value: string | null) => {
+                      const font = CANONICAL_FACE_OPTIONS.find((f) => f.id === value);
+                      if (!font) return 'Font';
+                      const css = cssFamilyForFaceId(font.id);
+                      return (
+                        <span
+                          className="truncate"
+                          style={{
+                            fontFamily: css.family,
+                            fontWeight: css.weight,
+                            fontStyle: css.style === 'italic' ? 'italic' : 'normal',
+                          }}
+                        >
+                          {font.label}
+                        </span>
+                      );
+                    }}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {CANONICAL_FACE_OPTIONS.map((font) => (
-                    <SelectItem key={font.id} value={font.id} label={font.label}>
-                      {font.label}
-                    </SelectItem>
-                  ))}
+                  {CANONICAL_FACE_OPTIONS.map((font) => {
+                    const css = cssFamilyForFaceId(font.id);
+                    return (
+                      <SelectItem key={font.id} value={font.id} label={font.label}>
+                        <span
+                          style={{
+                            fontFamily: css.family,
+                            fontWeight: css.weight,
+                            fontStyle: css.style === 'italic' ? 'italic' : 'normal',
+                            fontSize: '14px',
+                          }}
+                        >
+                          {font.label}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             ) : (
@@ -292,13 +320,24 @@ export function ImageStudioTypographyControls({
                 }
                 disabled={toolsLocked}
               >
-                <SelectTrigger className="h-10 w-full text-xs bg-muted/30 border-border/50 rounded-lg">
-                  <SelectValue />
+                <SelectTrigger className="h-11 w-full text-xs bg-muted/30 border-border/50 rounded-lg">
+                  <SelectValue>
+                    {(value: string | null) => {
+                      const font = LEGACY_FONTS.find((f) => f.id === value);
+                      return (
+                        <span style={{ fontFamily: studioFontFamily(value as 'impact' | 'inter' | 'montserrat') }}>
+                          {font?.label ?? 'Font'}
+                        </span>
+                      );
+                    }}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {LEGACY_FONTS.map((font) => (
-                    <SelectItem key={font.id} value={font.id}>
-                      {font.label}
+                    <SelectItem key={font.id} value={font.id} label={font.label}>
+                      <span style={{ fontFamily: studioFontFamily(font.id), fontSize: '14px' }}>
+                        {font.label}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -306,8 +345,8 @@ export function ImageStudioTypographyControls({
             )}
             {useCanonicalFaces ? (
               <p className="text-[10px] text-muted-foreground px-1 leading-relaxed">
-                Preview uses the full typeface. Apply Text burns the closest Impact / Inter /
-                Montserrat export face until Image Studio multi-face compose ships.
+                Preview and Apply to Image use the same typeface. Apply text only burns layers;
+                use the footer Apply to Image when Adjust is ready too.
               </p>
             ) : null}
           </div>
@@ -471,25 +510,27 @@ export function ImageStudioTypographyControls({
           </div>
 
           <p className="text-[10px] text-muted-foreground leading-relaxed px-0.5">
-            Drag text on the preview to place it. Use Apply Text to burn layers into the image.
+            Drag text on the preview to place it. Apply text only burns typography; Apply to Image
+            in the footer burns Adjust + Typography together.
           </p>
         </>
       ) : (
         <p className="text-[11px] text-muted-foreground leading-relaxed">
-          Add a text layer to start. Layers stay editable until you apply text.
+          Add a text layer to start. Layers stay editable until you apply them to the image.
         </p>
       )}
 
       {(selected || hasComposedText || textLayers.length > 0) && (
         <Button
-          variant="secondary"
+          variant="outline"
           size="sm"
           className="w-full text-[10px] h-9 font-bold"
           onClick={onApplyCompose}
           disabled={toolsLocked || isApplyingCompose}
+          title="Burn text layers only"
         >
           {isApplyingCompose ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
-          Apply text
+          Apply text only
         </Button>
       )}
     </div>

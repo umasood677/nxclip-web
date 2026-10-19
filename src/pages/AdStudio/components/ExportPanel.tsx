@@ -14,6 +14,9 @@ import { AD_FORMATS } from "../types";
 interface ExportPanelProps {
   creativeId: string;
   graph: AdSceneGraph | null;
+  dirty?: boolean;
+  saving?: boolean;
+  ensureSaved?: () => Promise<boolean>;
 }
 
 async function downloadJob(jobId: string, fileName: string) {
@@ -63,7 +66,25 @@ async function pollJob(
   throw new Error("Export timed out — check export history and retry download.");
 }
 
-export function ExportPanel({ creativeId, graph }: ExportPanelProps) {
+function readCreativeVersion(job: {
+  metadata?: Record<string, unknown> | null;
+}): number | null {
+  const raw = job.metadata?.creativeVersion;
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  if (typeof raw === "string" && raw.trim() !== "") {
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+export function ExportPanel({
+  creativeId,
+  graph,
+  dirty = false,
+  saving = false,
+  ensureSaved,
+}: ExportPanelProps) {
   const [format, setFormat] = useState<"png" | "jpeg">("png");
   const [quality, setQuality] = useState(90);
   const [allowPlaceholders, setAllowPlaceholders] = useState(false);
@@ -118,6 +139,16 @@ export function ExportPanel({ creativeId, graph }: ExportPanelProps) {
     setLastJob(null);
     setStatusText("Starting render…");
     try {
+      if (ensureSaved) {
+        setStatusText("Saving…");
+        const saved = await ensureSaved();
+        if (!saved) {
+          setStatusText(null);
+          return;
+        }
+        setStatusText("Starting render…");
+      }
+
       let job = await adStudioApi.exportCreative(creativeId, {
         exportFormat: format,
         quality: format === "jpeg" ? quality : undefined,
@@ -137,8 +168,13 @@ export function ExportPanel({ creativeId, graph }: ExportPanelProps) {
         });
         setStatusText("Failed");
       } else if (job.status === "completed") {
+        const exportedVersion = readCreativeVersion(job);
         toast.success(`${format.toUpperCase()} ready`);
-        setStatusText("Completed");
+        setStatusText(
+          exportedVersion != null
+            ? `Completed · creative v${exportedVersion}`
+            : "Completed",
+        );
         await downloadJob(
           job.id,
           `ad-export.${format === "jpeg" ? "jpg" : "png"}`,
@@ -179,6 +215,12 @@ export function ExportPanel({ creativeId, graph }: ExportPanelProps) {
           </li>
         ))}
       </ul>
+
+      {dirty && !busy ? (
+        <p className="text-[11px] text-amber-600 dark:text-amber-500">
+          Save required — export will save your latest edits first.
+        </p>
+      ) : null}
 
       {hasPlaceholderRisk ? (
         <label className="flex items-start gap-2 text-[11px] leading-snug">
@@ -234,7 +276,7 @@ export function ExportPanel({ creativeId, graph }: ExportPanelProps) {
         type="button"
         size="sm"
         className="w-full"
-        disabled={busy || blocked}
+        disabled={busy || blocked || saving}
         onClick={() => void runExport()}
       >
         {busy ? (
@@ -242,7 +284,11 @@ export function ExportPanel({ creativeId, graph }: ExportPanelProps) {
         ) : (
           <Download size={14} className="mr-1" />
         )}
-        {busy ? "Rendering…" : "Render & download"}
+        {busy
+          ? statusText === "Saving…"
+            ? "Saving…"
+            : "Rendering…"
+          : "Render & download"}
       </Button>
 
       {statusText ? (

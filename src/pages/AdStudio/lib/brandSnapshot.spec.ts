@@ -65,6 +65,10 @@ describe("brandSnapshot", () => {
       (fonted.layers[0] as { fontFamily?: string }).fontFamily,
       "Playfair Display",
     );
+    assert.equal(
+      (fonted.layers[0] as { fontId?: string }).fontId,
+      "playfair_display",
+    );
   });
 
   it("returns null for empty snapshot", () => {

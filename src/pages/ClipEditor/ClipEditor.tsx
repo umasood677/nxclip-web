@@ -141,7 +141,7 @@ const TRACKS = [
 
 const BGM_SELECT_ITEMS: Record<string, string> = {
   none: "None",
-  ...Object.fromEntries(TRACKS.map((track) => [track.id, `${track.title} Â· ${track.genre}`])),
+  ...Object.fromEntries(TRACKS.map((track) => [track.id, `${track.title} · ${track.genre}`])),
 };
 
 function bgmSelectLabel(trackId: string | null | undefined): string {
@@ -218,7 +218,7 @@ export default function ClipEditor() {
   /** Block burn-affecting edits while Final Preview is encoding. */
   const editsLocked = isRendering;
   const publishBlockedReason = isAlreadyPublished
-    ? "This clip is already published. Publish is locked â€” use Download to export a new polished MP4."
+    ? "This clip is already published. Publish is locked — use Download to export a new polished MP4."
     : null;
   const [isPlaying, setIsPlaying] = useState(false);
   const [trimStart, setTrimStart] = useState(0);
@@ -228,7 +228,7 @@ export default function ClipEditor() {
   /** Ignore dirty marks while hydrating server state into form fields (refresh). */
   const suppressDirtyRef = useRef(true);
   const isLoaded = useRef(false);
-  /** True after server clipEditSpec (or first metadata) applied â€” blocks trim corruption. */
+  /** True after server clipEditSpec (or first metadata) applied — blocks trim corruption. */
   const specHydratedRef = useRef(false);
   const autoCaptionRanRef = useRef(false);
   const retryAnimateRanRef = useRef(false);
@@ -236,7 +236,7 @@ export default function ClipEditor() {
   const [currentTime, setCurrentTime] = useState(0);
   const [DURATION, setDuration] = useState(90);
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
-  /** Blob URL of the completed burn-in MP4 â€” shown in polish preview after Save & Render. */
+  /** Blob URL of the completed burn-in MP4 — shown in polish preview after Save & Render. */
   const [renderPreviewSrc, setRenderPreviewSrc] = useState<string | null>(null);
   const [renderPreviewDuration, setRenderPreviewDuration] = useState(0);
   const [videoLoading, setVideoLoading] = useState(false);
@@ -410,11 +410,17 @@ export default function ClipEditor() {
     [rebuildCanonicalFromComposition],
   );
 
-  const onT3SelectLayer = useCallback((layerId: string) => {
-    setT3Composition((prev) =>
-      prev.activeLayerId === layerId ? prev : { ...prev, activeLayerId: layerId },
-    );
-  }, []);
+  const onT3SelectLayer = useCallback(
+    (layerId: string) => {
+      setT3Composition((prev) => {
+        if (prev.activeLayerId === layerId) return prev;
+        const next = { ...prev, activeLayerId: layerId };
+        void rebuildCanonicalFromComposition(next);
+        return next;
+      });
+    },
+    [rebuildCanonicalFromComposition],
+  );
 
   const t3DragTimerRef = useRef<number | null>(null);
   const onT3PositionChange = useCallback(
@@ -438,7 +444,7 @@ export default function ClipEditor() {
   );
   const previewPlaybackGenRef = useRef(0);
   const [hooks, setHooks] = useState<Array<{ text: string; startMs: number; durationMs: number; styleId?: string }>>([]);
-  /** AI alternatives from Generate hooks â€” pick one to overwrite the active on-clip hook. */
+  /** AI alternatives from Generate hooks — pick one to overwrite the active on-clip hook. */
   const [hookOptions, setHookOptions] = useState<
     Array<{ text: string; startMs: number; durationMs: number; styleId?: string }>
   >([]);
@@ -476,7 +482,7 @@ export default function ClipEditor() {
       | "circle"
     >
   >([]);
-  /** True after Apply to clip â€” keep multi-cut order through Polish / Download. */
+  /** True after Apply to clip — keep multi-cut order through Polish / Download. */
   const [coachViralApplied, setCoachViralApplied] = useState(false);
   /** Restored from clipEditSpec.extras.soundDesign so Sound Design skips re-Analyze. */
   const [persistedSoundDesign, setPersistedSoundDesign] = useState<PersistedSoundDesign | null>(
@@ -484,7 +490,7 @@ export default function ClipEditor() {
   );
   /** True after Apply / plan in this session (persisted may lag until reload). */
   const [soundDesignMixActive, setSoundDesignMixActive] = useState(false);
-  /** Sound Design SRC/AMB bars own these levels â€” Polish Original/BGM must not double them. */
+  /** Sound Design SRC/AMB bars own these levels — Polish Original/BGM must not double them. */
   const soundDesignOwnsOriginal = useMemo(() => {
     if (!soundDesignMixActive && !persistedSoundDesign) return false;
     const edl = Array.isArray(persistedSoundDesign?.audioEdl)
@@ -653,7 +659,7 @@ export default function ClipEditor() {
     (async () => {
       setVideoLoading(true);
       try {
-        // Drafts after upload live on /content/mine/:id â€” /content/:id is published-only (404).
+        // Drafts after upload live on /content/mine/:id — /content/:id is published-only (404).
         const item = await contentApi.getOwnedContentById(id, { suppressErrorLog: true });
         if (cancelled) return;
         if (item.title) setTitle(item.title);
@@ -817,8 +823,8 @@ export default function ClipEditor() {
             // nxClip-generated / I2V clips may keep the day brief as polish context.
             const weekPlanBrief =
               Boolean(dueBrief && storedContext.trim() === dueBrief.trim()) ||
-              (/â€”\s*Niche:/i.test(storedContext) &&
-                /â€”\s*Focus:/i.test(storedContext));
+              (/—\s*Niche:/i.test(storedContext) &&
+                /—\s*Focus:/i.test(storedContext));
             if (userUpload && weekPlanBrief) {
               setPrompt("");
             } else if (storedContext) {
@@ -1022,7 +1028,7 @@ export default function ClipEditor() {
         }
 
         // Always load the original master for editing. Feed/detail use the polished
-        // render by default once burn-in completes â€” without variant=master Studio
+        // render by default once burn-in completes — without variant=master Studio
         // would show the burned MP4 and feel like edits "didn't apply" on re-open.
         // Same-origin gateway-proxy streams GCS after signed redirect (avoids browser CORS).
         const mediaUrl = buildGatewayProxyUrl(`/content/${id}/media?variant=master`);
@@ -1049,7 +1055,7 @@ export default function ClipEditor() {
         console.warn("Clip media load failed", err);
         if (!cancelled) {
           toast.message("Preview unavailable", {
-            description: "Upload may still be processing â€” trim uses fallback duration until media loads.",
+            description: "Upload may still be processing — trim uses fallback duration until media loads.",
           });
         }
       } finally {
@@ -1092,7 +1098,7 @@ export default function ClipEditor() {
     hashtags,
   }).slice(0, 2000);
 
-  /** Completed burn-in that matches current edits â€” Publish/Download unlock. */
+  /** Completed burn-in that matches current edits — Publish/Download unlock. */
   const renderReady =
     String(renderStatus || "").toLowerCase() === "completed" && !isDirty;
 
@@ -1128,7 +1134,7 @@ export default function ClipEditor() {
     }
     renderPreviewUrlRef.current = objectUrl;
     setRenderPreviewSrc(objectUrl);
-    // Stop live mix â€” final MP4 already has BGM/captions burned in.
+    // Stop live mix — final MP4 already has BGM/captions burned in.
     mixBgmRef.current?.pause();
     const el = videoRef.current;
     if (el) {
@@ -1397,7 +1403,7 @@ export default function ClipEditor() {
     const bgm = mixBgmRef.current;
     if (el) {
       el.volume = usedGraph ? 1 : Math.max(0, Math.min(1, master * clip));
-      // Original mute only silences the video bed â€” commentary/Foley overlays stay up.
+      // Original mute only silences the video bed — commentary/Foley overlays stay up.
       el.muted = isMasterMuted || isClipMuted || clip === 0 || master === 0;
     }
     if (bgm) {
@@ -1425,7 +1431,7 @@ export default function ClipEditor() {
     syncSoundOverlays,
   ]);
 
-  // Coach mode / Audio picker changed the track â€” swap the underlay immediately.
+  // Coach mode / Audio picker changed the track — swap the underlay immediately.
   useEffect(() => {
     const bgm = mixBgmRef.current;
     if (!bgm) return;
@@ -1507,7 +1513,7 @@ export default function ClipEditor() {
     [DURATION, applyPreviewMix, selectedTrackId],
   );
 
-  /** Coach: play checked moments in order (skip gaps) â€” preview before Download. */
+  /** Coach: play checked moments in order (skip gaps) — preview before Download. */
   const previewCoachStitch = useCallback(() => {
     const el = videoRef.current;
     const cuts = coachTextCuts;
@@ -1538,7 +1544,7 @@ export default function ClipEditor() {
           void bgm.play().catch(() => {});
         }
         toast.message("Previewing final edit", {
-          description: `${cuts.length} moment${cuts.length === 1 ? "" : "s"} in order â€” gaps are skipped.`,
+          description: `${cuts.length} moment${cuts.length === 1 ? "" : "s"} in order — gaps are skipped.`,
         });
       })
       .catch(() => setIsPlaying(false));
@@ -1549,7 +1555,7 @@ export default function ClipEditor() {
     const track = TRACKS.find((t) => t.id === selectedTrackId);
     const bgm = mixBgmRef.current;
     if (!selectedTrackId || !track || !bgm) {
-      toast.message("No BGM selected yet â€” run Analyze first");
+      toast.message("No BGM selected yet — run Analyze first");
       return;
     }
     if (mixBgmTrackIdRef.current !== selectedTrackId) {
@@ -1654,6 +1660,15 @@ export default function ClipEditor() {
       console.warn("Playback failed", err);
       setIsPlaying(false);
       mixBgmRef.current?.pause();
+      const message =
+        err instanceof DOMException
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Playback could not start";
+      toast.error("Preview could not play", {
+        description: message || "Check that clip media loaded, then try again.",
+      });
     }
   }, [
     trimStart,
@@ -1897,7 +1912,7 @@ export default function ClipEditor() {
         appliedTransitions.length > 0 || serverTransitionCount > 0 || coachViralApplied;
       const renderCompleted =
         String(serverRenderStatus).toLowerCase() === "completed";
-      // Prior polish may have wiped transcript via trim autosave â€” social copy,
+      // Prior polish may have wiped transcript via trim autosave — social copy,
       // hooks, or a completed render are enough to skip the full pipeline.
       const polishAlreadyDone =
         polishPrepCompleted ||
@@ -1905,7 +1920,7 @@ export default function ClipEditor() {
         renderCompleted ||
         (hasTranscript && (hasHook || hasTransitions));
 
-      // Fast path: returning draft â€” skip Whisper/captions/effects regeneration.
+      // Fast path: returning draft — skip Whisper/captions/effects regeneration.
       if (polishAlreadyDone) {
         setPolishStep(0);
         setNote(0, t("clip_editor.overlays.steps.transcribing_done", { defaultValue: "Transcript ready" }));
@@ -1913,8 +1928,24 @@ export default function ClipEditor() {
         setPolishStep(1);
         setNote(1, t("clip_editor.overlays.steps.captions_done", { defaultValue: "Caption and hashtags drafted" }));
         autoCaptionRanRef.current = true;
-        if (serverHashtags.length && !hashtags.length) setHashtags(serverHashtags);
-        if (!description.trim() && serverCaption) setDescription(serverCaption);
+        if (serverHashtags.length && !hashtags.length) {
+          setHashtags(
+            serverHashtags.map((t) => (String(t).startsWith("#") ? String(t) : `#${t}`)),
+          );
+        }
+        if (!description.trim() && serverCaption) {
+          const tags = serverCaption.match(/#[\p{L}\p{N}_]+/gu) ?? [];
+          const cleaned = serverCaption
+            .replace(/#[\p{L}\p{N}_]+/gu, " ")
+            .replace(/[ \t]+\n/g, "\n")
+            .replace(/\n{3,}/g, "\n\n")
+            .replace(/[ \t]{2,}/g, " ")
+            .trim();
+          setDescription(cleaned);
+          if (tags.length && !hashtags.length && !serverHashtags.length) {
+            setHashtags(tags.slice(0, 12));
+          }
+        }
         setPolishProgress(80);
         setPolishStep(2);
         setNote(2, t("clip_editor.overlays.steps.effects_done", { defaultValue: "Hooks and transition beats ready" }));
@@ -1939,7 +1970,7 @@ export default function ClipEditor() {
       }
 
       setPolishProgress(10);
-      setNote(0, t("clip_editor.overlays.steps.transcribing_queued", { defaultValue: "Queued speech-to-textâ€¦" }));
+      setNote(0, t("clip_editor.overlays.steps.transcribing_queued", { defaultValue: "Queued speech-to-text…" }));
 
       if (id) {
         const transcribeStarted = Date.now();
@@ -1963,7 +1994,7 @@ export default function ClipEditor() {
                   setNote(
                     0,
                     t("clip_editor.overlays.steps.transcribing_wait", {
-                      defaultValue: "Listening for wordsâ€¦ {{attempt}}/{{attempts}}",
+                      defaultValue: "Listening for words… {{attempt}}/{{attempts}}",
                       attempt: attempt + 1,
                       attempts,
                     }),
@@ -1978,13 +2009,13 @@ export default function ClipEditor() {
                 0,
                 transcript.trim()
                   ? t("clip_editor.overlays.steps.transcribing_done", { defaultValue: "Transcript ready" })
-                  : t("clip_editor.overlays.steps.transcribing_empty", { defaultValue: "No speech detected â€” continuing" }),
+                  : t("clip_editor.overlays.steps.transcribing_empty", { defaultValue: "No speech detected — continuing" }),
               );
             } else {
               setNote(
                 0,
                 t("clip_editor.overlays.steps.transcribing_slow", {
-                  defaultValue: "Still processing â€” you can transcribe again on Captions",
+                  defaultValue: "Still processing — you can transcribe again on Captions",
                 }),
               );
             }
@@ -2002,8 +2033,24 @@ export default function ClipEditor() {
       const captionStarted = Date.now();
       if (hasCopy) {
         autoCaptionRanRef.current = true;
-        if (serverHashtags.length && !hashtags.length) setHashtags(serverHashtags);
-        if (!description.trim() && serverCaption) setDescription(serverCaption);
+        if (serverHashtags.length && !hashtags.length) {
+          setHashtags(
+            serverHashtags.map((t) => (String(t).startsWith("#") ? String(t) : `#${t}`)),
+          );
+        }
+        if (!description.trim() && serverCaption) {
+          const tags = serverCaption.match(/#[\p{L}\p{N}_]+/gu) ?? [];
+          const cleaned = serverCaption
+            .replace(/#[\p{L}\p{N}_]+/gu, " ")
+            .replace(/[ \t]+\n/g, "\n")
+            .replace(/\n{3,}/g, "\n\n")
+            .replace(/[ \t]{2,}/g, " ")
+            .trim();
+          setDescription(cleaned);
+          if (tags.length && !hashtags.length && !serverHashtags.length) {
+            setHashtags(tags.slice(0, 12));
+          }
+        }
         setNote(1, t("clip_editor.overlays.steps.captions_done", { defaultValue: "Caption and hashtags drafted" }));
       } else {
         await generateAICaption({ silent: true });
@@ -2020,7 +2067,7 @@ export default function ClipEditor() {
       if (id) {
         try {
           await contentApi.saveClipEdit(id, buildClipEditSpec());
-          // Coach / prior edit already set the active hook â€” do not auto-overwrite it.
+          // Coach / prior edit already set the active hook — do not auto-overwrite it.
           // Still fetch alternatives into hookOptions when empty so Details can offer picks.
           const existingHook =
             topText.trim() ||
@@ -2061,7 +2108,7 @@ export default function ClipEditor() {
             }
           }
         } catch {
-          /* hooks stay empty â€” user can retry on polish */
+          /* hooks stay empty — user can retry on polish */
         }
         if (!still()) return;
         // Do not replace Coach cut joins with Enhance timeline suggestions after Viral Apply.
@@ -2094,7 +2141,7 @@ export default function ClipEditor() {
     } catch (err) {
       if (!still()) return;
       toast.error("Could not start polish", {
-        description: formatClipApiError(err, "Trim is saved â€” open Polish & Publish to continue."),
+        description: formatClipApiError(err, "Trim is saved — open Polish & Publish to continue."),
       });
       mergeSearchParams({ step: "polish" });
     } finally {
@@ -2108,7 +2155,7 @@ export default function ClipEditor() {
     }
   };
 
-  /** Next: Polish â€” silent handoff (no trim-review audio under the progress overlay). */
+  /** Next: Polish — silent handoff (no trim-review audio under the progress overlay). */
   const handleApplyTrim = () => {
     setFinalTrim({ start: trimStart, end: trimEnd });
     stopAllPreviewPlayback();
@@ -2267,9 +2314,9 @@ export default function ClipEditor() {
         .slice(0, 6)
         .map((s) => `#${s}`);
       const suggestions = [
-        `${title.trim()} âœ¨`,
-        `${title.trim()} â€” ${nicheFocus} ðŸ”¥`,
-        `New drop: ${title.trim()}. Save this. ðŸ“Œ`,
+        `${title.trim()}`,
+        `${title.trim()} — ${nicheFocus}`,
+        `New drop: ${title.trim()}. Save this.`,
       ];
       setAiSuggestions(suggestions);
       if (!description.trim() && suggestions[0]) setDescription(suggestions[0]);
@@ -2285,8 +2332,15 @@ export default function ClipEditor() {
       });
       const captions = Array.isArray(res.captions) ? res.captions.filter(Boolean).slice(0, 3) : [];
       if (captions.length) {
-        setAiSuggestions(captions);
-        if (!description.trim() && captions[0]) setDescription(captions[0]);
+        const stripTags = (text: string) =>
+          text
+            .replace(/#[\p{L}\p{N}_]+/gu, ' ')
+            .replace(/[ \t]+\n/g, '\n')
+            .replace(/\n{3,}/g, '\n\n')
+            .replace(/[ \t]{2,}/g, ' ')
+            .trim();
+        setAiSuggestions(captions.map(stripTags).filter(Boolean));
+        if (!description.trim() && captions[0]) setDescription(stripTags(captions[0]));
       } else {
         applyHeuristic();
       }
@@ -2410,7 +2464,7 @@ export default function ClipEditor() {
 
   const saveClipEditToServer = useCallback(async () => {
     if (!id) return;
-    // Do not autosave during burn-in â€” that spammed clip-edit + cleared render hashes.
+    // Do not autosave during burn-in — that spammed clip-edit + cleared render hashes.
     if (isRenderingRef.current || renderPollLockRef.current) return;
     try {
       await contentApi.saveClipEdit(id, buildClipEditSpec());
@@ -2546,8 +2600,8 @@ export default function ClipEditor() {
         const quality = String(extras.renderQuality || "");
         const hasHash =
           typeof extras.renderSpecHash === "string" && Boolean(extras.renderSpecHash);
-        // Require a real polished fingerprint â€” hasPolishedRender alone reused
-        // preâ€“Sound Design burns and skipped commentary/Foley.
+        // Require a real polished fingerprint — hasPolishedRender alone reused
+        // pre–Sound Design burns and skipped commentary/Foley.
         if (st !== "completed" || quality === "fallback") return false;
         return quality === "polished" && hasHash;
       };
@@ -2562,7 +2616,7 @@ export default function ClipEditor() {
       };
 
       // Match media-worker inline FFmpeg budget (up to ~6 min) + callback latency.
-      // Progress UI is RenderLayerProgressBanner â€” no competing Sonner loading toast.
+      // Progress UI is RenderLayerProgressBanner — no competing Sonner loading toast.
       const pollUntilDone = async (maxMs = 360_000) => {
         toast.dismiss(toastId);
         const started = Date.now();
@@ -2592,7 +2646,7 @@ export default function ClipEditor() {
           queued.renderStatus || queued.status || "queued",
         ).toLowerCase();
         const nextJobId = String(queued.jobId || "");
-        // Soft 200 "already in progress" must not look like a fresh enqueue â€” that
+        // Soft 200 "already in progress" must not look like a fresh enqueue — that
         // is what made timeout â†’ Save & Render poll the same hung job forever.
         if (
           forceNew &&
@@ -2620,7 +2674,7 @@ export default function ClipEditor() {
         const previousJobId =
           typeof latest.renderJobId === "string" ? latest.renderJobId : null;
 
-        // Stale copy-fallback must not unlock Final Preview â€” force a real burn-in.
+        // Stale copy-fallback must not unlock Final Preview — force a real burn-in.
         const latestQuality = String(latest.clipEditSpec?.extras?.renderQuality || "");
         const latestHasHash =
           typeof latest.clipEditSpec?.extras?.renderSpecHash === "string" &&
@@ -2631,7 +2685,7 @@ export default function ClipEditor() {
             latestQuality !== "polished" &&
             !latestHasHash &&
             latest.hasPolishedRender !== true);
-        // Hung worker / lost callback â€” do not poll forever on refresh.
+        // Hung worker / lost callback — do not poll forever on refresh.
         const staleInFlight =
           (status === "queued" || status === "processing") &&
           renderAgeMs(latest) >= 90_000;
@@ -2653,7 +2707,7 @@ export default function ClipEditor() {
         const inFlight = status === "queued" || status === "processing";
 
         if (inFlight && !mustForce) {
-          // Never stack a second job â€” just wait (or soft-fail if it never moves).
+          // Never stack a second job — just wait (or soft-fail if it never moves).
           await pollUntilDone(180_000);
           if (status !== "completed" && status !== "failed") {
             throw new Error(
@@ -2665,7 +2719,7 @@ export default function ClipEditor() {
           !soundDesignNeedsBurn &&
           isPolishedComplete(latest)
         ) {
-          // Already burned with a matching fingerprint â€” do not re-save/re-enqueue
+          // Already burned with a matching fingerprint — do not re-save/re-enqueue
           // (that caused clip-edit spam and cleared hashes mid-session).
           status = "completed";
         } else {
@@ -2713,7 +2767,7 @@ export default function ClipEditor() {
       }
 
       if (opts?.download) {
-        toast.loading("Preparing downloadâ€¦", { id: toastId });
+        toast.loading("Preparing download…", { id: toastId });
         const mediaUrl = buildGatewayProxyUrl(
           `/content/${id}/media?variant=render&_=${Date.now()}`,
         );
@@ -2763,7 +2817,7 @@ export default function ClipEditor() {
     setIsPublishing(true);
     triggerHaptic("medium");
     try {
-      // Render already completed via Save & Render â€” publish that same MP4 to the feed.
+      // Render already completed via Save & Render — publish that same MP4 to the feed.
       toast.loading("Submitting to content moderation and feed...", { id: "publish-clip" });
       await contentApi.publish(id, {
         title,
@@ -2835,7 +2889,7 @@ export default function ClipEditor() {
         }
         toast.success(
           t("clip_editor.polish.details.hooks_ready", {
-            defaultValue: "{{count}} hooks ready â€” tap one to replace the on-clip hook",
+            defaultValue: "{{count}} hooks ready — tap one to replace the on-clip hook",
             count: generatedHooks.length,
           }),
         );
@@ -2889,8 +2943,8 @@ export default function ClipEditor() {
           return;
         }
         retryAnimateRanRef.current = true;
-        toast.message("Retrying animationâ€¦", {
-          description: "Weâ€™ll refresh the preview when the MP4 is ready.",
+        toast.message("Retrying animation…", {
+          description: "We'll refresh the preview when the MP4 is ready.",
         });
         const sourceContentId =
           typeof item.clipEditSpec?.sourceContentId === "string"
@@ -2906,7 +2960,7 @@ export default function ClipEditor() {
           const status = String(latest.status || "").toLowerCase();
           if (latest.storageKey) {
             ready = true;
-            toast.success("Animation ready â€” loading preview");
+            toast.success("Animation ready — loading preview");
             // Trigger media reload by clearing then re-setting via navigation params
             const mediaUrl = buildGatewayProxyUrl(
               `/content/${id}/media?variant=master`,
@@ -2931,7 +2985,7 @@ export default function ClipEditor() {
         }
         if (!ready && !cancelled) {
           toast.message("Still processing", {
-            description: "Animation is taking longer â€” refresh in a minute.",
+            description: "Animation is taking longer — refresh in a minute.",
           });
         }
         mergeSearchParams({ retryAnimate: null });
@@ -2966,7 +3020,7 @@ export default function ClipEditor() {
     triggerHaptic("medium");
     try {
       // Always force on this button: after a client timeout the server may still
-      // say queued/processing â€” reuse/poll would hang on the same dead job again.
+      // say queued/processing — reuse/poll would hang on the same dead job again.
       await ensurePolishedRender({
         toastId: "save-render",
         force: true,
@@ -2974,7 +3028,7 @@ export default function ClipEditor() {
       setRenderStatus("completed");
       finishRenderLayerProgress(true);
       await loadRenderPreview();
-      toast.success("Final render ready â€” play it below, then Publish or Download", {
+      toast.success("Final render ready — play it below, then Publish or Download", {
         id: "save-render",
       });
       triggerHaptic("success");
@@ -2993,7 +3047,7 @@ export default function ClipEditor() {
     }
   };
 
-  /** Download the completed render only â€” no re-render (use Save & Render first). */
+  /** Download the completed render only — no re-render (use Save & Render first). */
   const handleRenderDownload = async () => {
     if (!id) {
       toast.error("No active clip ID found.");
@@ -3009,7 +3063,7 @@ export default function ClipEditor() {
     setIsRendering(true);
     triggerHaptic("medium");
     try {
-      toast.loading("Preparing downloadâ€¦", { id: "render-clip" });
+      toast.loading("Preparing download…", { id: "render-clip" });
       const mediaUrl = buildGatewayProxyUrl(
         `/content/${id}/media?variant=render&_=${Date.now()}`,
       );
@@ -3038,7 +3092,7 @@ export default function ClipEditor() {
     }
   };
 
-  // Auto-save logic (per content id â€” never reuse another clip's draft)
+  // Auto-save logic (per content id — never reuse another clip's draft)
   useEffect(() => {
     specHydratedRef.current = false;
     isLoaded.current = false;
@@ -3083,7 +3137,7 @@ export default function ClipEditor() {
   }, [trimStart, trimEnd, selectedTrackId, saveToLocalStorage]);
 
   // Debounced server clip-edit persist after trim / caption changes.
-  // Omit live volume sliders â€” SRC sync was firing clip-edit on every drag.
+  // Omit live volume sliders — SRC sync was firing clip-edit on every drag.
   useEffect(() => {
     if (!isLoaded.current || !id || !specHydratedRef.current) return;
     if (isRenderingRef.current || renderPollLockRef.current) return;
@@ -3093,16 +3147,16 @@ export default function ClipEditor() {
     return () => clearTimeout(timer);
   }, [trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, captionTextColor, title, description, prompt, hooks, silenceEnabled, hashtags, isNoiseReduced, colorCorrection, appliedTransitions, id, saveClipEditToServer]);
 
-  // Track real user edits only â€” ignore hydration / post-render state sync.
+  // Track real user edits only — ignore hydration / post-render state sync.
   useEffect(() => {
     if (!isLoaded.current || !specHydratedRef.current || suppressDirtyRef.current) return;
     setIsDirty(true);
-    // New edits invalidate the final-render preview â€” back to live CSS/mix preview.
+    // New edits invalidate the final-render preview — back to live CSS/mix preview.
     clearRenderPreview();
   }, [trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, captionTextColor, title, description, prompt, hooks, silenceEnabled, hashtags, colorCorrection, isNoiseReduced, clipVolume, musicVolume, masterVolume, appliedTransitions, cropMode, coachViralApplied, coachTextCuts, coachStitchJoins, clearRenderPreview]);
 
   // Resume a *fresh* in-flight render after refresh. Stale queued/processing jobs
-  // must NOT auto force-restart here â€” that toasted timeout on every polish open.
+  // must NOT auto force-restart here — that toasted timeout on every polish open.
   useEffect(() => {
     if (!id || step !== "polish") return;
     if (isRenderingRef.current) return;
@@ -3150,7 +3204,7 @@ export default function ClipEditor() {
           ? Date.now() - queuedMs
           : Number.POSITIVE_INFINITY;
 
-        // Zombie job from a prior session â€” leave it for Save & Render (force).
+        // Zombie job from a prior session — leave it for Save & Render (force).
         if (ageMs >= 90_000) {
           setRenderStatus("failed");
           toast.message("Previous render didn't finish", {
@@ -3184,14 +3238,14 @@ export default function ClipEditor() {
           setIsDirty(false);
           finishRenderLayerProgress(true);
           await loadRenderPreview();
-          toast.success("Final render ready â€” play it below", { id: "save-render" });
+          toast.success("Final render ready — play it below", { id: "save-render" });
         } else if (status === "failed") {
           finishRenderLayerProgress(false);
-          toast.error("Render failed â€” tap Save & Render to retry", {
+          toast.error("Render failed — tap Save & Render to retry", {
             id: "save-render",
           });
         } else {
-          // Still in flight after 90s â€” don't auto-force (worker may be slow or dead).
+          // Still in flight after 90s — don't auto-force (worker may be slow or dead).
           setRenderStatus("failed");
           finishRenderLayerProgress(false);
           toast.message("Render is taking longer than expected", {
@@ -3269,7 +3323,7 @@ export default function ClipEditor() {
         setTransitionSuggestions(fromCoach);
         if (!opts?.silent) {
           toast.message("Transitions from AI Coach beats", {
-            description: "Preview on the player â€” burn-in on export is next.",
+            description: "Preview on the player — burn-in on export is next.",
           });
         }
         return true;
@@ -3316,7 +3370,7 @@ export default function ClipEditor() {
     }
   }, [DURATION, finalTrim, id, markers, trimEnd, trimStart]);
 
-  // Auto-suggest transitions when entering Polish / Enhance â€” skip when Coach viral stitch is locked.
+  // Auto-suggest transitions when entering Polish / Enhance — skip when Coach viral stitch is locked.
   const transitionsAutoForIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (step !== "polish" || !id || coachViralApplied) return;
@@ -3453,7 +3507,7 @@ export default function ClipEditor() {
           el.currentTime = next.start;
           setCurrentTime(next.start);
         } else if (isReviewingTrimRef.current) {
-          // Review handler advances to polish â€” do not loop the stitch.
+          // Review handler advances to polish — do not loop the stitch.
           return true;
         } else {
           el.pause();
@@ -3546,7 +3600,7 @@ export default function ClipEditor() {
       ) : null}
       <SEO 
         title="Advanced AI Video Clip Studio"
-        description="AI Coach cuts, sound design, captions, and polish for short-form clips â€” then publish."
+        description="AI Coach cuts, sound design, captions, and polish for short-form clips — then publish."
       />
       <StudioPlanBanner
         toolLabel="Clip Studio"
@@ -3562,11 +3616,11 @@ export default function ClipEditor() {
             });
             return;
           }
-          // Optional: user opted in â€” put todayâ€™s plan into AI Coach Creator Context.
+          // Optional: user opted in — put today's plan into AI Coach Creator Context.
           setPrompt(brief.slice(0, 500));
           toast.success("Day brief applied to Creator Context", {
             description: isUserUploadClip
-              ? "Edit the context if it doesnâ€™t match this footage, then Analyze again."
+              ? "Edit the context if it doesn't match this footage, then Analyze again."
               : "Analyze again so Coach uses this brief for cuts and music.",
           });
         }}
@@ -3575,7 +3629,7 @@ export default function ClipEditor() {
         onNicheDialogOpenChange={setNicheDialogOpen}
         onConfirmNicheChange={confirmNicheChange}
       />
-        {/* Step Indicator â€” progress for Clip Studio: source â†’ Coach/Edit â†’ Polish/Publish */}
+        {/* Step Indicator — progress for Clip Studio: source â†’ Coach/Edit â†’ Polish/Publish */}
         <div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-8 mb-8 md:mb-12 overflow-x-auto py-2 no-scrollbar">
           {(() => {
             const sourceDone = Boolean(id);
@@ -3800,7 +3854,7 @@ export default function ClipEditor() {
                   const trackTitle =
                     TRACKS.find((t) => t.id === impact.bgmTrackId)?.title ||
                     `Track ${impact.bgmTrackId}`;
-                  toast.message(`${impact.label} Â· ${trackTitle}`, {
+                  toast.message(`${impact.label} · ${trackTitle}`, {
                     description:
                       "New BGM is selected now. Play the clip or Preview BGM to hear it. Re-analyze to rebuild which moments are kept.",
                   });
@@ -3849,7 +3903,7 @@ export default function ClipEditor() {
                   // Force a Coach-aware re-render on Download/Publish (invalidate stale polish).
                   setRenderStatus("idle");
                   setIsDirty(true);
-                  // textCuts/joins already set by onPreview from Apply â€” keep that order.
+                  // textCuts/joins already set by onPreview from Apply — keep that order.
                   setCoachTextCuts((prev) =>
                     prev?.length === segs.length
                       ? prev
@@ -3861,7 +3915,7 @@ export default function ClipEditor() {
                   );
                   if (segs.length > 0) {
                     const first = segs[0]!;
-                    // Bounding window for UI only â€” playback uses coachTextCuts order.
+                    // Bounding window for UI only — playback uses coachTextCuts order.
                     const start = Math.min(...segs.map((s) => s.start));
                     const end = Math.max(...segs.map((s) => s.end));
                     if (Number.isFinite(start) && Number.isFinite(end) && end > start) {
@@ -3980,7 +4034,7 @@ export default function ClipEditor() {
                     const d = e.currentTarget.duration;
                     if (Number.isFinite(d) && d > 0) {
                       setDuration(d);
-                      // Only clamp end to duration â€” never rewrite in-point after hydrate
+                      // Only clamp end to duration — never rewrite in-point after hydrate
                       setTrimEnd((prev) => Math.min(Math.max(prev, 1), d));
                       if (!specHydratedRef.current) {
                         setTrimStart(0);
@@ -4055,10 +4109,10 @@ export default function ClipEditor() {
                 <div className="flex h-full w-full items-center justify-center bg-muted/30 text-xs text-muted-foreground">
                   {videoLoading ? (
                     <span className="inline-flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Loading clipâ€¦
+                      <Loader2 className="h-4 w-4 animate-spin" /> Loading clip…
                     </span>
                   ) : (
-                    "No media yet â€” re-upload if this stays empty"
+                    "No media yet — re-upload if this stays empty"
                   )}
                 </div>
               )}
@@ -4076,7 +4130,16 @@ export default function ClipEditor() {
                 locked={editsLocked}
                 enabled={t3Authorized}
                 interactive={t3Authorized && !editsLocked}
-                layers={t3Composition.layers}
+                layers={t3Composition.layers.map((layer) => ({
+                  id: layer.id,
+                  positionX: layer.positionX,
+                  verticalAnchor: layer.verticalAnchor,
+                  startMs: layer.startMs,
+                  endMs: layer.endMs,
+                  fontSize: layer.fontSize,
+                  text: layer.text,
+                  lineCount: Math.max(1, layer.text.split('\n').length),
+                }))}
                 activeLayerId={t3Composition.activeLayerId}
                 onSelectLayer={onT3SelectLayer}
                 onPositionChange={onT3PositionChange}
@@ -4139,7 +4202,7 @@ export default function ClipEditor() {
                 </motion.div>
               </div>
               
-              {/* Tap to Play â€” under caption overlays so text stays draggable */}
+              {/* Tap to Play — under caption overlays so text stays draggable */}
               <div 
                 className="absolute inset-0 z-10 cursor-pointer"
                 onClick={() => void togglePlayback()}
@@ -4454,7 +4517,7 @@ export default function ClipEditor() {
                         key={`${marker.label}-${i}`}
                         className="absolute inset-y-0 z-10 w-10 -translate-x-1/2 group/marker"
                         style={{ left: `${(marker.time / Math.max(0.5, DURATION)) * 100}%` }}
-                        title={`${t(`clip_editor.trim.markers.${marker.label}`, { defaultValue: marker.label.replace(/_/g, " ") })} Â· ${formatTime(marker.time)} â€” ${t(`clip_editor.trim.marker_roles.${marker.label}`, { defaultValue: beatPurpose(marker.label) })}`}
+                        title={`${t(`clip_editor.trim.markers.${marker.label}`, { defaultValue: marker.label.replace(/_/g, " ") })} · ${formatTime(marker.time)} — ${t(`clip_editor.trim.marker_roles.${marker.label}`, { defaultValue: beatPurpose(marker.label) })}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           seekVideo(marker.time);
@@ -4632,7 +4695,7 @@ export default function ClipEditor() {
                       <p className="text-[10px] text-muted-foreground leading-relaxed">
                         {t("clip_editor.trim.scan_help", {
                           defaultValue:
-                            "Optional timeline pins only â€” not the Coach cut list. Click a beat to jump there; drag handles snap to them. Coach Analyze still builds the multi-cut plan + BGM.",
+                            "Optional timeline pins only — not the Coach cut list. Click a beat to jump there; drag handles snap to them. Coach Analyze still builds the multi-cut plan + BGM.",
                         })}
                       </p>
                   </div>
@@ -4726,7 +4789,7 @@ export default function ClipEditor() {
               </div>
             </div>
 
-            {/* AI Sound Design Review â€” after trim timeline */}
+            {/* AI Sound Design Review — after trim timeline */}
             <div
               ref={setSoundReviewHost}
               className="w-full min-w-0 empty:hidden"
@@ -4838,13 +4901,13 @@ export default function ClipEditor() {
               </div>
             ) : null}
 
-            <div className="grid lg:grid-cols-3 gap-6 lg:gap-8 pb-32 md:pb-0 lg:items-start">
+            <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] gap-6 lg:gap-8 pb-32 md:pb-0 lg:items-stretch lg:min-h-[calc(100dvh-5.5rem)]">
               {/* Preview Column — stays visible while caption controls scroll */}
-              <div className="lg:col-span-2 space-y-4 md:space-y-6 lg:sticky lg:top-20 lg:self-start">
-                <div className="w-full max-w-[320px] sm:max-w-[340px] md:max-w-[420px] mx-auto space-y-3">
+              <div className="space-y-4 md:space-y-6 lg:sticky lg:top-20 lg:self-start">
+                <div className="w-full max-w-[240px] sm:max-w-[260px] md:max-w-[300px] mx-auto space-y-3">
                 <div
                   ref={polishPreviewRef}
-                  className="aspect-[9/16] w-full bg-background rounded-xl overflow-hidden relative shadow-soft-2xl border border-border group"
+                  className="aspect-[9/16] w-full max-h-[min(58dvh,560px)] bg-background rounded-xl overflow-hidden relative shadow-soft-2xl border border-border group mx-auto"
                 >
                 {(showingFinalRender ? renderPreviewSrc : videoSrc) ? (
                   <div
@@ -4932,7 +4995,7 @@ export default function ClipEditor() {
                   </div>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
-                    {videoLoading || isRendering ? "Loading previewâ€¦" : "No clip media yet"}
+                    {videoLoading || isRendering ? "Loading preview…" : "No clip media yet"}
                   </div>
                 )}
 
@@ -4944,19 +5007,20 @@ export default function ClipEditor() {
                   />
                 ) : null}
 
-                <div
-                  className="absolute inset-0 z-10 cursor-pointer"
+                <button
+                  type="button"
+                  className="absolute inset-0 z-[15] cursor-pointer bg-transparent border-0 p-0"
                   onClick={() => void togglePlayback()}
-                  aria-hidden
+                  aria-label={isPlaying ? t('clip_editor.player.pause') : t('clip_editor.player.play')}
                 />
 
-                <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+                <div className="absolute inset-0 z-[16] flex items-center justify-center pointer-events-none">
                   <motion.div
                     initial={false}
                     animate={{ scale: isPlaying ? 0.9 : 1, opacity: isPlaying ? 0 : 1 }}
                   >
-                    <div className="size-16 md:size-20 bg-popover/80 backdrop-blur-xl rounded-full text-foreground border border-border shadow-soft-xl flex items-center justify-center">
-                      <Play size={28} fill="currentColor" className="ml-1" />
+                    <div className="size-14 md:size-16 bg-popover/80 backdrop-blur-xl rounded-full text-foreground border border-border shadow-soft-xl flex items-center justify-center">
+                      <Play size={24} fill="currentColor" className="ml-1" />
                     </div>
                   </motion.div>
                 </div>
@@ -4985,7 +5049,7 @@ export default function ClipEditor() {
                               : null,
                           ]
                             .filter(Boolean)
-                            .join(" Â· ")}
+                            .join(" · ")}
                     </div>
                   </div>
                 ) : null}
@@ -5022,7 +5086,16 @@ export default function ClipEditor() {
                   finalRender={showingFinalRender}
                   enabled={t3Authorized}
                   interactive={t3Authorized && !editsLocked && !showingFinalRender}
-                  layers={t3Composition.layers}
+                  layers={t3Composition.layers.map((layer) => ({
+                    id: layer.id,
+                    positionX: layer.positionX,
+                    verticalAnchor: layer.verticalAnchor,
+                    startMs: layer.startMs,
+                    endMs: layer.endMs,
+                    fontSize: layer.fontSize,
+                    text: layer.text,
+                    lineCount: Math.max(1, layer.text.split('\n').length),
+                  }))}
                   activeLayerId={t3Composition.activeLayerId}
                   onSelectLayer={onT3SelectLayer}
                   onPositionChange={onT3PositionChange}
@@ -5069,13 +5142,15 @@ export default function ClipEditor() {
                 >
                   {isPlaying ? <Pause size={18} fill="currentColor" className="mr-2" /> : <Play size={18} fill="currentColor" className="mr-2 ml-0.5" />}
                   {isPlaying
-                    ? t("clip_editor.player.pause")
+                    ? t("clip_editor.player.pause", { defaultValue: "Pause" })
                     : showingFinalRender
-                      ? "Play final render"
-                      : t("clip_editor.polish.audio.play_mix", { defaultValue: "Play clip + music mix" })}
+                      ? "Preview Clip"
+                      : selectedTrackId
+                        ? "Preview with Music"
+                        : "Preview Clip"}
                 </Button>
               </div>
-                {/* AI Sound Design Review â€” under polish clip preview (hidden when empty) */}
+                {/* AI Sound Design Review — under polish clip preview (hidden when empty) */}
                 <div
                   ref={setSoundReviewHost}
                   className="w-full min-w-0 empty:hidden"
@@ -5083,28 +5158,28 @@ export default function ClipEditor() {
                 />
             </div>
 
-            {/* Controls Column — independent scroll so preview stays in view */}
+            {/* Controls Column — full-height right rail aligned to viewport bottom */}
             <div
               className={cn(
-                "relative space-y-6 lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1",
+                "relative flex flex-col space-y-6 min-h-0 lg:h-[calc(100dvh-5.5rem)] lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-hidden lg:pr-0",
                 editsLocked && "pointer-events-none select-none",
               )}
             >
               {editsLocked ? (
                 <div className="absolute inset-0 z-20 flex items-start justify-center rounded-xl bg-background/55 px-4 pt-6 backdrop-blur-[1px]">
                   <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-center text-[11px] font-semibold text-amber-900 shadow-sm dark:text-amber-100">
-                    Rendering in progress â€” edits locked until Final Preview finishes.
+                    Rendering in progress — edits locked until Final Preview finishes.
                   </div>
                 </div>
               ) : null}
               <div
                 className={cn(
-                  "ui-card p-0 overflow-hidden lg:border-border",
+                  "ui-card p-0 overflow-hidden lg:border-border flex-1 min-h-0 flex flex-col",
                   editsLocked && "opacity-55",
                 )}
                 aria-disabled={editsLocked || undefined}
               >
-                <Tabs value={activePolishTab} onValueChange={setActivePolishTab} className="w-full">
+                <Tabs value={activePolishTab} onValueChange={setActivePolishTab} className="w-full flex flex-col flex-1 min-h-0">
                   <TabsList className="w-full grid grid-cols-4 bg-muted border-none rounded-none p-1 shrink-0 h-14">
                     <TabsTrigger value="details" className="text-[10px] md:text-[11px] font-bold py-0 h-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
                       <div className="flex flex-col items-center gap-1">
@@ -5132,7 +5207,7 @@ export default function ClipEditor() {
                     </TabsTrigger>
                   </TabsList>
 
-                  <div className="p-4 sm:p-6">
+                  <div className="p-4 sm:p-6 flex-1 min-h-0 overflow-y-auto overscroll-contain">
                     <TabsContent value="details" className="mt-0 space-y-6">
                       <div className="flex items-center justify-between mb-1 md:mb-2">
                         <h3 className="text-base md:text-lg font-display font-bold text-foreground flex items-center gap-2">
@@ -5255,7 +5330,31 @@ export default function ClipEditor() {
                           </div>
                           <Textarea 
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            onChange={(e) => {
+                              const next = e.target.value;
+                              const extracted = next.match(/#[\p{L}\p{N}_]+/gu) ?? [];
+                              if (extracted.length) {
+                                const cleaned = next
+                                  .replace(/#[\p{L}\p{N}_]+/gu, ' ')
+                                  .replace(/[ \t]+\n/g, '\n')
+                                  .replace(/\n{3,}/g, '\n\n')
+                                  .replace(/[ \t]{2,}/g, ' ')
+                                  .trim();
+                                setDescription(cleaned);
+                                setHashtags((prev) => {
+                                  const merged = [...prev];
+                                  for (const raw of extracted) {
+                                    const tag = raw.startsWith('#') ? raw : `#${raw}`;
+                                    if (!merged.some((h) => h.toLowerCase() === tag.toLowerCase())) {
+                                      merged.push(tag);
+                                    }
+                                  }
+                                  return merged.slice(0, 30);
+                                });
+                                return;
+                              }
+                              setDescription(next);
+                            }}
                             placeholder={t('clip_editor.polish.details.caption_placeholder')}
                             rows={4}
                             className="bg-muted/30 border-border rounded-md text-sm font-medium resize-none"
@@ -5290,24 +5389,37 @@ export default function ClipEditor() {
                           </AnimatePresence>
                         </div>
 
-                        {/* Hashtags */}
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold text-muted-foreground">
-                            {t('clip_editor.polish.details.hashtags', { defaultValue: 'Hashtags' })}
-                          </label>
-                          <div className="flex flex-wrap gap-1.5 min-h-[32px]">
-                            {hashtags.map((tag) => (
-                              <Badge
-                                key={tag}
-                                variant="secondary"
-                                className="gap-1 text-[10px] cursor-pointer"
-                                onClick={() => setHashtags((prev) => prev.filter((h) => h !== tag))}
-                              >
-                                {tag}
-                                <span className="opacity-60">Ã—</span>
-                              </Badge>
-                            ))}
+                        {/* Hashtags — chips only here; caption body stays tag-free */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <label className="text-[10px] font-bold text-muted-foreground leading-none">
+                              {t('clip_editor.polish.details.hashtags', { defaultValue: 'Hashtags' })}
+                            </label>
+                            {hashtags.length > 0 ? (
+                              <span className="text-[9px] font-mono text-muted-foreground">
+                                {hashtags.length} tag{hashtags.length === 1 ? '' : 's'}
+                              </span>
+                            ) : null}
                           </div>
+                          {hashtags.length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {hashtags.map((tag) => (
+                                <Badge
+                                  key={tag}
+                                  variant="secondary"
+                                  className="gap-1 text-[10px] cursor-pointer"
+                                  onClick={() => setHashtags((prev) => prev.filter((h) => h !== tag))}
+                                >
+                                  {tag}
+                                  <span className="opacity-60">×</span>
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-muted-foreground leading-snug">
+                              Generated tags appear here (not duplicated inside Caption).
+                            </p>
+                          )}
                           <Input
                             value={hashtagDraft}
                             onChange={(e) => setHashtagDraft(e.target.value)}
@@ -5342,7 +5454,7 @@ export default function ClipEditor() {
                                   toast.success(
                                     t("clip_editor.polish.details.hooks_ready", {
                                       defaultValue:
-                                        "{{count}} hooks ready â€” tap one to replace the on-clip hook",
+                                        "{{count}} hooks ready — tap one to replace the on-clip hook",
                                       count: next.length,
                                     }),
                                   );
@@ -5473,7 +5585,7 @@ export default function ClipEditor() {
                               />
                             </span>
                             <span className="text-[10px] font-normal text-muted-foreground leading-snug">
-                              Final Render only â€” trims quiet edges off the MP4. Studio play stays full length. Leave off for
+                              Final Render only — trims quiet edges off the MP4. Studio play stays full length. Leave off for
                               WYSIWYG length (quiet clips can otherwise burn down to ~1s).
                             </span>
                           </label>
@@ -5695,7 +5807,7 @@ export default function ClipEditor() {
                                   }
                                   if (!ready) {
                                     toast.message("Still processing", {
-                                      description: "Transcription is taking longer â€” try again in a minute.",
+                                      description: "Transcription is taking longer — try again in a minute.",
                                     });
                                   }
                                 } catch (err) {
@@ -5724,7 +5836,7 @@ export default function ClipEditor() {
                             <p className="text-[10px] font-bold text-foreground">{t('clip_editor.polish.meme.pro_tip')}</p>
                           </div>
                           <p className="text-[11px] text-muted-foreground leading-relaxed">
-                              Captions, hooks, BGM, and silence cuts burn into the exported MP4 on Download/Render â€” not just this preview.
+                              Captions, hooks, BGM, and silence cuts burn into the exported MP4 on Download/Render — not just this preview.
                           </p>
                           </div>
                         </div>
@@ -5796,7 +5908,7 @@ export default function ClipEditor() {
                               <span className="font-semibold">Original Clip</span> (SRC) and{" "}
                               <span className="font-semibold">Music</span> (BGM) here or on the
                               Sound timeline for commentary+Foley only. Final Output is master
-                              level â€” it does not strip VO/Foley.{" "}
+                              level — it does not strip VO/Foley.{" "}
                               <span className="font-semibold">AMB</span> is separate ambience.
                             </p>
                           )}
@@ -5817,7 +5929,7 @@ export default function ClipEditor() {
                                 </span>
                                 {soundDesignOwnsOriginal ? (
                                   <p className="text-[9px] font-medium text-emerald-600 dark:text-emerald-300/90">
-                                    Synced with Sound timeline Â· SRC
+                                    Synced with Sound timeline · SRC
                                   </p>
                                 ) : null}
                               </div>
@@ -5865,7 +5977,7 @@ export default function ClipEditor() {
                           ) : isAnimateClip ? (
                             <p className="text-[10px] text-muted-foreground leading-relaxed">
                               {t('clip_editor.polish.audio.animate_no_source', {
-                                defaultValue: 'Animated clips often have no source audio â€” raise BGM or keep this low.',
+                                defaultValue: 'Animated clips often have no source audio — raise BGM or keep this low.',
                               })}
                             </p>
                           ) : null}
@@ -5891,7 +6003,7 @@ export default function ClipEditor() {
                                 </span>
                                 {soundDesignOwnsAmbience ? (
                                   <p className="text-[9px] font-medium text-teal-700 dark:text-teal-300/90">
-                                    Separate from AMB Â· Ambience uses Sound timeline
+                                    Separate from AMB · Ambience uses Sound timeline
                                   </p>
                                 ) : null}
                               </div>
@@ -5933,7 +6045,7 @@ export default function ClipEditor() {
                           {soundDesignOwnsAmbience || soundDesignMixActive ? (
                             <p className="text-[10px] text-muted-foreground leading-relaxed">
                               Mute here (or BGM on the Sound timeline) for commentary+Foley only.
-                              AMB is ambient bed â€” separate from this Music slider.
+                              AMB is ambient bed — separate from this Music slider.
                             </p>
                           ) : null}
                         </div>
@@ -5975,9 +6087,9 @@ export default function ClipEditor() {
                                 <SelectItem
                                     key={track.id}
                                   value={track.id}
-                                  label={`${track.title} Â· ${track.genre}`}
+                                  label={`${track.title} · ${track.genre}`}
                                   >
-                                  {track.title} Â· {track.genre}
+                                  {track.title} · {track.genre}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -6097,7 +6209,7 @@ export default function ClipEditor() {
                             {isAnimateClip
                               ? t("clip_editor.polish.audio.animate_no_source", {
                                   defaultValue:
-                                    "Animated clips often have no source audio â€” raise BGM or keep this low.",
+                                    "Animated clips often have no source audio — raise BGM or keep this low.",
                                 })
                               : t("clip_editor.polish.enhance.audio_polish_hint", {
                                   defaultValue:
@@ -6145,7 +6257,7 @@ export default function ClipEditor() {
                           <p className="text-[11px] text-muted-foreground leading-relaxed">
                             {t("clip_editor.polish.enhance.visual_polish_hint", {
                               defaultValue:
-                                "Drag toward Vibrant â€” saturation and contrast update on the 9:16 preview immediately.",
+                                "Drag toward Vibrant — saturation and contrast update on the 9:16 preview immediately.",
                             })}
                           </p>
                           <div className="space-y-3">
@@ -6314,7 +6426,7 @@ export default function ClipEditor() {
                 </Tabs>
               </div>
 
-              <div className="hidden lg:block space-y-3 pt-4">
+              <div className="hidden lg:flex flex-col space-y-3 pt-3 shrink-0 border-t border-border/40 mt-auto">
                 <div
                   className={cn(
                     "rounded-xl border px-3 py-2 text-[11px] font-medium",
@@ -6324,14 +6436,14 @@ export default function ClipEditor() {
                   )}
                 >
                   {isRendering && renderLayerPhase === "running"
-                    ? `Rendering ${renderLayers[Math.min(renderLayerIndex, Math.max(0, renderLayers.length - 1))]?.label || "clip"}â€¦`
+                    ? `Rendering ${renderLayers[Math.min(renderLayerIndex, Math.max(0, renderLayers.length - 1))]?.label || "clip"}…`
                     : isRendering
-                      ? "Rendering your edits into the MP4â€¦"
+                      ? "Rendering your edits into the MP4…"
                       : showingFinalRender
-                        ? "Final render in preview â€” play it, then Publish or Download."
+                        ? "Final render ready — preview it before publishing or downloading."
                         : renderReady
-                          ? "Render ready â€” loading final previewâ€¦"
-                          : "Edits pending â€” tap Save & Render before Publish or Download."}
+                          ? "Render ready — loading final preview…"
+                          : "Edits pending — select Save & Render before publishing or downloading."}
                 </div>
                 <Button
                   size="default"
@@ -6349,8 +6461,8 @@ export default function ClipEditor() {
                     <>
                       <Loader2 size={18} className="mr-1 animate-spin" />
                       {renderStatus === "processing" || renderStatus === "queued"
-                        ? "Renderingâ€¦"
-                        : "Savingâ€¦"}
+                        ? "Rendering…"
+                        : "Saving…"}
                     </>
                   ) : (
                     <>
@@ -6418,9 +6530,9 @@ export default function ClipEditor() {
                   )}
                 >
                   {isRendering && renderLayerPhase === "running"
-                    ? `Rendering ${renderLayers[Math.min(renderLayerIndex, Math.max(0, renderLayers.length - 1))]?.short || "â€¦"} Â· tap to expand status above`
+                    ? `Rendering ${renderLayers[Math.min(renderLayerIndex, Math.max(0, renderLayers.length - 1))]?.short || "…"} · tap to expand status above`
                     : renderReady
-                      ? "Render ready â€” Publish or Download."
+                      ? "Render ready — Publish or Download."
                       : "Save & Render required before Publish or Download."}
                 </div>
                 <SocialPublishTargets

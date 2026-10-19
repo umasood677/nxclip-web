@@ -58,7 +58,7 @@ describe("exportWarnings", () => {
           height: 20,
           zIndex: 1,
           text: "Hi",
-          fontFamily: "Playfair Display",
+          fontFamily: "Unknown Brand Serif",
         },
       ],
     };

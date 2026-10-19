@@ -126,6 +126,135 @@ export type BriefBrandSeed = {
   name?: string;
 };
 
+/** Cached signed URLs / palette from the active Brand Kit (cleared on kit change). */
+export type BriefBrandPreviewCache = {
+  logoUrl: string | null;
+  productImageUrls: string[];
+  paletteHex: string[];
+};
+
+export function brandPreviewFromKit(
+  kit: BrandKitSummary | null | undefined,
+): BriefBrandPreviewCache | null {
+  const ctx = normalizeBrandContext(kit);
+  if (!ctx) return null;
+  const productImageUrls = [ctx.assets.productUrl, ctx.assets.modelUrl]
+    .filter((u): u is string => Boolean(u && /^https?:/i.test(u)));
+  const paletteHex = ctx.colors.all.map((c) => c.hex).filter(Boolean);
+  return {
+    logoUrl:
+      ctx.assets.logoUrl && /^https?:/i.test(ctx.assets.logoUrl)
+        ? ctx.assets.logoUrl
+        : null,
+    productImageUrls,
+    paletteHex,
+  };
+}
+
+const DEFAULT_BRIEF_NAME = "New ad project";
+const DEFAULT_CTA = "Learn more";
+const DEFAULT_TONE = "confident";
+
+function fieldMatchesBrandSeed(
+  field: keyof BriefBrandSeed,
+  value: string | undefined,
+  kit: BrandKitSummary,
+): boolean {
+  const ctx = normalizeBrandContext(kit);
+  if (!ctx) return false;
+  const v = (value ?? "").trim();
+  switch (field) {
+    case "productOrService":
+      return Boolean(ctx.signatureProduct) && v === ctx.signatureProduct;
+    case "targetAudience":
+      return Boolean(ctx.targetAudience) && v === ctx.targetAudience;
+    case "desiredTone":
+      return (
+        Boolean(ctx.tone) &&
+        (v === ctx.tone || (!v && DEFAULT_TONE === ctx.tone))
+      );
+    case "cta":
+      return (
+        Boolean(ctx.preferredCta) &&
+        (v === ctx.preferredCta ||
+          (v === DEFAULT_CTA && ctx.preferredCta === DEFAULT_CTA))
+      );
+    case "coreMessage":
+      return Boolean(ctx.tagline) && v === ctx.tagline;
+    case "name":
+      return (
+        Boolean(ctx.name) &&
+        (v === `${ctx.name} campaign` ||
+          (v === DEFAULT_BRIEF_NAME && `${ctx.name} campaign` === DEFAULT_BRIEF_NAME))
+      );
+    default:
+      return false;
+  }
+}
+
+/** Drop brief + preview fields that still reflect a previous Brand Kit seed. */
+export function clearStaleBriefBrandSeed(
+  previousKit: BrandKitSummary | null | undefined,
+  current: BriefBrandSeed & { brandPreview?: BriefBrandPreviewCache | null },
+): Partial<
+  BriefBrandSeed & { brandPreview?: BriefBrandPreviewCache | null }
+> {
+  const cleared: Partial<
+    BriefBrandSeed & { brandPreview?: BriefBrandPreviewCache | null }
+  > = { brandPreview: null };
+  if (!previousKit?.id) return cleared;
+  const fields: (keyof BriefBrandSeed)[] = [
+    "productOrService",
+    "targetAudience",
+    "desiredTone",
+    "cta",
+    "coreMessage",
+    "name",
+  ];
+  for (const field of fields) {
+    const cur = current[field];
+    if (typeof cur === "string" && fieldMatchesBrandSeed(field, cur, previousKit)) {
+      if (field === "name") cleared.name = DEFAULT_BRIEF_NAME;
+      else if (field === "cta") cleared.cta = DEFAULT_CTA;
+      else if (field === "desiredTone") cleared.desiredTone = DEFAULT_TONE;
+      else cleared[field] = "";
+    }
+  }
+  return cleared;
+}
+
+/** Switch Brand Kit: clear stale seeds, then prefill empties from the new kit. */
+export function applyBrandKitToBriefForm(
+  previousKitId: string,
+  nextKitId: string,
+  brands: BrandKitSummary[],
+  current: BriefBrandSeed & { brandPreview?: BriefBrandPreviewCache | null },
+): Partial<
+  BriefBrandSeed & {
+    brandKitId: string;
+    brandPreview?: BriefBrandPreviewCache | null;
+  }
+> {
+  const previousKit =
+    previousKitId && previousKitId !== nextKitId
+      ? (brands.find((b) => b.id === previousKitId) ?? null)
+      : null;
+  const nextKit = nextKitId ? (brands.find((b) => b.id === nextKitId) ?? null) : null;
+  const afterClear = {
+    ...current,
+    ...clearStaleBriefBrandSeed(previousKit, current),
+    brandKitId: nextKitId,
+    brandPreview: null,
+  };
+  const seed = seedBriefFromBrand(nextKit, afterClear);
+  const preview = brandPreviewFromKit(nextKit);
+  return {
+    brandKitId: nextKitId,
+    brandPreview: preview,
+    ...seed,
+  };
+}
+
 /**
  * Prefill empty brief fields from Brand Kit. Never overwrites non-empty user values.
  * Does not trigger AI.

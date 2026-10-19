@@ -11,6 +11,11 @@ export type TypographyHitLayer = {
   verticalAnchor: number;
   startMs: number;
   endMs: number;
+  /** Plan font size in layout pixels (e.g. 56 on 1080x1920). */
+  fontSize?: number;
+  /** Approximate line count for hit height. */
+  lineCount?: number;
+  text?: string;
 };
 
 /** Both editor stages share the same activation/locked/final-render gates. */
@@ -49,7 +54,7 @@ export function ClipTypographyOverlay({
   if (!state.active || locked || finalRender) return null;
   if (state.invalid) {
     return (
-      <div role="alert" className="absolute bottom-2 text-xs">
+      <div role="alert" className="absolute bottom-2 text-xs pointer-events-none">
         Saved typography layout is invalid. Export requires repair.
       </div>
     );
@@ -62,18 +67,25 @@ export function ClipTypographyOverlay({
     const rect = stage.getBoundingClientRect();
     if (rect.width < 8 || rect.height < 8) return;
     const x = Math.min(0.94, Math.max(0.06, (clientX - rect.left) / rect.width));
+    // Pointer maps to baseline Y (glyphs sit above the baseline).
     const y = Math.min(0.94, Math.max(0.06, (clientY - rect.top) / rect.height));
     onPositionChange(layerId, { positionX: x, verticalAnchor: y });
   };
 
   const visibleLayers = layers.filter((l) => timeMs >= l.startMs && timeMs < l.endMs);
+  const planH = Math.max(1, state.plan.height);
 
   return (
-    <div ref={stageRef} className="absolute inset-0 z-20">
+    <div ref={stageRef} className="absolute inset-0 z-20 pointer-events-none">
       <CanonicalCaptionPreview plan={state.plan} timeMs={timeMs} enabled={true} aspect={aspect} />
       {interactive && onPositionChange
         ? visibleLayers.map((layer) => {
             const active = layer.id === activeLayerId;
+            const fontSize = Math.max(16, layer.fontSize ?? 56);
+            const lines = Math.max(1, layer.lineCount ?? (layer.text?.split('\n').length || 1));
+            // Map plan px → % of stage so the ring hugs the rendered glyphs.
+            const heightPct = Math.min(28, ((fontSize * lines * 1.35) / planH) * 100);
+            const widthPct = Math.min(88, Math.max(28, (String(layer.text || '').length || 8) * 2.2));
             return (
               <div
                 key={layer.id}
@@ -82,16 +94,21 @@ export function ClipTypographyOverlay({
                 aria-label={active ? 'Drag caption on clip' : 'Select and drag caption layer'}
                 aria-pressed={active}
                 className={cn(
-                  'absolute z-30 min-h-[2.75rem] w-[min(88%,20rem)] max-w-[88%] -translate-x-1/2 -translate-y-1/2',
-                  'cursor-grab active:cursor-grabbing select-none touch-none rounded-lg',
+                  'absolute z-30 pointer-events-auto -translate-x-1/2',
+                  'cursor-grab active:cursor-grabbing select-none touch-none rounded-md',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70',
                   active
-                    ? 'ring-1 ring-primary/40'
-                    : 'hover:ring-1 hover:ring-white/25',
+                    ? 'ring-1 ring-primary/50 bg-primary/5'
+                    : 'hover:ring-1 hover:ring-white/30',
                 )}
                 style={{
                   left: `${layer.positionX * 100}%`,
                   top: `${layer.verticalAnchor * 100}%`,
+                  // Baseline at bottom of hit box — matches canvas alphabetic baseline.
+                  transform: 'translate(-50%, -100%)',
+                  width: `${widthPct}%`,
+                  height: `${heightPct}%`,
+                  minHeight: '1.25rem',
                 }}
                 onPointerDown={(e) => {
                   e.preventDefault();

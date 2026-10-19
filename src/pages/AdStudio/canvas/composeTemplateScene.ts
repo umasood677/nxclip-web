@@ -19,6 +19,7 @@ import {
   type TemplateRegion,
   type TemplateSlotRole,
 } from "./templateCatalog";
+import { fontIdForBrandFamily } from "../lib/adStudioFontId";
 import { sanitizeSceneGraphForClient } from "./sanitizeSceneGraph";
 
 export type TemplatePreviewStatus = "ready" | "partial" | "blocked";
@@ -92,6 +93,10 @@ function resolvePalette(brand?: BrandKitSummary | null) {
   return { primary, secondary, accent, background, text };
 }
 
+function brandGradientFill(palette: ReturnType<typeof resolvePalette>): string {
+  return `linear-gradient(160deg, ${palette.background} 0%, ${palette.primary}55 55%, ${palette.background} 100%)`;
+}
+
 function resolveFonts(brand?: BrandKitSummary | null) {
   const ty = brand?.typography ?? [];
   const pick = (role: string, fallback: string) =>
@@ -103,15 +108,7 @@ function resolveFonts(brand?: BrandKitSummary | null) {
   };
 }
 
-function fontIdForFamily(family: string): string {
-  const key = family.toLowerCase().replace(/\s+/g, "_");
-  if (key.includes("playfair")) return "playfair_display";
-  if (key.includes("bebas")) return "bebas_neue";
-  if (key.includes("anton")) return "anton";
-  if (key.includes("inter")) return "inter";
-  if (key.includes("montserrat")) return "montserrat";
-  return key;
-}
+const fontIdForFamily = fontIdForBrandFamily;
 
 export function resolveTemplateIdForConcept(
   concept: AdConcept,
@@ -203,18 +200,42 @@ export function composeTemplatePreview(input: {
     const box = regionBox(region, width, height);
 
     if (recipe.kind === "background") {
-      layers.push({
-        id: layerId(templateId, "background", recipe.regionId),
-        type: "shape",
-        name: "Background",
-        shape: "rectangle",
-        x: 0,
-        y: 0,
-        width,
-        height,
-        zIndex: recipe.zIndex,
-        fill: palette.background,
-      });
+      const bgDef = def.background;
+      if (bgDef.mode === "slot" && bgDef.slotId) {
+        const assets = bound.get(bgDef.slotId) ?? [];
+        const asset = assets[0];
+        if (asset) {
+          layers.push({
+            id: layerId(templateId, "background", recipe.regionId),
+            type: "image",
+            name: "Background",
+            x: 0,
+            y: 0,
+            width,
+            height,
+            zIndex: recipe.zIndex,
+            assetId: asset.assetId,
+            objectFit: "cover",
+          });
+        }
+        continue;
+      }
+      if (bgDef.mode === "brandGradient") {
+        layers.push({
+          id: layerId(templateId, "background", recipe.regionId),
+          type: "shape",
+          name: "Background",
+          shape: "rectangle",
+          x: 0,
+          y: 0,
+          width,
+          height,
+          zIndex: recipe.zIndex,
+          fill: brandGradientFill(palette),
+        });
+        continue;
+      }
+      // solid — canvas.backgroundColor only (matches server TemplateEngine).
       continue;
     }
 

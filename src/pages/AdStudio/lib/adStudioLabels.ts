@@ -28,9 +28,13 @@ export const AD_CTA_SUGGESTIONS = [
   "Book Now",
 ] as const;
 
+import type { BriefBrandPreviewCache } from "../../BrandKits/lib/brandContext";
+
 export type AdBriefFormState = {
   name: string;
   brandKitId: string;
+  /** Signed URL / palette cache from active kit — cleared when brandKitId changes. */
+  brandPreview?: BriefBrandPreviewCache | null;
   productOrService: string;
   advertisingObjective: string;
   targetAudience: string;

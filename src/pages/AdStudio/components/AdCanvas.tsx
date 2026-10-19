@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "../../../lib/utils";
 import {
   resolveLayerAssetUrl,
@@ -243,6 +243,17 @@ function LayerVisual({
   onAssetLoadError?: (assetId: string) => void;
 }) {
   const [failed, setFailed] = useState(false);
+  const imgLayer =
+    layer.type === "image" || layer.type === "logo"
+      ? (layer as Extract<AdSceneLayer, { type: "image" | "logo" }>)
+      : null;
+  const resolvedUrl = imgLayer
+    ? resolveLayerAssetUrl(assetUrls, storageKeyUrls, imgLayer)
+    : null;
+
+  useEffect(() => {
+    setFailed(false);
+  }, [imgLayer?.assetId, imgLayer?.storageKey, resolvedUrl]);
 
   if (layer.type === "text") {
     const t = layer as Extract<AdSceneLayer, { type: "text" }>;
@@ -294,10 +305,9 @@ function LayerVisual({
     );
   }
   if (layer.type === "image" || layer.type === "logo") {
-    const img = layer as Extract<AdSceneLayer, { type: "image" | "logo" }>;
+    const img = imgLayer!;
     const presence = inspectLayerAsset(img);
-    // Never use storageKey as an image source — only authorized readUrls.
-    const url = resolveLayerAssetUrl(assetUrls, storageKeyUrls, img);
+    const url = resolvedUrl;
 
     if (presence.missing && !url) {
       return (

@@ -9,7 +9,10 @@ import {
   type BrandKitSummary,
 } from "../BrandKits/CreateBrandKitDialog";
 import { BrandKitImportDialog } from "../BrandKits/components/BrandKitImportDialog";
-import { seedBriefFromBrand } from "../BrandKits/lib/brandContext";
+import {
+  applyBrandKitToBriefForm,
+  seedBriefFromBrand,
+} from "../BrandKits/lib/brandContext";
 import { AdStudioHome, type RecentCreative } from "./components/AdStudioHome";
 import { GuidedBriefComposer } from "./components/GuidedBriefComposer";
 import {
@@ -22,6 +25,9 @@ import {
   writeSelectedConceptId,
 } from "./lib/selectedConceptStorage";
 import type { AdConcept } from "./types";
+import { getTemplateDef } from "./canvas/templateCatalog";
+import type { AdSceneOutputFormatId, AdStudioTemplateId } from "./canvas/templateCatalog";
+import { isAdStudioTemplatesV1Enabled } from "./lib/adStudioTemplatesFlag";
 import "../ImageStudio/components/image-edit-fonts.css";
 
 type StudioView = "home" | "compose";
@@ -51,6 +57,7 @@ export default function AdStudio() {
   const [importBrandOpen, setImportBrandOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<BrandKitSummary | null>(null);
   const [form, setForm] = useState<AdBriefFormState>({ ...DEFAULT_AD_BRIEF });
+  const templatesV1Enabled = isAdStudioTemplatesV1Enabled();
 
   const patchForm = useCallback((patch: Partial<AdBriefFormState>) => {
     setForm((prev) => ({ ...prev, ...patch }));
@@ -124,11 +131,11 @@ export default function AdStudio() {
 
   const selectBrand = useCallback(
     (id: string) => {
-      setForm((prev) => {
-        const kit = brands.find((b) => b.id === id) ?? null;
-        const seed = seedBriefFromBrand(kit, prev);
-        return { ...prev, brandKitId: id, ...seed };
-      });
+      setForm((prev) => ({
+        ...prev,
+        ...applyBrandKitToBriefForm(prev.brandKitId, id, brands, prev),
+      }));
+      setConceptImages({});
       if (projectId) {
         void syncProjectBrand(projectId, id);
       }
@@ -273,6 +280,76 @@ export default function AdStudio() {
     }
   };
 
+  const ensureProjectForTemplate = useCallback(
+    async (format: string): Promise<string> => {
+      const briefState: AdBriefFormState = {
+        ...form,
+        outputFormat: format,
+        name: form.name.trim() || "Template draft",
+        productOrService: form.productOrService.trim() || "Your product or service",
+        coreMessage: form.coreMessage.trim() || "Your core message",
+        targetAudience: form.targetAudience.trim() || "Your target audience",
+        desiredTone: form.desiredTone.trim() || "Confident and clear",
+      };
+      patchForm(briefState);
+
+      if (projectId) {
+        await syncProjectBrief(projectId, briefState);
+        return projectId;
+      }
+
+      const project = await adStudioApi.createProject({
+        name: briefState.name.trim(),
+        brandKitId: briefState.brandKitId || undefined,
+        brief: buildBriefPayload(briefState),
+        routingProfile: "BALANCED",
+      });
+      setProjectId(project.id);
+      setProjects((prev) => [project, ...prev.filter((x) => x.id !== project.id)]);
+      setConcepts([]);
+      setCreatives([]);
+      setGenerationSource(null);
+      setView("compose");
+      return project.id;
+    },
+    [buildBriefPayload, form, patchForm, projectId, syncProjectBrief],
+  );
+
+  const openFromTemplate = useCallback(
+    async (templateId: AdStudioTemplateId, format: AdSceneOutputFormatId) => {
+      if (!templatesV1Enabled) {
+        toast.error("Templates V1 is not enabled in this environment");
+        return;
+      }
+      setBusy(true);
+      try {
+        const pid = await ensureProjectForTemplate(format);
+        const tpl = getTemplateDef(templateId);
+        const creative = await adStudioApi.createFromTemplate(pid, {
+          templateId,
+          format,
+          name: `${tpl.name} draft`,
+          primaryHeadline: form.coreMessage.trim() || undefined,
+          supportingCopy: form.productOrService.trim() || undefined,
+          cta: form.cta.trim() || undefined,
+        });
+        navigate(`/create/ad/${creative.id}`);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Could not create template draft");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [
+      ensureProjectForTemplate,
+      form.coreMessage,
+      form.cta,
+      form.productOrService,
+      navigate,
+      templatesV1Enabled,
+    ],
+  );
+
   const openFromConcept = async (conceptId: string) => {
     if (!projectId) return;
     setBusy(true);
@@ -394,17 +471,16 @@ export default function AdStudio() {
 
   const handleBrandCreated = async (kit: BrandKitSummary) => {
     const items = await refreshBrands();
-    const exists = items.some((b) => b.id === kit.id);
-    if (!exists) {
-      setBrands((prev) => [kit, ...prev.filter((b) => b.id !== kit.id)]);
-    } else {
-      setBrands((prev) => prev.map((b) => (b.id === kit.id ? { ...b, ...kit } : b)));
-    }
+    const merged = items.some((b) => b.id === kit.id)
+      ? items.map((b) => (b.id === kit.id ? { ...b, ...kit } : b))
+      : [kit, ...items.filter((b) => b.id !== kit.id)];
+    setBrands(merged);
     // Preserve unsaved brief fields; only seed empties + auto-select.
-    setForm((prev) => {
-      const seed = seedBriefFromBrand(kit, prev);
-      return { ...prev, brandKitId: kit.id, ...seed };
-    });
+    setForm((prev) => ({
+      ...prev,
+      ...applyBrandKitToBriefForm(prev.brandKitId, kit.id, merged, prev),
+    }));
+    setConceptImages({});
     if (projectId) {
       void syncProjectBrand(projectId, kit.id);
     }
@@ -484,6 +560,9 @@ export default function AdStudio() {
           onEditBrand={openEditBrand}
           onImportBrand={openImportBrand}
           onRetryBrands={() => void refreshBrands()}
+          templatesV1Enabled={templatesV1Enabled}
+          templateBusy={busy}
+          onUseTemplate={(tid, fmt) => void openFromTemplate(tid, fmt)}
         />
       ) : (
         <GuidedBriefComposer
@@ -516,6 +595,8 @@ export default function AdStudio() {
           onOpenConcept={(id) => void openFromConcept(id)}
           onGenerateBackground={(id) => void generateBackground(id)}
           onOpenCreative={(id) => navigate(`/create/ad/${id}`)}
+          templatesV1Enabled={templatesV1Enabled}
+          onUseTemplate={(tid, fmt) => void openFromTemplate(tid, fmt)}
         />
       )}
 

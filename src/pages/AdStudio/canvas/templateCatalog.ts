@@ -48,11 +48,27 @@ export type TemplateLayerRecipe = {
   zIndex: number;
 };
 
+export type AdSceneOutputFormatId =
+  | "square_1080"
+  | "portrait_1080x1350"
+  | "vertical_1080x1920"
+  | "landscape_1920x1080";
+
+export type TemplateBackgroundMode = "brandGradient" | "solid" | "slot";
+
+export type TemplateBackgroundDef = {
+  mode: TemplateBackgroundMode;
+  slotId?: TemplateSlotRole;
+};
+
 export type TemplateDef = {
   templateId: AdStudioTemplateId;
   name: string;
   layoutFamily: string;
+  /** Supported output formats (mirrors contracts catalog). */
+  formats: readonly AdSceneOutputFormatId[];
   missingAssetPolicy: MissingAssetPolicy;
+  background: TemplateBackgroundDef;
   slots: Array<{
     slotId: TemplateSlotRole;
     required: boolean;
@@ -79,6 +95,18 @@ function r(
   return { id, x, y, w, h };
 }
 
+const ALL_SCENE_FORMATS: readonly AdSceneOutputFormatId[] = [
+  "square_1080",
+  "portrait_1080x1350",
+  "vertical_1080x1920",
+  "landscape_1920x1080",
+];
+
+const STORY_SCENE_FORMATS: readonly AdSceneOutputFormatId[] = [
+  "portrait_1080x1350",
+  "vertical_1080x1920",
+];
+
 function ty(
   align: "left" | "center" | "right",
 ): TemplateDef["typography"] {
@@ -94,7 +122,9 @@ export const TEMPLATE_CATALOG_V1: readonly TemplateDef[] = [
     templateId: "product-hero",
     name: "Product hero",
     layoutFamily: "centered-hero",
+    formats: ALL_SCENE_FORMATS,
     missingAssetPolicy: "blockPreview",
+    background: { mode: "brandGradient" },
     slots: [
       { slotId: "product", required: true, maxCount: 1, label: "Product image", objectFit: "contain" },
       { slotId: "logo", required: true, maxCount: 1, label: "Logo", objectFit: "contain" },
@@ -121,7 +151,9 @@ export const TEMPLATE_CATALOG_V1: readonly TemplateDef[] = [
     templateId: "model-editorial",
     name: "Model editorial",
     layoutFamily: "left-editorial",
+    formats: ALL_SCENE_FORMATS,
     missingAssetPolicy: "blockPreview",
+    background: { mode: "brandGradient" },
     slots: [
       { slotId: "model", required: true, maxCount: 1, label: "Brand model", objectFit: "cover" },
       { slotId: "logo", required: true, maxCount: 1, label: "Logo", objectFit: "contain" },
@@ -151,7 +183,9 @@ export const TEMPLATE_CATALOG_V1: readonly TemplateDef[] = [
     templateId: "product-launch",
     name: "Product launch",
     layoutFamily: "top-banner",
+    formats: ALL_SCENE_FORMATS,
     missingAssetPolicy: "blockPreview",
+    background: { mode: "brandGradient" },
     slots: [
       { slotId: "product", required: true, maxCount: 1, label: "Product image", objectFit: "contain" },
       { slotId: "logo", required: true, maxCount: 1, label: "Logo", objectFit: "contain" },
@@ -180,7 +214,9 @@ export const TEMPLATE_CATALOG_V1: readonly TemplateDef[] = [
     templateId: "multi-shade-collection",
     name: "Multi-shade collection",
     layoutFamily: "bottom-stack",
+    formats: ALL_SCENE_FORMATS,
     missingAssetPolicy: "showSlotHint",
+    background: { mode: "solid" },
     slots: [
       { slotId: "product", required: true, maxCount: 4, label: "Product shades", objectFit: "contain" },
       { slotId: "logo", required: true, maxCount: 1, label: "Logo", objectFit: "contain" },
@@ -207,7 +243,9 @@ export const TEMPLATE_CATALOG_V1: readonly TemplateDef[] = [
     templateId: "texture-showcase",
     name: "Texture showcase",
     layoutFamily: "diagonal-luxury",
+    formats: ALL_SCENE_FORMATS,
     missingAssetPolicy: "blockPreview",
+    background: { mode: "brandGradient" },
     slots: [
       { slotId: "product", required: true, maxCount: 1, label: "Product image", objectFit: "cover" },
       { slotId: "logo", required: true, maxCount: 1, label: "Logo", objectFit: "contain" },
@@ -234,7 +272,9 @@ export const TEMPLATE_CATALOG_V1: readonly TemplateDef[] = [
     templateId: "lifestyle-placement",
     name: "Lifestyle placement",
     layoutFamily: "left-editorial",
+    formats: ALL_SCENE_FORMATS,
     missingAssetPolicy: "showSlotHint",
+    background: { mode: "brandGradient" },
     slots: [
       { slotId: "model", required: false, maxCount: 1, label: "Brand model", objectFit: "cover" },
       { slotId: "campaign", required: false, maxCount: 1, label: "Campaign reference", objectFit: "cover" },
@@ -266,7 +306,9 @@ export const TEMPLATE_CATALOG_V1: readonly TemplateDef[] = [
     templateId: "seasonal-campaign",
     name: "Seasonal campaign",
     layoutFamily: "top-banner",
+    formats: ALL_SCENE_FORMATS,
     missingAssetPolicy: "allowLogoOnly",
+    background: { mode: "slot", slotId: "campaign" },
     slots: [
       { slotId: "campaign", required: false, maxCount: 1, label: "Campaign reference", objectFit: "cover" },
       { slotId: "model", required: false, maxCount: 1, label: "Brand model", objectFit: "cover" },
@@ -295,7 +337,9 @@ export const TEMPLATE_CATALOG_V1: readonly TemplateDef[] = [
     templateId: "promotional-offer",
     name: "Promotional offer",
     layoutFamily: "bottom-stack",
+    formats: ALL_SCENE_FORMATS,
     missingAssetPolicy: "blockPreview",
+    background: { mode: "solid" },
     slots: [
       { slotId: "product", required: true, maxCount: 1, label: "Product image", objectFit: "contain" },
       { slotId: "logo", required: true, maxCount: 1, label: "Logo", objectFit: "contain" },
@@ -322,7 +366,9 @@ export const TEMPLATE_CATALOG_V1: readonly TemplateDef[] = [
     templateId: "minimal-editorial",
     name: "Minimal editorial",
     layoutFamily: "top-banner",
+    formats: ALL_SCENE_FORMATS,
     missingAssetPolicy: "allowLogoOnly",
+    background: { mode: "brandGradient" },
     slots: [
       { slotId: "logo", required: true, maxCount: 1, label: "Logo", objectFit: "contain" },
       { slotId: "product", required: false, maxCount: 1, label: "Product image", objectFit: "contain" },
@@ -349,7 +395,9 @@ export const TEMPLATE_CATALOG_V1: readonly TemplateDef[] = [
     templateId: "social-story",
     name: "Social story",
     layoutFamily: "centered-hero",
+    formats: STORY_SCENE_FORMATS,
     missingAssetPolicy: "showSlotHint",
+    background: { mode: "brandGradient" },
     slots: [
       { slotId: "product", required: false, maxCount: 1, label: "Product image", objectFit: "cover" },
       { slotId: "model", required: false, maxCount: 1, label: "Brand model", objectFit: "cover" },

@@ -68,14 +68,14 @@ export function collectExportWarnings(
   if (missingLogos.length) {
     warnings.push({
       code: "missing_logo",
-      message: `${missingLogos.length} logo layer(s) have no asset — server would render a slate placeholder.`,
+      message: `${missingLogos.length} logo layer(s) have no asset — with placeholders allowed, export uses bounded slate tiles (not full-bleed).`,
       blocking: !allowPlaceholders,
     });
   }
   if (missingImages.length) {
     warnings.push({
       code: "missing_assets",
-      message: `${missingImages.length} image layer(s) have no asset reference — export would use placeholders, not product photography.`,
+      message: `${missingImages.length} product/image layer(s) have no asset — export uses bounded slate placeholders when allowed, never stock imagery.`,
       blocking: !allowPlaceholders,
     });
   }
@@ -83,7 +83,7 @@ export function collectExportWarnings(
     warnings.push({
       code: "missing_background_asset",
       message:
-        "Background image layer has no generated asset — canvas background color fills instead (often intentional).",
+        "Unbound full-bleed background image layers are skipped at export; canvas backgroundColor (and brand gradient wash shapes) fill the frame.",
       blocking: false,
     });
   }

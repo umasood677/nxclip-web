@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { cn } from "../../../lib/utils";
 import { resolveAdFontFamily } from "../lib/adFonts";
 import { sortLayers } from "../lib/sceneGraph";
@@ -207,6 +207,17 @@ function StageLayerVisual({
   onAssetLoadError?: (assetId: string) => void;
 }) {
   const [failed, setFailed] = useState(false);
+  const imgLayer =
+    layer.type === "image" || layer.type === "logo"
+      ? (layer as Extract<AdSceneLayer, { type: "image" | "logo" }>)
+      : null;
+  const resolvedUrl = imgLayer
+    ? resolveAssetUrl(assetUrls, imgLayer.assetId)
+    : null;
+
+  useEffect(() => {
+    setFailed(false);
+  }, [imgLayer?.assetId, resolvedUrl]);
 
   if (layer.type === "text") {
     const t = layer as Extract<AdSceneLayer, { type: "text" }>;
@@ -266,9 +277,8 @@ function StageLayerVisual({
   }
 
   if (layer.type === "image" || layer.type === "logo") {
-    const img = layer as Extract<AdSceneLayer, { type: "image" | "logo" }>;
-    // Never read storageKey — only assetId → authorized URL map.
-    const url = resolveAssetUrl(assetUrls, img.assetId);
+    const img = imgLayer!;
+    const url = resolvedUrl;
 
     if (!img.assetId || !url || failed) {
       return (

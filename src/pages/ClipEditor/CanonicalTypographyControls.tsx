@@ -1,7 +1,8 @@
-﻿import { Type, Palette, Plus, Trash2, Layers } from 'lucide-react';
+﻿import { useEffect, useRef } from 'react';
+import { Type, Palette, Plus, Trash2, Layers } from 'lucide-react';
 import { CANONICAL_FACE_OPTIONS } from '../../lib/clipTypography/canonicalFaces';
+import { canonicalBrowserFamily } from '../../lib/clipTypography/canonicalLayout';
 import {
-  compositionHasMixedFonts,
   createLayerDraft,
   getActiveLayer,
   type CanonicalCompositionDraft,
@@ -35,6 +36,17 @@ export const CANONICAL_FILL_COLORS: Array<{ hex: string; label: string }> = [
   { hex: '#1E293B', label: 'Slate' },
   { hex: '#78716C', label: 'Stone' },
   { hex: '#A8A29E', label: 'Warm gray' },
+];
+
+const EFFECT_COLORS: Array<{ hex: string; label: string }> = [
+  { hex: '#000000', label: 'Black' },
+  { hex: '#111111', label: 'Near black' },
+  { hex: '#FFFFFF', label: 'White' },
+  { hex: '#1E293B', label: 'Slate' },
+  { hex: '#78716C', label: 'Stone' },
+  { hex: '#FF3B3B', label: 'Red' },
+  { hex: '#4DA3FF', label: 'Blue' },
+  { hex: '#FFE600', label: 'Yellow' },
 ];
 
 const LAYER_COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ec4899', '#06b6d4', '#a855f7', '#ef4444', '#14b8a6'];
@@ -89,6 +101,68 @@ function CharacteristicSlider({
   );
 }
 
+function ColorSwatchRow({
+  label,
+  value,
+  onChange,
+  swatches,
+}: {
+  label: string;
+  value: string;
+  onChange: (hex: string) => void;
+  swatches: Array<{ hex: string; label: string }>;
+}) {
+  const known = swatches.some((c) => c.hex.toUpperCase() === value.toUpperCase());
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between px-0.5">
+        <label className="text-[10px] font-bold text-muted-foreground flex items-center gap-1.5">
+          <Palette size={12} className="text-primary" />
+          {label}
+        </label>
+        <span className="text-[10px] font-mono font-bold text-foreground">{value.toUpperCase()}</span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {swatches.map((swatch) => {
+          const selected = value.toUpperCase() === swatch.hex.toUpperCase();
+          return (
+            <button
+              key={swatch.hex}
+              type="button"
+              title={swatch.label}
+              aria-label={swatch.label}
+              aria-pressed={selected}
+              onClick={() => onChange(swatch.hex)}
+              className={cn(
+                'h-7 w-7 rounded-full border-2 shadow-sm transition-transform',
+                selected ? 'border-primary scale-110 ring-2 ring-primary/30' : 'border-border/60 hover:scale-105',
+              )}
+              style={{ backgroundColor: swatch.hex }}
+            />
+          );
+        })}
+        <label
+          className={cn(
+            'relative h-7 w-7 cursor-pointer overflow-hidden rounded-full border-2 border-dashed border-primary/40',
+            'flex items-center justify-center bg-muted/40 hover:border-primary',
+            !known && 'ring-2 ring-primary/30 border-primary',
+          )}
+          title="Custom color"
+        >
+          <span className="text-[9px] font-black text-primary">+</span>
+          <input
+            type="color"
+            value={/^#[0-9a-fA-F]{6}$/.test(value) ? value : '#000000'}
+            onChange={(e) => onChange(e.target.value.toUpperCase())}
+            className="absolute inset-0 cursor-pointer opacity-0"
+            aria-label={`Custom ${label.toLowerCase()}`}
+          />
+        </label>
+      </div>
+    </div>
+  );
+}
+
 function formatTime(ms: number): string {
   const s = Math.max(0, ms) / 1000;
   const m = Math.floor(s / 60);
@@ -106,13 +180,59 @@ export function CanonicalTypographyControls({
   onPatchActive,
 }: Props) {
   const active = getActiveLayer(draft);
+  const textInputRef = useRef<HTMLTextAreaElement | null>(null);
   const faceItems = Object.fromEntries(CANONICAL_FACE_OPTIONS.map((f) => [f.id, f.label]));
-  const fillKnown = CANONICAL_FILL_COLORS.some(
-    (c) => c.hex.toUpperCase() === active.fill.toUpperCase(),
-  );
   const duration = Math.max(1000, Math.round(durationMs));
-  const mixedFonts = compositionHasMixedFonts(draft);
   const maxLayers = 8;
+
+  useEffect(() => {
+    if (!active.text.trim()) {
+      textInputRef.current?.focus();
+    }
+  }, [active.id, active.text]);
+
+  // Warm browser faces so the font menu renders each name in its own typeface.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { loadCanonicalLayoutFont, prepareCanonicalLayout } = await import(
+          '../../lib/clipTypography/canonicalLayout'
+        );
+        if (cancelled) return;
+        // Load the active face fully; remaining faces get CSS family names as soft preview.
+        const probe = await prepareCanonicalLayout({
+          faceId: active.faceId,
+          width: 320,
+          height: 180,
+          layers: [
+            {
+              id: 'probe',
+              startMs: 0,
+              endMs: 1000,
+              fontSize: 24,
+              lineHeight: 28,
+              letterSpacing: 0,
+              align: 'left',
+              fill: '#FFFFFF',
+              outline: 0,
+              shadow: 0,
+              text: 'Aa',
+              left: 8,
+              firstBaseline: 40,
+              maxWidth: 280,
+            },
+          ],
+        });
+        await loadCanonicalLayoutFont(probe);
+      } catch {
+        /* preview still works with system fallback until a layer is authored */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [active.faceId]);
 
   const setActive = (id: string) => onChange({ ...draft, activeLayerId: id });
 
@@ -127,6 +247,8 @@ export function CanonicalTypographyControls({
         startMs: Math.min(duration - 800, Math.round(playheadMs)),
         endMs: Math.min(duration, Math.round(playheadMs) + Math.min(2500, duration)),
         faceId: active.faceId,
+        outlineColor: active.outlineColor,
+        shadowColor: active.shadowColor,
       },
     });
     onChange({
@@ -168,16 +290,40 @@ export function CanonicalTypographyControls({
         </div>
       </div>
 
-      {/* Layer picker */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between px-0.5">
-          <label className="text-[10px] font-bold text-muted-foreground flex items-center gap-1.5">
-            <Layers size={12} className="text-primary" />
+        <div className="flex items-center justify-between gap-2 px-0.5">
+          <label className="text-[10px] font-bold text-muted-foreground flex items-center gap-1.5 min-w-0">
+            <Layers size={12} className="text-primary shrink-0" />
             Text layers
           </label>
-          <span className="text-[10px] font-mono text-muted-foreground">
-            {draft.layers.length}/{maxLayers}
-          </span>
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="text-[10px] font-mono text-muted-foreground mr-1">
+              {draft.layers.length}/{maxLayers}
+            </span>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 rounded-lg text-[10px] font-bold px-2.5"
+              disabled={draft.layers.length >= maxLayers}
+              onClick={addLayer}
+            >
+              <Plus size={12} className="mr-1" />
+              Add text
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 rounded-lg p-0 text-destructive"
+              disabled={draft.layers.length <= 1}
+              onClick={removeActive}
+              title="Remove selected layer"
+              aria-label="Remove selected layer"
+            >
+              <Trash2 size={14} />
+            </Button>
+          </div>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {draft.layers.map((layer, index) => {
@@ -201,30 +347,22 @@ export function CanonicalTypographyControls({
               </button>
             );
           })}
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-8 rounded-lg text-[10px] font-bold"
-            disabled={draft.layers.length >= maxLayers}
-            onClick={addLayer}
-          >
-            <Plus size={12} className="mr-1" />
-            Add text
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            className="h-8 rounded-lg text-[10px] font-bold text-destructive"
-            disabled={draft.layers.length <= 1}
-            onClick={removeActive}
-            title="Remove active layer"
-          >
-            <Trash2 size={12} />
-          </Button>
         </div>
       </div>
+
+      <label className="space-y-1.5 text-[10px] font-bold text-muted-foreground block">
+        <span className="ml-1">Text Content</span>
+        <textarea
+          ref={textInputRef}
+          className="min-h-[88px] w-full rounded-lg border border-border/50 bg-background px-3 py-2.5 text-sm font-medium text-foreground leading-relaxed focus:outline-none focus:border-primary/50"
+          value={active.text}
+          onChange={(e) => onPatchActive({ text: e.target.value })}
+          placeholder="Type the words drawn on this clip…"
+        />
+        <span className="ml-1 text-[9px] font-medium text-muted-foreground/80 normal-case tracking-normal">
+          Overlay text for the selected layer — separate from the social caption below.
+        </span>
+      </label>
 
       {/* Timeline */}
       <div className="space-y-2 rounded-xl border border-border/40 bg-background/50 p-3">
@@ -301,38 +439,47 @@ export function CanonicalTypographyControls({
           onValueChange={(v) => onPatchActive({ faceId: v as CanonicalLayerDraft['faceId'] })}
           items={faceItems}
         >
-          <SelectTrigger className="h-10 w-full text-xs bg-muted/30 border-border/50 rounded-lg">
+          <SelectTrigger className="h-11 w-full text-xs bg-muted/30 border-border/50 rounded-lg">
             <SelectValue>
-              {(value: string | null) =>
-                CANONICAL_FACE_OPTIONS.find((f) => f.id === value)?.label ?? 'Font'
-              }
+              {(value: string | null) => {
+                const font = CANONICAL_FACE_OPTIONS.find((f) => f.id === value);
+                if (!font) return 'Font';
+                return (
+                  <span
+                    className="truncate"
+                    style={{
+                      fontFamily: `"${canonicalBrowserFamily(font.id)}", system-ui, sans-serif`,
+                      fontWeight: font.weight,
+                      fontStyle: font.style === 'italic' ? 'italic' : 'normal',
+                    }}
+                  >
+                    {font.label}
+                  </span>
+                );
+              }}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {CANONICAL_FACE_OPTIONS.map((font) => (
               <SelectItem key={font.id} value={font.id} label={font.label}>
-                {font.label}
+                <span
+                  style={{
+                    fontFamily: `"${canonicalBrowserFamily(font.id)}", system-ui, sans-serif`,
+                    fontWeight: font.weight,
+                    fontStyle: font.style === 'italic' ? 'italic' : 'normal',
+                    fontSize: '14px',
+                  }}
+                >
+                  {font.label}
+                </span>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        {mixedFonts ? (
-          <p className="text-[10px] text-amber-600 dark:text-amber-400 px-1 leading-relaxed">
-            Multiple fonts selected — export v1 burns the first layer&apos;s typeface for all layers.
-            Preview uses that typeface until multi-face export ships.
-          </p>
-        ) : null}
+        <p className="text-[9px] text-muted-foreground px-1 leading-relaxed">
+          Font applies to the selected layer only. Preview and final render use each layer&apos;s face.
+        </p>
       </div>
-
-      <label className="space-y-1.5 text-[10px] font-bold text-muted-foreground block">
-        <span className="ml-1">Caption text</span>
-        <textarea
-          className="min-h-[72px] w-full rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-xs font-medium text-foreground leading-relaxed focus:outline-none focus:border-primary/50"
-          value={active.text}
-          onChange={(e) => onPatchActive({ text: e.target.value })}
-          placeholder="Type this layer’s caption"
-        />
-      </label>
 
       <div className="space-y-4 rounded-xl border border-border/40 bg-background/40 p-3">
         <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">
@@ -366,7 +513,7 @@ export function CanonicalTypographyControls({
           onChange={(letterSpacing) => onPatchActive({ letterSpacing })}
         />
         <CharacteristicSlider
-          label="Stroke"
+          label="Stroke width"
           value={active.outline}
           display={`${Math.round(active.outline)}`}
           min={0}
@@ -374,14 +521,26 @@ export function CanonicalTypographyControls({
           step={1}
           onChange={(outline) => onPatchActive({ outline })}
         />
+        <ColorSwatchRow
+          label="Stroke color"
+          value={active.outlineColor || '#000000'}
+          swatches={EFFECT_COLORS}
+          onChange={(outlineColor) => onPatchActive({ outlineColor })}
+        />
         <CharacteristicSlider
-          label="Shadow"
+          label="Shadow size"
           value={active.shadow}
           display={`${Math.round(active.shadow)}`}
           min={0}
           max={24}
           step={1}
           onChange={(shadow) => onPatchActive({ shadow })}
+        />
+        <ColorSwatchRow
+          label="Shadow color"
+          value={active.shadowColor || '#000000'}
+          swatches={EFFECT_COLORS}
+          onChange={(shadowColor) => onPatchActive({ shadowColor })}
         />
         <CharacteristicSlider
           label="Safe margin"
@@ -415,52 +574,12 @@ export function CanonicalTypographyControls({
         </div>
       </div>
 
-      <div className="space-y-2.5">
-        <div className="flex items-center justify-between px-0.5">
-          <label className="text-[10px] font-bold text-muted-foreground flex items-center gap-1.5">
-            <Palette size={12} className="text-primary" />
-            Text color
-          </label>
-          <span className="text-[10px] font-mono font-bold text-foreground">{active.fill.toUpperCase()}</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {CANONICAL_FILL_COLORS.map((swatch) => {
-            const selected = active.fill.toUpperCase() === swatch.hex.toUpperCase();
-            return (
-              <button
-                key={swatch.hex}
-                type="button"
-                title={swatch.label}
-                aria-label={swatch.label}
-                aria-pressed={selected}
-                onClick={() => onPatchActive({ fill: swatch.hex })}
-                className={cn(
-                  'h-8 w-8 rounded-full border-2 shadow-sm transition-transform',
-                  selected ? 'border-primary scale-110 ring-2 ring-primary/30' : 'border-border/60 hover:scale-105',
-                )}
-                style={{ backgroundColor: swatch.hex }}
-              />
-            );
-          })}
-          <label
-            className={cn(
-              'relative h-8 w-8 cursor-pointer overflow-hidden rounded-full border-2 border-dashed border-primary/40',
-              'flex items-center justify-center bg-muted/40 hover:border-primary',
-              !fillKnown && 'ring-2 ring-primary/30 border-primary',
-            )}
-            title="Custom color"
-          >
-            <span className="text-[9px] font-black text-primary">+</span>
-            <input
-              type="color"
-              value={/^#[0-9a-fA-F]{6}$/.test(active.fill) ? active.fill : '#FFFFFF'}
-              onChange={(e) => onPatchActive({ fill: e.target.value.toUpperCase() })}
-              className="absolute inset-0 cursor-pointer opacity-0"
-              aria-label="Custom text color"
-            />
-          </label>
-        </div>
-      </div>
+      <ColorSwatchRow
+        label="Text color"
+        value={active.fill}
+        swatches={CANONICAL_FILL_COLORS}
+        onChange={(fill) => onPatchActive({ fill })}
+      />
 
       {busy ? <p className="text-[10px] text-muted-foreground">Updating layout…</p> : null}
       {error ? (

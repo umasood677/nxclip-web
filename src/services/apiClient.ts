@@ -2934,6 +2934,35 @@ export const adStudioApi = {
     performApiRequest(`/ad-studio/projects/${id}`, { method: "DELETE" }),
   listCreatives: async (projectId: string): Promise<{ items: any[] }> =>
     performApiRequest(`/ad-studio/projects/${projectId}/creatives`, { method: "GET" }),
+  createCreative: async (
+    projectId: string,
+    body: {
+      name: string;
+      sceneGraph?: Record<string, unknown>;
+      conceptSnapshot?: Record<string, unknown>;
+    },
+  ): Promise<any> =>
+    performApiRequest(`/ad-studio/projects/${projectId}/creatives`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  createFromTemplate: async (
+    projectId: string,
+    body: {
+      templateId: string;
+      format?: string;
+      name?: string;
+      primaryHeadline?: string;
+      supportingCopy?: string;
+      cta?: string;
+    },
+  ): Promise<any> =>
+    performApiRequest(`/ad-studio/projects/${projectId}/creatives/from-template`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
   getCreative: async (id: string): Promise<any> =>
     performApiRequest(`/ad-studio/creatives/${id}`, { method: "GET" }),
   updateCreative: async (id: string, body: Record<string, unknown>): Promise<any> =>
@@ -3075,5 +3104,79 @@ export const adStudioApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
+  },
+
+  /** Animated MP4 export (Phase 4C-B) */
+  createAnimatedExport: async (
+    animatedId: string,
+    body: {
+      quality?: "draft" | "standard" | "high";
+      idempotencyKey?: string;
+      motionVersion?: number;
+      format?: "mp4";
+      audioPolicy?: "omit" | "graph_tracks" | "silent_placeholder";
+      missingAssetPolicy?: "fail" | "skip_layer";
+    } = {},
+  ): Promise<any> => {
+    requireAdStudioAnimatedEnabled();
+    return performApiRequest(`/ad-studio/animated/${animatedId}/exports`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  },
+  listAnimatedExports: async (animatedId: string): Promise<{ items: any[] }> => {
+    requireAdStudioAnimatedEnabled();
+    return performApiRequest(`/ad-studio/animated/${animatedId}/exports`, {
+      method: "GET",
+    });
+  },
+  getAnimatedExport: async (
+    animatedId: string,
+    exportId: string,
+  ): Promise<any> => {
+    requireAdStudioAnimatedEnabled();
+    return performApiRequest(
+      `/ad-studio/animated/${animatedId}/exports/${exportId}`,
+      { method: "GET" },
+    );
+  },
+  animatedExportDownloadPath: (exportId: string): string =>
+    `/ad-studio/animated-exports/${exportId}/download`,
+  downloadAnimatedExport: async (
+    exportId: string,
+    fileName = "animated-ad.mp4",
+  ): Promise<void> => {
+    requireAdStudioAnimatedEnabled();
+    const { buildGatewayProxyUrl } = await import("../lib/authenticatedMediaUrl");
+    const { getAccessToken } = await import("./auth/authService");
+    const url = buildGatewayProxyUrl(
+      `/ad-studio/animated-exports/${exportId}/download`,
+    );
+    const token = getAccessToken();
+    const res = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        throw new Error("Session expired or access denied. Sign in again and retry.");
+      }
+      throw new Error(`Download failed (${res.status})`);
+    }
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    try {
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = fileName;
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
   },
 };

@@ -14,6 +14,7 @@ import { MotionPlaybackControls } from "./components/MotionPlaybackControls";
 import { MotionPresetGallery } from "./components/MotionPresetGallery";
 import { MotionTimeline } from "./components/MotionTimeline";
 import { MotionVersionHistoryPanel } from "./components/MotionVersionHistoryPanel";
+import { AnimatedExportPanel } from "./components/AnimatedExportPanel";
 import { normalizeBrandSnapshot } from "./lib/brandSnapshot";
 import { isAdStudioAnimatedEnabled } from "./lib/adStudioAnimatedFlag";
 import { countMissingAssets } from "./lib/motionAssets";
@@ -112,7 +113,9 @@ export default function AnimatedAdStudioEditor() {
   const [pxPerSecond, setPxPerSecond] = useState(TIMELINE_ZOOM_DEFAULT);
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [canvasZoom, setCanvasZoom] = useState(0.35);
-  const [inspectorTab, setInspectorTab] = useState<"props" | "presets" | "history">("props");
+  const [inspectorTab, setInspectorTab] = useState<
+    "props" | "presets" | "history" | "export"
+  >("props");
   const [presetBusy, setPresetBusy] = useState(false);
   const [mobilePane, setMobilePane] = useState<"canvas" | "inspector" | "timeline">("canvas");
   const [serverConfirmed, setServerConfirmed] = useState(true);
@@ -324,6 +327,15 @@ export default function AnimatedAdStudioEditor() {
     },
     [animatedId, reloadAnimated],
   );
+
+  const ensureSaved = useCallback(async (): Promise<boolean> => {
+    if (saveStateRef.current === "saved") return true;
+    const ok = await persist({ silent: true });
+    if (!ok) {
+      toast.error("Could not save — export cancelled");
+    }
+    return ok;
+  }, [persist]);
 
   // Debounced autosave — not for playhead ticks
   useEffect(() => {
@@ -689,6 +701,7 @@ export default function AnimatedAdStudioEditor() {
               ["props", "Properties"],
               ["presets", "Presets"],
               ["history", "History"],
+              ["export", "Export"],
             ] as const
           ).map(([id, label]) => (
             <Button
@@ -773,6 +786,15 @@ export default function AnimatedAdStudioEditor() {
             dirty={saveState === "dirty" || saveState === "error"}
             saving={saveState === "saving" || savingRef.current}
             onRestore={restoreVersion}
+          />
+        ) : null}
+        {inspectorTab === "export" && animatedId && animatedEnabled ? (
+          <AnimatedExportPanel
+            animatedId={animatedId}
+            motionVersion={version}
+            dirty={saveState === "dirty" || saveState === "error"}
+            saving={saveState === "saving"}
+            ensureSaved={ensureSaved}
           />
         ) : null}
       </CardContent>
@@ -863,7 +885,7 @@ export default function AnimatedAdStudioEditor() {
             {saveLabel}
           </Badge>
           <Badge variant="secondary" className="text-[10px] hidden md:inline-flex">
-            4B-D
+            4C-B
           </Badge>
         </div>
         <div className="flex items-center gap-2 flex-wrap">

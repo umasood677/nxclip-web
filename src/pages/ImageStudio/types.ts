@@ -294,6 +294,11 @@ export interface EditPanelProps {
   handleApplyAdjust?: () => void;
   isApplyingCompose?: boolean;
   handleApplyCompose?: () => void;
+  /** Burns Adjust + Typography permanently (central Apply to Image). */
+  isApplyingToImage?: boolean;
+  handleApplyToImage?: () => void;
+  hasPendingAdjust?: boolean;
+  hasPendingText?: boolean;
   editLayers?: ImageEditTextLayer[];
   selectedLayerId?: string | null;
   onSelectLayer?: (id: string) => void;

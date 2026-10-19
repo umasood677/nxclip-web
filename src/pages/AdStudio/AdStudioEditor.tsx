@@ -92,6 +92,9 @@ export default function AdStudioEditor() {
   const versionRef = useRef(1);
   const saveStateRef = useRef(saveState);
   const dragBaselineRef = useRef<AdSceneGraph | null>(null);
+  const saveInFlightRef = useRef<Promise<boolean> | null>(null);
+  const persistConflictRef = useRef(false);
+  const brandRefreshEpochRef = useRef(0);
 
   useEffect(() => {
     graphRef.current = graph;
@@ -105,21 +108,27 @@ export default function AdStudioEditor() {
 
   const refreshBrandKit = useCallback(async (projectIdHint?: string | null) => {
     const pid = projectIdHint ?? projectId;
+    const epoch = ++brandRefreshEpochRef.current;
     if (!pid) {
       setBrandKit(null);
       return;
     }
     try {
       const project = await adStudioApi.getProject(pid);
+      if (epoch !== brandRefreshEpochRef.current) return;
       const kitId = project?.brandKitId as string | undefined;
       if (!kitId) {
         setBrandKit(null);
         return;
       }
       const kit = (await brandApi.getKit(kitId)) as BrandKitSummary;
+      if (epoch !== brandRefreshEpochRef.current) return;
       setBrandKit(kit);
-    } catch {
-      // Preview falls back to missing-asset UI; export still hydrates server-side.
+    } catch (e) {
+      if (epoch !== brandRefreshEpochRef.current) return;
+      toast.error(
+        e instanceof Error ? e.message : "Could not refresh Brand Kit assets",
+      );
     }
   }, [projectId]);
 
@@ -219,52 +228,82 @@ export default function AdStudioEditor() {
   };
 
   const persist = useCallback(
-    async (opts?: { silent?: boolean }) => {
-      if (!creativeId || !graphRef.current) return;
-      const epochAtStart = editEpochRef.current;
-      const snapshot = graphRef.current;
-      const expectedVersion = versionRef.current;
-      setSaving(true);
-      setSaveState("saving");
-      try {
-        const updated = await adStudioApi.updateCreative(creativeId, {
-          // Strip private keys from client payload; server rehydrates storageKeys.
-          sceneGraph: sanitizeSceneGraphForClient(snapshot) ?? snapshot,
-          changeSummary: opts?.silent ? "Autosave" : "Editor save",
-          expectedVersion,
-        });
-        if (editEpochRef.current === epochAtStart) {
-          setGraph(updated.sceneGraph as AdSceneGraph);
-          setCurrentVersion(updated.currentVersion ?? expectedVersion + 1);
-          setSaveState("saved");
-          if (!opts?.silent) toast.success("Creative saved");
-        } else {
-          setCurrentVersion(updated.currentVersion ?? expectedVersion + 1);
-          setSaveState("dirty");
-        }
-      } catch (e) {
-        setSaveState("dirty");
-        if (isConflictError(e)) {
-          toast.error("Version conflict — another save updated this creative.", {
-            action: {
-              label: "Reload",
-              onClick: () => {
-                void reloadCreative().catch(() =>
-                  toast.error("Could not reload creative"),
-                );
-              },
-            },
-            duration: 8000,
+    async (opts?: { silent?: boolean }): Promise<boolean> => {
+      if (!creativeId || !graphRef.current) return false;
+      if (saveInFlightRef.current) {
+        return saveInFlightRef.current;
+      }
+
+      const run = async (): Promise<boolean> => {
+        persistConflictRef.current = false;
+        const epochAtStart = editEpochRef.current;
+        const snapshot = graphRef.current!;
+        const expectedVersion = versionRef.current;
+        setSaving(true);
+        setSaveState("saving");
+        try {
+          const updated = await adStudioApi.updateCreative(creativeId, {
+            // Strip private keys from client payload; server rehydrates storageKeys.
+            sceneGraph: sanitizeSceneGraphForClient(snapshot) ?? snapshot,
+            changeSummary: opts?.silent ? "Autosave" : "Editor save",
+            expectedVersion,
           });
-        } else if (!opts?.silent) {
-          toast.error(e instanceof Error ? e.message : "Save failed");
+          const nextVersion = updated.currentVersion ?? expectedVersion + 1;
+          if (editEpochRef.current === epochAtStart) {
+            setGraph(updated.sceneGraph as AdSceneGraph);
+            setCurrentVersion(nextVersion);
+            setSaveState("saved");
+            if (!opts?.silent) toast.success("Creative saved");
+            return true;
+          }
+          setCurrentVersion(nextVersion);
+          setSaveState("dirty");
+          return false;
+        } catch (e) {
+          setSaveState("dirty");
+          if (isConflictError(e)) {
+            persistConflictRef.current = true;
+            toast.error("Version conflict — another save updated this creative.", {
+              action: {
+                label: "Reload",
+                onClick: () => {
+                  void reloadCreative().catch(() =>
+                    toast.error("Could not reload creative"),
+                  );
+                },
+              },
+              duration: 8000,
+            });
+          } else if (!opts?.silent) {
+            toast.error(e instanceof Error ? e.message : "Save failed");
+          }
+          return false;
+        } finally {
+          setSaving(false);
         }
+      };
+
+      const flight = run();
+      saveInFlightRef.current = flight;
+      try {
+        return await flight;
       } finally {
-        setSaving(false);
+        if (saveInFlightRef.current === flight) {
+          saveInFlightRef.current = null;
+        }
       }
     },
     [creativeId, reloadCreative],
   );
+
+  const ensureSaved = useCallback(async (): Promise<boolean> => {
+    if (saveStateRef.current === "saved") return true;
+    const ok = await persist({ silent: true });
+    if (!ok && !persistConflictRef.current) {
+      toast.error("Could not save — export cancelled");
+    }
+    return ok;
+  }, [persist]);
 
   // Debounced autosave
   useEffect(() => {
@@ -455,7 +494,15 @@ export default function AdStudioEditor() {
       );
     }
     if (tab === "export" && creativeId) {
-      return <ExportPanel creativeId={creativeId} graph={graph} />;
+      return (
+        <ExportPanel
+          creativeId={creativeId}
+          graph={graph}
+          dirty={saveState === "dirty" || saveState === "saving"}
+          saving={saving}
+          ensureSaved={ensureSaved}
+        />
+      );
     }
     return (
       <>

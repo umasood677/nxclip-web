@@ -32,6 +32,7 @@ export function EditPanel({
   isUpscaling, handleUpscale, isRemovingBg, handleRemoveBg,
   backgroundMode, setBackgroundMode, backgroundColor, setBackgroundColor,
   isApplyingAdjust, handleApplyAdjust, isApplyingCompose, handleApplyCompose,
+  isApplyingToImage, handleApplyToImage, hasPendingAdjust = false, hasPendingText = false,
   editLayers = [], selectedLayerId, onSelectLayer, onAddTextLayer,
   onUpdateSelectedLayer, onRemoveSelectedLayer, onToggleLayerVisible, onMoveLayer,
   editToolsDisabled, editDisabledReason, hasComposedText = false,
@@ -264,6 +265,36 @@ export function EditPanel({
         </ScrollArea>
 
         <div className="p-4 border-t border-border/50 space-y-2 shrink-0 bg-background/90">
+          {resultImage && handleApplyToImage ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="secondary"
+                  className={cn(
+                    "w-full text-xs gap-2 h-10 font-bold",
+                    isRTL && "flex-row-reverse",
+                  )}
+                  onClick={handleApplyToImage}
+                  disabled={
+                    toolsLocked ||
+                    Boolean(isApplyingToImage) ||
+                    (!hasPendingAdjust && !hasPendingText)
+                  }
+                >
+                  {isApplyingToImage ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : null}
+                  {t('image_studio.edit.apply_to_image', { defaultValue: 'Apply to Image' })}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                {t('image_studio.edit.apply_to_image_tooltip', {
+                  defaultValue:
+                    'Permanently burn Adjust + Typography into this image (updates Recent Generations).',
+                })}
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
           {resultImage && (
             <>
             <Button
