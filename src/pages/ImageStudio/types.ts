@@ -241,6 +241,11 @@ export interface CanvasPanelProps {
   memeTemplates?: import("../../services/apiClient").MemeTemplateDto[];
   /** Non-destructive text overlays before compose burn-in. */
   editLayers?: ImageEditTextLayer[];
+  selectedLayerId?: string | null;
+  onSelectLayer?: (id: string) => void;
+  onUpdateLayerPosition?: (id: string, patch: { xPct: number; yPct: number }) => void;
+  /** When true, canvas preview loads canonical Smart Typography faces. */
+  useCanonicalTypography?: boolean;
   /** Original raster used while editing a previously composed text stack. */
   editBaseImage?: string | null;
 }
@@ -257,6 +262,16 @@ export interface ImageEditTextLayer {
   strokeColor?: string;
   align?: "left" | "center" | "right";
   fontId?: "impact" | "inter" | "montserrat";
+  /** Smart Typography face id (preview); compose maps to fontId. */
+  faceId?: string;
+  /** Stroke weight 0–12 (Image Studio typography characteristics). */
+  outline?: number;
+  /** Shadow offset strength 0–24. */
+  shadow?: number;
+  /** Letter spacing / tracking 0–24. */
+  letterSpacing?: number;
+  /** Line height multiplier 1–2.4. */
+  lineHeightRatio?: number;
 }
 
 export interface EditPanelProps {
@@ -291,6 +306,8 @@ export interface EditPanelProps {
   editDisabledReason?: string;
   /** Allows applying an empty stack to remove previously baked text. */
   hasComposedText?: boolean;
+  /** Smart Typography faces when the account is allowlisted. */
+  useCanonicalTypography?: boolean;
   onPublishClick?: () => void;
   onAnimateAsClipClick?: () => void;
   isAnimatingAsClip?: boolean;

@@ -49,6 +49,11 @@ import { GeneratePanel } from "./components/GeneratePanel";
 import { parseImageBrief, structuredImagePromptsEnabled, type ImageComposition, type ImagePromptContext } from "./lib/imagePromptContext";
 import { CanvasPanel } from "./components/CanvasPanel";
 import { EditPanel } from "./components/EditPanel";
+import { useCanonicalTypographyAuthorized } from "../../lib/clipTypography/useCanonicalTypographyAuthorized";
+import {
+  DEFAULT_TEXT_LAYER_STYLE,
+  faceIdToEditFontId,
+} from "./lib/imageStudioTypography";
 import { RecentGenerationsGallery } from "./components/RecentGenerations";
 import {
   buildWeekPlanDays,
@@ -308,6 +313,7 @@ export default function ImageStudio() {
     applyDuePrompt,
     hasWeekPlan,
   } = useCreatorStudioContext(studioTool);
+  const { authorized: t3Authorized } = useCanonicalTypographyAuthorized();
   const [memeMode, setMemeModeState] = useState<"ai" | "template" | "hybrid">("ai");
   const setMemeMode = (next: "ai" | "template" | "hybrid") => {
     setMemeModeState(next);
@@ -1754,18 +1760,15 @@ export default function ImageStudio() {
   const handleAddTextLayer = () => {
     if (editToolsDisabled || editLayers.length >= 24) return;
     const id = `text-${Date.now()}`;
+    const faceId = t3Authorized ? DEFAULT_TEXT_LAYER_STYLE.faceId : undefined;
     const layer: ImageEditTextLayer = {
       id,
       type: "text",
       visible: true,
       text: t("image_studio.edit.default_text"),
-      xPct: 50,
-      yPct: 82,
-      fontSizePct: 8,
-      color: "#ffffff",
-      strokeColor: "#000000",
-      align: "center",
-      fontId: "impact",
+      ...DEFAULT_TEXT_LAYER_STYLE,
+      faceId,
+      fontId: faceId ? faceIdToEditFontId(faceId) : "impact",
     };
     setEditLayers((prev) => [...prev, layer]);
     setSelectedLayerId(id);
@@ -1774,7 +1777,20 @@ export default function ImageStudio() {
   const handleUpdateSelectedLayer = (patch: Partial<ImageEditTextLayer>) => {
     if (!selectedLayerId || editToolsDisabled) return;
     setEditLayers((prev) =>
-      prev.map((layer) => (layer.id === selectedLayerId ? { ...layer, ...patch } : layer)),
+      prev.map((layer) => {
+        if (layer.id !== selectedLayerId) return layer;
+        const next = { ...layer, ...patch };
+        if (patch.faceId) next.fontId = faceIdToEditFontId(patch.faceId);
+        return next;
+      }),
+    );
+  };
+
+  const handleUpdateLayerPosition = (id: string, patch: { xPct: number; yPct: number }) => {
+    if (editToolsDisabled) return;
+    setSelectedLayerId(id);
+    setEditLayers((prev) =>
+      prev.map((layer) => (layer.id === id && layer.type === "text" ? { ...layer, ...patch } : layer)),
     );
   };
 
@@ -2963,6 +2979,10 @@ export default function ImageStudio() {
               onCloseWeekPlanCanvas={() => setWeekPlanCanvasOpen(false)}
               memeTemplates={memeTemplates}
               editLayers={editLayers}
+              selectedLayerId={selectedLayerId}
+              onSelectLayer={setSelectedLayerId}
+              onUpdateLayerPosition={handleUpdateLayerPosition}
+              useCanonicalTypography={t3Authorized}
               editBaseImage={editBaseImage}
             />
           </TabsContent>
@@ -2986,6 +3006,7 @@ export default function ImageStudio() {
               handleApplyAdjust={handleApplyAdjust}
               isApplyingCompose={isApplyingCompose}
               handleApplyCompose={handleApplyCompose}
+              useCanonicalTypography={t3Authorized}
               editLayers={editLayers}
               selectedLayerId={selectedLayerId}
               onSelectLayer={setSelectedLayerId}
@@ -3149,6 +3170,10 @@ export default function ImageStudio() {
           onCloseWeekPlanCanvas={() => setWeekPlanCanvasOpen(false)}
           memeTemplates={memeTemplates}
           editLayers={editLayers}
+          selectedLayerId={selectedLayerId}
+          onSelectLayer={setSelectedLayerId}
+          onUpdateLayerPosition={handleUpdateLayerPosition}
+          useCanonicalTypography={t3Authorized}
           editBaseImage={editBaseImage}
         />
 
@@ -3170,6 +3195,7 @@ export default function ImageStudio() {
           handleApplyAdjust={handleApplyAdjust}
           isApplyingCompose={isApplyingCompose}
           handleApplyCompose={handleApplyCompose}
+          useCanonicalTypography={t3Authorized}
           editLayers={editLayers}
           selectedLayerId={selectedLayerId}
           onSelectLayer={setSelectedLayerId}

@@ -33,7 +33,10 @@ import { getStatusBadge, getTypeBadge } from "./RecentGenerations/statusStyles";
 import { StatusPill } from "./RecentGenerations/StatusPill";
 import { MemeTemplatePreview } from "./MemeTemplatePreview";
 import { MemeWeekPlanCanvas } from "./MemeWeekPlanCanvas";
+import { layerPreviewStyle, resolveLayerFaceId } from "../lib/imageStudioTypography";
+import { CANONICAL_FACE_OPTIONS } from "../../../lib/clipTypography/canonicalFaces";
 import nxclipLogo from "../../../contents/images/nexa-logo.png";
+
 
 export function CanvasPanel({
   resultImage,
@@ -101,12 +104,69 @@ export function CanvasPanel({
   onCloseWeekPlanCanvas,
   memeTemplates = [],
   editLayers = [],
+  selectedLayerId = null,
+  onSelectLayer,
+  onUpdateLayerPosition,
+  useCanonicalTypography = false,
   editBaseImage = null,
 }: CanvasPanelProps) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === "rtl";
   const canvasImage = editBaseImage || resultImage;
   const [loadedImageSize, setLoadedImageSize] = React.useState<{ src: string; width: number; height: number } | null>(null);
+  const stageRef = React.useRef<HTMLDivElement | null>(null);
+  const draggingRef = React.useRef(false);
+  const dragLayerIdRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    if (!useCanonicalTypography) return;
+    const faceIds = [
+      ...new Set(
+        editLayers
+          .filter((l) => l.type === "text" && (l.text || "").trim())
+          .map((l) => resolveLayerFaceId(l)),
+      ),
+    ];
+    if (!faceIds.length) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { FontLoaderService } = await import("../../../lib/clipTypography/FontLoaderService");
+        const loader = new FontLoaderService();
+        await Promise.all(
+          faceIds.map(async (faceId) => {
+            const face = CANONICAL_FACE_OPTIONS.find((f) => f.id === faceId);
+            if (!face || cancelled) return;
+            const fontId = faceId.replace(/-\d+-(normal|italic)$/, "");
+            await loader.loadFont(
+              fontId,
+              face.weight,
+              face.style as "normal" | "italic",
+              editLayers
+                .filter((l) => l.type === "text" && resolveLayerFaceId(l) === faceId)
+                .map((l) => l.text || "")
+                .join(" ") || "Aa",
+            );
+          }),
+        );
+      } catch {
+        // Preview falls back to Studio fonts if a face fails to load.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [useCanonicalTypography, editLayers]);
+
+  const moveLayerToPointer = (layerId: string, clientX: number, clientY: number) => {
+    const stage = stageRef.current;
+    if (!stage || !onUpdateLayerPosition) return;
+    const rect = stage.getBoundingClientRect();
+    if (rect.width < 8 || rect.height < 8) return;
+    const xPct = Math.round(Math.min(94, Math.max(6, ((clientX - rect.left) / rect.width) * 100)));
+    const yPct = Math.round(Math.min(94, Math.max(6, ((clientY - rect.top) / rect.height) * 100)));
+    onUpdateLayerPosition(layerId, { xPct, yPct });
+  };
   const statusBadge = getStatusBadge(contentStatus || (isPublished ? "published" : "draft"));
   const typeBadge = getTypeBadge({
     type: mode === "meme" ? "meme" : "image",
@@ -477,6 +537,7 @@ export function CanvasPanel({
                   )}
                 >
                   <div
+                    ref={stageRef}
                     style={{
                       containerType: "size",
                       // Preview-only checkerboard: PNG transparency is never flattened on export.
@@ -528,41 +589,75 @@ export function CanvasPanel({
                     {previewReady && canvasImage
                       ? editLayers
                           .filter((layer) => layer.type === "text" && layer.visible !== false && (layer.text || "").trim())
-                          .map((layer) => (
-                            <div
-                              key={layer.id}
-                              className="pointer-events-none absolute z-[2] max-w-[90%]"
-                              style={{
-                                left: `${layer.xPct ?? 50}%`,
-                                top: `${layer.yPct ?? 50}%`,
-                                transform:
-                                  layer.align === "left"
-                                    ? "translate(0, -50%)"
-                                    : layer.align === "right"
-                                      ? "translate(-100%, -50%)"
-                                      : "translate(-50%, -50%)",
-                                color: layer.color || "#ffffff",
-                                fontSize: `${Math.max(2, Math.min(40, layer.fontSizePct ?? 8))}cqh`,
-                                fontWeight: 400,
-                                width: "max-content",
-                                fontFamily:
-                                  layer.fontId === "montserrat"
-                                    ? '"Studio Montserrat", sans-serif'
-                                    : layer.fontId === "inter"
-                                      ? '"Studio Inter", sans-serif'
-                                      : '"Studio Anton", sans-serif',
-                                textAlign: layer.align || "center",
-                                WebkitTextStroke: `0.04em ${layer.strokeColor || "#000000"}`,
-                                paintOrder: "stroke fill",
-                                lineHeight: 1.1,
-                                whiteSpace: "pre-wrap",
-                                wordBreak: "break-all",
-                                filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`,
-                              }}
-                            >
-                              {layer.text}
-                            </div>
-                          ))
+                          .map((layer) => {
+                            const active = layer.id === selectedLayerId;
+                            const interactive = Boolean(onUpdateLayerPosition);
+                            return (
+                              <div
+                                key={layer.id}
+                                role={interactive ? "button" : undefined}
+                                tabIndex={interactive ? 0 : undefined}
+                                aria-label={
+                                  active
+                                    ? "Drag caption on image"
+                                    : "Select and drag caption layer"
+                                }
+                                aria-pressed={interactive ? active : undefined}
+                                className={cn(
+                                  "absolute z-[2] max-w-[90%] select-none",
+                                  interactive
+                                    ? "cursor-grab active:cursor-grabbing touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+                                    : "pointer-events-none",
+                                  active && interactive ? "ring-1 ring-primary/40 rounded-sm" : null,
+                                )}
+                                style={layerPreviewStyle(layer, {
+                                  useCanonicalFaces: useCanonicalTypography,
+                                  brightness,
+                                  contrast,
+                                  saturation,
+                                })}
+                                onPointerDown={
+                                  interactive
+                                    ? (e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        onSelectLayer?.(layer.id);
+                                        draggingRef.current = true;
+                                        dragLayerIdRef.current = layer.id;
+                                        (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+                                        moveLayerToPointer(layer.id, e.clientX, e.clientY);
+                                      }
+                                    : undefined
+                                }
+                                onPointerMove={
+                                  interactive
+                                    ? (e) => {
+                                        if (!draggingRef.current || dragLayerIdRef.current !== layer.id) return;
+                                        moveLayerToPointer(layer.id, e.clientX, e.clientY);
+                                      }
+                                    : undefined
+                                }
+                                onPointerUp={
+                                  interactive
+                                    ? () => {
+                                        draggingRef.current = false;
+                                        dragLayerIdRef.current = null;
+                                      }
+                                    : undefined
+                                }
+                                onPointerCancel={
+                                  interactive
+                                    ? () => {
+                                        draggingRef.current = false;
+                                        dragLayerIdRef.current = null;
+                                      }
+                                    : undefined
+                                }
+                              >
+                                {layer.text}
+                              </div>
+                            );
+                          })
                       : null}
 
                     {(isGenerating || !previewReady || !resultImage) && (

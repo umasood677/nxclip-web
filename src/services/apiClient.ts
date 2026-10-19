@@ -1245,6 +1245,11 @@ export interface ContentDto {
       strokeColor?: string;
       align?: "left" | "center" | "right";
       fontId?: "impact" | "inter" | "montserrat";
+      faceId?: string;
+      outline?: number;
+      shadow?: number;
+      letterSpacing?: number;
+      lineHeightRatio?: number;
     }>;
     lastOp?: "upscale" | "remove_bg" | "adjust" | "compose" | string;
     baseAvailable?: boolean;
@@ -1796,6 +1801,11 @@ export const contentApi = {
             strokeColor?: string;
             align?: "left" | "center" | "right";
             fontId?: "impact" | "inter" | "montserrat";
+            faceId?: string;
+            outline?: number;
+            shadow?: number;
+            letterSpacing?: number;
+            lineHeightRatio?: number;
           }>;
         },
   ): Promise<{
