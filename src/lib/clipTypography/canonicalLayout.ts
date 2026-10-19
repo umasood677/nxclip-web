@@ -9,7 +9,7 @@ export const PARITY_FONT_PACKAGE = parity;
 const catalog: {fonts: FontEntry[]} = { fonts: FONT_MANIFEST.fonts.map(font => ({...font, family:`Canonical ${font.id}`, faces:font.faces.map(face => {
   const asset = parity.faces.find(item => item.id === face.id)!;
   return {...face, browser:{availability:'packaged',format:'truetype',runtimeVerified:false,requirements:['Canonical layout v1; activation approval required'],assets:[{path:asset.path,sha256:asset.sha256,url:asset.path.replace(/^public/,''),deliveryRelease:'1.1.0',subset:'full',cssUnicodeRange:asset.inspection.unicodeRanges.join(','),inspection:{...asset.inspection,kind:'static',style:asset.style,axes:{}}}]}};
-}))}) };
+})})) };
 const loader = new FontLoaderService(undefined, 10000, catalog);
 export const canonicalBrowserFamily = (faceId: string) => `NxClip T2 Canonical ${faceId.replace(/-\d+-(normal|italic)$/,'')}`;
 
