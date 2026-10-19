@@ -37,7 +37,6 @@ import {
   buildLayoutFromComposition,
   createDefaultComposition,
   draftFromPlan,
-  getActiveLayer,
   type CanonicalCompositionDraft,
   type CanonicalLayerDraft,
 } from '../../lib/clipTypography/canonicalAuthoring';
@@ -352,7 +351,6 @@ export default function ClipEditor() {
   const [t3Composition, setT3Composition] = useState<CanonicalCompositionDraft>(() =>
     createDefaultComposition(5000),
   );
-  const t3ActiveLayer = useMemo(() => getActiveLayer(t3Composition), [t3Composition]);
   const [t3LayoutBusy, setT3LayoutBusy] = useState(false);
   const [t3LayoutError, setT3LayoutError] = useState<string | null>(null);
   const t3RebuildSeq = useRef(0);
@@ -412,14 +410,21 @@ export default function ClipEditor() {
     [rebuildCanonicalFromComposition],
   );
 
+  const onT3SelectLayer = useCallback((layerId: string) => {
+    setT3Composition((prev) =>
+      prev.activeLayerId === layerId ? prev : { ...prev, activeLayerId: layerId },
+    );
+  }, []);
+
   const t3DragTimerRef = useRef<number | null>(null);
   const onT3PositionChange = useCallback(
-    (patch: Pick<CanonicalLayerDraft, 'positionX' | 'verticalAnchor'>) => {
+    (layerId: string, patch: Pick<CanonicalLayerDraft, 'positionX' | 'verticalAnchor'>) => {
       setT3Composition((prev) => {
         const next: CanonicalCompositionDraft = {
           ...prev,
+          activeLayerId: layerId,
           layers: prev.layers.map((layer) =>
-            layer.id === prev.activeLayerId ? { ...layer, ...patch } : layer,
+            layer.id === layerId ? { ...layer, ...patch } : layer,
           ),
         };
         if (t3DragTimerRef.current != null) window.clearTimeout(t3DragTimerRef.current);
@@ -4071,8 +4076,9 @@ export default function ClipEditor() {
                 locked={editsLocked}
                 enabled={t3Authorized}
                 interactive={t3Authorized && !editsLocked}
-                positionX={t3ActiveLayer.positionX}
-                verticalAnchor={t3ActiveLayer.verticalAnchor}
+                layers={t3Composition.layers}
+                activeLayerId={t3Composition.activeLayerId}
+                onSelectLayer={onT3SelectLayer}
                 onPositionChange={onT3PositionChange}
               />
               {!editsLocked &&
@@ -4832,9 +4838,9 @@ export default function ClipEditor() {
               </div>
             ) : null}
 
-            <div className="grid lg:grid-cols-3 gap-6 lg:gap-8 pb-32 md:pb-0">
-              {/* Preview Column */}
-              <div className="lg:col-span-2 space-y-4 md:space-y-6">
+            <div className="grid lg:grid-cols-3 gap-6 lg:gap-8 pb-32 md:pb-0 lg:items-start">
+              {/* Preview Column — stays visible while caption controls scroll */}
+              <div className="lg:col-span-2 space-y-4 md:space-y-6 lg:sticky lg:top-20 lg:self-start">
                 <div className="w-full max-w-[320px] sm:max-w-[340px] md:max-w-[420px] mx-auto space-y-3">
                 <div
                   ref={polishPreviewRef}
@@ -5016,8 +5022,9 @@ export default function ClipEditor() {
                   finalRender={showingFinalRender}
                   enabled={t3Authorized}
                   interactive={t3Authorized && !editsLocked && !showingFinalRender}
-                  positionX={t3ActiveLayer.positionX}
-                  verticalAnchor={t3ActiveLayer.verticalAnchor}
+                  layers={t3Composition.layers}
+                  activeLayerId={t3Composition.activeLayerId}
+                  onSelectLayer={onT3SelectLayer}
                   onPositionChange={onT3PositionChange}
                 />
                 {!showingFinalRender &&
@@ -5076,8 +5083,13 @@ export default function ClipEditor() {
                 />
             </div>
 
-            {/* Controls Column */}
-            <div className={cn("relative space-y-6", editsLocked && "pointer-events-none select-none")}>
+            {/* Controls Column — independent scroll so preview stays in view */}
+            <div
+              className={cn(
+                "relative space-y-6 lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1",
+                editsLocked && "pointer-events-none select-none",
+              )}
+            >
               {editsLocked ? (
                 <div className="absolute inset-0 z-20 flex items-start justify-center rounded-xl bg-background/55 px-4 pt-6 backdrop-blur-[1px]">
                   <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-center text-[11px] font-semibold text-amber-900 shadow-sm dark:text-amber-100">
@@ -5481,11 +5493,11 @@ export default function ClipEditor() {
                       </div>
 
                       <div className="space-y-6">
-                        <p className="text-[11px] text-muted-foreground leading-relaxed">
-                          {t3Authorized
-                            ? 'Add multiple text layers, set each layer’s font and timing on the timeline, then drag placement on the clip preview.'
-                            : t("clip_editor.polish.meme.drag_hint")}
-                        </p>
+                        {!t3Authorized ? (
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            {t("clip_editor.polish.meme.drag_hint")}
+                          </p>
+                        ) : null}
                         <div className="space-y-4">
                           {t3Authorized ? (
                             <CanonicalTypographyControls

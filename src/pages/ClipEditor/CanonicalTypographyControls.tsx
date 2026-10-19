@@ -1,4 +1,4 @@
-﻿import { Type, Move, Palette, Plus, Trash2, Layers } from 'lucide-react';
+﻿import { Type, Palette, Plus, Trash2, Layers } from 'lucide-react';
 import { CANONICAL_FACE_OPTIONS } from '../../lib/clipTypography/canonicalFaces';
 import {
   compositionHasMixedFonts,
@@ -154,21 +154,17 @@ export function CanonicalTypographyControls({
 
   return (
     <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 space-y-5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/20">
-            <Type size={18} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[9px] font-black uppercase tracking-wider text-primary/60">
-              Smart Typography
-            </p>
-            <p className="text-[13px] font-bold text-foreground truncate">Multi-layer captions</p>
-          </div>
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/20">
+          <Type size={18} />
         </div>
-        <div className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-background/60 px-2.5 py-1 text-[9px] font-bold text-primary">
-          <Move size={11} />
-          Drag on preview
+        <div className="min-w-0 flex-1">
+          <p className="text-[9px] font-black uppercase tracking-wider text-primary/60">
+            Smart Typography
+          </p>
+          <p className="text-[13px] font-bold text-foreground leading-snug">
+            Multi-layer captions
+          </p>
         </div>
       </div>
 
@@ -296,10 +292,6 @@ export function CanonicalTypographyControls({
             onChange={(endMs) => patchTiming(Math.min(active.startMs, endMs - 200), endMs)}
           />
         </div>
-        <p className="text-[10px] text-muted-foreground leading-relaxed">
-          Scrub the clip preview — each layer only shows between its appear/hide times. Drag the active
-          layer on the preview to place it.
-        </p>
       </div>
 
       <div className="space-y-1.5">
@@ -468,13 +460,6 @@ export function CanonicalTypographyControls({
             />
           </label>
         </div>
-      </div>
-
-      <div className="rounded-lg border border-border/40 bg-muted/20 px-3 py-2 text-[10px] text-muted-foreground leading-relaxed">
-        Active position:{' '}
-        <span className="font-mono font-bold text-foreground">
-          {Math.round(active.positionX * 100)}% · {Math.round(active.verticalAnchor * 100)}%
-        </span>
       </div>
 
       {busy ? <p className="text-[10px] text-muted-foreground">Updating layout…</p> : null}
