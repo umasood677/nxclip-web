@@ -54,12 +54,17 @@ export function EditPanel({
       <div className="flex-1 flex flex-col min-h-0">
         <ScrollArea className="flex-1 min-h-0">
           <div className="p-3 sm:p-4">
-            {editDisabledReason ? (
-              <p className="mb-4 text-[10px] text-muted-foreground leading-relaxed rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
-                {editDisabledReason}
-              </p>
-            ) : null}
+            <h3
+              className={cn(
+                "mb-4 text-base md:text-lg font-display font-bold text-foreground flex items-center gap-2",
+                isRTL && "flex-row-reverse",
+              )}
+            >
+              <Settings2 size={18} className="text-primary shrink-0" />
+              {t("image_studio.edit.title", { defaultValue: "Edit Tool" })}
+            </h3>
 
+            <fieldset disabled={toolsLocked} className={cn("min-w-0 border-0 p-0 m-0", toolsLocked && "opacity-55")}>
             <Accordion
               multiple
               value={openSections}
@@ -281,6 +286,7 @@ export function EditPanel({
               </AccordionContent>
             </AccordionItem>
             </Accordion>
+            </fieldset>
           </div>
         </ScrollArea>
 

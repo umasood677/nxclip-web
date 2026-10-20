@@ -1,4 +1,4 @@
-﻿import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { 
   Scissors, 
   Sparkles, 
@@ -255,14 +255,13 @@ export default function ClipEditor() {
   const [activePolishTab, setActivePolishTab] = useState(
     () => (searchParams.get("action") === "hooks" ? "details" : "meme"),
   );
+  /** Single open polish category so its options fill the right rail and push actions down. */
   const [openPolishSections, setOpenPolishSections] = useState<string[]>(() =>
-    searchParams.get("action") === "hooks"
-      ? ["details"]
-      : ["details", "meme"],
+    searchParams.get("action") === "hooks" ? ["details"] : ["meme"],
   );
   const ensurePolishSectionOpen = useCallback((section: string) => {
     setActivePolishTab(section);
-    setOpenPolishSections((prev) => (prev.includes(section) ? prev : [...prev, section]));
+    setOpenPolishSections([section]);
   }, []);
   const [isAnimateClip, setIsAnimateClip] = useState(false);
 
@@ -4915,7 +4914,7 @@ export default function ClipEditor() {
               </div>
             ) : null}
 
-            <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] gap-6 lg:gap-8 pb-32 md:pb-0 lg:items-stretch lg:min-h-[calc(100dvh-5.5rem)]">
+            <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] gap-6 lg:gap-8 pb-32 md:pb-0 lg:items-start">
               {/* Preview Column — stays visible while caption controls scroll */}
               <div className="space-y-4 md:space-y-6 lg:sticky lg:top-20 lg:self-start">
                 <div className="w-full flex flex-col items-center space-y-3">
@@ -5178,10 +5177,10 @@ export default function ClipEditor() {
                 />
             </div>
 
-            {/* Controls Column — full-height right rail aligned to viewport bottom */}
+            {/* Controls Column — open section expands fully and pushes Save/Render/Publish down */}
             <div
               className={cn(
-                "relative flex flex-col space-y-6 min-h-0 lg:h-[calc(100dvh-5.5rem)] lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-hidden lg:pr-0",
+                "relative flex flex-col gap-6 lg:pr-0",
                 editsLocked && "pointer-events-none select-none",
               )}
             >
@@ -5194,21 +5193,21 @@ export default function ClipEditor() {
               ) : null}
               <div
                 className={cn(
-                  "ui-card p-0 overflow-hidden lg:border-border flex-1 min-h-0 flex flex-col",
+                  "ui-card p-0 overflow-visible lg:border-border shrink-0 flex flex-col",
                   editsLocked && "opacity-55",
                 )}
                 aria-disabled={editsLocked || undefined}
               >
                 <Accordion
-                  multiple
                   value={openPolishSections}
                   onValueChange={(value) => {
-                    setOpenPolishSections(value);
-                    if (value.length) setActivePolishTab(value[value.length - 1]!);
+                    const next = value.length ? [value[value.length - 1]!] : openPolishSections;
+                    setOpenPolishSections(next);
+                    if (next[0]) setActivePolishTab(next[0]);
                   }}
-                  className="w-full flex flex-col flex-1 min-h-0"
+                  className="w-full"
                 >
-                  <div className="px-2 sm:px-3 flex-1 min-h-0 overflow-y-auto overscroll-contain">
+                  <div className="px-2 sm:px-3 py-2">
                     <AccordionItem value="details" className="border border-border/50 rounded-xl mb-2 overflow-hidden px-3 sm:px-4">
                       <AccordionTrigger className="py-3 hover:no-underline">
                         <span className="flex items-center gap-2 text-sm font-bold">
@@ -6452,7 +6451,7 @@ export default function ClipEditor() {
                 </Accordion>
               </div>
 
-              <div className="hidden lg:flex flex-col space-y-3 pt-3 shrink-0 border-t border-border/40 mt-auto">
+              <div className="hidden lg:flex flex-col space-y-3 pt-3 pb-2 shrink-0 border-t border-border/40">
                 <div
                   className={cn(
                     "rounded-xl border px-3 py-2 text-[11px] font-medium",
