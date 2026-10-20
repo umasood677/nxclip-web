@@ -48,7 +48,8 @@ export const DEFAULT_LAYER_DRAFT: Omit<CanonicalLayerDraft, 'id' | 'startMs' | '
   lineHeightRatio: 1.25,
   letterSpacing: 0,
   positionX: 0.5,
-  verticalAnchor: 0.72,
+  /** Lower third — clears the centered play affordance on the preview. */
+  verticalAnchor: 0.82,
 };
 
 export const DEFAULT_CANONICAL_DRAFT: CanonicalAuthoringDraft = {
@@ -112,7 +113,13 @@ export function createDefaultComposition(durationMs: number, fallbackText = ''):
   return { safeInset: 0.08, layers: [layer], activeLayerId: layer.id };
 }
 
-export function getActiveLayer(draft: CanonicalCompositionDraft): CanonicalLayerDraft {
+/** Start with no caption layers — user adds the first layer explicitly. */
+export function createEmptyComposition(): CanonicalCompositionDraft {
+  return { safeInset: 0.08, layers: [], activeLayerId: '' };
+}
+
+export function getActiveLayer(draft: CanonicalCompositionDraft): CanonicalLayerDraft | null {
+  if (!draft.layers.length) return null;
   return draft.layers.find((l) => l.id === draft.activeLayerId) ?? draft.layers[0]!;
 }
 
@@ -122,7 +129,9 @@ export function draftFromPlan(
   durationMs = 5000,
 ): CanonicalCompositionDraft {
   if (!plan?.layers?.length) {
-    return createDefaultComposition(durationMs, fallbackText);
+    return fallbackText.trim()
+      ? createDefaultComposition(durationMs, fallbackText)
+      : createEmptyComposition();
   }
   const faceOk = PARITY_FONT_PACKAGE.faces.some((f) => f.id === plan.faceId);
   const planFace = (faceOk ? plan.faceId : CANONICAL_FACE_DEFAULT) as CanonicalFaceId;
@@ -192,7 +201,10 @@ export async function buildLayoutFromComposition(
   const contentHeight = Math.max(1, contentBottom - contentTop);
 
   const usable = draft.layers.filter((l) => l.text.trim().length > 0);
-  const source = usable.length ? usable : draft.layers.slice(0, 1);
+  if (!usable.length) {
+    throw new Error('NO_TYPOGRAPHY_LAYERS');
+  }
+  const source = usable;
   // Plan-level faceId is the first visible layer (v1 primary identity); each layer also carries its own face.
   const primaryFace = source[0]?.faceId || CANONICAL_FACE_DEFAULT;
 

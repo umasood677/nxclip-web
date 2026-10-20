@@ -122,7 +122,7 @@ function ColorSwatchRow({
         </label>
         <span className="text-[10px] font-mono font-bold text-foreground">{value.toUpperCase()}</span>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto pb-0.5">
         {swatches.map((swatch) => {
           const selected = value.toUpperCase() === swatch.hex.toUpperCase();
           return (
@@ -134,7 +134,7 @@ function ColorSwatchRow({
               aria-pressed={selected}
               onClick={() => onChange(swatch.hex)}
               className={cn(
-                'h-7 w-7 rounded-full border-2 shadow-sm transition-transform',
+                'h-6 w-6 shrink-0 rounded-full border-2 shadow-sm transition-transform',
                 selected ? 'border-primary scale-110 ring-2 ring-primary/30' : 'border-border/60 hover:scale-105',
               )}
               style={{ backgroundColor: swatch.hex }}
@@ -143,7 +143,7 @@ function ColorSwatchRow({
         })}
         <label
           className={cn(
-            'relative h-7 w-7 cursor-pointer overflow-hidden rounded-full border-2 border-dashed border-primary/40',
+            'relative h-6 w-6 shrink-0 cursor-pointer overflow-hidden rounded-full border-2 border-dashed border-primary/40',
             'flex items-center justify-center bg-muted/40 hover:border-primary',
             !known && 'ring-2 ring-primary/30 border-primary',
           )}
@@ -186,13 +186,14 @@ export function CanonicalTypographyControls({
   const maxLayers = 8;
 
   useEffect(() => {
-    if (!active.text.trim()) {
+    if (active && !active.text.trim()) {
       textInputRef.current?.focus();
     }
-  }, [active.id, active.text]);
+  }, [active?.id, active?.text]);
 
   // Warm browser faces so the font menu renders each name in its own typeface.
   useEffect(() => {
+    if (!active) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -232,7 +233,7 @@ export function CanonicalTypographyControls({
     return () => {
       cancelled = true;
     };
-  }, [active.faceId]);
+  }, [active?.faceId]);
 
   const [layerClipboard, setLayerClipboard] = useState<CanonicalLayerDraft | null>(null);
 
@@ -245,12 +246,13 @@ export function CanonicalTypographyControls({
       existingIds: draft.layers.map((l) => l.id),
       seed: {
         text: '',
-        verticalAnchor: Math.min(0.9, 0.35 + draft.layers.length * 0.12),
+        // Stack new layers in the lower third so they clear the center play control.
+        verticalAnchor: Math.min(0.9, 0.78 + draft.layers.length * 0.05),
         startMs: Math.min(duration - 800, Math.round(playheadMs)),
         endMs: Math.min(duration, Math.round(playheadMs) + Math.min(2500, duration)),
-        faceId: active.faceId,
-        outlineColor: active.outlineColor,
-        shadowColor: active.shadowColor,
+        faceId: active?.faceId,
+        outlineColor: active?.outlineColor,
+        shadowColor: active?.shadowColor,
       },
     });
     onChange({
@@ -261,6 +263,7 @@ export function CanonicalTypographyControls({
   };
 
   const copyActive = () => {
+    if (!active) return;
     setLayerClipboard({ ...active });
   };
 
@@ -274,7 +277,7 @@ export function CanonicalTypographyControls({
       existingIds: draft.layers.map((l) => l.id),
       seed: {
         ...style,
-        verticalAnchor: Math.min(0.92, (clip.verticalAnchor ?? 0.72) + 0.06),
+        verticalAnchor: Math.min(0.92, (clip.verticalAnchor ?? 0.82) + 0.05),
         startMs: Math.min(duration - 800, Math.round(playheadMs)),
         endMs: Math.min(duration, Math.round(playheadMs) + span),
       },
@@ -287,12 +290,12 @@ export function CanonicalTypographyControls({
   };
 
   const removeActive = () => {
-    if (draft.layers.length <= 1) return;
+    if (!active || draft.layers.length < 1) return;
     const nextLayers = draft.layers.filter((l) => l.id !== active.id);
     onChange({
       ...draft,
       layers: nextLayers,
-      activeLayerId: nextLayers[0]!.id,
+      activeLayerId: nextLayers[0]?.id ?? '',
     });
   };
 
@@ -303,16 +306,16 @@ export function CanonicalTypographyControls({
   };
 
   return (
-    <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 space-y-5">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/20">
-          <Type size={18} />
+    <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 space-y-4">
+      <div className="flex items-center gap-2.5">
+        <div className="w-8 h-8 shrink-0 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-md shadow-primary/20">
+          <Type size={15} />
         </div>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 leading-none space-y-0.5">
           <p className="text-[9px] font-black uppercase tracking-wider text-primary/60">
             Smart Typography
           </p>
-          <p className="text-[13px] font-bold text-foreground leading-snug">
+          <p className="text-[12px] font-bold text-foreground">
             Multi-layer captions
           </p>
         </div>
@@ -344,6 +347,7 @@ export function CanonicalTypographyControls({
               size="sm"
               variant="ghost"
               className="h-8 w-8 rounded-lg p-0"
+              disabled={!active}
               onClick={copyActive}
               title="Copy selected text layer"
               aria-label="Copy selected text layer"
@@ -367,7 +371,7 @@ export function CanonicalTypographyControls({
               size="sm"
               variant="ghost"
               className="h-8 w-8 rounded-lg p-0 text-destructive"
-              disabled={draft.layers.length <= 1}
+              disabled={!active}
               onClick={removeActive}
               title="Remove selected layer"
               aria-label="Remove selected layer"
@@ -376,43 +380,49 @@ export function CanonicalTypographyControls({
             </Button>
           </div>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {draft.layers.map((layer, index) => {
-            const selected = layer.id === active.id;
-            const color = LAYER_COLORS[index % LAYER_COLORS.length]!;
-            return (
-              <button
-                key={layer.id}
-                type="button"
-                onClick={() => setActive(layer.id)}
-                className={cn(
-                  'h-8 max-w-[9rem] truncate rounded-lg border px-2.5 text-[10px] font-bold transition-colors',
-                  selected
-                    ? 'border-primary bg-primary/15 text-primary'
-                    : 'border-border/50 bg-muted/20 text-muted-foreground hover:border-primary/30',
-                )}
-                style={selected ? { boxShadow: `inset 3px 0 0 ${color}` } : undefined}
-                title={layer.text || `Layer ${index + 1}`}
-              >
-                {layer.text.trim() ? layer.text.trim().slice(0, 18) : `Layer ${index + 1}`}
-              </button>
-            );
-          })}
-        </div>
+        {draft.layers.length ? (
+          <div className="flex flex-wrap gap-1.5">
+            {draft.layers.map((layer, index) => {
+              const selected = layer.id === active?.id;
+              const color = LAYER_COLORS[index % LAYER_COLORS.length]!;
+              return (
+                <button
+                  key={layer.id}
+                  type="button"
+                  onClick={() => setActive(layer.id)}
+                  className={cn(
+                    'h-8 max-w-[9rem] truncate rounded-lg border px-2.5 text-[10px] font-bold transition-colors',
+                    selected
+                      ? 'border-primary bg-primary/15 text-primary'
+                      : 'border-border/50 bg-muted/20 text-muted-foreground hover:border-primary/30',
+                  )}
+                  style={selected ? { boxShadow: `inset 3px 0 0 ${color}` } : undefined}
+                  title={layer.text || `Layer ${index + 1}`}
+                >
+                  {layer.text.trim() ? layer.text.trim().slice(0, 18) : `Layer ${index + 1}`}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-[10px] text-muted-foreground px-0.5">
+            No text layers yet. Tap Add text to create one.
+          </p>
+        )}
       </div>
 
-      <label className="space-y-1.5 text-[10px] font-bold text-muted-foreground block">
-        <span className="ml-1">Text Content</span>
+      {active ? (
+      <>
+      <label className="space-y-1 text-[10px] font-bold text-muted-foreground block">
+        <span className="ml-1">Text</span>
         <textarea
           ref={textInputRef}
-          className="min-h-[88px] w-full rounded-lg border border-border/50 bg-background px-3 py-2.5 text-sm font-medium text-foreground leading-relaxed focus:outline-none focus:border-primary/50"
+          rows={2}
+          className="h-[3.25rem] max-h-[3.25rem] min-h-0 w-full resize-none rounded-lg border border-border/50 bg-background px-3 py-1.5 text-sm font-medium text-foreground leading-snug focus:outline-none focus:border-primary/50"
           value={active.text}
           onChange={(e) => onPatchActive({ text: e.target.value })}
           placeholder="Type the words drawn on this clip…"
         />
-        <span className="ml-1 text-[9px] font-medium text-muted-foreground/80 normal-case tracking-normal">
-          Overlay text for the selected layer — separate from the social caption below.
-        </span>
       </label>
 
       {/* Timeline */}
@@ -634,6 +644,8 @@ export function CanonicalTypographyControls({
         <p role="alert" className="text-[10px] text-destructive">
           {error}
         </p>
+      ) : null}
+      </>
       ) : null}
     </div>
   );

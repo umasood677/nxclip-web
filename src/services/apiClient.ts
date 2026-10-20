@@ -1584,6 +1584,7 @@ export const contentApi = {
       suggestedMode?: string;
       commentaryRecommended?: boolean;
       lightTouchOnly?: boolean;
+      commentaryStyle?: string;
     };
     visualEvents?: unknown[];
     soundDesign?: unknown;
@@ -1603,6 +1604,8 @@ export const contentApi = {
       components?: Record<string, boolean>;
       durationSec: number;
       voiceId?: string;
+      commentaryStyle?: string;
+      commentaryPersona?: string;
     },
   ): Promise<{
     provider: string;
@@ -1647,7 +1650,17 @@ export const contentApi = {
 
   synthesizeSoundDesign: async (
     id: string,
-    body?: { segmentIds?: string[]; durationSec?: number; voiceId?: string },
+    body?: {
+      segmentIds?: string[];
+      durationSec?: number;
+      voiceId?: string;
+      segmentPatches?: Array<{
+        id: string;
+        text?: string;
+        startMs?: number;
+        delivery?: string;
+      }>;
+    },
   ): Promise<{
     provider: string;
     synthesized: number;
@@ -1664,7 +1677,13 @@ export const contentApi = {
 
   reimagineSoundDesign: async (
     id: string,
-    body: { presetId: string; durationSec: number; creatorContext?: string },
+    body: {
+      presetId: string;
+      durationSec: number;
+      creatorContext?: string;
+      voiceId?: string;
+      commentaryPersona?: string;
+    },
   ): Promise<{
     preset?: { id: string; name: string };
     provider?: string;

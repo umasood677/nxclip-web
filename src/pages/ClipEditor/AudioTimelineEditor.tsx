@@ -1,4 +1,10 @@
-import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { GripVertical, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { cn } from "../../lib/utils";
 
@@ -26,6 +32,11 @@ type Props = {
   previewingId?: string | null;
   /** Play / stop commentary or Foley for a single timeline note. */
   onPreviewClip?: (item: TimelineEdlItem) => void;
+  /**
+   * Persist edited commentary text and regenerate TTS for that line.
+   * Called when the creator saves the textarea (blur / Apply).
+   */
+  onCommitVoiceText?: (item: TimelineEdlItem, text: string) => void;
 };
 
 const LAYER_ORDER: TimelineEdlItem["type"][] = [
@@ -326,10 +337,12 @@ export function AudioTimelineEditor({
   comfortable,
   previewingId,
   onPreviewClip,
+  onCommitVoiceText,
 }: Props) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [draft, setDraft] = useState<TimelineEdlItem[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [voiceDraft, setVoiceDraft] = useState("");
   const dragSpanRef = useRef(0);
   const widthMs = Math.max(1000, durationMs);
   const view = draft || items;
@@ -356,6 +369,14 @@ export function AudioTimelineEditor({
     () => (selectedId ? view.find((it) => it.id === selectedId) : undefined),
     [selectedId, view],
   );
+
+  useEffect(() => {
+    if (selected?.type === "voice") {
+      setVoiceDraft(selected.metadata?.text?.trim() || "");
+    } else {
+      setVoiceDraft("");
+    }
+  }, [selected?.id, selected?.type, selected?.metadata?.text]);
 
   const patchLocal = (id: string, patch: Partial<TimelineEdlItem>) => {
     const next = view.map((it) => (it.id === id ? { ...it, ...patch } : it));
@@ -820,9 +841,53 @@ export function AudioTimelineEditor({
               </button>
             ) : null}
           </div>
-          <p className="text-[12px] font-medium leading-snug text-white/90">
-            {clipDetailLabel(selected)}
-          </p>
+          {selected.type === "voice" && onCommitVoiceText ? (
+            <div className="space-y-1.5">
+              <label className="block text-[9px] font-semibold uppercase tracking-wide text-white/40">
+                Commentary text
+              </label>
+              <textarea
+                rows={2}
+                disabled={disabled}
+                value={voiceDraft}
+                maxLength={500}
+                className="w-full resize-y rounded-md border border-white/15 bg-black/50 px-2 py-1.5 text-[12px] font-medium leading-snug text-white/90 placeholder:text-white/25 focus:border-sky-400/50 focus:outline-none"
+                placeholder="Edit this line, then Apply & regenerate voice"
+                onChange={(e) => setVoiceDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setVoiceDraft(selected.metadata?.text?.trim() || "");
+                    (e.target as HTMLTextAreaElement).blur();
+                  }
+                }}
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={
+                    disabled ||
+                    !voiceDraft.trim() ||
+                    voiceDraft.trim() === (selected.metadata?.text || "").trim()
+                  }
+                  className="rounded-md bg-sky-500/90 px-2 py-1 text-[10px] font-semibold text-sky-950 disabled:cursor-not-allowed disabled:opacity-40"
+                  onClick={() => {
+                    const next = voiceDraft.trim().slice(0, 500);
+                    if (!next) return;
+                    onCommitVoiceText(selected, next);
+                  }}
+                >
+                  Apply &amp; regenerate voice
+                </button>
+                <span className="text-[9px] text-white/30">
+                  Edits only this line · timing stays action-synced unless you drag Start
+                </span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-[12px] font-medium leading-snug text-white/90">
+              {clipDetailLabel(selected)}
+            </p>
+          )}
           <p className="text-[9px] text-white/30">
             Drag the note (keeps length) or set Start · mute SRC/AMB/BGM rails for VO+Foley only · ▶
             to preview

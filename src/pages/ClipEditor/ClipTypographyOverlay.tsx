@@ -61,6 +61,10 @@ export function ClipTypographyOverlay({
   }
   if (!state.plan) return null;
 
+  const plan = state.plan;
+  const planW = Math.max(1, plan.width);
+  const planH = Math.max(1, plan.height);
+
   const moveToPointer = (layerId: string, clientX: number, clientY: number) => {
     const stage = stageRef.current;
     if (!stage || !onPositionChange) return;
@@ -73,19 +77,48 @@ export function ClipTypographyOverlay({
   };
 
   const visibleLayers = layers.filter((l) => timeMs >= l.startMs && timeMs < l.endMs);
-  const planH = Math.max(1, state.plan.height);
 
   return (
     <div ref={stageRef} className="absolute inset-0 z-20 pointer-events-none">
-      <CanonicalCaptionPreview plan={state.plan} timeMs={timeMs} enabled={true} aspect={aspect} />
+      <CanonicalCaptionPreview plan={plan} timeMs={timeMs} enabled={true} aspect={aspect} />
       {interactive && onPositionChange
         ? visibleLayers.map((layer) => {
             const active = layer.id === activeLayerId;
-            const fontSize = Math.max(16, layer.fontSize ?? 56);
-            const lines = Math.max(1, layer.lineCount ?? (layer.text?.split('\n').length || 1));
-            // Map plan px → % of stage so the ring hugs the rendered glyphs.
-            const heightPct = Math.min(28, ((fontSize * lines * 1.35) / planH) * 100);
-            const widthPct = Math.min(88, Math.max(28, (String(layer.text || '').length || 8) * 2.2));
+            const planLayer = plan.layers.find((pl) => pl.id === layer.id);
+            const fontSize = Math.max(16, planLayer?.fontSize ?? layer.fontSize ?? 56);
+            const padX = Math.max(6, fontSize * 0.18 + (planLayer?.outline ?? 0) + (planLayer?.shadow ?? 0) * 0.35);
+            const padY = Math.max(4, fontSize * 0.22 + (planLayer?.outline ?? 0));
+
+            let leftPct: number;
+            let topPct: number;
+            let widthPct: number;
+            let heightPct: number;
+
+            if (planLayer?.lines?.length) {
+              // Hug the measured glyph boxes from the same plan the canvas draws.
+              const minX = Math.min(...planLayer.lines.map((ln) => ln.x));
+              const maxX = Math.max(...planLayer.lines.map((ln) => ln.x + ln.width));
+              const minBase = Math.min(...planLayer.lines.map((ln) => ln.baseline));
+              const maxBase = Math.max(...planLayer.lines.map((ln) => ln.baseline));
+              const ascent = fontSize * 0.82;
+              const descent = fontSize * 0.22;
+              const boxLeft = Math.max(0, minX - padX);
+              const boxRight = Math.min(planW, maxX + padX);
+              const boxTop = Math.max(0, minBase - ascent - padY);
+              const boxBottom = Math.min(planH, maxBase + descent + padY);
+              leftPct = (boxLeft / planW) * 100;
+              topPct = (boxTop / planH) * 100;
+              widthPct = Math.max(4, ((boxRight - boxLeft) / planW) * 100);
+              heightPct = Math.max(3, ((boxBottom - boxTop) / planH) * 100);
+            } else {
+              // Empty / not-yet-built layer: compact target at the draft anchor.
+              const lines = Math.max(1, layer.lineCount ?? 1);
+              heightPct = Math.min(18, ((fontSize * lines * 1.2) / planH) * 100);
+              widthPct = 36;
+              leftPct = layer.positionX * 100 - widthPct / 2;
+              topPct = layer.verticalAnchor * 100 - heightPct;
+            }
+
             return (
               <div
                 key={layer.id}
@@ -94,21 +127,19 @@ export function ClipTypographyOverlay({
                 aria-label={active ? 'Drag caption on clip' : 'Select and drag caption layer'}
                 aria-pressed={active}
                 className={cn(
-                  'absolute z-30 pointer-events-auto -translate-x-1/2',
+                  'absolute z-30 pointer-events-auto',
                   'cursor-grab active:cursor-grabbing select-none touch-none rounded-md',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70',
                   active
-                    ? 'ring-1 ring-primary/50 bg-primary/5'
-                    : 'hover:ring-1 hover:ring-white/30',
+                    ? 'ring-1 ring-primary/55 bg-primary/10'
+                    : 'hover:ring-1 hover:ring-white/35',
                 )}
                 style={{
-                  left: `${layer.positionX * 100}%`,
-                  top: `${layer.verticalAnchor * 100}%`,
-                  // Baseline at bottom of hit box — matches canvas alphabetic baseline.
-                  transform: 'translate(-50%, -100%)',
+                  left: `${leftPct}%`,
+                  top: `${topPct}%`,
                   width: `${widthPct}%`,
                   height: `${heightPct}%`,
-                  minHeight: '1.25rem',
+                  minHeight: '1.1rem',
                 }}
                 onPointerDown={(e) => {
                   e.preventDefault();

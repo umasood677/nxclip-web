@@ -38,6 +38,12 @@ export type PersistedSoundDesign = {
     commentaryRecommended?: boolean;
     lightTouchOnly?: boolean;
     suggestedMode?: string;
+    commentaryStyle?: string;
+  };
+  userOverrides?: {
+    commentaryPersona?: string;
+    commentaryStyle?: string;
+    reimaginePresetId?: string;
   };
   audioStoryPlan?: {
     foleyEvents?: Array<{ enabled?: boolean }>;
@@ -45,6 +51,24 @@ export type PersistedSoundDesign = {
   };
   audioEdl?: unknown[];
 };
+
+/** Map Advanced mode → TTS voice style when Analyze did not set one. */
+function commentaryStyleFromMode(mode: SoundDesignMode): string | undefined {
+  switch (mode) {
+    case "broadcast":
+      return "sports-broadcast";
+    case "cinematic":
+      return "cinematic";
+    case "energetic":
+      return "energetic";
+    case "comedy":
+      return "comedy";
+    case "natural":
+      return "natural";
+    default:
+      return undefined;
+  }
+}
 
 const MODES: Array<[SoundDesignMode, string]> = [
   ["auto", "Auto"],
@@ -290,7 +314,9 @@ export function SoundDesignPanel({
     commentaryRecommended?: boolean;
     lightTouchOnly?: boolean;
     suggestedMode?: string;
+    commentaryStyle?: string;
   } | null>(null);
+  const [commentaryPersona, setCommentaryPersona] = useState("");
   const [planSummary, setPlanSummary] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<TimelineEdlItem[]>([]);
   const [lastPreset, setLastPreset] = useState<string | null>(null);
@@ -323,7 +349,15 @@ export function SoundDesignPanel({
         commentaryRecommended: Boolean(rec.commentaryRecommended),
         lightTouchOnly: Boolean(rec.lightTouchOnly),
         suggestedMode: rec.suggestedMode ? String(rec.suggestedMode) : undefined,
+        commentaryStyle: rec.commentaryStyle ? String(rec.commentaryStyle) : undefined,
       });
+    }
+    const persona = sd.userOverrides?.commentaryPersona;
+    if (typeof persona === "string" && persona.trim()) {
+      setCommentaryPersona(persona.trim().slice(0, 240));
+    }
+    if (sd.userOverrides?.reimaginePresetId) {
+      setLastPreset(String(sd.userOverrides.reimaginePresetId));
     }
     const planVoice = (sd.audioStoryPlan as { commentary?: { voiceId?: string } } | undefined)
       ?.commentary?.voiceId;
@@ -562,13 +596,20 @@ export function SoundDesignPanel({
     })();
   };
 
-  const retrySynthesize = async () => {
+  const retrySynthesize = async (opts?: {
+    segmentIds?: string[];
+    segmentPatches?: Array<{ id: string; text?: string; startMs?: number }>;
+  }) => {
     if (!contentId) return;
     setBusy("tts");
     try {
       const tts = await contentApi.synthesizeSoundDesign(contentId, {
         durationSec: Math.max(0.5, durationSec),
         voiceId: commentaryVoiceId,
+        ...(opts?.segmentIds?.length ? { segmentIds: opts.segmentIds } : {}),
+        ...(opts?.segmentPatches?.length
+          ? { segmentPatches: opts.segmentPatches }
+          : {}),
       });
       const edl = (tts.audioEdl as unknown[]) || [];
       const items = toTimelineItems(edl);
@@ -582,7 +623,11 @@ export function SoundDesignPanel({
           tts.failed ? `, ${tts.failed} skipped` : ""
         }`,
       );
-      toast.success("Commentary synthesized — voice layer ready");
+      toast.success(
+        opts?.segmentPatches?.length
+          ? "Commentary text updated — voice regenerated"
+          : "Commentary synthesized — voice layer ready",
+      );
       notifyApplied(items);
     } catch (err) {
       const message = err instanceof Error ? err.message : "TTS failed";
@@ -592,6 +637,28 @@ export function SoundDesignPanel({
     } finally {
       setBusy(null);
     }
+  };
+
+  const commitVoiceText = (item: TimelineEdlItem, text: string) => {
+    const segId = voiceSegmentId(item);
+    if (!segId || !contentId) return;
+    // Optimistic local text so the editor reflects the edit immediately.
+    setTimeline((prev) =>
+      prev.map((it) =>
+        it.id === item.id
+          ? {
+              ...it,
+              sourceUrl: undefined,
+              assetId: undefined,
+              metadata: { ...it.metadata, text },
+            }
+          : it,
+      ),
+    );
+    void retrySynthesize({
+      segmentIds: [segId],
+      segmentPatches: [{ id: segId, text, startMs: item.startMs }],
+    });
   };
 
   const suggestedPresets = useMemo(
@@ -630,7 +697,11 @@ export function SoundDesignPanel({
         durationSec: Math.max(0.5, durationSec),
       });
       const rec = res.recommendation
-        ? { ...res.recommendation, suggestedMode: res.recommendation.suggestedMode }
+        ? {
+            ...res.recommendation,
+            suggestedMode: res.recommendation.suggestedMode,
+            commentaryStyle: res.recommendation.commentaryStyle,
+          }
         : null;
       setRecommendation(rec);
       setAnalyzed(true);
@@ -794,6 +865,9 @@ export function SoundDesignPanel({
         components,
         durationSec: Math.max(0.5, durationSec),
         voiceId: commentaryVoiceId,
+        commentaryStyle:
+          recommendation?.commentaryStyle || commentaryStyleFromMode(mode),
+        commentaryPersona: commentaryPersona.trim() || undefined,
       });
       const foley = res.audioStoryPlan?.foleyEvents?.filter((f) => f.enabled).length ?? 0;
       const voice = res.audioStoryPlan?.commentary?.segments?.length ?? 0;
@@ -885,6 +959,8 @@ export function SoundDesignPanel({
         presetId,
         durationSec: Math.max(0.5, durationSec),
         creatorContext: creatorContext || undefined,
+        voiceId: commentaryVoiceId,
+        commentaryPersona: commentaryPersona.trim() || undefined,
       });
       const foley = res.audioStoryPlan?.foleyEvents?.filter((f) => f.enabled).length ?? 0;
       const voice = res.audioStoryPlan?.commentary?.segments?.length ?? 0;
@@ -1068,8 +1144,27 @@ export function SoundDesignPanel({
                   ))}
                 </div>
                 <p className="text-[10px] text-white/35">
-                  Pick before Apply. Change later with Retry TTS to regenerate lines.
+                  Talent voice (man/woman). Style &amp; thrill come from Reimagine presets +
+                  persona notes below — not celebrity cloning.
                 </p>
+                <label className="block space-y-1">
+                  <span className="text-[11px] font-medium text-white/80">
+                    Commentary persona / style notes
+                  </span>
+                  <textarea
+                    rows={2}
+                    maxLength={240}
+                    disabled={disabled || Boolean(busy)}
+                    value={commentaryPersona}
+                    onChange={(e) => setCommentaryPersona(e.target.value.slice(0, 240))}
+                    placeholder="e.g. English cricket booth energy — witty, anticipatory, punchy calls; dry wit under pressure"
+                    className="w-full resize-y rounded-lg border border-white/10 bg-black/40 px-2.5 py-2 text-[11px] text-white/85 placeholder:text-white/30 focus:border-emerald-400/40 focus:outline-none"
+                  />
+                  <span className="block text-[10px] text-white/35">
+                    Guides script tone &amp; delivery (accent flavor, wit, energy). Does not clone a
+                    real person&apos;s voice — describe the style you want.
+                  </span>
+                </label>
               </div>
 
               <div className="space-y-2">
@@ -1285,6 +1380,7 @@ export function SoundDesignPanel({
                     disabled={disabled || Boolean(busy)}
                     previewingId={previewingId}
                     onPreviewClip={previewTimelineClip}
+                    onCommitVoiceText={commitVoiceText}
                     onChange={(visibleNext) => {
                       // Preserve off-window EDL rows so a drag does not delete them.
                       const hidden = timeline.filter(

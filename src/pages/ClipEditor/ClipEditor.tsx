@@ -35,7 +35,7 @@ import { CanonicalTypographyControls } from './CanonicalTypographyControls';
 import { editorTypography, typographyExtras } from '../../lib/clipTypography/editorTypography';
 import {
   buildLayoutFromComposition,
-  createDefaultComposition,
+  createEmptyComposition,
   draftFromPlan,
   type CanonicalCompositionDraft,
   type CanonicalLayerDraft,
@@ -255,13 +255,13 @@ export default function ClipEditor() {
   const [activePolishTab, setActivePolishTab] = useState(
     () => (searchParams.get("action") === "hooks" ? "details" : "meme"),
   );
-  /** Single open polish category so its options fill the right rail and push actions down. */
+  /** Independent toggles — opening one category does not collapse others. */
   const [openPolishSections, setOpenPolishSections] = useState<string[]>(() =>
     searchParams.get("action") === "hooks" ? ["details"] : ["meme"],
   );
   const ensurePolishSectionOpen = useCallback((section: string) => {
     setActivePolishTab(section);
-    setOpenPolishSections([section]);
+    setOpenPolishSections((prev) => (prev.includes(section) ? prev : [...prev, section]));
   }, []);
   const [isAnimateClip, setIsAnimateClip] = useState(false);
 
@@ -362,7 +362,7 @@ export default function ClipEditor() {
     [canonicalTypographyRaw, t3Authorized],
   );
   const [t3Composition, setT3Composition] = useState<CanonicalCompositionDraft>(() =>
-    createDefaultComposition(5000),
+    createEmptyComposition(),
   );
   const [t3LayoutBusy, setT3LayoutBusy] = useState(false);
   const [t3LayoutError, setT3LayoutError] = useState<string | null>(null);
@@ -378,6 +378,12 @@ export default function ClipEditor() {
       setT3LayoutBusy(true);
       setT3LayoutError(null);
       try {
+        const hasText = draft.layers.some((l) => l.text.trim().length > 0);
+        if (!hasText) {
+          if (seq !== t3RebuildSeq.current) return;
+          setCanonicalTypographyRaw(undefined);
+          return;
+        }
         const plan = await buildLayoutFromComposition(draft, {
           aspect: '9:16',
           durationMs: Math.max(1000, Math.round((trimEnd - trimStart) * 1000)),
@@ -391,7 +397,13 @@ export default function ClipEditor() {
         }
       } catch (err) {
         if (seq !== t3RebuildSeq.current) return;
-        setT3LayoutError(err instanceof Error ? err.message : 'Typography layout failed');
+        const message = err instanceof Error ? err.message : 'Typography layout failed';
+        if (message === 'NO_TYPOGRAPHY_LAYERS') {
+          setCanonicalTypographyRaw(undefined);
+          setT3LayoutError(null);
+          return;
+        }
+        setT3LayoutError(message);
       } finally {
         if (seq === t3RebuildSeq.current) setT3LayoutBusy(false);
       }
@@ -715,13 +727,10 @@ export default function ClipEditor() {
               : Math.round((trimEnd - trimStart) * 1000),
           );
           if (parsed.plan) {
-            setT3Composition(
-              draftFromPlan(parsed.plan, String(spec?.captions?.topText || ''), durationGuess),
-            );
+            setT3Composition(draftFromPlan(parsed.plan, '', durationGuess));
           } else {
-            setT3Composition(
-              createDefaultComposition(durationGuess, String(spec?.captions?.topText || '')),
-            );
+            // No saved typography — start empty; user adds the first text layer.
+            setT3Composition(createEmptyComposition());
           }
         }
         const isAnimate =
@@ -3642,8 +3651,8 @@ export default function ClipEditor() {
         onNicheDialogOpenChange={setNicheDialogOpen}
         onConfirmNicheChange={confirmNicheChange}
       />
-        {/* Step Indicator — progress for Clip Studio: source â†’ Coach/Edit â†’ Polish/Publish */}
-        <div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-8 mb-8 md:mb-12 overflow-x-auto py-2 no-scrollbar">
+        {/* Compact step strip — keep canvas / side panels as the focus */}
+        <div className="flex items-center justify-center gap-1 sm:gap-1.5 mb-3 md:mb-4 overflow-x-auto py-0.5 no-scrollbar">
           {(() => {
             const sourceDone = Boolean(id);
             const coachDone = step === "polish" || Boolean(finalTrim);
@@ -3651,7 +3660,6 @@ export default function ClipEditor() {
             const studioSteps: Array<{
               id: string;
               label: string;
-              hint: string;
               icon: typeof Film;
               active: boolean;
               done: boolean;
@@ -3660,7 +3668,6 @@ export default function ClipEditor() {
               {
                 id: "upload",
                 label: t("clip_editor.steps.upload", { defaultValue: "Clip ready" }),
-                hint: t("clip_editor.steps.upload_hint", { defaultValue: "Source loaded" }),
                 icon: Film,
                 active: false,
                 done: sourceDone,
@@ -3669,9 +3676,6 @@ export default function ClipEditor() {
               {
                 id: "trim",
                 label: t("clip_editor.steps.trim", { defaultValue: "Coach & Edit" }),
-                hint: t("clip_editor.steps.trim_hint", {
-                  defaultValue: "Cuts, BGM, sound design",
-                }),
                 icon: BrainCircuit,
                 active: step === "trim",
                 done: coachDone,
@@ -3680,9 +3684,6 @@ export default function ClipEditor() {
               {
                 id: "polish",
                 label: t("clip_editor.steps.polish", { defaultValue: "Polish & Publish" }),
-                hint: t("clip_editor.steps.polish_hint", {
-                  defaultValue: "Captions, enhance, share",
-                }),
                 icon: Sparkles,
                 active: step === "polish",
                 done: polishDone,
@@ -3699,46 +3700,43 @@ export default function ClipEditor() {
                   disabled={!s.clickable}
                   aria-current={s.active ? "step" : undefined}
                   aria-label={`${s.label}${s.done ? " (done)" : s.active ? " (current)" : ""}`}
+                  title={s.label}
                   onClick={() => {
                     if (!s.clickable || editsLocked) return;
                     mergeSearchParams({ step: s.id });
                   }}
                   className={cn(
-                    "flex items-center gap-2 sm:gap-3 shrink-0",
-                    s.clickable ? "cursor-pointer hover:opacity-90" : "cursor-default",
+                    "flex items-center gap-1.5 shrink-0 rounded-full border px-2 py-1 transition-colors",
+                    s.active
+                      ? "border-primary/40 bg-primary/10 text-foreground"
+                      : s.done
+                        ? "border-border/60 bg-muted/30 text-foreground/80"
+                        : "border-transparent text-muted-foreground",
+                    s.clickable ? "cursor-pointer hover:border-primary/30" : "cursor-default",
                   )}
                 >
                   <div
                     className={cn(
-                      "w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center border-2 transition-all shrink-0",
+                      "w-5 h-5 rounded-full flex items-center justify-center border shrink-0",
                       s.active
-                        ? "bg-primary border-primary text-primary-foreground shadow-lg"
+                        ? "bg-primary border-primary text-primary-foreground"
                         : s.done
-                          ? "bg-primary/10 border-primary/40 text-primary"
+                          ? "bg-primary/10 border-primary/35 text-primary"
                           : "bg-background border-border text-muted-foreground",
                     )}
                   >
-                    <Icon size={16} className="md:w-[18px] md:h-[18px]" />
+                    <Icon size={11} />
                   </div>
-                  <div className="min-w-0 text-left">
-                    <span
-                      className={cn(
-                        "block text-[10px] md:text-sm font-bold whitespace-nowrap",
-                        s.active ? "text-foreground" : s.done ? "text-foreground/80" : "text-muted-foreground",
-                      )}
-                    >
-                      {s.label}
-                    </span>
-                    <span className="hidden sm:block text-[9px] md:text-[10px] text-muted-foreground leading-tight whitespace-nowrap">
-                      {s.hint}
-                    </span>
-                  </div>
+                  <span className="text-[10px] font-bold whitespace-nowrap">
+                    {s.label}
+                  </span>
                   {i < studioSteps.length - 1 ? (
                     <div
                       className={cn(
-                        "w-4 sm:w-8 md:w-12 h-0.5 ml-2 sm:ml-3 md:ml-4 shrink-0 transition-colors",
-                        prevDone && s.done ? "bg-primary/50" : "bg-border",
+                        "w-3 sm:w-5 h-px ml-0.5 shrink-0 transition-colors",
+                        prevDone && s.done ? "bg-primary/40" : "bg-border",
                       )}
+                      aria-hidden
                     />
                   ) : null}
                 </button>
@@ -4817,7 +4815,7 @@ export default function ClipEditor() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            <div className="flex items-center justify-between mb-4 px-1">
+            <div className="flex items-center justify-between mb-3 px-1">
               <Button
                 variant="ghost"
                 size="sm"
@@ -4828,22 +4826,11 @@ export default function ClipEditor() {
                 }}
                 className="flex items-center gap-2 -ml-2 text-muted-foreground hover:text-foreground transition-all group active:scale-95"
               >
-                <div className="w-8 h-8 rounded-full border border-border flex items-center justify-center group-hover:border-primary/50 transition-colors">
-                  <ChevronLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                <div className="w-7 h-7 rounded-full border border-border flex items-center justify-center group-hover:border-primary/50 transition-colors">
+                  <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
                 </div>
                 <span className="text-[11px] font-bold">{t('clip_editor.polish.editor')}</span>
               </Button>
-              
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider px-3 py-1">
-                  {t('clip_editor.polish.polishing')}
-                </Badge>
-                {isAlreadyPublished ? (
-                  <Badge variant="outline" className="bg-muted border-border text-muted-foreground text-[10px] font-bold uppercase tracking-wider px-3 py-1">
-                    Published
-                  </Badge>
-                ) : null}
-              </div>
             </div>
 
             {isAlreadyPublished ? (
@@ -4852,15 +4839,6 @@ export default function ClipEditor() {
                 <span className="font-semibold text-foreground">Download</span> to export a new MP4.
               </div>
             ) : null}
-
-            <RenderLayerProgressBanner
-              layers={renderLayers}
-              currentIndex={renderLayerIndex}
-              phase={renderLayerPhase}
-              expanded={renderLayersExpanded}
-              onToggle={() => setRenderLayersExpanded((v) => !v)}
-              className="mb-2"
-            />
 
             {composeEnabled && composeSources.length >= 2 && (
               <ComposeTimelinePanel
@@ -5198,12 +5176,30 @@ export default function ClipEditor() {
                 )}
                 aria-disabled={editsLocked || undefined}
               >
+                <div className="flex flex-wrap items-center gap-2 px-3 pt-3 pb-1">
+                  <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5">
+                    {t('clip_editor.polish.polishing')}
+                  </Badge>
+                  {isAlreadyPublished ? (
+                    <Badge variant="outline" className="bg-muted border-border text-muted-foreground text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5">
+                      Published
+                    </Badge>
+                  ) : null}
+                </div>
+                <RenderLayerProgressBanner
+                  layers={renderLayers}
+                  currentIndex={renderLayerIndex}
+                  phase={renderLayerPhase}
+                  expanded={renderLayersExpanded}
+                  onToggle={() => setRenderLayersExpanded((v) => !v)}
+                  className="mx-3 mb-1"
+                />
                 <Accordion
+                  multiple
                   value={openPolishSections}
                   onValueChange={(value) => {
-                    const next = value.length ? [value[value.length - 1]!] : openPolishSections;
-                    setOpenPolishSections(next);
-                    if (next[0]) setActivePolishTab(next[0]);
+                    setOpenPolishSections(value);
+                    if (value.length) setActivePolishTab(value[value.length - 1]!);
                   }}
                   className="w-full"
                 >
@@ -5216,14 +5212,6 @@ export default function ClipEditor() {
                         </span>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-6 pb-4 px-1 pt-3">
-                      {finalTrim ? (
-                        <div className="flex justify-end">
-                          <div className="ui-badge bg-primary/5 text-primary border-primary/20 text-[10px] md:text-xs">
-                            {formatSpan(finalTrim.start, finalTrim.end)}
-                          </div>
-                        </div>
-                      ) : null}
-
                       {/* Trim Summary */}
                       <div className="p-3 md:p-4 bg-muted/50 rounded-xl border border-border flex items-center justify-between">
                         <div className="flex items-center gap-3">
