@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { 
-  Settings2, Loader2, Maximize2, Image as ImageIcon, Plus, Check, History, Clapperboard,
+  Settings2, Loader2, Maximize2, Image as ImageIcon, Plus, Check, History, Clapperboard, Type,
 } from "lucide-react";
 import { Card } from "../../../components/ui/card";
 import { Label } from "../../../components/ui/label";
@@ -10,7 +10,6 @@ import { Slider } from "../../../components/ui/slider";
 import { Input } from "../../../components/ui/input";
 import { ScrollArea } from "../../../components/ui/scroll-area";
 import { Separator } from "../../../components/ui/separator";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../../components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -23,6 +22,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "../../../components/ui/tooltip";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "../../../components/ui/accordion";
 import { cn } from "../../../lib/utils";
 import { EditPanelProps } from "../types";
 import { ImageStudioTypographyControls } from "./ImageStudioTypographyControls";
@@ -33,7 +38,7 @@ export function EditPanel({
   backgroundMode, setBackgroundMode, backgroundColor, setBackgroundColor,
   isApplyingAdjust, handleApplyAdjust, isApplyingCompose, handleApplyCompose,
   isApplyingToImage, handleApplyToImage, hasPendingAdjust = false, hasPendingText = false,
-  editLayers = [], selectedLayerId, onSelectLayer, onAddTextLayer,
+  editLayers = [], selectedLayerId, onSelectLayer, onAddTextLayer, onDuplicateSelectedLayer,
   onUpdateSelectedLayer, onRemoveSelectedLayer, onToggleLayerVisible, onMoveLayer,
   editToolsDisabled, editDisabledReason, hasComposedText = false,
   useCanonicalTypography = false,
@@ -41,30 +46,34 @@ export function EditPanel({
 }: EditPanelProps) {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.dir() === "rtl";
-  const [activeTab, setActiveTab] = React.useState("adjust");
+  const [openSections, setOpenSections] = React.useState<string[]>(["adjust", "typography"]);
   const toolsLocked = Boolean(editToolsDisabled || !resultImage);
 
   return (
     <Card className={cn("flex flex-col border-border glass shrink-0 h-full min-h-0 overflow-hidden", className, isRTL ? "direction-rtl" : "direction-ltr")}>
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-        <div className="p-2 border-b border-border/50 shrink-0">
-          <TabsList className="grid w-full grid-cols-2 h-9">
-            <TabsTrigger value="adjust" className="text-[10px] font-bold">{t('image_studio.edit.tabs.adjust')}</TabsTrigger>
-            <TabsTrigger value="typography" className="text-[10px] font-bold">
-              {t('image_studio.edit.tabs.typography', { defaultValue: 'Typography' })}
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
+      <div className="flex-1 flex flex-col min-h-0">
         <ScrollArea className="flex-1 min-h-0">
-          <div className="p-4">
+          <div className="p-3 sm:p-4">
             {editDisabledReason ? (
               <p className="mb-4 text-[10px] text-muted-foreground leading-relaxed rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
                 {editDisabledReason}
               </p>
             ) : null}
 
-            <TabsContent value="adjust" className="m-0 space-y-6">
+            <Accordion
+              multiple
+              value={openSections}
+              onValueChange={setOpenSections}
+              className="w-full"
+            >
+            <AccordionItem value="adjust" className="border border-border/50 rounded-xl mb-3 overflow-hidden px-3">
+              <AccordionTrigger className="py-3 hover:no-underline">
+                <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
+                  <Settings2 size={14} className="text-primary" />
+                  {t('image_studio.edit.tabs.adjust')}
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-6 pb-4">
               <div className="space-y-4">
                 <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
                   <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{t('image_studio.edit.adjustments')}</Label>
@@ -242,14 +251,23 @@ export function EditPanel({
                   </Tooltip>
                 </div>
               </div>
-            </TabsContent>
+              </AccordionContent>
+            </AccordionItem>
 
-            <TabsContent value="typography" className="m-0">
+            <AccordionItem value="typography" className="border border-border/50 rounded-xl overflow-hidden px-3">
+              <AccordionTrigger className="py-3 hover:no-underline">
+                <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
+                  <Type size={14} className="text-primary" />
+                  {t('image_studio.edit.tabs.typography', { defaultValue: 'Typography' })}
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4">
               <ImageStudioTypographyControls
                 editLayers={editLayers}
                 selectedLayerId={selectedLayerId}
                 onSelectLayer={onSelectLayer}
                 onAddTextLayer={onAddTextLayer}
+                onDuplicateSelectedLayer={onDuplicateSelectedLayer}
                 onUpdateSelectedLayer={onUpdateSelectedLayer}
                 onRemoveSelectedLayer={onRemoveSelectedLayer}
                 onToggleLayerVisible={onToggleLayerVisible}
@@ -260,7 +278,9 @@ export function EditPanel({
                 toolsLocked={toolsLocked}
                 useCanonicalFaces={useCanonicalTypography}
               />
-            </TabsContent>
+              </AccordionContent>
+            </AccordionItem>
+            </Accordion>
           </div>
         </ScrollArea>
 
@@ -358,7 +378,7 @@ export function EditPanel({
             View History
           </Button>
         </div>
-      </Tabs>
+      </div>
     </Card>
   );
 }

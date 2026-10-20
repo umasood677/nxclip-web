@@ -1243,6 +1243,7 @@ export interface ContentDto {
       fontSizePct?: number;
       color?: string;
       strokeColor?: string;
+      shadowColor?: string;
       align?: "left" | "center" | "right";
       fontId?: "impact" | "inter" | "montserrat";
       faceId?: string;
@@ -1799,6 +1800,7 @@ export const contentApi = {
             fontSizePct?: number;
             color?: string;
             strokeColor?: string;
+            shadowColor?: string;
             align?: "left" | "center" | "right";
             fontId?: "impact" | "inter" | "montserrat";
             faceId?: string;

@@ -1822,6 +1822,27 @@ export default function ImageStudio() {
     setSelectedLayerId(id);
   };
 
+  const handleDuplicateSelectedLayer = (seed?: Partial<ImageEditTextLayer>) => {
+    if (editToolsDisabled || editLayers.length >= 24) return;
+    const source =
+      seed ||
+      editLayers.find((l) => l.id === selectedLayerId && l.type === "text") ||
+      editLayers.find((l) => l.type === "text");
+    if (!source || source.type === "base") return;
+    const { id: _omit, ...rest } = source;
+    const id = `text-${Date.now()}`;
+    const layer: ImageEditTextLayer = {
+      ...DEFAULT_TEXT_LAYER_STYLE,
+      ...rest,
+      id,
+      type: "text",
+      visible: true,
+      yPct: Math.min(95, (rest.yPct ?? DEFAULT_TEXT_LAYER_STYLE.yPct ?? 82) + 4),
+    };
+    setEditLayers((prev) => [...prev, layer]);
+    setSelectedLayerId(id);
+  };
+
   const handleUpdateSelectedLayer = (patch: Partial<ImageEditTextLayer>) => {
     if (!selectedLayerId || editToolsDisabled) return;
     setEditLayers((prev) =>
@@ -3063,6 +3084,7 @@ export default function ImageStudio() {
               selectedLayerId={selectedLayerId}
               onSelectLayer={setSelectedLayerId}
               onAddTextLayer={handleAddTextLayer}
+              onDuplicateSelectedLayer={handleDuplicateSelectedLayer}
               onUpdateSelectedLayer={handleUpdateSelectedLayer}
               onRemoveSelectedLayer={handleRemoveSelectedLayer}
               onToggleLayerVisible={handleToggleLayerVisible}
@@ -3256,6 +3278,7 @@ export default function ImageStudio() {
           selectedLayerId={selectedLayerId}
           onSelectLayer={setSelectedLayerId}
           onAddTextLayer={handleAddTextLayer}
+          onDuplicateSelectedLayer={handleDuplicateSelectedLayer}
           onUpdateSelectedLayer={handleUpdateSelectedLayer}
           onRemoveSelectedLayer={handleRemoveSelectedLayer}
           onToggleLayerVisible={handleToggleLayerVisible}

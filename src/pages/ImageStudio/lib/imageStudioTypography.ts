@@ -63,6 +63,16 @@ export function studioFontFamily(fontId?: ImageEditTextLayer['fontId']): string 
   return '"Studio Anton", sans-serif';
 }
 
+function shadowColorToRgba(hex: string | undefined, alpha: number): string {
+  const raw = (hex || '#000000').replace('#', '');
+  const full = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw;
+  if (!/^[0-9a-fA-F]{6}$/.test(full)) return `rgba(0,0,0,${alpha})`;
+  const r = Number.parseInt(full.slice(0, 2), 16);
+  const g = Number.parseInt(full.slice(2, 4), 16);
+  const b = Number.parseInt(full.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 export function layerPreviewStyle(
   layer: ImageEditTextLayer,
   opts: { useCanonicalFaces: boolean; brightness: number; contrast: number; saturation: number },
@@ -94,7 +104,7 @@ export function layerPreviewStyle(
     paintOrder: 'stroke fill',
     textShadow:
       shadow > 0
-        ? `${shadow * 0.04}em ${shadow * 0.04}em ${shadow * 0.02}em rgba(0,0,0,0.65)`
+        ? `${shadow * 0.04}em ${shadow * 0.04}em ${shadow * 0.02}em ${shadowColorToRgba(layer.shadowColor, 0.65)}`
         : undefined,
     letterSpacing: letterSpacing ? `${letterSpacing * 0.02}em` : undefined,
     lineHeight,
@@ -111,6 +121,7 @@ export const DEFAULT_TEXT_LAYER_STYLE: Pick<
   | 'fontSizePct'
   | 'color'
   | 'strokeColor'
+  | 'shadowColor'
   | 'align'
   | 'fontId'
   | 'faceId'
@@ -124,6 +135,7 @@ export const DEFAULT_TEXT_LAYER_STYLE: Pick<
   fontSizePct: 8,
   color: '#FFFFFF',
   strokeColor: '#000000',
+  shadowColor: '#000000',
   align: 'center',
   fontId: 'impact',
   faceId: CANONICAL_FACE_DEFAULT,

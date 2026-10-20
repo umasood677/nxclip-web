@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Type,
   Palette,
@@ -9,6 +10,8 @@ import {
   ChevronUp,
   ChevronDown,
   Loader2,
+  Copy,
+  ClipboardPaste,
 } from 'lucide-react';
 import { CANONICAL_FACE_OPTIONS } from '../../../lib/clipTypography/canonicalFaces';
 import { CANONICAL_FILL_COLORS } from '../../ClipEditor/CanonicalTypographyControls';
@@ -32,6 +35,16 @@ import { Button } from '../../../components/ui/button';
 import { Label } from '../../../components/ui/label';
 
 const LAYER_COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ec4899', '#06b6d4', '#a855f7', '#ef4444', '#14b8a6'];
+const EFFECT_COLORS: Array<{ hex: string; label: string }> = [
+  { hex: '#000000', label: 'Black' },
+  { hex: '#111111', label: 'Near black' },
+  { hex: '#FFFFFF', label: 'White' },
+  { hex: '#1E293B', label: 'Slate' },
+  { hex: '#78716C', label: 'Stone' },
+  { hex: '#FF3B3B', label: 'Red' },
+  { hex: '#4DA3FF', label: 'Blue' },
+  { hex: '#FFE600', label: 'Yellow' },
+];
 const LEGACY_FONTS = [
   { id: 'impact' as const, label: 'Anton (Impact style)' },
   { id: 'inter' as const, label: 'Inter' },
@@ -84,6 +97,8 @@ type Props = {
   selectedLayerId?: string | null;
   onSelectLayer?: (id: string) => void;
   onAddTextLayer?: () => void;
+  /** Paste / duplicate selected text layer (parent assigns new id). */
+  onDuplicateSelectedLayer?: (seed?: Partial<ImageEditTextLayer>) => void;
   onUpdateSelectedLayer?: (patch: Partial<ImageEditTextLayer>) => void;
   onRemoveSelectedLayer?: () => void;
   onToggleLayerVisible?: (id: string) => void;
@@ -101,6 +116,7 @@ export function ImageStudioTypographyControls({
   selectedLayerId,
   onSelectLayer,
   onAddTextLayer,
+  onDuplicateSelectedLayer,
   onUpdateSelectedLayer,
   onRemoveSelectedLayer,
   onToggleLayerVisible,
@@ -122,6 +138,25 @@ export function ImageStudioTypographyControls({
   const faceItems = Object.fromEntries(CANONICAL_FACE_OPTIONS.map((f) => [f.id, f.label]));
   const activeFaceId = selected ? resolveLayerFaceId(selected) : undefined;
   const maxLayers = 24;
+  const [layerClipboard, setLayerClipboard] = useState<Partial<ImageEditTextLayer> | null>(null);
+
+  const copySelected = () => {
+    if (!selected || selected.type !== 'text') return;
+    const { id: _id, ...rest } = selected;
+    setLayerClipboard({ ...rest, type: 'text', visible: true });
+  };
+
+  const pasteLayer = () => {
+    if (toolsLocked || editLayers.length >= maxLayers) return;
+    if (layerClipboard) {
+      onDuplicateSelectedLayer?.({
+        ...layerClipboard,
+        yPct: Math.min(95, (layerClipboard.yPct ?? selected?.yPct ?? 82) + 4),
+      });
+      return;
+    }
+    if (selected) onDuplicateSelectedLayer?.();
+  };
 
   return (
     <div className="space-y-5">
@@ -242,6 +277,30 @@ export function ImageStudioTypographyControls({
             type="button"
             size="sm"
             variant="ghost"
+            className="h-8 w-8 rounded-lg p-0"
+            disabled={toolsLocked || !selected}
+            onClick={copySelected}
+            title="Copy selected text layer"
+            aria-label="Copy selected text layer"
+          >
+            <Copy size={12} />
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="h-8 w-8 rounded-lg p-0"
+            disabled={toolsLocked || editLayers.length >= maxLayers || (!layerClipboard && !selected)}
+            onClick={pasteLayer}
+            title="Paste text layer"
+            aria-label="Paste text layer"
+          >
+            <ClipboardPaste size={12} />
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
             className="h-8 rounded-lg text-[10px] font-bold text-destructive"
             disabled={toolsLocked || !selected || textLayers.length < 1}
             onClick={onRemoveSelectedLayer}
@@ -343,12 +402,6 @@ export function ImageStudioTypographyControls({
                 </SelectContent>
               </Select>
             )}
-            {useCanonicalFaces ? (
-              <p className="text-[10px] text-muted-foreground px-1 leading-relaxed">
-                Preview and Apply to Image use the same typeface. Apply text only burns layers;
-                use the footer Apply to Image when Adjust is ready too.
-              </p>
-            ) : null}
           </div>
 
           <label className="space-y-1.5 text-[10px] font-bold text-muted-foreground block">
@@ -494,25 +547,52 @@ export function ImageStudioTypographyControls({
                 />
               </label>
             </div>
-            <div className="flex items-center gap-2 pt-1">
-              <label className="text-[10px] font-bold text-muted-foreground">Stroke color</label>
-              <input
-                type="color"
-                value={selected.strokeColor || '#000000'}
-                onChange={(e) =>
-                  onUpdateSelectedLayer?.({ strokeColor: e.target.value })
-                }
-                className="h-8 w-12 cursor-pointer rounded border border-border/50 bg-muted/30 p-1"
-                disabled={toolsLocked}
-                aria-label="Stroke color"
-              />
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] font-bold text-muted-foreground">Stroke color</label>
+                <input
+                  type="color"
+                  value={selected.strokeColor || '#000000'}
+                  onChange={(e) =>
+                    onUpdateSelectedLayer?.({ strokeColor: e.target.value })
+                  }
+                  className="h-8 w-12 cursor-pointer rounded border border-border/50 bg-muted/30 p-1"
+                  disabled={toolsLocked}
+                  aria-label="Stroke color"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] font-bold text-muted-foreground">Shadow color</label>
+                <input
+                  type="color"
+                  value={selected.shadowColor || '#000000'}
+                  onChange={(e) =>
+                    onUpdateSelectedLayer?.({ shadowColor: e.target.value })
+                  }
+                  className="h-8 w-12 cursor-pointer rounded border border-border/50 bg-muted/30 p-1"
+                  disabled={toolsLocked}
+                  aria-label="Shadow color"
+                />
+                <div className="flex flex-wrap gap-1">
+                  {EFFECT_COLORS.slice(0, 4).map((swatch) => (
+                    <button
+                      key={swatch.hex}
+                      type="button"
+                      title={swatch.label}
+                      disabled={toolsLocked}
+                      onClick={() => onUpdateSelectedLayer?.({ shadowColor: swatch.hex })}
+                      className={cn(
+                        'h-5 w-5 rounded-full border border-border/60 disabled:opacity-50',
+                        (selected.shadowColor || '#000000').toUpperCase() === swatch.hex.toUpperCase() &&
+                          'ring-2 ring-primary/40',
+                      )}
+                      style={{ backgroundColor: swatch.hex }}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-
-          <p className="text-[10px] text-muted-foreground leading-relaxed px-0.5">
-            Drag text on the preview to place it. Apply text only burns typography; Apply to Image
-            in the footer burns Adjust + Typography together.
-          </p>
         </>
       ) : (
         <p className="text-[11px] text-muted-foreground leading-relaxed">

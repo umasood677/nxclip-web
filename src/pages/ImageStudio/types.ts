@@ -260,6 +260,8 @@ export interface ImageEditTextLayer {
   fontSizePct?: number;
   color?: string;
   strokeColor?: string;
+  /** Drop-shadow color (#RRGGBB). */
+  shadowColor?: string;
   align?: "left" | "center" | "right";
   fontId?: "impact" | "inter" | "montserrat";
   /** Smart Typography face id (preview); compose maps to fontId. */
@@ -303,6 +305,7 @@ export interface EditPanelProps {
   selectedLayerId?: string | null;
   onSelectLayer?: (id: string) => void;
   onAddTextLayer?: () => void;
+  onDuplicateSelectedLayer?: () => void;
   onUpdateSelectedLayer?: (patch: Partial<ImageEditTextLayer>) => void;
   onRemoveSelectedLayer?: () => void;
   onToggleLayerVisible?: (id: string) => void;

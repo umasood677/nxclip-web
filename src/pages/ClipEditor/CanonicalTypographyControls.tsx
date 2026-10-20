@@ -1,5 +1,5 @@
-﻿import { useEffect, useRef } from 'react';
-import { Type, Palette, Plus, Trash2, Layers } from 'lucide-react';
+﻿import { useEffect, useRef, useState } from 'react';
+import { Type, Palette, Plus, Trash2, Layers, Copy, ClipboardPaste } from 'lucide-react';
 import { CANONICAL_FACE_OPTIONS } from '../../lib/clipTypography/canonicalFaces';
 import { canonicalBrowserFamily } from '../../lib/clipTypography/canonicalLayout';
 import {
@@ -234,6 +234,8 @@ export function CanonicalTypographyControls({
     };
   }, [active.faceId]);
 
+  const [layerClipboard, setLayerClipboard] = useState<CanonicalLayerDraft | null>(null);
+
   const setActive = (id: string) => onChange({ ...draft, activeLayerId: id });
 
   const addLayer = () => {
@@ -249,6 +251,32 @@ export function CanonicalTypographyControls({
         faceId: active.faceId,
         outlineColor: active.outlineColor,
         shadowColor: active.shadowColor,
+      },
+    });
+    onChange({
+      ...draft,
+      layers: [...draft.layers, layer],
+      activeLayerId: layer.id,
+    });
+  };
+
+  const copyActive = () => {
+    setLayerClipboard({ ...active });
+  };
+
+  const pasteLayer = () => {
+    const clip = layerClipboard;
+    if (!clip || draft.layers.length >= maxLayers) return;
+    const { id: _omitId, ...style } = clip;
+    const span = Math.max(800, (clip.endMs ?? 0) - (clip.startMs ?? 0));
+    const layer = createLayerDraft({
+      durationMs: duration,
+      existingIds: draft.layers.map((l) => l.id),
+      seed: {
+        ...style,
+        verticalAnchor: Math.min(0.92, (clip.verticalAnchor ?? 0.72) + 0.06),
+        startMs: Math.min(duration - 800, Math.round(playheadMs)),
+        endMs: Math.min(duration, Math.round(playheadMs) + span),
       },
     });
     onChange({
@@ -310,6 +338,29 @@ export function CanonicalTypographyControls({
             >
               <Plus size={12} className="mr-1" />
               Add text
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 rounded-lg p-0"
+              onClick={copyActive}
+              title="Copy selected text layer"
+              aria-label="Copy selected text layer"
+            >
+              <Copy size={14} />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 rounded-lg p-0"
+              disabled={!layerClipboard || draft.layers.length >= maxLayers}
+              onClick={pasteLayer}
+              title="Paste text layer"
+              aria-label="Paste text layer"
+            >
+              <ClipboardPaste size={14} />
             </Button>
             <Button
               type="button"
@@ -476,9 +527,6 @@ export function CanonicalTypographyControls({
             ))}
           </SelectContent>
         </Select>
-        <p className="text-[9px] text-muted-foreground px-1 leading-relaxed">
-          Font applies to the selected layer only. Preview and final render use each layer&apos;s face.
-        </p>
       </div>
 
       <div className="space-y-4 rounded-xl border border-border/40 bg-background/40 p-3">

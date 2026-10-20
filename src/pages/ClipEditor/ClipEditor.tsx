@@ -99,7 +99,12 @@ import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../components/ui/tabs";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "../../components/ui/accordion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../components/ui/tooltip";
 import { 
   Select, 
@@ -248,8 +253,17 @@ export default function ClipEditor() {
   const renderPreviewUrlRef = useRef<string | null>(null);
   const showingFinalRenderRef = useRef(false);
   const [activePolishTab, setActivePolishTab] = useState(
-    () => (searchParams.get("action") === "hooks" ? "details" : "audio"),
+    () => (searchParams.get("action") === "hooks" ? "details" : "meme"),
   );
+  const [openPolishSections, setOpenPolishSections] = useState<string[]>(() =>
+    searchParams.get("action") === "hooks"
+      ? ["details"]
+      : ["details", "meme"],
+  );
+  const ensurePolishSectionOpen = useCallback((section: string) => {
+    setActivePolishTab(section);
+    setOpenPolishSections((prev) => (prev.includes(section) ? prev : [...prev, section]));
+  }, []);
   const [isAnimateClip, setIsAnimateClip] = useState(false);
 
   const mergeSearchParams = useCallback(
@@ -2862,7 +2876,7 @@ export default function ClipEditor() {
     const action = searchParams.get("action");
     if (action !== "hooks" || !id || autoHooksRanRef.current) return;
     if (videoLoading || !specHydratedRef.current) return;
-    setActivePolishTab("details");
+    ensurePolishSectionOpen("details");
     // Focus hooks editor once Details is visible
     requestAnimationFrame(() => {
       document.getElementById("clip-hooks-editor")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -4904,10 +4918,16 @@ export default function ClipEditor() {
             <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] gap-6 lg:gap-8 pb-32 md:pb-0 lg:items-stretch lg:min-h-[calc(100dvh-5.5rem)]">
               {/* Preview Column — stays visible while caption controls scroll */}
               <div className="space-y-4 md:space-y-6 lg:sticky lg:top-20 lg:self-start">
-                <div className="w-full max-w-[240px] sm:max-w-[260px] md:max-w-[300px] mx-auto space-y-3">
+                <div className="w-full flex flex-col items-center space-y-3">
                 <div
                   ref={polishPreviewRef}
-                  className="aspect-[9/16] w-full max-h-[min(58dvh,560px)] bg-background rounded-xl overflow-hidden relative shadow-soft-2xl border border-border group mx-auto"
+                  className="relative bg-background rounded-xl overflow-hidden shadow-soft-2xl border border-border group mx-auto"
+                  style={{
+                    aspectRatio: "9 / 16",
+                    height: "min(72dvh, 680px)",
+                    width: "auto",
+                    maxWidth: "min(100%, 360px)",
+                  }}
                 >
                 {(showingFinalRender ? renderPreviewSrc : videoSrc) ? (
                   <div
@@ -5179,39 +5199,26 @@ export default function ClipEditor() {
                 )}
                 aria-disabled={editsLocked || undefined}
               >
-                <Tabs value={activePolishTab} onValueChange={setActivePolishTab} className="w-full flex flex-col flex-1 min-h-0">
-                  <TabsList className="w-full grid grid-cols-4 bg-muted border-none rounded-none p-1 shrink-0 h-14">
-                    <TabsTrigger value="details" className="text-[10px] md:text-[11px] font-bold py-0 h-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
-                      <div className="flex flex-col items-center gap-1">
-                        <Settings size={14} className="md:hidden" />
-                        {t('clip_editor.polish.tabs.details')}
-                      </div>
-                    </TabsTrigger>
-                    <TabsTrigger value="meme" className="text-[10px] md:text-[11px] font-bold py-0 h-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
-                      <div className="flex flex-col items-center gap-1">
-                        <Type size={14} className="md:hidden" />
-                        {t('clip_editor.polish.tabs.meme')}
-                      </div>
-                    </TabsTrigger>
-                    <TabsTrigger value="audio" className="text-[10px] md:text-[11px] font-bold py-0 h-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
-                      <div className="flex flex-col items-center gap-1">
-                        <Music size={14} className="md:hidden" />
-                        {t('clip_editor.polish.tabs.audio')}
-                      </div>
-                    </TabsTrigger>
-                    <TabsTrigger value="enhance" className="text-[10px] md:text-[11px] font-bold py-0 h-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
-                      <div className="flex flex-col items-center gap-1">
-                        <Sparkles size={14} className="md:hidden" />
-                        {t('clip_editor.polish.tabs.enhance')}
-                      </div>
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <div className="p-4 sm:p-6 flex-1 min-h-0 overflow-y-auto overscroll-contain">
-                    <TabsContent value="details" className="mt-0 space-y-6">
+                <Accordion
+                  multiple
+                  value={openPolishSections}
+                  onValueChange={(value) => {
+                    setOpenPolishSections(value);
+                    if (value.length) setActivePolishTab(value[value.length - 1]!);
+                  }}
+                  className="w-full flex flex-col flex-1 min-h-0"
+                >
+                  <div className="px-2 sm:px-3 flex-1 min-h-0 overflow-y-auto overscroll-contain">
+                    <AccordionItem value="details" className="border border-border/50 rounded-xl mb-2 overflow-hidden px-3 sm:px-4">
+                      <AccordionTrigger className="py-3 hover:no-underline">
+                        <span className="flex items-center gap-2 text-sm font-bold">
+                          <Settings size={16} className="text-primary" />
+                          {t('clip_editor.polish.tabs.details')}
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-6 pb-4">
                       <div className="flex items-center justify-between mb-1 md:mb-2">
-                        <h3 className="text-base md:text-lg font-display font-bold text-foreground flex items-center gap-2">
-                          <Settings size={18} className="text-primary" />
+                        <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2">
                           {t('clip_editor.polish.details.title')}
                         </h3>
                         {finalTrim && (
@@ -5591,18 +5598,20 @@ export default function ClipEditor() {
                           </label>
                         </div>
                       </div>
-                    </TabsContent>
+                      </AccordionContent>
+                    </AccordionItem>
 
-                    <TabsContent value="meme" className="mt-0 space-y-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-base md:text-lg font-display font-bold text-foreground flex items-center gap-2">
-                          <Type size={18} className="text-primary" />
-                          {t('clip_editor.polish.meme.title')}
-                        </h3>
-                        <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 border-primary/20 text-primary bg-primary/5">
-                          {t('clip_editor.polish.meme.beta')}
-                        </Badge>
-                      </div>
+                    <AccordionItem value="meme" className="border border-border/50 rounded-xl mb-2 overflow-hidden px-3 sm:px-4">
+                      <AccordionTrigger className="py-3 hover:no-underline">
+                        <span className="flex items-center gap-2 text-sm font-bold">
+                          <Type size={16} className="text-primary" />
+                          {t('clip_editor.polish.tabs.meme')}
+                          <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 border-primary/20 text-primary bg-primary/5">
+                            {t('clip_editor.polish.meme.beta')}
+                          </Badge>
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-6 pb-4">
 
                       <div className="space-y-6">
                         {!t3Authorized ? (
@@ -5841,9 +5850,17 @@ export default function ClipEditor() {
                           </div>
                         </div>
                       </div>
-                    </TabsContent>
+                      </AccordionContent>
+                    </AccordionItem>
 
-                    <TabsContent value="audio" className="mt-0 space-y-6 md:space-y-8">
+                    <AccordionItem value="audio" className="border border-border/50 rounded-xl mb-2 overflow-hidden px-3 sm:px-4">
+                      <AccordionTrigger className="py-3 hover:no-underline">
+                        <span className="flex items-center gap-2 text-sm font-bold">
+                          <Music size={16} className="text-primary" />
+                          {t('clip_editor.polish.tabs.audio')}
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-6 md:space-y-8 pb-4">
                       <div className="flex items-center justify-between mb-2 md:mb-4">
                         <h3 className="text-base md:text-lg font-display font-bold text-foreground flex items-center gap-2">
                           <Volume2 size={18} className="text-primary" />
@@ -6119,9 +6136,17 @@ export default function ClipEditor() {
                         </div>
                         )}
                       </div>
-                    </TabsContent>
+                      </AccordionContent>
+                    </AccordionItem>
 
-                    <TabsContent value="enhance" className="mt-0 space-y-6">
+                    <AccordionItem value="enhance" className="border border-border/50 rounded-xl mb-2 overflow-hidden px-3 sm:px-4">
+                      <AccordionTrigger className="py-3 hover:no-underline">
+                        <span className="flex items-center gap-2 text-sm font-bold">
+                          <Sparkles size={16} className="text-primary" />
+                          {t('clip_editor.polish.tabs.enhance')}
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-6 pb-4">
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-base md:text-lg font-display font-bold text-foreground flex items-center gap-2 min-w-0">
@@ -6421,9 +6446,10 @@ export default function ClipEditor() {
                               })}
                         </p>
                       </div>
-                    </TabsContent>
+                      </AccordionContent>
+                    </AccordionItem>
                   </div>
-                </Tabs>
+                </Accordion>
               </div>
 
               <div className="hidden lg:flex flex-col space-y-3 pt-3 shrink-0 border-t border-border/40 mt-auto">
