@@ -1423,6 +1423,7 @@ const resources = {
           "try_again": "Try Again"
         },
         "edit": {
+          "title": "Edit Tool",
           "tabs": {
             "adjust": "Adjust",
             "text": "Text",
@@ -3519,6 +3520,7 @@ const resources = {
           "try_again": "حاول مرة أخرى"
         },
         "edit": {
+          "title": "أداة التعديل",
           "tabs": {
             "adjust": "ضبط",
             "text": "نص",
