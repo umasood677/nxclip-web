@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "motion/react";
+﻿import { motion, AnimatePresence } from "motion/react";
 import { 
   Scissors, 
   Sparkles, 
@@ -5208,24 +5208,21 @@ export default function ClipEditor() {
                   className="w-full"
                 >
                   <div className="px-2 sm:px-3 py-2">
-                    <AccordionItem value="details" className="border border-border/50 rounded-xl mb-2 overflow-hidden px-3 sm:px-4">
-                      <AccordionTrigger className="py-3 hover:no-underline">
-                        <span className="flex items-center gap-2 text-sm font-bold">
-                          <Settings size={16} className="text-primary" />
+                    <AccordionItem value="details" className="border border-border/50 rounded-xl mb-2 overflow-hidden px-2 sm:px-3">
+                      <AccordionTrigger className="py-2.5 px-2 hover:no-underline rounded-lg bg-muted/35 hover:bg-muted/50 data-panel-open:bg-primary/10">
+                        <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                          <Settings size={14} className="shrink-0" />
                           {t('clip_editor.polish.tabs.details')}
                         </span>
                       </AccordionTrigger>
-                      <AccordionContent className="space-y-6 pb-4">
-                      <div className="flex items-center justify-between mb-1 md:mb-2">
-                        <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2">
-                          {t('clip_editor.polish.details.title')}
-                        </h3>
-                        {finalTrim && (
+                      <AccordionContent className="space-y-6 pb-4 px-1 pt-3">
+                      {finalTrim ? (
+                        <div className="flex justify-end">
                           <div className="ui-badge bg-primary/5 text-primary border-primary/20 text-[10px] md:text-xs">
                             {formatSpan(finalTrim.start, finalTrim.end)}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      ) : null}
 
                       {/* Trim Summary */}
                       <div className="p-3 md:p-4 bg-muted/50 rounded-xl border border-border flex items-center justify-between">
@@ -5600,17 +5597,17 @@ export default function ClipEditor() {
                       </AccordionContent>
                     </AccordionItem>
 
-                    <AccordionItem value="meme" className="border border-border/50 rounded-xl mb-2 overflow-hidden px-3 sm:px-4">
-                      <AccordionTrigger className="py-3 hover:no-underline">
-                        <span className="flex items-center gap-2 text-sm font-bold">
-                          <Type size={16} className="text-primary" />
+                    <AccordionItem value="meme" className="border border-border/50 rounded-xl mb-2 overflow-hidden px-2 sm:px-3">
+                      <AccordionTrigger className="py-2.5 px-2 hover:no-underline rounded-lg bg-muted/35 hover:bg-muted/50 data-panel-open:bg-primary/10">
+                        <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                          <Type size={14} className="shrink-0" />
                           {t('clip_editor.polish.tabs.meme')}
-                          <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 border-primary/20 text-primary bg-primary/5">
+                          <Badge variant="outline" className="normal-case tracking-wider text-[9px] font-bold px-1.5 py-0 border-primary/20 text-primary bg-primary/5">
                             {t('clip_editor.polish.meme.beta')}
                           </Badge>
                         </span>
                       </AccordionTrigger>
-                      <AccordionContent className="space-y-6 pb-4">
+                      <AccordionContent className="space-y-6 pb-4 px-1 pt-3">
 
                       <div className="space-y-6">
                         {!t3Authorized ? (
@@ -5852,19 +5849,15 @@ export default function ClipEditor() {
                       </AccordionContent>
                     </AccordionItem>
 
-                    <AccordionItem value="audio" className="border border-border/50 rounded-xl mb-2 overflow-hidden px-3 sm:px-4">
-                      <AccordionTrigger className="py-3 hover:no-underline">
-                        <span className="flex items-center gap-2 text-sm font-bold">
-                          <Music size={16} className="text-primary" />
+                    <AccordionItem value="audio" className="border border-border/50 rounded-xl mb-2 overflow-hidden px-2 sm:px-3">
+                      <AccordionTrigger className="py-2.5 px-2 hover:no-underline rounded-lg bg-muted/35 hover:bg-muted/50 data-panel-open:bg-primary/10">
+                        <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                          <Music size={14} className="shrink-0" />
                           {t('clip_editor.polish.tabs.audio')}
                         </span>
                       </AccordionTrigger>
-                      <AccordionContent className="space-y-6 md:space-y-8 pb-4">
-                      <div className="flex items-center justify-between mb-2 md:mb-4">
-                        <h3 className="text-base md:text-lg font-display font-bold text-foreground flex items-center gap-2">
-                          <Volume2 size={18} className="text-primary" />
-                          {t('clip_editor.polish.audio.title')}
-                        </h3>
+                      <AccordionContent className="space-y-6 md:space-y-8 pb-4 px-1 pt-3">
+                      <div className="flex items-center justify-end mb-1">
                         <MixMeterBars
                           videoRef={videoRef}
                           bgmRef={mixBgmRef}
@@ -6138,27 +6131,23 @@ export default function ClipEditor() {
                       </AccordionContent>
                     </AccordionItem>
 
-                    <AccordionItem value="enhance" className="border border-border/50 rounded-xl mb-2 overflow-hidden px-3 sm:px-4">
-                      <AccordionTrigger className="py-3 hover:no-underline">
-                        <span className="flex items-center gap-2 text-sm font-bold">
-                          <Sparkles size={16} className="text-primary" />
+                    <AccordionItem value="enhance" className="border border-border/50 rounded-xl mb-2 overflow-hidden px-2 sm:px-3">
+                      <AccordionTrigger className="py-2.5 px-2 hover:no-underline rounded-lg bg-muted/35 hover:bg-muted/50 data-panel-open:bg-primary/10">
+                        <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                          <Sparkles size={14} className="shrink-0" />
                           {t('clip_editor.polish.tabs.enhance')}
                         </span>
                       </AccordionTrigger>
-                      <AccordionContent className="space-y-6 pb-4">
+                      <AccordionContent className="space-y-6 pb-4 px-1 pt-3">
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base md:text-lg font-display font-bold text-foreground flex items-center gap-2 min-w-0">
-                            <Sparkles size={18} className="text-primary shrink-0" />
-                            <span className="truncate">{t("clip_editor.polish.tabs.enhance")}</span>
-                        </h3>
                           <Badge
                             variant="secondary"
-                            className="shrink-0 bg-muted text-muted-foreground border-border text-[10px] font-bold"
+                            className="shrink-0 bg-muted text-muted-foreground border-border text-[10px] font-bold uppercase tracking-wider"
                           >
                             {t("clip_editor.polish.enhance.live_preview", { defaultValue: "Live preview" })}
-                        </Badge>
-                      </div>
+                          </Badge>
+                        </div>
                         <p className="text-xs text-muted-foreground leading-relaxed">
                           {t("clip_editor.polish.enhance.preview_hint", {
                             defaultValue:
@@ -6180,8 +6169,8 @@ export default function ClipEditor() {
                       {/* Audio Enhancement Section */}
                       <div className="space-y-3">
                           <div className="flex items-center gap-2">
-                            <Volume2 size={16} className="text-muted-foreground" />
-                          <span className="text-[10px] font-bold text-muted-foreground">
+                            <Volume2 size={14} className="text-muted-foreground" />
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                             {t("clip_editor.polish.enhance.audio_polish")}
                           </span>
                         </div>
@@ -6249,8 +6238,8 @@ export default function ClipEditor() {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
-                            <Wand2 size={16} className="text-muted-foreground shrink-0" />
-                            <span className="text-[10px] font-bold text-muted-foreground">
+                            <Wand2 size={14} className="text-muted-foreground shrink-0" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                               {t("clip_editor.polish.enhance.visual_polish")}
                             </span>
                           </div>
