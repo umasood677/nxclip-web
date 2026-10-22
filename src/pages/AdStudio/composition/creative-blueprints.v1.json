@@ -1,0 +1,4644 @@
+[
+  {
+    "schemaVersion": "1.0.0",
+    "blueprintId": "template:product-hero",
+    "revision": 1,
+    "entryPoint": {
+      "kind": "template",
+      "id": "product-hero",
+      "version": "1.0.0"
+    },
+    "catalog": {
+      "templateId": "product-hero",
+      "templateVersion": "1.0.0",
+      "catalogVersion": "1.0.0"
+    },
+    "creative": {
+      "objective": "product_promotion",
+      "audience": "User must provide target audience",
+      "productOrService": "User must select product or service",
+      "coreMessage": "User must provide creative message"
+    },
+    "references": [
+      {
+        "id": "w0a-product-hero",
+        "availability": "w7Only",
+        "approval": "approvedVisualBaseline",
+        "locator": ".tmp/consolidated-release/w0a-visual/assets/w0a-product-hero.jpg",
+        "sha256": "14d12cf8e1b29563da5eabe16481c2d460f0dd442b9d9b562955bf72bbf48dd1",
+        "approvalEvidence": ".tmp/consolidated-release/w0a-visual/W0A-VISUAL-DESIGN-PACKAGE.md",
+        "provenance": ".tmp/consolidated-release/w0a-visual/SAMPLE-ASSET-PROVENANCE.md",
+        "allowedUses": [
+          "internalDesignReview"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "slotId": "product",
+        "role": "product_image",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "logo",
+        "role": "logo_primary",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 128,
+        "minimumHeight": 64
+      }
+    ],
+    "artDirection": {
+      "expectedComposition": "Single real SKU dominates mid-frame; calm luxury studio surface, coherent contact shadow and clear headline/CTA hierarchy.",
+      "background": "brandGradient",
+      "lighting": "Coherent soft key light, material-appropriate reflection and grounded contact shadows; reference-led direction needs review.",
+      "mood": "Adapt approved reference to user brand; do not reuse demo brand identity.",
+      "camera": "Use supplied subject view; novel product perspective or model pose is unsupported.",
+      "avoid": [
+        "generated labels or logos",
+        "invented product shades",
+        "AI-baked headlines",
+        "unverified offer facts"
+      ]
+    },
+    "composition": {
+      "regions": [
+        {
+          "id": "bg",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "id": "product",
+          "x": 0.15,
+          "y": 0.18,
+          "width": 0.7,
+          "height": 0.48
+        },
+        {
+          "id": "headline",
+          "x": 0.08,
+          "y": 0.68,
+          "width": 0.84,
+          "height": 0.12
+        },
+        {
+          "id": "supporting",
+          "x": 0.08,
+          "y": 0.8,
+          "width": 0.84,
+          "height": 0.08
+        },
+        {
+          "id": "cta",
+          "x": 0.3,
+          "y": 0.9,
+          "width": 0.4,
+          "height": 0.06
+        },
+        {
+          "id": "logo",
+          "x": 0.78,
+          "y": 0.04,
+          "width": 0.16,
+          "height": 0.08
+        }
+      ],
+      "safeArea": {
+        "id": "safe",
+        "x": 0.04,
+        "y": 0.04,
+        "width": 0.92,
+        "height": 0.92
+      },
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.42
+      },
+      "visualReferenceDifference": "W0A artwork has headline above product; committed catalog has headline below. Keep baseline geometry until owner resolves composition."
+    },
+    "branding": {
+      "source": "userBrandKitOrExplicitUnbranded",
+      "preserveLogo": true,
+      "neverUseDemoBrand": true
+    },
+    "typography": {
+      "headline": "",
+      "supporting": "",
+      "cta": "",
+      "fontSource": "brandKitOrUserSelection",
+      "minimumFontPx": 24,
+      "minimumContrast": 4.5,
+      "renderAsEditableLayers": true
+    },
+    "identity": {
+      "mode": "sourcePixels",
+      "generativeIdentityGuaranteed": false,
+      "protectedFeatures": [
+        "silhouette",
+        "packaging",
+        "label",
+        "logo",
+        "color",
+        "modelFace"
+      ],
+      "allowedTransforms": [
+        "translate",
+        "uniformScale",
+        "crop",
+        "rotate"
+      ],
+      "novelPose": "unsupported",
+      "humanReviewRequired": true
+    },
+    "editableLayers": [
+      {
+        "id": "background:bg:0",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "imageSlot:product:1",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "headline:headline:2",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "supporting:supporting:3",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "cta:cta:4",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "logoSlot:logo:5",
+        "kind": "logo",
+        "required": true
+      }
+    ],
+    "output": {
+      "formatId": "portrait_1080x1350",
+      "width": 1080,
+      "height": 1350,
+      "aspectRatio": "4:5",
+      "exports": [
+        "png",
+        "jpeg"
+      ],
+      "maxLayers": 80,
+      "sceneGraphVersion": "1.0"
+    },
+    "qualityChecks": [
+      {
+        "id": "productIdentity",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "sourceHash",
+        "acceptance": "Verify selected source asset/hash provenance only; this does not certify visible identity after integration."
+      },
+      {
+        "id": "packagingGeometry",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "geometryComparison",
+        "acceptance": "Compare silhouette, proportions and protected regions against source; uncertain results require human review."
+      },
+      {
+        "id": "logoLabelIntegrity",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review packaging labels, logo shapes and exact text against original; source hash alone is insufficient."
+      },
+      {
+        "id": "modelConsistency",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review supplied model face, clothing and crop when a model is selected; no generative guarantee."
+      },
+      {
+        "id": "brandColor",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "brandTokens",
+        "acceptance": "Compare configured scene color tokens to approved brand snapshot; photographed colors still need visual review."
+      },
+      {
+        "id": "brandTypography",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "fontResolution",
+        "acceptance": "Verify selected font ids, resolved fonts and editable typography tokens; inspect exported typography separately."
+      },
+      {
+        "id": "compositionFocalPoint",
+        "verification": "aiAssistedUncertain",
+        "severity": "review",
+        "evaluator": "visualComparison",
+        "acceptance": "Assess subject hierarchy and focal point against reference; human review for aesthetic acceptance."
+      },
+      {
+        "id": "safeAreas",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "layoutBounds",
+        "acceptance": "Check text/logo bounds within output-safe regions and reject clipping."
+      },
+      {
+        "id": "textLegibility",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "contrastAndGlyphs",
+        "acceptance": "Measure font size/contrast/glyph coverage and review raster text against complex backgrounds; no preflight pass."
+      }
+    ],
+    "providerRequirements": [
+      {
+        "capability": "generateImage",
+        "reason": "Generate scene background only; preserve supplied subject pixels."
+      },
+      {
+        "capability": "referenceGuidedImage",
+        "reason": "Use approved reference for artistic scene guidance, not sample product identity."
+      },
+      {
+        "capability": "segmentForeground",
+        "reason": "Create validated alpha masks using existing segmentation infrastructure."
+      },
+      {
+        "capability": "sourcePixelComposite",
+        "reason": "Integrate exact supplied foreground with editable text/logo layers."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "blueprintId": "template:model-editorial",
+    "revision": 1,
+    "entryPoint": {
+      "kind": "template",
+      "id": "model-editorial",
+      "version": "1.0.0"
+    },
+    "catalog": {
+      "templateId": "model-editorial",
+      "templateVersion": "1.0.0",
+      "catalogVersion": "1.0.0"
+    },
+    "creative": {
+      "objective": "product_promotion",
+      "audience": "User must provide target audience",
+      "productOrService": "User must select product or service",
+      "coreMessage": "User must provide creative message"
+    },
+    "references": [
+      {
+        "id": "w0a-model-editorial",
+        "availability": "w7Only",
+        "approval": "approvedVisualBaseline",
+        "locator": ".tmp/consolidated-release/w0a-visual/assets/w0a-model-editorial.jpg",
+        "sha256": "38ebb6c013d46f3b21f5a0332570b4f268b817ccf510204d89d60ed027948175",
+        "approvalEvidence": ".tmp/consolidated-release/w0a-visual/W0A-VISUAL-DESIGN-PACKAGE.md",
+        "provenance": ".tmp/consolidated-release/w0a-visual/SAMPLE-ASSET-PROVENANCE.md",
+        "allowedUses": [
+          "internalDesignReview"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "slotId": "model",
+        "role": "brand_model",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "logo",
+        "role": "logo_primary",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 128,
+        "minimumHeight": 64
+      },
+      {
+        "slotId": "product",
+        "role": "product_image",
+        "minCount": 0,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      }
+    ],
+    "artDirection": {
+      "expectedComposition": "Beauty editorial split: model left approximately 55%, copy and optional product right.",
+      "background": "brandGradient",
+      "lighting": "Coherent soft key light, material-appropriate reflection and grounded contact shadows; reference-led direction needs review.",
+      "mood": "Adapt approved reference to user brand; do not reuse demo brand identity.",
+      "camera": "Use supplied subject view; novel product perspective or model pose is unsupported.",
+      "avoid": [
+        "generated labels or logos",
+        "invented product shades",
+        "AI-baked headlines",
+        "unverified offer facts"
+      ]
+    },
+    "composition": {
+      "regions": [
+        {
+          "id": "bg",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "id": "model",
+          "x": 0,
+          "y": 0,
+          "width": 0.55,
+          "height": 1
+        },
+        {
+          "id": "headline",
+          "x": 0.58,
+          "y": 0.18,
+          "width": 0.36,
+          "height": 0.16
+        },
+        {
+          "id": "supporting",
+          "x": 0.58,
+          "y": 0.38,
+          "width": 0.36,
+          "height": 0.14
+        },
+        {
+          "id": "product",
+          "x": 0.58,
+          "y": 0.56,
+          "width": 0.28,
+          "height": 0.22
+        },
+        {
+          "id": "cta",
+          "x": 0.58,
+          "y": 0.84,
+          "width": 0.32,
+          "height": 0.06
+        },
+        {
+          "id": "logo",
+          "x": 0.82,
+          "y": 0.04,
+          "width": 0.14,
+          "height": 0.07
+        }
+      ],
+      "safeArea": {
+        "id": "safe",
+        "x": 0.04,
+        "y": 0.04,
+        "width": 0.92,
+        "height": 0.92
+      },
+      "focalPoint": {
+        "x": 0.275,
+        "y": 0.5
+      },
+      "visualReferenceDifference": "Reference is an artistic target; catalog geometry and new safe-area proposal require visual review."
+    },
+    "branding": {
+      "source": "userBrandKitOrExplicitUnbranded",
+      "preserveLogo": true,
+      "neverUseDemoBrand": true
+    },
+    "typography": {
+      "headline": "",
+      "supporting": "",
+      "cta": "",
+      "fontSource": "brandKitOrUserSelection",
+      "minimumFontPx": 24,
+      "minimumContrast": 4.5,
+      "renderAsEditableLayers": true
+    },
+    "identity": {
+      "mode": "sourcePixels",
+      "generativeIdentityGuaranteed": false,
+      "protectedFeatures": [
+        "silhouette",
+        "packaging",
+        "label",
+        "logo",
+        "color",
+        "modelFace"
+      ],
+      "allowedTransforms": [
+        "translate",
+        "uniformScale",
+        "crop",
+        "rotate"
+      ],
+      "novelPose": "unsupported",
+      "humanReviewRequired": true
+    },
+    "editableLayers": [
+      {
+        "id": "background:bg:0",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "imageSlot:model:1",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "headline:headline:2",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "supporting:supporting:3",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "imageSlot:product:4",
+        "kind": "image",
+        "required": false
+      },
+      {
+        "id": "cta:cta:5",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "logoSlot:logo:6",
+        "kind": "logo",
+        "required": true
+      }
+    ],
+    "output": {
+      "formatId": "portrait_1080x1350",
+      "width": 1080,
+      "height": 1350,
+      "aspectRatio": "4:5",
+      "exports": [
+        "png",
+        "jpeg"
+      ],
+      "maxLayers": 80,
+      "sceneGraphVersion": "1.0"
+    },
+    "qualityChecks": [
+      {
+        "id": "productIdentity",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "sourceHash",
+        "acceptance": "Verify selected source asset/hash provenance only; this does not certify visible identity after integration."
+      },
+      {
+        "id": "packagingGeometry",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "geometryComparison",
+        "acceptance": "Compare silhouette, proportions and protected regions against source; uncertain results require human review."
+      },
+      {
+        "id": "logoLabelIntegrity",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review packaging labels, logo shapes and exact text against original; source hash alone is insufficient."
+      },
+      {
+        "id": "modelConsistency",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review supplied model face, clothing and crop when a model is selected; no generative guarantee."
+      },
+      {
+        "id": "brandColor",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "brandTokens",
+        "acceptance": "Compare configured scene color tokens to approved brand snapshot; photographed colors still need visual review."
+      },
+      {
+        "id": "brandTypography",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "fontResolution",
+        "acceptance": "Verify selected font ids, resolved fonts and editable typography tokens; inspect exported typography separately."
+      },
+      {
+        "id": "compositionFocalPoint",
+        "verification": "aiAssistedUncertain",
+        "severity": "review",
+        "evaluator": "visualComparison",
+        "acceptance": "Assess subject hierarchy and focal point against reference; human review for aesthetic acceptance."
+      },
+      {
+        "id": "safeAreas",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "layoutBounds",
+        "acceptance": "Check text/logo bounds within output-safe regions and reject clipping."
+      },
+      {
+        "id": "textLegibility",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "contrastAndGlyphs",
+        "acceptance": "Measure font size/contrast/glyph coverage and review raster text against complex backgrounds; no preflight pass."
+      }
+    ],
+    "providerRequirements": [
+      {
+        "capability": "generateImage",
+        "reason": "Generate scene background only; preserve supplied subject pixels."
+      },
+      {
+        "capability": "referenceGuidedImage",
+        "reason": "Use approved reference for artistic scene guidance, not sample product identity."
+      },
+      {
+        "capability": "segmentForeground",
+        "reason": "Create validated alpha masks using existing segmentation infrastructure."
+      },
+      {
+        "capability": "sourcePixelComposite",
+        "reason": "Integrate exact supplied foreground with editable text/logo layers."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "blueprintId": "template:product-launch",
+    "revision": 1,
+    "entryPoint": {
+      "kind": "template",
+      "id": "product-launch",
+      "version": "1.0.0"
+    },
+    "catalog": {
+      "templateId": "product-launch",
+      "templateVersion": "1.0.0",
+      "catalogVersion": "1.0.0"
+    },
+    "creative": {
+      "objective": "product_promotion",
+      "audience": "User must provide target audience",
+      "productOrService": "User must select product or service",
+      "coreMessage": "User must provide creative message"
+    },
+    "references": [
+      {
+        "id": "w0a-product-launch",
+        "availability": "w7Only",
+        "approval": "approvedVisualBaseline",
+        "locator": ".tmp/consolidated-release/w0a-visual/assets/w0a-product-launch.jpg",
+        "sha256": "590d29e88109837907b22e9c710907a58cc173b676752eff3d6f3055fb7ad334",
+        "approvalEvidence": ".tmp/consolidated-release/w0a-visual/W0A-VISUAL-DESIGN-PACKAGE.md",
+        "provenance": ".tmp/consolidated-release/w0a-visual/SAMPLE-ASSET-PROVENANCE.md",
+        "allowedUses": [
+          "internalDesignReview"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "slotId": "product",
+        "role": "product_image",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "logo",
+        "role": "logo_primary",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 128,
+        "minimumHeight": 64
+      }
+    ],
+    "artDirection": {
+      "expectedComposition": "Masthead banner above hero product; supporting copy and lower CTA.",
+      "background": "brandGradient",
+      "lighting": "Coherent soft key light, material-appropriate reflection and grounded contact shadows; reference-led direction needs review.",
+      "mood": "Adapt approved reference to user brand; do not reuse demo brand identity.",
+      "camera": "Use supplied subject view; novel product perspective or model pose is unsupported.",
+      "avoid": [
+        "generated labels or logos",
+        "invented product shades",
+        "AI-baked headlines",
+        "unverified offer facts"
+      ]
+    },
+    "composition": {
+      "regions": [
+        {
+          "id": "bg",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "id": "banner",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 0.28
+        },
+        {
+          "id": "headline",
+          "x": 0.08,
+          "y": 0.06,
+          "width": 0.7,
+          "height": 0.16
+        },
+        {
+          "id": "product",
+          "x": 0.2,
+          "y": 0.32,
+          "width": 0.6,
+          "height": 0.48
+        },
+        {
+          "id": "supporting",
+          "x": 0.08,
+          "y": 0.82,
+          "width": 0.6,
+          "height": 0.08
+        },
+        {
+          "id": "cta",
+          "x": 0.72,
+          "y": 0.84,
+          "width": 0.2,
+          "height": 0.06
+        },
+        {
+          "id": "logo",
+          "x": 0.82,
+          "y": 0.04,
+          "width": 0.14,
+          "height": 0.07
+        }
+      ],
+      "safeArea": {
+        "id": "safe",
+        "x": 0.04,
+        "y": 0.04,
+        "width": 0.92,
+        "height": 0.92
+      },
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.56
+      },
+      "visualReferenceDifference": "Reference is an artistic target; catalog geometry and new safe-area proposal require visual review."
+    },
+    "branding": {
+      "source": "userBrandKitOrExplicitUnbranded",
+      "preserveLogo": true,
+      "neverUseDemoBrand": true
+    },
+    "typography": {
+      "headline": "",
+      "supporting": "",
+      "cta": "",
+      "fontSource": "brandKitOrUserSelection",
+      "minimumFontPx": 24,
+      "minimumContrast": 4.5,
+      "renderAsEditableLayers": true
+    },
+    "identity": {
+      "mode": "sourcePixels",
+      "generativeIdentityGuaranteed": false,
+      "protectedFeatures": [
+        "silhouette",
+        "packaging",
+        "label",
+        "logo",
+        "color",
+        "modelFace"
+      ],
+      "allowedTransforms": [
+        "translate",
+        "uniformScale",
+        "crop",
+        "rotate"
+      ],
+      "novelPose": "unsupported",
+      "humanReviewRequired": true
+    },
+    "editableLayers": [
+      {
+        "id": "background:bg:0",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "shapeAccent:banner:1",
+        "kind": "shape",
+        "required": true
+      },
+      {
+        "id": "headline:headline:2",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "imageSlot:product:3",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "supporting:supporting:4",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "cta:cta:5",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "logoSlot:logo:6",
+        "kind": "logo",
+        "required": true
+      }
+    ],
+    "output": {
+      "formatId": "portrait_1080x1350",
+      "width": 1080,
+      "height": 1350,
+      "aspectRatio": "4:5",
+      "exports": [
+        "png",
+        "jpeg"
+      ],
+      "maxLayers": 80,
+      "sceneGraphVersion": "1.0"
+    },
+    "qualityChecks": [
+      {
+        "id": "productIdentity",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "sourceHash",
+        "acceptance": "Verify selected source asset/hash provenance only; this does not certify visible identity after integration."
+      },
+      {
+        "id": "packagingGeometry",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "geometryComparison",
+        "acceptance": "Compare silhouette, proportions and protected regions against source; uncertain results require human review."
+      },
+      {
+        "id": "logoLabelIntegrity",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review packaging labels, logo shapes and exact text against original; source hash alone is insufficient."
+      },
+      {
+        "id": "modelConsistency",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review supplied model face, clothing and crop when a model is selected; no generative guarantee."
+      },
+      {
+        "id": "brandColor",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "brandTokens",
+        "acceptance": "Compare configured scene color tokens to approved brand snapshot; photographed colors still need visual review."
+      },
+      {
+        "id": "brandTypography",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "fontResolution",
+        "acceptance": "Verify selected font ids, resolved fonts and editable typography tokens; inspect exported typography separately."
+      },
+      {
+        "id": "compositionFocalPoint",
+        "verification": "aiAssistedUncertain",
+        "severity": "review",
+        "evaluator": "visualComparison",
+        "acceptance": "Assess subject hierarchy and focal point against reference; human review for aesthetic acceptance."
+      },
+      {
+        "id": "safeAreas",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "layoutBounds",
+        "acceptance": "Check text/logo bounds within output-safe regions and reject clipping."
+      },
+      {
+        "id": "textLegibility",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "contrastAndGlyphs",
+        "acceptance": "Measure font size/contrast/glyph coverage and review raster text against complex backgrounds; no preflight pass."
+      }
+    ],
+    "providerRequirements": [
+      {
+        "capability": "generateImage",
+        "reason": "Generate scene background only; preserve supplied subject pixels."
+      },
+      {
+        "capability": "referenceGuidedImage",
+        "reason": "Use approved reference for artistic scene guidance, not sample product identity."
+      },
+      {
+        "capability": "segmentForeground",
+        "reason": "Create validated alpha masks using existing segmentation infrastructure."
+      },
+      {
+        "capability": "sourcePixelComposite",
+        "reason": "Integrate exact supplied foreground with editable text/logo layers."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "blueprintId": "template:multi-shade-collection",
+    "revision": 1,
+    "entryPoint": {
+      "kind": "template",
+      "id": "multi-shade-collection",
+      "version": "1.0.0"
+    },
+    "catalog": {
+      "templateId": "multi-shade-collection",
+      "templateVersion": "1.0.0",
+      "catalogVersion": "1.0.0"
+    },
+    "creative": {
+      "objective": "product_promotion",
+      "audience": "User must provide target audience",
+      "productOrService": "User must select product or service",
+      "coreMessage": "User must provide creative message"
+    },
+    "references": [
+      {
+        "id": "w0a-multi-shade-collection",
+        "availability": "w7Only",
+        "approval": "approvedVisualBaseline",
+        "locator": ".tmp/consolidated-release/w0a-visual/assets/w0a-multi-shade.jpg",
+        "sha256": "06dfa01b78f5dc19c2af43aa9157ec61b62bad10f12a211200d7afbc78a458c5",
+        "approvalEvidence": ".tmp/consolidated-release/w0a-visual/W0A-VISUAL-DESIGN-PACKAGE.md",
+        "provenance": ".tmp/consolidated-release/w0a-visual/SAMPLE-ASSET-PROVENANCE.md",
+        "allowedUses": [
+          "internalDesignReview"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "slotId": "product",
+        "role": "product_image",
+        "minCount": 1,
+        "maxCount": 4,
+        "distinctBy": "productId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "logo",
+        "role": "logo_primary",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 128,
+        "minimumHeight": 64
+      }
+    ],
+    "artDirection": {
+      "expectedComposition": "Separate real SKU cells with distinct shade labels; never fabricate shades from a single product.",
+      "background": "solid",
+      "lighting": "Coherent soft key light, material-appropriate reflection and grounded contact shadows; reference-led direction needs review.",
+      "mood": "Adapt approved reference to user brand; do not reuse demo brand identity.",
+      "camera": "Use supplied subject view; novel product perspective or model pose is unsupported.",
+      "avoid": [
+        "generated labels or logos",
+        "invented product shades",
+        "AI-baked headlines",
+        "unverified offer facts"
+      ]
+    },
+    "composition": {
+      "regions": [
+        {
+          "id": "bg",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "id": "headline",
+          "x": 0.08,
+          "y": 0.06,
+          "width": 0.84,
+          "height": 0.12
+        },
+        {
+          "id": "grid",
+          "x": 0.08,
+          "y": 0.22,
+          "width": 0.84,
+          "height": 0.52
+        },
+        {
+          "id": "supporting",
+          "x": 0.08,
+          "y": 0.76,
+          "width": 0.84,
+          "height": 0.08
+        },
+        {
+          "id": "cta",
+          "x": 0.3,
+          "y": 0.88,
+          "width": 0.4,
+          "height": 0.06
+        },
+        {
+          "id": "logo",
+          "x": 0.78,
+          "y": 0.04,
+          "width": 0.16,
+          "height": 0.08
+        }
+      ],
+      "safeArea": {
+        "id": "safe",
+        "x": 0.04,
+        "y": 0.04,
+        "width": 0.92,
+        "height": 0.92
+      },
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.48
+      },
+      "visualReferenceDifference": "Reference is an artistic target; catalog geometry and new safe-area proposal require visual review."
+    },
+    "branding": {
+      "source": "userBrandKitOrExplicitUnbranded",
+      "preserveLogo": true,
+      "neverUseDemoBrand": true
+    },
+    "typography": {
+      "headline": "",
+      "supporting": "",
+      "cta": "",
+      "fontSource": "brandKitOrUserSelection",
+      "minimumFontPx": 24,
+      "minimumContrast": 4.5,
+      "renderAsEditableLayers": true
+    },
+    "identity": {
+      "mode": "sourcePixels",
+      "generativeIdentityGuaranteed": false,
+      "protectedFeatures": [
+        "silhouette",
+        "packaging",
+        "label",
+        "logo",
+        "color",
+        "modelFace"
+      ],
+      "allowedTransforms": [
+        "translate",
+        "uniformScale",
+        "crop",
+        "rotate"
+      ],
+      "novelPose": "unsupported",
+      "humanReviewRequired": true
+    },
+    "editableLayers": [
+      {
+        "id": "background:bg:0",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "headline:headline:1",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "imageSlot:grid:2",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "supporting:supporting:3",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "cta:cta:4",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "logoSlot:logo:5",
+        "kind": "logo",
+        "required": true
+      }
+    ],
+    "output": {
+      "formatId": "portrait_1080x1350",
+      "width": 1080,
+      "height": 1350,
+      "aspectRatio": "4:5",
+      "exports": [
+        "png",
+        "jpeg"
+      ],
+      "maxLayers": 80,
+      "sceneGraphVersion": "1.0"
+    },
+    "qualityChecks": [
+      {
+        "id": "productIdentity",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "sourceHash",
+        "acceptance": "Verify selected source asset/hash provenance only; this does not certify visible identity after integration."
+      },
+      {
+        "id": "packagingGeometry",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "geometryComparison",
+        "acceptance": "Compare silhouette, proportions and protected regions against source; uncertain results require human review."
+      },
+      {
+        "id": "logoLabelIntegrity",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review packaging labels, logo shapes and exact text against original; source hash alone is insufficient."
+      },
+      {
+        "id": "modelConsistency",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review supplied model face, clothing and crop when a model is selected; no generative guarantee."
+      },
+      {
+        "id": "brandColor",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "brandTokens",
+        "acceptance": "Compare configured scene color tokens to approved brand snapshot; photographed colors still need visual review."
+      },
+      {
+        "id": "brandTypography",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "fontResolution",
+        "acceptance": "Verify selected font ids, resolved fonts and editable typography tokens; inspect exported typography separately."
+      },
+      {
+        "id": "compositionFocalPoint",
+        "verification": "aiAssistedUncertain",
+        "severity": "review",
+        "evaluator": "visualComparison",
+        "acceptance": "Assess subject hierarchy and focal point against reference; human review for aesthetic acceptance."
+      },
+      {
+        "id": "safeAreas",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "layoutBounds",
+        "acceptance": "Check text/logo bounds within output-safe regions and reject clipping."
+      },
+      {
+        "id": "textLegibility",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "contrastAndGlyphs",
+        "acceptance": "Measure font size/contrast/glyph coverage and review raster text against complex backgrounds; no preflight pass."
+      }
+    ],
+    "providerRequirements": [
+      {
+        "capability": "generateImage",
+        "reason": "Generate scene background only; preserve supplied subject pixels."
+      },
+      {
+        "capability": "referenceGuidedImage",
+        "reason": "Use approved reference for artistic scene guidance, not sample product identity."
+      },
+      {
+        "capability": "segmentForeground",
+        "reason": "Create validated alpha masks using existing segmentation infrastructure."
+      },
+      {
+        "capability": "sourcePixelComposite",
+        "reason": "Integrate exact supplied foreground with editable text/logo layers."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "blueprintId": "template:texture-showcase",
+    "revision": 1,
+    "entryPoint": {
+      "kind": "template",
+      "id": "texture-showcase",
+      "version": "1.0.0"
+    },
+    "catalog": {
+      "templateId": "texture-showcase",
+      "templateVersion": "1.0.0",
+      "catalogVersion": "1.0.0"
+    },
+    "creative": {
+      "objective": "product_promotion",
+      "audience": "User must provide target audience",
+      "productOrService": "User must select product or service",
+      "coreMessage": "User must provide creative message"
+    },
+    "references": [
+      {
+        "id": "w0a-texture-showcase",
+        "availability": "w7Only",
+        "approval": "approvedVisualBaseline",
+        "locator": ".tmp/consolidated-release/w0a-visual/assets/w0a-texture-showcase.jpg",
+        "sha256": "46f7d4c1cee4b3efda39fb6217be29366f05c40ecd443c31df28001bb38ced69",
+        "approvalEvidence": ".tmp/consolidated-release/w0a-visual/W0A-VISUAL-DESIGN-PACKAGE.md",
+        "provenance": ".tmp/consolidated-release/w0a-visual/SAMPLE-ASSET-PROVENANCE.md",
+        "allowedUses": [
+          "internalDesignReview"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "slotId": "product",
+        "role": "product_image",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "logo",
+        "role": "logo_primary",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 128,
+        "minimumHeight": 64
+      }
+    ],
+    "artDirection": {
+      "expectedComposition": "Material close-up in upper area, copy lower-left and CTA lower-right.",
+      "background": "brandGradient",
+      "lighting": "Coherent soft key light, material-appropriate reflection and grounded contact shadows; reference-led direction needs review.",
+      "mood": "Adapt approved reference to user brand; do not reuse demo brand identity.",
+      "camera": "Use supplied subject view; novel product perspective or model pose is unsupported.",
+      "avoid": [
+        "generated labels or logos",
+        "invented product shades",
+        "AI-baked headlines",
+        "unverified offer facts"
+      ]
+    },
+    "composition": {
+      "regions": [
+        {
+          "id": "bg",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "id": "product",
+          "x": 0.05,
+          "y": 0.1,
+          "width": 0.9,
+          "height": 0.55
+        },
+        {
+          "id": "headline",
+          "x": 0.08,
+          "y": 0.7,
+          "width": 0.7,
+          "height": 0.12
+        },
+        {
+          "id": "supporting",
+          "x": 0.08,
+          "y": 0.82,
+          "width": 0.6,
+          "height": 0.08
+        },
+        {
+          "id": "cta",
+          "x": 0.72,
+          "y": 0.88,
+          "width": 0.2,
+          "height": 0.06
+        },
+        {
+          "id": "logo",
+          "x": 0.78,
+          "y": 0.04,
+          "width": 0.16,
+          "height": 0.08
+        }
+      ],
+      "safeArea": {
+        "id": "safe",
+        "x": 0.04,
+        "y": 0.04,
+        "width": 0.92,
+        "height": 0.92
+      },
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.375
+      },
+      "visualReferenceDifference": "Reference is an artistic target; catalog geometry and new safe-area proposal require visual review."
+    },
+    "branding": {
+      "source": "userBrandKitOrExplicitUnbranded",
+      "preserveLogo": true,
+      "neverUseDemoBrand": true
+    },
+    "typography": {
+      "headline": "",
+      "supporting": "",
+      "cta": "",
+      "fontSource": "brandKitOrUserSelection",
+      "minimumFontPx": 24,
+      "minimumContrast": 4.5,
+      "renderAsEditableLayers": true
+    },
+    "identity": {
+      "mode": "sourcePixels",
+      "generativeIdentityGuaranteed": false,
+      "protectedFeatures": [
+        "silhouette",
+        "packaging",
+        "label",
+        "logo",
+        "color",
+        "modelFace"
+      ],
+      "allowedTransforms": [
+        "translate",
+        "uniformScale",
+        "crop",
+        "rotate"
+      ],
+      "novelPose": "unsupported",
+      "humanReviewRequired": true
+    },
+    "editableLayers": [
+      {
+        "id": "background:bg:0",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "imageSlot:product:1",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "headline:headline:2",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "supporting:supporting:3",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "cta:cta:4",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "logoSlot:logo:5",
+        "kind": "logo",
+        "required": true
+      }
+    ],
+    "output": {
+      "formatId": "portrait_1080x1350",
+      "width": 1080,
+      "height": 1350,
+      "aspectRatio": "4:5",
+      "exports": [
+        "png",
+        "jpeg"
+      ],
+      "maxLayers": 80,
+      "sceneGraphVersion": "1.0"
+    },
+    "qualityChecks": [
+      {
+        "id": "productIdentity",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "sourceHash",
+        "acceptance": "Verify selected source asset/hash provenance only; this does not certify visible identity after integration."
+      },
+      {
+        "id": "packagingGeometry",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "geometryComparison",
+        "acceptance": "Compare silhouette, proportions and protected regions against source; uncertain results require human review."
+      },
+      {
+        "id": "logoLabelIntegrity",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review packaging labels, logo shapes and exact text against original; source hash alone is insufficient."
+      },
+      {
+        "id": "modelConsistency",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review supplied model face, clothing and crop when a model is selected; no generative guarantee."
+      },
+      {
+        "id": "brandColor",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "brandTokens",
+        "acceptance": "Compare configured scene color tokens to approved brand snapshot; photographed colors still need visual review."
+      },
+      {
+        "id": "brandTypography",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "fontResolution",
+        "acceptance": "Verify selected font ids, resolved fonts and editable typography tokens; inspect exported typography separately."
+      },
+      {
+        "id": "compositionFocalPoint",
+        "verification": "aiAssistedUncertain",
+        "severity": "review",
+        "evaluator": "visualComparison",
+        "acceptance": "Assess subject hierarchy and focal point against reference; human review for aesthetic acceptance."
+      },
+      {
+        "id": "safeAreas",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "layoutBounds",
+        "acceptance": "Check text/logo bounds within output-safe regions and reject clipping."
+      },
+      {
+        "id": "textLegibility",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "contrastAndGlyphs",
+        "acceptance": "Measure font size/contrast/glyph coverage and review raster text against complex backgrounds; no preflight pass."
+      }
+    ],
+    "providerRequirements": [
+      {
+        "capability": "generateImage",
+        "reason": "Generate scene background only; preserve supplied subject pixels."
+      },
+      {
+        "capability": "referenceGuidedImage",
+        "reason": "Use approved reference for artistic scene guidance, not sample product identity."
+      },
+      {
+        "capability": "segmentForeground",
+        "reason": "Create validated alpha masks using existing segmentation infrastructure."
+      },
+      {
+        "capability": "sourcePixelComposite",
+        "reason": "Integrate exact supplied foreground with editable text/logo layers."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "blueprintId": "template:lifestyle-placement",
+    "revision": 1,
+    "entryPoint": {
+      "kind": "template",
+      "id": "lifestyle-placement",
+      "version": "1.0.0"
+    },
+    "catalog": {
+      "templateId": "lifestyle-placement",
+      "templateVersion": "1.0.0",
+      "catalogVersion": "1.0.0"
+    },
+    "creative": {
+      "objective": "product_promotion",
+      "audience": "User must provide target audience",
+      "productOrService": "User must select product or service",
+      "coreMessage": "User must provide creative message"
+    },
+    "references": [
+      {
+        "id": "w0a-lifestyle-placement",
+        "availability": "w7Only",
+        "approval": "approvedVisualBaseline",
+        "locator": ".tmp/consolidated-release/w0a-visual/assets/w0a-lifestyle.jpg",
+        "sha256": "c75b724a5b4b544532c20619cba759ff76a56ea2abbd175584f27ff9c08ceb13",
+        "approvalEvidence": ".tmp/consolidated-release/w0a-visual/W0A-VISUAL-DESIGN-PACKAGE.md",
+        "provenance": ".tmp/consolidated-release/w0a-visual/SAMPLE-ASSET-PROVENANCE.md",
+        "allowedUses": [
+          "internalDesignReview"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "slotId": "model",
+        "role": "brand_model",
+        "minCount": 0,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "campaign",
+        "role": "campaign_reference",
+        "minCount": 0,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "product",
+        "role": "product_image",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "logo",
+        "role": "logo_primary",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 128,
+        "minimumHeight": 64
+      }
+    ],
+    "artDirection": {
+      "expectedComposition": "In-context campaign or model photograph with separate product and copy panel; novel hand/product interaction is unsupported.",
+      "background": "brandGradient",
+      "lighting": "Coherent soft key light, material-appropriate reflection and grounded contact shadows; reference-led direction needs review.",
+      "mood": "Adapt approved reference to user brand; do not reuse demo brand identity.",
+      "camera": "Use supplied subject view; novel product perspective or model pose is unsupported.",
+      "avoid": [
+        "generated labels or logos",
+        "invented product shades",
+        "AI-baked headlines",
+        "unverified offer facts"
+      ]
+    },
+    "composition": {
+      "regions": [
+        {
+          "id": "bg",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "id": "lifestyle",
+          "x": 0,
+          "y": 0,
+          "width": 0.58,
+          "height": 1
+        },
+        {
+          "id": "product",
+          "x": 0.62,
+          "y": 0.48,
+          "width": 0.3,
+          "height": 0.28
+        },
+        {
+          "id": "headline",
+          "x": 0.62,
+          "y": 0.12,
+          "width": 0.32,
+          "height": 0.14
+        },
+        {
+          "id": "supporting",
+          "x": 0.62,
+          "y": 0.3,
+          "width": 0.32,
+          "height": 0.12
+        },
+        {
+          "id": "cta",
+          "x": 0.62,
+          "y": 0.84,
+          "width": 0.28,
+          "height": 0.06
+        },
+        {
+          "id": "logo",
+          "x": 0.82,
+          "y": 0.04,
+          "width": 0.14,
+          "height": 0.07
+        }
+      ],
+      "safeArea": {
+        "id": "safe",
+        "x": 0.04,
+        "y": 0.04,
+        "width": 0.92,
+        "height": 0.92
+      },
+      "focalPoint": {
+        "x": 0.29,
+        "y": 0.5
+      },
+      "visualReferenceDifference": "Reference is an artistic target; catalog geometry and new safe-area proposal require visual review."
+    },
+    "branding": {
+      "source": "userBrandKitOrExplicitUnbranded",
+      "preserveLogo": true,
+      "neverUseDemoBrand": true
+    },
+    "typography": {
+      "headline": "",
+      "supporting": "",
+      "cta": "",
+      "fontSource": "brandKitOrUserSelection",
+      "minimumFontPx": 24,
+      "minimumContrast": 4.5,
+      "renderAsEditableLayers": true
+    },
+    "identity": {
+      "mode": "sourcePixels",
+      "generativeIdentityGuaranteed": false,
+      "protectedFeatures": [
+        "silhouette",
+        "packaging",
+        "label",
+        "logo",
+        "color",
+        "modelFace"
+      ],
+      "allowedTransforms": [
+        "translate",
+        "uniformScale",
+        "crop",
+        "rotate"
+      ],
+      "novelPose": "unsupported",
+      "humanReviewRequired": true
+    },
+    "editableLayers": [
+      {
+        "id": "background:bg:0",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "imageSlot:lifestyle:1",
+        "kind": "image",
+        "required": false
+      },
+      {
+        "id": "imageSlot:lifestyle:2",
+        "kind": "image",
+        "required": false
+      },
+      {
+        "id": "imageSlot:product:3",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "headline:headline:4",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "supporting:supporting:5",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "cta:cta:6",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "logoSlot:logo:7",
+        "kind": "logo",
+        "required": true
+      }
+    ],
+    "output": {
+      "formatId": "portrait_1080x1350",
+      "width": 1080,
+      "height": 1350,
+      "aspectRatio": "4:5",
+      "exports": [
+        "png",
+        "jpeg"
+      ],
+      "maxLayers": 80,
+      "sceneGraphVersion": "1.0"
+    },
+    "qualityChecks": [
+      {
+        "id": "productIdentity",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "sourceHash",
+        "acceptance": "Verify selected source asset/hash provenance only; this does not certify visible identity after integration."
+      },
+      {
+        "id": "packagingGeometry",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "geometryComparison",
+        "acceptance": "Compare silhouette, proportions and protected regions against source; uncertain results require human review."
+      },
+      {
+        "id": "logoLabelIntegrity",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review packaging labels, logo shapes and exact text against original; source hash alone is insufficient."
+      },
+      {
+        "id": "modelConsistency",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review supplied model face, clothing and crop when a model is selected; no generative guarantee."
+      },
+      {
+        "id": "brandColor",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "brandTokens",
+        "acceptance": "Compare configured scene color tokens to approved brand snapshot; photographed colors still need visual review."
+      },
+      {
+        "id": "brandTypography",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "fontResolution",
+        "acceptance": "Verify selected font ids, resolved fonts and editable typography tokens; inspect exported typography separately."
+      },
+      {
+        "id": "compositionFocalPoint",
+        "verification": "aiAssistedUncertain",
+        "severity": "review",
+        "evaluator": "visualComparison",
+        "acceptance": "Assess subject hierarchy and focal point against reference; human review for aesthetic acceptance."
+      },
+      {
+        "id": "safeAreas",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "layoutBounds",
+        "acceptance": "Check text/logo bounds within output-safe regions and reject clipping."
+      },
+      {
+        "id": "textLegibility",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "contrastAndGlyphs",
+        "acceptance": "Measure font size/contrast/glyph coverage and review raster text against complex backgrounds; no preflight pass."
+      }
+    ],
+    "providerRequirements": [
+      {
+        "capability": "generateImage",
+        "reason": "Generate scene background only; preserve supplied subject pixels."
+      },
+      {
+        "capability": "referenceGuidedImage",
+        "reason": "Use approved reference for artistic scene guidance, not sample product identity."
+      },
+      {
+        "capability": "segmentForeground",
+        "reason": "Create validated alpha masks using existing segmentation infrastructure."
+      },
+      {
+        "capability": "sourcePixelComposite",
+        "reason": "Integrate exact supplied foreground with editable text/logo layers."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "blueprintId": "template:seasonal-campaign",
+    "revision": 1,
+    "entryPoint": {
+      "kind": "template",
+      "id": "seasonal-campaign",
+      "version": "1.0.0"
+    },
+    "catalog": {
+      "templateId": "seasonal-campaign",
+      "templateVersion": "1.0.0",
+      "catalogVersion": "1.0.0"
+    },
+    "creative": {
+      "objective": "product_promotion",
+      "audience": "User must provide target audience",
+      "productOrService": "User must select product or service",
+      "coreMessage": "User must provide creative message"
+    },
+    "references": [
+      {
+        "id": "w0a-seasonal-campaign",
+        "availability": "w7Only",
+        "approval": "approvedVisualBaseline",
+        "locator": ".tmp/consolidated-release/w0a-visual/assets/w0a-seasonal.jpg",
+        "sha256": "bc5ebca23949859bed53fc593836906eeeffb0df2d14684b04a36ff707049241",
+        "approvalEvidence": ".tmp/consolidated-release/w0a-visual/W0A-VISUAL-DESIGN-PACKAGE.md",
+        "provenance": ".tmp/consolidated-release/w0a-visual/SAMPLE-ASSET-PROVENANCE.md",
+        "allowedUses": [
+          "internalDesignReview"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "slotId": "campaign",
+        "role": "campaign_reference",
+        "minCount": 0,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "model",
+        "role": "brand_model",
+        "minCount": 0,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "logo",
+        "role": "logo_primary",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 128,
+        "minimumHeight": 64
+      }
+    ],
+    "artDirection": {
+      "expectedComposition": "Seasonal environmental hero with controlled props and branded copy area; product is not required by baseline catalog.",
+      "background": "slot",
+      "lighting": "Coherent soft key light, material-appropriate reflection and grounded contact shadows; reference-led direction needs review.",
+      "mood": "Adapt approved reference to user brand; do not reuse demo brand identity.",
+      "camera": "Use supplied subject view; novel product perspective or model pose is unsupported.",
+      "avoid": [
+        "generated labels or logos",
+        "invented product shades",
+        "AI-baked headlines",
+        "unverified offer facts"
+      ]
+    },
+    "composition": {
+      "regions": [
+        {
+          "id": "bg",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "id": "hero",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 0.62
+        },
+        {
+          "id": "headline",
+          "x": 0.08,
+          "y": 0.66,
+          "width": 0.84,
+          "height": 0.12
+        },
+        {
+          "id": "supporting",
+          "x": 0.08,
+          "y": 0.78,
+          "width": 0.7,
+          "height": 0.08
+        },
+        {
+          "id": "cta",
+          "x": 0.08,
+          "y": 0.9,
+          "width": 0.36,
+          "height": 0.06
+        },
+        {
+          "id": "logo",
+          "x": 0.78,
+          "y": 0.04,
+          "width": 0.16,
+          "height": 0.08
+        }
+      ],
+      "safeArea": {
+        "id": "safe",
+        "x": 0.04,
+        "y": 0.04,
+        "width": 0.92,
+        "height": 0.92
+      },
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.31
+      },
+      "visualReferenceDifference": "Reference is an artistic target; catalog geometry and new safe-area proposal require visual review."
+    },
+    "branding": {
+      "source": "userBrandKitOrExplicitUnbranded",
+      "preserveLogo": true,
+      "neverUseDemoBrand": true
+    },
+    "typography": {
+      "headline": "",
+      "supporting": "",
+      "cta": "",
+      "fontSource": "brandKitOrUserSelection",
+      "minimumFontPx": 24,
+      "minimumContrast": 4.5,
+      "renderAsEditableLayers": true
+    },
+    "identity": {
+      "mode": "sourcePixels",
+      "generativeIdentityGuaranteed": false,
+      "protectedFeatures": [
+        "silhouette",
+        "packaging",
+        "label",
+        "logo",
+        "color",
+        "modelFace"
+      ],
+      "allowedTransforms": [
+        "translate",
+        "uniformScale",
+        "crop",
+        "rotate"
+      ],
+      "novelPose": "unsupported",
+      "humanReviewRequired": true
+    },
+    "editableLayers": [
+      {
+        "id": "background:bg:0",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "imageSlot:hero:1",
+        "kind": "image",
+        "required": false
+      },
+      {
+        "id": "imageSlot:hero:2",
+        "kind": "image",
+        "required": false
+      },
+      {
+        "id": "headline:headline:3",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "supporting:supporting:4",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "cta:cta:5",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "logoSlot:logo:6",
+        "kind": "logo",
+        "required": true
+      }
+    ],
+    "output": {
+      "formatId": "portrait_1080x1350",
+      "width": 1080,
+      "height": 1350,
+      "aspectRatio": "4:5",
+      "exports": [
+        "png",
+        "jpeg"
+      ],
+      "maxLayers": 80,
+      "sceneGraphVersion": "1.0"
+    },
+    "qualityChecks": [
+      {
+        "id": "productIdentity",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "sourceHash",
+        "acceptance": "Verify selected source asset/hash provenance only; this does not certify visible identity after integration."
+      },
+      {
+        "id": "packagingGeometry",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "geometryComparison",
+        "acceptance": "Compare silhouette, proportions and protected regions against source; uncertain results require human review."
+      },
+      {
+        "id": "logoLabelIntegrity",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review packaging labels, logo shapes and exact text against original; source hash alone is insufficient."
+      },
+      {
+        "id": "modelConsistency",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review supplied model face, clothing and crop when a model is selected; no generative guarantee."
+      },
+      {
+        "id": "brandColor",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "brandTokens",
+        "acceptance": "Compare configured scene color tokens to approved brand snapshot; photographed colors still need visual review."
+      },
+      {
+        "id": "brandTypography",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "fontResolution",
+        "acceptance": "Verify selected font ids, resolved fonts and editable typography tokens; inspect exported typography separately."
+      },
+      {
+        "id": "compositionFocalPoint",
+        "verification": "aiAssistedUncertain",
+        "severity": "review",
+        "evaluator": "visualComparison",
+        "acceptance": "Assess subject hierarchy and focal point against reference; human review for aesthetic acceptance."
+      },
+      {
+        "id": "safeAreas",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "layoutBounds",
+        "acceptance": "Check text/logo bounds within output-safe regions and reject clipping."
+      },
+      {
+        "id": "textLegibility",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "contrastAndGlyphs",
+        "acceptance": "Measure font size/contrast/glyph coverage and review raster text against complex backgrounds; no preflight pass."
+      }
+    ],
+    "providerRequirements": [
+      {
+        "capability": "generateImage",
+        "reason": "Generate scene background only; preserve supplied subject pixels."
+      },
+      {
+        "capability": "referenceGuidedImage",
+        "reason": "Use approved reference for artistic scene guidance, not sample product identity."
+      },
+      {
+        "capability": "segmentForeground",
+        "reason": "Create validated alpha masks using existing segmentation infrastructure."
+      },
+      {
+        "capability": "sourcePixelComposite",
+        "reason": "Integrate exact supplied foreground with editable text/logo layers."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "blueprintId": "template:promotional-offer",
+    "revision": 1,
+    "entryPoint": {
+      "kind": "template",
+      "id": "promotional-offer",
+      "version": "1.0.0"
+    },
+    "catalog": {
+      "templateId": "promotional-offer",
+      "templateVersion": "1.0.0",
+      "catalogVersion": "1.0.0"
+    },
+    "creative": {
+      "objective": "product_promotion",
+      "audience": "User must provide target audience",
+      "productOrService": "User must select product or service",
+      "coreMessage": "User must provide creative message"
+    },
+    "references": [
+      {
+        "id": "w0a-promotional-offer",
+        "availability": "w7Only",
+        "approval": "approvedVisualBaseline",
+        "locator": ".tmp/consolidated-release/w0a-visual/assets/w0a-promo.jpg",
+        "sha256": "2bd18a567141bc51d52d8a28a8365fee11294edda75d5acc0315ab46372ab110",
+        "approvalEvidence": ".tmp/consolidated-release/w0a-visual/W0A-VISUAL-DESIGN-PACKAGE.md",
+        "provenance": ".tmp/consolidated-release/w0a-visual/SAMPLE-ASSET-PROVENANCE.md",
+        "allowedUses": [
+          "internalDesignReview"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "slotId": "product",
+        "role": "product_image",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "logo",
+        "role": "logo_primary",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 128,
+        "minimumHeight": 64
+      }
+    ],
+    "artDirection": {
+      "expectedComposition": "CTA-led hierarchy using only explicitly verified offer/price facts.",
+      "background": "solid",
+      "lighting": "Coherent soft key light, material-appropriate reflection and grounded contact shadows; reference-led direction needs review.",
+      "mood": "Adapt approved reference to user brand; do not reuse demo brand identity.",
+      "camera": "Use supplied subject view; novel product perspective or model pose is unsupported.",
+      "avoid": [
+        "generated labels or logos",
+        "invented product shades",
+        "AI-baked headlines",
+        "unverified offer facts"
+      ]
+    },
+    "composition": {
+      "regions": [
+        {
+          "id": "bg",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "id": "product",
+          "x": 0.2,
+          "y": 0.08,
+          "width": 0.6,
+          "height": 0.42
+        },
+        {
+          "id": "headline",
+          "x": 0.08,
+          "y": 0.54,
+          "width": 0.84,
+          "height": 0.12
+        },
+        {
+          "id": "supporting",
+          "x": 0.08,
+          "y": 0.68,
+          "width": 0.84,
+          "height": 0.1
+        },
+        {
+          "id": "cta",
+          "x": 0.2,
+          "y": 0.84,
+          "width": 0.6,
+          "height": 0.08
+        },
+        {
+          "id": "logo",
+          "x": 0.78,
+          "y": 0.04,
+          "width": 0.16,
+          "height": 0.08
+        }
+      ],
+      "safeArea": {
+        "id": "safe",
+        "x": 0.04,
+        "y": 0.04,
+        "width": 0.92,
+        "height": 0.92
+      },
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.29
+      },
+      "visualReferenceDifference": "Reference is an artistic target; catalog geometry and new safe-area proposal require visual review."
+    },
+    "branding": {
+      "source": "userBrandKitOrExplicitUnbranded",
+      "preserveLogo": true,
+      "neverUseDemoBrand": true
+    },
+    "typography": {
+      "headline": "",
+      "supporting": "",
+      "cta": "",
+      "fontSource": "brandKitOrUserSelection",
+      "minimumFontPx": 24,
+      "minimumContrast": 4.5,
+      "renderAsEditableLayers": true
+    },
+    "identity": {
+      "mode": "sourcePixels",
+      "generativeIdentityGuaranteed": false,
+      "protectedFeatures": [
+        "silhouette",
+        "packaging",
+        "label",
+        "logo",
+        "color",
+        "modelFace"
+      ],
+      "allowedTransforms": [
+        "translate",
+        "uniformScale",
+        "crop",
+        "rotate"
+      ],
+      "novelPose": "unsupported",
+      "humanReviewRequired": true
+    },
+    "editableLayers": [
+      {
+        "id": "background:bg:0",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "imageSlot:product:1",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "headline:headline:2",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "supporting:supporting:3",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "cta:cta:4",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "logoSlot:logo:5",
+        "kind": "logo",
+        "required": true
+      }
+    ],
+    "output": {
+      "formatId": "portrait_1080x1350",
+      "width": 1080,
+      "height": 1350,
+      "aspectRatio": "4:5",
+      "exports": [
+        "png",
+        "jpeg"
+      ],
+      "maxLayers": 80,
+      "sceneGraphVersion": "1.0"
+    },
+    "qualityChecks": [
+      {
+        "id": "productIdentity",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "sourceHash",
+        "acceptance": "Verify selected source asset/hash provenance only; this does not certify visible identity after integration."
+      },
+      {
+        "id": "packagingGeometry",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "geometryComparison",
+        "acceptance": "Compare silhouette, proportions and protected regions against source; uncertain results require human review."
+      },
+      {
+        "id": "logoLabelIntegrity",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review packaging labels, logo shapes and exact text against original; source hash alone is insufficient."
+      },
+      {
+        "id": "modelConsistency",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review supplied model face, clothing and crop when a model is selected; no generative guarantee."
+      },
+      {
+        "id": "brandColor",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "brandTokens",
+        "acceptance": "Compare configured scene color tokens to approved brand snapshot; photographed colors still need visual review."
+      },
+      {
+        "id": "brandTypography",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "fontResolution",
+        "acceptance": "Verify selected font ids, resolved fonts and editable typography tokens; inspect exported typography separately."
+      },
+      {
+        "id": "compositionFocalPoint",
+        "verification": "aiAssistedUncertain",
+        "severity": "review",
+        "evaluator": "visualComparison",
+        "acceptance": "Assess subject hierarchy and focal point against reference; human review for aesthetic acceptance."
+      },
+      {
+        "id": "safeAreas",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "layoutBounds",
+        "acceptance": "Check text/logo bounds within output-safe regions and reject clipping."
+      },
+      {
+        "id": "textLegibility",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "contrastAndGlyphs",
+        "acceptance": "Measure font size/contrast/glyph coverage and review raster text against complex backgrounds; no preflight pass."
+      }
+    ],
+    "providerRequirements": [
+      {
+        "capability": "generateImage",
+        "reason": "Generate scene background only; preserve supplied subject pixels."
+      },
+      {
+        "capability": "referenceGuidedImage",
+        "reason": "Use approved reference for artistic scene guidance, not sample product identity."
+      },
+      {
+        "capability": "segmentForeground",
+        "reason": "Create validated alpha masks using existing segmentation infrastructure."
+      },
+      {
+        "capability": "sourcePixelComposite",
+        "reason": "Integrate exact supplied foreground with editable text/logo layers."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "blueprintId": "template:minimal-editorial",
+    "revision": 1,
+    "entryPoint": {
+      "kind": "template",
+      "id": "minimal-editorial",
+      "version": "1.0.0"
+    },
+    "catalog": {
+      "templateId": "minimal-editorial",
+      "templateVersion": "1.0.0",
+      "catalogVersion": "1.0.0"
+    },
+    "creative": {
+      "objective": "product_promotion",
+      "audience": "User must provide target audience",
+      "productOrService": "User must select product or service",
+      "coreMessage": "User must provide creative message"
+    },
+    "references": [
+      {
+        "id": "w0a-minimal-editorial",
+        "availability": "w7Only",
+        "approval": "approvedVisualBaseline",
+        "locator": ".tmp/consolidated-release/w0a-visual/assets/w0a-minimal.jpg",
+        "sha256": "cb76c144ce74d31fbe654c8c5cbe67ef1e307334cd93f138ac5b4f32012a8d35",
+        "approvalEvidence": ".tmp/consolidated-release/w0a-visual/W0A-VISUAL-DESIGN-PACKAGE.md",
+        "provenance": ".tmp/consolidated-release/w0a-visual/SAMPLE-ASSET-PROVENANCE.md",
+        "allowedUses": [
+          "internalDesignReview"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "slotId": "logo",
+        "role": "logo_primary",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 128,
+        "minimumHeight": 64
+      },
+      {
+        "slotId": "product",
+        "role": "product_image",
+        "minCount": 0,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      }
+    ],
+    "artDirection": {
+      "expectedComposition": "Controlled negative space, restrained typography and recognizable supplied product.",
+      "background": "brandGradient",
+      "lighting": "Coherent soft key light, material-appropriate reflection and grounded contact shadows; reference-led direction needs review.",
+      "mood": "Adapt approved reference to user brand; do not reuse demo brand identity.",
+      "camera": "Use supplied subject view; novel product perspective or model pose is unsupported.",
+      "avoid": [
+        "generated labels or logos",
+        "invented product shades",
+        "AI-baked headlines",
+        "unverified offer facts"
+      ]
+    },
+    "composition": {
+      "regions": [
+        {
+          "id": "bg",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "id": "headline",
+          "x": 0.08,
+          "y": 0.2,
+          "width": 0.84,
+          "height": 0.18
+        },
+        {
+          "id": "supporting",
+          "x": 0.08,
+          "y": 0.42,
+          "width": 0.6,
+          "height": 0.1
+        },
+        {
+          "id": "product",
+          "x": 0.55,
+          "y": 0.55,
+          "width": 0.35,
+          "height": 0.3
+        },
+        {
+          "id": "cta",
+          "x": 0.08,
+          "y": 0.88,
+          "width": 0.36,
+          "height": 0.06
+        },
+        {
+          "id": "logo",
+          "x": 0.08,
+          "y": 0.06,
+          "width": 0.2,
+          "height": 0.08
+        }
+      ],
+      "safeArea": {
+        "id": "safe",
+        "x": 0.04,
+        "y": 0.04,
+        "width": 0.92,
+        "height": 0.92
+      },
+      "focalPoint": {
+        "x": 0.725,
+        "y": 0.7
+      },
+      "visualReferenceDifference": "Reference is an artistic target; catalog geometry and new safe-area proposal require visual review."
+    },
+    "branding": {
+      "source": "userBrandKitOrExplicitUnbranded",
+      "preserveLogo": true,
+      "neverUseDemoBrand": true
+    },
+    "typography": {
+      "headline": "",
+      "supporting": "",
+      "cta": "",
+      "fontSource": "brandKitOrUserSelection",
+      "minimumFontPx": 24,
+      "minimumContrast": 4.5,
+      "renderAsEditableLayers": true
+    },
+    "identity": {
+      "mode": "sourcePixels",
+      "generativeIdentityGuaranteed": false,
+      "protectedFeatures": [
+        "silhouette",
+        "packaging",
+        "label",
+        "logo",
+        "color",
+        "modelFace"
+      ],
+      "allowedTransforms": [
+        "translate",
+        "uniformScale",
+        "crop",
+        "rotate"
+      ],
+      "novelPose": "unsupported",
+      "humanReviewRequired": true
+    },
+    "editableLayers": [
+      {
+        "id": "background:bg:0",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "logoSlot:logo:1",
+        "kind": "logo",
+        "required": true
+      },
+      {
+        "id": "headline:headline:2",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "supporting:supporting:3",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "imageSlot:product:4",
+        "kind": "image",
+        "required": false
+      },
+      {
+        "id": "cta:cta:5",
+        "kind": "text",
+        "required": true
+      }
+    ],
+    "output": {
+      "formatId": "portrait_1080x1350",
+      "width": 1080,
+      "height": 1350,
+      "aspectRatio": "4:5",
+      "exports": [
+        "png",
+        "jpeg"
+      ],
+      "maxLayers": 80,
+      "sceneGraphVersion": "1.0"
+    },
+    "qualityChecks": [
+      {
+        "id": "productIdentity",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "sourceHash",
+        "acceptance": "Verify selected source asset/hash provenance only; this does not certify visible identity after integration."
+      },
+      {
+        "id": "packagingGeometry",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "geometryComparison",
+        "acceptance": "Compare silhouette, proportions and protected regions against source; uncertain results require human review."
+      },
+      {
+        "id": "logoLabelIntegrity",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review packaging labels, logo shapes and exact text against original; source hash alone is insufficient."
+      },
+      {
+        "id": "modelConsistency",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review supplied model face, clothing and crop when a model is selected; no generative guarantee."
+      },
+      {
+        "id": "brandColor",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "brandTokens",
+        "acceptance": "Compare configured scene color tokens to approved brand snapshot; photographed colors still need visual review."
+      },
+      {
+        "id": "brandTypography",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "fontResolution",
+        "acceptance": "Verify selected font ids, resolved fonts and editable typography tokens; inspect exported typography separately."
+      },
+      {
+        "id": "compositionFocalPoint",
+        "verification": "aiAssistedUncertain",
+        "severity": "review",
+        "evaluator": "visualComparison",
+        "acceptance": "Assess subject hierarchy and focal point against reference; human review for aesthetic acceptance."
+      },
+      {
+        "id": "safeAreas",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "layoutBounds",
+        "acceptance": "Check text/logo bounds within output-safe regions and reject clipping."
+      },
+      {
+        "id": "textLegibility",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "contrastAndGlyphs",
+        "acceptance": "Measure font size/contrast/glyph coverage and review raster text against complex backgrounds; no preflight pass."
+      }
+    ],
+    "providerRequirements": [
+      {
+        "capability": "generateImage",
+        "reason": "Generate scene background only; preserve supplied subject pixels."
+      },
+      {
+        "capability": "referenceGuidedImage",
+        "reason": "Use approved reference for artistic scene guidance, not sample product identity."
+      },
+      {
+        "capability": "segmentForeground",
+        "reason": "Create validated alpha masks using existing segmentation infrastructure."
+      },
+      {
+        "capability": "sourcePixelComposite",
+        "reason": "Integrate exact supplied foreground with editable text/logo layers."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "blueprintId": "template:social-story",
+    "revision": 1,
+    "entryPoint": {
+      "kind": "template",
+      "id": "social-story",
+      "version": "1.0.0"
+    },
+    "catalog": {
+      "templateId": "social-story",
+      "templateVersion": "1.0.0",
+      "catalogVersion": "1.0.0"
+    },
+    "creative": {
+      "objective": "product_promotion",
+      "audience": "User must provide target audience",
+      "productOrService": "User must select product or service",
+      "coreMessage": "User must provide creative message"
+    },
+    "references": [
+      {
+        "id": "w0a-social-story",
+        "availability": "w7Only",
+        "approval": "approvedVisualBaseline",
+        "locator": ".tmp/consolidated-release/w0a-visual/assets/w0a-social-story.jpg",
+        "sha256": "186a7f1fcb69a77e443b2c81111a69876fad01e8c01a5851d1df19188ac039e8",
+        "approvalEvidence": ".tmp/consolidated-release/w0a-visual/W0A-VISUAL-DESIGN-PACKAGE.md",
+        "provenance": ".tmp/consolidated-release/w0a-visual/SAMPLE-ASSET-PROVENANCE.md",
+        "allowedUses": [
+          "internalDesignReview"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "slotId": "product",
+        "role": "product_image",
+        "minCount": 0,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "model",
+        "role": "brand_model",
+        "minCount": 0,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "logo",
+        "role": "logo_primary",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 128,
+        "minimumHeight": 64
+      }
+    ],
+    "artDirection": {
+      "expectedComposition": "Vertical story framing with mobile-safe copy/CTA zones and recognizable subject.",
+      "background": "brandGradient",
+      "lighting": "Coherent soft key light, material-appropriate reflection and grounded contact shadows; reference-led direction needs review.",
+      "mood": "Adapt approved reference to user brand; do not reuse demo brand identity.",
+      "camera": "Use supplied subject view; novel product perspective or model pose is unsupported.",
+      "avoid": [
+        "generated labels or logos",
+        "invented product shades",
+        "AI-baked headlines",
+        "unverified offer facts"
+      ]
+    },
+    "composition": {
+      "regions": [
+        {
+          "id": "bg",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "id": "safe",
+          "x": 0.08,
+          "y": 0.12,
+          "width": 0.84,
+          "height": 0.7
+        },
+        {
+          "id": "hero",
+          "x": 0.12,
+          "y": 0.18,
+          "width": 0.76,
+          "height": 0.48
+        },
+        {
+          "id": "headline",
+          "x": 0.1,
+          "y": 0.7,
+          "width": 0.8,
+          "height": 0.1
+        },
+        {
+          "id": "cta",
+          "x": 0.25,
+          "y": 0.84,
+          "width": 0.5,
+          "height": 0.06
+        },
+        {
+          "id": "logo",
+          "x": 0.38,
+          "y": 0.04,
+          "width": 0.24,
+          "height": 0.06
+        }
+      ],
+      "safeArea": {
+        "id": "safe",
+        "x": 0.04,
+        "y": 0.04,
+        "width": 0.92,
+        "height": 0.92
+      },
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.42
+      },
+      "visualReferenceDifference": "Reference is an artistic target; catalog geometry and new safe-area proposal require visual review."
+    },
+    "branding": {
+      "source": "userBrandKitOrExplicitUnbranded",
+      "preserveLogo": true,
+      "neverUseDemoBrand": true
+    },
+    "typography": {
+      "headline": "",
+      "supporting": "",
+      "cta": "",
+      "fontSource": "brandKitOrUserSelection",
+      "minimumFontPx": 24,
+      "minimumContrast": 4.5,
+      "renderAsEditableLayers": true
+    },
+    "identity": {
+      "mode": "sourcePixels",
+      "generativeIdentityGuaranteed": false,
+      "protectedFeatures": [
+        "silhouette",
+        "packaging",
+        "label",
+        "logo",
+        "color",
+        "modelFace"
+      ],
+      "allowedTransforms": [
+        "translate",
+        "uniformScale",
+        "crop",
+        "rotate"
+      ],
+      "novelPose": "unsupported",
+      "humanReviewRequired": true
+    },
+    "editableLayers": [
+      {
+        "id": "background:bg:0",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "imageSlot:hero:1",
+        "kind": "image",
+        "required": false
+      },
+      {
+        "id": "imageSlot:hero:2",
+        "kind": "image",
+        "required": false
+      },
+      {
+        "id": "headline:headline:3",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "cta:cta:4",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "logoSlot:logo:5",
+        "kind": "logo",
+        "required": true
+      }
+    ],
+    "output": {
+      "formatId": "vertical_1080x1920",
+      "width": 1080,
+      "height": 1920,
+      "aspectRatio": "9:16",
+      "exports": [
+        "png",
+        "jpeg"
+      ],
+      "maxLayers": 80,
+      "sceneGraphVersion": "1.0"
+    },
+    "qualityChecks": [
+      {
+        "id": "productIdentity",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "sourceHash",
+        "acceptance": "Verify selected source asset/hash provenance only; this does not certify visible identity after integration."
+      },
+      {
+        "id": "packagingGeometry",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "geometryComparison",
+        "acceptance": "Compare silhouette, proportions and protected regions against source; uncertain results require human review."
+      },
+      {
+        "id": "logoLabelIntegrity",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review packaging labels, logo shapes and exact text against original; source hash alone is insufficient."
+      },
+      {
+        "id": "modelConsistency",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review supplied model face, clothing and crop when a model is selected; no generative guarantee."
+      },
+      {
+        "id": "brandColor",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "brandTokens",
+        "acceptance": "Compare configured scene color tokens to approved brand snapshot; photographed colors still need visual review."
+      },
+      {
+        "id": "brandTypography",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "fontResolution",
+        "acceptance": "Verify selected font ids, resolved fonts and editable typography tokens; inspect exported typography separately."
+      },
+      {
+        "id": "compositionFocalPoint",
+        "verification": "aiAssistedUncertain",
+        "severity": "review",
+        "evaluator": "visualComparison",
+        "acceptance": "Assess subject hierarchy and focal point against reference; human review for aesthetic acceptance."
+      },
+      {
+        "id": "safeAreas",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "layoutBounds",
+        "acceptance": "Check text/logo bounds within output-safe regions and reject clipping."
+      },
+      {
+        "id": "textLegibility",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "contrastAndGlyphs",
+        "acceptance": "Measure font size/contrast/glyph coverage and review raster text against complex backgrounds; no preflight pass."
+      }
+    ],
+    "providerRequirements": [
+      {
+        "capability": "generateImage",
+        "reason": "Generate scene background only; preserve supplied subject pixels."
+      },
+      {
+        "capability": "referenceGuidedImage",
+        "reason": "Use approved reference for artistic scene guidance, not sample product identity."
+      },
+      {
+        "capability": "segmentForeground",
+        "reason": "Create validated alpha masks using existing segmentation infrastructure."
+      },
+      {
+        "capability": "sourcePixelComposite",
+        "reason": "Integrate exact supplied foreground with editable text/logo layers."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "blueprintId": "exampleBrief:ex-athletic",
+    "revision": 1,
+    "entryPoint": {
+      "kind": "exampleBrief",
+      "id": "ex-athletic",
+      "version": "1.0.0"
+    },
+    "catalog": {
+      "templateId": "product-launch",
+      "templateVersion": "1.0.0",
+      "catalogVersion": "1.0.0"
+    },
+    "creative": {
+      "objective": "product_promotion",
+      "audience": "Active adults 22–40",
+      "productOrService": "Performance running shoes",
+      "coreMessage": "Move Without Limits"
+    },
+    "references": [
+      {
+        "id": "ex-athletic-candidate",
+        "availability": "w7Only",
+        "approval": "pendingMapping",
+        "locator": ".tmp/consolidated-release/w0a-visual/assets/w0a-product-launch.jpg",
+        "sha256": "590d29e88109837907b22e9c710907a58cc173b676752eff3d6f3055fb7ad334",
+        "approvalEvidence": null,
+        "provenance": ".tmp/consolidated-release/w0a-visual/SAMPLE-ASSET-PROVENANCE.md",
+        "allowedUses": [
+          "internalDesignReview"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "slotId": "product",
+        "role": "product_image",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "logo",
+        "role": "logo_primary",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 128,
+        "minimumHeight": 64
+      }
+    ],
+    "artDirection": {
+      "expectedComposition": "Masthead banner above hero product; supporting copy and lower CTA.",
+      "background": "brandGradient",
+      "lighting": "Coherent soft key light, material-appropriate reflection and grounded contact shadows; reference-led direction needs review.",
+      "mood": "Adapt approved reference to user brand; do not reuse demo brand identity.",
+      "camera": "Use supplied subject view; novel product perspective or model pose is unsupported.",
+      "avoid": [
+        "generated labels or logos",
+        "invented product shades",
+        "AI-baked headlines",
+        "unverified offer facts"
+      ]
+    },
+    "composition": {
+      "regions": [
+        {
+          "id": "bg",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "id": "banner",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 0.28
+        },
+        {
+          "id": "headline",
+          "x": 0.08,
+          "y": 0.06,
+          "width": 0.7,
+          "height": 0.16
+        },
+        {
+          "id": "product",
+          "x": 0.2,
+          "y": 0.32,
+          "width": 0.6,
+          "height": 0.48
+        },
+        {
+          "id": "supporting",
+          "x": 0.08,
+          "y": 0.82,
+          "width": 0.6,
+          "height": 0.08
+        },
+        {
+          "id": "cta",
+          "x": 0.72,
+          "y": 0.84,
+          "width": 0.2,
+          "height": 0.06
+        },
+        {
+          "id": "logo",
+          "x": 0.82,
+          "y": 0.04,
+          "width": 0.14,
+          "height": 0.07
+        }
+      ],
+      "safeArea": {
+        "id": "safe",
+        "x": 0.04,
+        "y": 0.04,
+        "width": 0.92,
+        "height": 0.92
+      },
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.56
+      },
+      "visualReferenceDifference": "Reference is an artistic target; catalog geometry and new safe-area proposal require visual review."
+    },
+    "branding": {
+      "source": "userBrandKitOrExplicitUnbranded",
+      "preserveLogo": true,
+      "neverUseDemoBrand": true
+    },
+    "typography": {
+      "headline": "Move Without Limits",
+      "supporting": "Performance gear engineered for everyday athletes.",
+      "cta": "Shop Now",
+      "fontSource": "brandKitOrUserSelection",
+      "minimumFontPx": 24,
+      "minimumContrast": 4.5,
+      "renderAsEditableLayers": true
+    },
+    "identity": {
+      "mode": "sourcePixels",
+      "generativeIdentityGuaranteed": false,
+      "protectedFeatures": [
+        "silhouette",
+        "packaging",
+        "label",
+        "logo",
+        "color",
+        "modelFace"
+      ],
+      "allowedTransforms": [
+        "translate",
+        "uniformScale",
+        "crop",
+        "rotate"
+      ],
+      "novelPose": "unsupported",
+      "humanReviewRequired": true
+    },
+    "editableLayers": [
+      {
+        "id": "background:bg:0",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "shapeAccent:banner:1",
+        "kind": "shape",
+        "required": true
+      },
+      {
+        "id": "headline:headline:2",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "imageSlot:product:3",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "supporting:supporting:4",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "cta:cta:5",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "logoSlot:logo:6",
+        "kind": "logo",
+        "required": true
+      }
+    ],
+    "output": {
+      "formatId": "portrait_1080x1350",
+      "width": 1080,
+      "height": 1350,
+      "aspectRatio": "4:5",
+      "exports": [
+        "png",
+        "jpeg"
+      ],
+      "maxLayers": 80,
+      "sceneGraphVersion": "1.0"
+    },
+    "qualityChecks": [
+      {
+        "id": "productIdentity",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "sourceHash",
+        "acceptance": "Verify selected source asset/hash provenance only; this does not certify visible identity after integration."
+      },
+      {
+        "id": "packagingGeometry",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "geometryComparison",
+        "acceptance": "Compare silhouette, proportions and protected regions against source; uncertain results require human review."
+      },
+      {
+        "id": "logoLabelIntegrity",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review packaging labels, logo shapes and exact text against original; source hash alone is insufficient."
+      },
+      {
+        "id": "modelConsistency",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review supplied model face, clothing and crop when a model is selected; no generative guarantee."
+      },
+      {
+        "id": "brandColor",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "brandTokens",
+        "acceptance": "Compare configured scene color tokens to approved brand snapshot; photographed colors still need visual review."
+      },
+      {
+        "id": "brandTypography",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "fontResolution",
+        "acceptance": "Verify selected font ids, resolved fonts and editable typography tokens; inspect exported typography separately."
+      },
+      {
+        "id": "compositionFocalPoint",
+        "verification": "aiAssistedUncertain",
+        "severity": "review",
+        "evaluator": "visualComparison",
+        "acceptance": "Assess subject hierarchy and focal point against reference; human review for aesthetic acceptance."
+      },
+      {
+        "id": "safeAreas",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "layoutBounds",
+        "acceptance": "Check text/logo bounds within output-safe regions and reject clipping."
+      },
+      {
+        "id": "textLegibility",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "contrastAndGlyphs",
+        "acceptance": "Measure font size/contrast/glyph coverage and review raster text against complex backgrounds; no preflight pass."
+      }
+    ],
+    "providerRequirements": [
+      {
+        "capability": "generateImage",
+        "reason": "Generate scene background only; preserve supplied subject pixels."
+      },
+      {
+        "capability": "referenceGuidedImage",
+        "reason": "Use approved reference for artistic scene guidance, not sample product identity."
+      },
+      {
+        "capability": "segmentForeground",
+        "reason": "Create validated alpha masks using existing segmentation infrastructure."
+      },
+      {
+        "capability": "sourcePixelComposite",
+        "reason": "Integrate exact supplied foreground with editable text/logo layers."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "blueprintId": "exampleBrief:ex-saas",
+    "revision": 1,
+    "entryPoint": {
+      "kind": "exampleBrief",
+      "id": "ex-saas",
+      "version": "1.0.0"
+    },
+    "catalog": {
+      "templateId": "minimal-editorial",
+      "templateVersion": "1.0.0",
+      "catalogVersion": "1.0.0"
+    },
+    "creative": {
+      "objective": "lead_generation",
+      "audience": "Product and engineering leads",
+      "productOrService": "Team collaboration platform",
+      "coreMessage": "Ship Faster Together"
+    },
+    "references": [
+      {
+        "id": "ex-saas-candidate",
+        "availability": "w7Only",
+        "approval": "pendingMapping",
+        "locator": ".tmp/consolidated-release/w0a-visual/assets/w0a-minimal.jpg",
+        "sha256": "cb76c144ce74d31fbe654c8c5cbe67ef1e307334cd93f138ac5b4f32012a8d35",
+        "approvalEvidence": null,
+        "provenance": ".tmp/consolidated-release/w0a-visual/SAMPLE-ASSET-PROVENANCE.md",
+        "allowedUses": [
+          "internalDesignReview"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "slotId": "logo",
+        "role": "logo_primary",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 128,
+        "minimumHeight": 64
+      },
+      {
+        "slotId": "product",
+        "role": "product_image",
+        "minCount": 0,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      }
+    ],
+    "artDirection": {
+      "expectedComposition": "Controlled negative space, restrained typography and recognizable supplied product.",
+      "background": "brandGradient",
+      "lighting": "Coherent soft key light, material-appropriate reflection and grounded contact shadows; reference-led direction needs review.",
+      "mood": "Adapt approved reference to user brand; do not reuse demo brand identity.",
+      "camera": "Use supplied subject view; novel product perspective or model pose is unsupported.",
+      "avoid": [
+        "generated labels or logos",
+        "invented product shades",
+        "AI-baked headlines",
+        "unverified offer facts"
+      ]
+    },
+    "composition": {
+      "regions": [
+        {
+          "id": "bg",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "id": "headline",
+          "x": 0.08,
+          "y": 0.2,
+          "width": 0.84,
+          "height": 0.18
+        },
+        {
+          "id": "supporting",
+          "x": 0.08,
+          "y": 0.42,
+          "width": 0.6,
+          "height": 0.1
+        },
+        {
+          "id": "product",
+          "x": 0.55,
+          "y": 0.55,
+          "width": 0.35,
+          "height": 0.3
+        },
+        {
+          "id": "cta",
+          "x": 0.08,
+          "y": 0.88,
+          "width": 0.36,
+          "height": 0.06
+        },
+        {
+          "id": "logo",
+          "x": 0.08,
+          "y": 0.06,
+          "width": 0.2,
+          "height": 0.08
+        }
+      ],
+      "safeArea": {
+        "id": "safe",
+        "x": 0.04,
+        "y": 0.04,
+        "width": 0.92,
+        "height": 0.92
+      },
+      "focalPoint": {
+        "x": 0.725,
+        "y": 0.7
+      },
+      "visualReferenceDifference": "Reference is an artistic target; catalog geometry and new safe-area proposal require visual review."
+    },
+    "branding": {
+      "source": "userBrandKitOrExplicitUnbranded",
+      "preserveLogo": true,
+      "neverUseDemoBrand": true
+    },
+    "typography": {
+      "headline": "Ship Faster Together",
+      "supporting": "The workspace your product team actually finishes work in.",
+      "cta": "Get Started",
+      "fontSource": "brandKitOrUserSelection",
+      "minimumFontPx": 24,
+      "minimumContrast": 4.5,
+      "renderAsEditableLayers": true
+    },
+    "identity": {
+      "mode": "sourcePixels",
+      "generativeIdentityGuaranteed": false,
+      "protectedFeatures": [
+        "silhouette",
+        "packaging",
+        "label",
+        "logo",
+        "color",
+        "modelFace"
+      ],
+      "allowedTransforms": [
+        "translate",
+        "uniformScale",
+        "crop",
+        "rotate"
+      ],
+      "novelPose": "unsupported",
+      "humanReviewRequired": true
+    },
+    "editableLayers": [
+      {
+        "id": "background:bg:0",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "logoSlot:logo:1",
+        "kind": "logo",
+        "required": true
+      },
+      {
+        "id": "headline:headline:2",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "supporting:supporting:3",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "imageSlot:product:4",
+        "kind": "image",
+        "required": false
+      },
+      {
+        "id": "cta:cta:5",
+        "kind": "text",
+        "required": true
+      }
+    ],
+    "output": {
+      "formatId": "square_1080",
+      "width": 1080,
+      "height": 1080,
+      "aspectRatio": "1:1",
+      "exports": [
+        "png",
+        "jpeg"
+      ],
+      "maxLayers": 80,
+      "sceneGraphVersion": "1.0"
+    },
+    "qualityChecks": [
+      {
+        "id": "productIdentity",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "sourceHash",
+        "acceptance": "Verify selected source asset/hash provenance only; this does not certify visible identity after integration."
+      },
+      {
+        "id": "packagingGeometry",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "geometryComparison",
+        "acceptance": "Compare silhouette, proportions and protected regions against source; uncertain results require human review."
+      },
+      {
+        "id": "logoLabelIntegrity",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review packaging labels, logo shapes and exact text against original; source hash alone is insufficient."
+      },
+      {
+        "id": "modelConsistency",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review supplied model face, clothing and crop when a model is selected; no generative guarantee."
+      },
+      {
+        "id": "brandColor",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "brandTokens",
+        "acceptance": "Compare configured scene color tokens to approved brand snapshot; photographed colors still need visual review."
+      },
+      {
+        "id": "brandTypography",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "fontResolution",
+        "acceptance": "Verify selected font ids, resolved fonts and editable typography tokens; inspect exported typography separately."
+      },
+      {
+        "id": "compositionFocalPoint",
+        "verification": "aiAssistedUncertain",
+        "severity": "review",
+        "evaluator": "visualComparison",
+        "acceptance": "Assess subject hierarchy and focal point against reference; human review for aesthetic acceptance."
+      },
+      {
+        "id": "safeAreas",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "layoutBounds",
+        "acceptance": "Check text/logo bounds within output-safe regions and reject clipping."
+      },
+      {
+        "id": "textLegibility",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "contrastAndGlyphs",
+        "acceptance": "Measure font size/contrast/glyph coverage and review raster text against complex backgrounds; no preflight pass."
+      }
+    ],
+    "providerRequirements": [
+      {
+        "capability": "generateImage",
+        "reason": "Generate scene background only; preserve supplied subject pixels."
+      },
+      {
+        "capability": "referenceGuidedImage",
+        "reason": "Use approved reference for artistic scene guidance, not sample product identity."
+      },
+      {
+        "capability": "segmentForeground",
+        "reason": "Create validated alpha masks using existing segmentation infrastructure."
+      },
+      {
+        "capability": "sourcePixelComposite",
+        "reason": "Integrate exact supplied foreground with editable text/logo layers."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "blueprintId": "exampleBrief:ex-event",
+    "revision": 1,
+    "entryPoint": {
+      "kind": "exampleBrief",
+      "id": "ex-event",
+      "version": "1.0.0"
+    },
+    "catalog": {
+      "templateId": "social-story",
+      "templateVersion": "1.0.0",
+      "catalogVersion": "1.0.0"
+    },
+    "creative": {
+      "objective": "event_promotion",
+      "audience": "City culture seekers 18–35",
+      "productOrService": "Live music festival",
+      "coreMessage": "One Night Only"
+    },
+    "references": [
+      {
+        "id": "ex-event-candidate",
+        "availability": "w7Only",
+        "approval": "pendingMapping",
+        "locator": ".tmp/consolidated-release/w0a-visual/assets/w0a-social-story.jpg",
+        "sha256": "186a7f1fcb69a77e443b2c81111a69876fad01e8c01a5851d1df19188ac039e8",
+        "approvalEvidence": null,
+        "provenance": ".tmp/consolidated-release/w0a-visual/SAMPLE-ASSET-PROVENANCE.md",
+        "allowedUses": [
+          "internalDesignReview"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "slotId": "product",
+        "role": "product_image",
+        "minCount": 0,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "model",
+        "role": "brand_model",
+        "minCount": 0,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "logo",
+        "role": "logo_primary",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 128,
+        "minimumHeight": 64
+      }
+    ],
+    "artDirection": {
+      "expectedComposition": "Vertical story framing with mobile-safe copy/CTA zones and recognizable subject.",
+      "background": "brandGradient",
+      "lighting": "Coherent soft key light, material-appropriate reflection and grounded contact shadows; reference-led direction needs review.",
+      "mood": "Adapt approved reference to user brand; do not reuse demo brand identity.",
+      "camera": "Use supplied subject view; novel product perspective or model pose is unsupported.",
+      "avoid": [
+        "generated labels or logos",
+        "invented product shades",
+        "AI-baked headlines",
+        "unverified offer facts"
+      ]
+    },
+    "composition": {
+      "regions": [
+        {
+          "id": "bg",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "id": "safe",
+          "x": 0.08,
+          "y": 0.12,
+          "width": 0.84,
+          "height": 0.7
+        },
+        {
+          "id": "hero",
+          "x": 0.12,
+          "y": 0.18,
+          "width": 0.76,
+          "height": 0.48
+        },
+        {
+          "id": "headline",
+          "x": 0.1,
+          "y": 0.7,
+          "width": 0.8,
+          "height": 0.1
+        },
+        {
+          "id": "cta",
+          "x": 0.25,
+          "y": 0.84,
+          "width": 0.5,
+          "height": 0.06
+        },
+        {
+          "id": "logo",
+          "x": 0.38,
+          "y": 0.04,
+          "width": 0.24,
+          "height": 0.06
+        }
+      ],
+      "safeArea": {
+        "id": "safe",
+        "x": 0.04,
+        "y": 0.04,
+        "width": 0.92,
+        "height": 0.92
+      },
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.42
+      },
+      "visualReferenceDifference": "Reference is an artistic target; catalog geometry and new safe-area proposal require visual review."
+    },
+    "branding": {
+      "source": "userBrandKitOrExplicitUnbranded",
+      "preserveLogo": true,
+      "neverUseDemoBrand": true
+    },
+    "typography": {
+      "headline": "One Night Only",
+      "supporting": "An immersive evening of music, light, and community.",
+      "cta": "Book Now",
+      "fontSource": "brandKitOrUserSelection",
+      "minimumFontPx": 24,
+      "minimumContrast": 4.5,
+      "renderAsEditableLayers": true
+    },
+    "identity": {
+      "mode": "sourcePixels",
+      "generativeIdentityGuaranteed": false,
+      "protectedFeatures": [
+        "silhouette",
+        "packaging",
+        "label",
+        "logo",
+        "color",
+        "modelFace"
+      ],
+      "allowedTransforms": [
+        "translate",
+        "uniformScale",
+        "crop",
+        "rotate"
+      ],
+      "novelPose": "unsupported",
+      "humanReviewRequired": true
+    },
+    "editableLayers": [
+      {
+        "id": "background:bg:0",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "imageSlot:hero:1",
+        "kind": "image",
+        "required": false
+      },
+      {
+        "id": "imageSlot:hero:2",
+        "kind": "image",
+        "required": false
+      },
+      {
+        "id": "headline:headline:3",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "cta:cta:4",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "logoSlot:logo:5",
+        "kind": "logo",
+        "required": true
+      }
+    ],
+    "output": {
+      "formatId": "vertical_1080x1920",
+      "width": 1080,
+      "height": 1920,
+      "aspectRatio": "9:16",
+      "exports": [
+        "png",
+        "jpeg"
+      ],
+      "maxLayers": 80,
+      "sceneGraphVersion": "1.0"
+    },
+    "qualityChecks": [
+      {
+        "id": "productIdentity",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "sourceHash",
+        "acceptance": "Verify selected source asset/hash provenance only; this does not certify visible identity after integration."
+      },
+      {
+        "id": "packagingGeometry",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "geometryComparison",
+        "acceptance": "Compare silhouette, proportions and protected regions against source; uncertain results require human review."
+      },
+      {
+        "id": "logoLabelIntegrity",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review packaging labels, logo shapes and exact text against original; source hash alone is insufficient."
+      },
+      {
+        "id": "modelConsistency",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review supplied model face, clothing and crop when a model is selected; no generative guarantee."
+      },
+      {
+        "id": "brandColor",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "brandTokens",
+        "acceptance": "Compare configured scene color tokens to approved brand snapshot; photographed colors still need visual review."
+      },
+      {
+        "id": "brandTypography",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "fontResolution",
+        "acceptance": "Verify selected font ids, resolved fonts and editable typography tokens; inspect exported typography separately."
+      },
+      {
+        "id": "compositionFocalPoint",
+        "verification": "aiAssistedUncertain",
+        "severity": "review",
+        "evaluator": "visualComparison",
+        "acceptance": "Assess subject hierarchy and focal point against reference; human review for aesthetic acceptance."
+      },
+      {
+        "id": "safeAreas",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "layoutBounds",
+        "acceptance": "Check text/logo bounds within output-safe regions and reject clipping."
+      },
+      {
+        "id": "textLegibility",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "contrastAndGlyphs",
+        "acceptance": "Measure font size/contrast/glyph coverage and review raster text against complex backgrounds; no preflight pass."
+      }
+    ],
+    "providerRequirements": [
+      {
+        "capability": "generateImage",
+        "reason": "Generate scene background only; preserve supplied subject pixels."
+      },
+      {
+        "capability": "referenceGuidedImage",
+        "reason": "Use approved reference for artistic scene guidance, not sample product identity."
+      },
+      {
+        "capability": "segmentForeground",
+        "reason": "Create validated alpha masks using existing segmentation infrastructure."
+      },
+      {
+        "capability": "sourcePixelComposite",
+        "reason": "Integrate exact supplied foreground with editable text/logo layers."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "blueprintId": "exampleBrief:ex-luxury",
+    "revision": 1,
+    "entryPoint": {
+      "kind": "exampleBrief",
+      "id": "ex-luxury",
+      "version": "1.0.0"
+    },
+    "catalog": {
+      "templateId": "lifestyle-placement",
+      "templateVersion": "1.0.0",
+      "catalogVersion": "1.0.0"
+    },
+    "creative": {
+      "objective": "brand_awareness",
+      "audience": "Design-conscious homeowners",
+      "productOrService": "Premium home fragrance",
+      "coreMessage": "Crafted Stillness"
+    },
+    "references": [
+      {
+        "id": "ex-luxury-candidate",
+        "availability": "w7Only",
+        "approval": "pendingMapping",
+        "locator": ".tmp/consolidated-release/w0a-visual/assets/w0a-lifestyle.jpg",
+        "sha256": "c75b724a5b4b544532c20619cba759ff76a56ea2abbd175584f27ff9c08ceb13",
+        "approvalEvidence": null,
+        "provenance": ".tmp/consolidated-release/w0a-visual/SAMPLE-ASSET-PROVENANCE.md",
+        "allowedUses": [
+          "internalDesignReview"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "slotId": "model",
+        "role": "brand_model",
+        "minCount": 0,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "campaign",
+        "role": "campaign_reference",
+        "minCount": 0,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "product",
+        "role": "product_image",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "logo",
+        "role": "logo_primary",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 128,
+        "minimumHeight": 64
+      }
+    ],
+    "artDirection": {
+      "expectedComposition": "In-context campaign or model photograph with separate product and copy panel; novel hand/product interaction is unsupported.",
+      "background": "brandGradient",
+      "lighting": "Coherent soft key light, material-appropriate reflection and grounded contact shadows; reference-led direction needs review.",
+      "mood": "Adapt approved reference to user brand; do not reuse demo brand identity.",
+      "camera": "Use supplied subject view; novel product perspective or model pose is unsupported.",
+      "avoid": [
+        "generated labels or logos",
+        "invented product shades",
+        "AI-baked headlines",
+        "unverified offer facts"
+      ]
+    },
+    "composition": {
+      "regions": [
+        {
+          "id": "bg",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "id": "lifestyle",
+          "x": 0,
+          "y": 0,
+          "width": 0.58,
+          "height": 1
+        },
+        {
+          "id": "product",
+          "x": 0.62,
+          "y": 0.48,
+          "width": 0.3,
+          "height": 0.28
+        },
+        {
+          "id": "headline",
+          "x": 0.62,
+          "y": 0.12,
+          "width": 0.32,
+          "height": 0.14
+        },
+        {
+          "id": "supporting",
+          "x": 0.62,
+          "y": 0.3,
+          "width": 0.32,
+          "height": 0.12
+        },
+        {
+          "id": "cta",
+          "x": 0.62,
+          "y": 0.84,
+          "width": 0.28,
+          "height": 0.06
+        },
+        {
+          "id": "logo",
+          "x": 0.82,
+          "y": 0.04,
+          "width": 0.14,
+          "height": 0.07
+        }
+      ],
+      "safeArea": {
+        "id": "safe",
+        "x": 0.04,
+        "y": 0.04,
+        "width": 0.92,
+        "height": 0.92
+      },
+      "focalPoint": {
+        "x": 0.29,
+        "y": 0.5
+      },
+      "visualReferenceDifference": "Reference is an artistic target; catalog geometry and new safe-area proposal require visual review."
+    },
+    "branding": {
+      "source": "userBrandKitOrExplicitUnbranded",
+      "preserveLogo": true,
+      "neverUseDemoBrand": true
+    },
+    "typography": {
+      "headline": "Crafted Stillness",
+      "supporting": "Minimal pieces for moments that deserve attention.",
+      "cta": "Learn more",
+      "fontSource": "brandKitOrUserSelection",
+      "minimumFontPx": 24,
+      "minimumContrast": 4.5,
+      "renderAsEditableLayers": true
+    },
+    "identity": {
+      "mode": "sourcePixels",
+      "generativeIdentityGuaranteed": false,
+      "protectedFeatures": [
+        "silhouette",
+        "packaging",
+        "label",
+        "logo",
+        "color",
+        "modelFace"
+      ],
+      "allowedTransforms": [
+        "translate",
+        "uniformScale",
+        "crop",
+        "rotate"
+      ],
+      "novelPose": "unsupported",
+      "humanReviewRequired": true
+    },
+    "editableLayers": [
+      {
+        "id": "background:bg:0",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "imageSlot:lifestyle:1",
+        "kind": "image",
+        "required": false
+      },
+      {
+        "id": "imageSlot:lifestyle:2",
+        "kind": "image",
+        "required": false
+      },
+      {
+        "id": "imageSlot:product:3",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "headline:headline:4",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "supporting:supporting:5",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "cta:cta:6",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "logoSlot:logo:7",
+        "kind": "logo",
+        "required": true
+      }
+    ],
+    "output": {
+      "formatId": "portrait_1080x1350",
+      "width": 1080,
+      "height": 1350,
+      "aspectRatio": "4:5",
+      "exports": [
+        "png",
+        "jpeg"
+      ],
+      "maxLayers": 80,
+      "sceneGraphVersion": "1.0"
+    },
+    "qualityChecks": [
+      {
+        "id": "productIdentity",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "sourceHash",
+        "acceptance": "Verify selected source asset/hash provenance only; this does not certify visible identity after integration."
+      },
+      {
+        "id": "packagingGeometry",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "geometryComparison",
+        "acceptance": "Compare silhouette, proportions and protected regions against source; uncertain results require human review."
+      },
+      {
+        "id": "logoLabelIntegrity",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review packaging labels, logo shapes and exact text against original; source hash alone is insufficient."
+      },
+      {
+        "id": "modelConsistency",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review supplied model face, clothing and crop when a model is selected; no generative guarantee."
+      },
+      {
+        "id": "brandColor",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "brandTokens",
+        "acceptance": "Compare configured scene color tokens to approved brand snapshot; photographed colors still need visual review."
+      },
+      {
+        "id": "brandTypography",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "fontResolution",
+        "acceptance": "Verify selected font ids, resolved fonts and editable typography tokens; inspect exported typography separately."
+      },
+      {
+        "id": "compositionFocalPoint",
+        "verification": "aiAssistedUncertain",
+        "severity": "review",
+        "evaluator": "visualComparison",
+        "acceptance": "Assess subject hierarchy and focal point against reference; human review for aesthetic acceptance."
+      },
+      {
+        "id": "safeAreas",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "layoutBounds",
+        "acceptance": "Check text/logo bounds within output-safe regions and reject clipping."
+      },
+      {
+        "id": "textLegibility",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "contrastAndGlyphs",
+        "acceptance": "Measure font size/contrast/glyph coverage and review raster text against complex backgrounds; no preflight pass."
+      }
+    ],
+    "providerRequirements": [
+      {
+        "capability": "generateImage",
+        "reason": "Generate scene background only; preserve supplied subject pixels."
+      },
+      {
+        "capability": "referenceGuidedImage",
+        "reason": "Use approved reference for artistic scene guidance, not sample product identity."
+      },
+      {
+        "capability": "segmentForeground",
+        "reason": "Create validated alpha masks using existing segmentation infrastructure."
+      },
+      {
+        "capability": "sourcePixelComposite",
+        "reason": "Integrate exact supplied foreground with editable text/logo layers."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "blueprintId": "exampleBrief:ex-zoe-artisan",
+    "revision": 1,
+    "entryPoint": {
+      "kind": "exampleBrief",
+      "id": "ex-zoe-artisan",
+      "version": "1.0.0"
+    },
+    "catalog": {
+      "templateId": "product-hero",
+      "templateVersion": "1.0.0",
+      "catalogVersion": "1.0.0"
+    },
+    "creative": {
+      "objective": "product_promotion",
+      "audience": "Luxury beauty consumers seeking elegant, long-wear color",
+      "productOrService": "ZoeArtisan Signature Red Matte Lipstick",
+      "coreMessage": "Signature Red, Perfectly Matte"
+    },
+    "references": [
+      {
+        "id": "ex-zoe-artisan-candidate",
+        "availability": "w7Only",
+        "approval": "pendingMapping",
+        "locator": ".tmp/consolidated-release/w0a-visual/assets/w0a-product-hero.jpg",
+        "sha256": "14d12cf8e1b29563da5eabe16481c2d460f0dd442b9d9b562955bf72bbf48dd1",
+        "approvalEvidence": null,
+        "provenance": ".tmp/consolidated-release/w0a-visual/SAMPLE-ASSET-PROVENANCE.md",
+        "allowedUses": [
+          "internalDesignReview"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "slotId": "product",
+        "role": "product_image",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 512,
+        "minimumHeight": 512
+      },
+      {
+        "slotId": "logo",
+        "role": "logo_primary",
+        "minCount": 1,
+        "maxCount": 1,
+        "distinctBy": "assetId",
+        "acceptedMime": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "minimumWidth": 128,
+        "minimumHeight": 64
+      }
+    ],
+    "artDirection": {
+      "expectedComposition": "Single real SKU dominates mid-frame; calm luxury studio surface, coherent contact shadow and clear headline/CTA hierarchy.",
+      "background": "brandGradient",
+      "lighting": "Coherent soft key light, material-appropriate reflection and grounded contact shadows; reference-led direction needs review.",
+      "mood": "Adapt approved reference to user brand; do not reuse demo brand identity.",
+      "camera": "Use supplied subject view; novel product perspective or model pose is unsupported.",
+      "avoid": [
+        "generated labels or logos",
+        "invented product shades",
+        "AI-baked headlines",
+        "unverified offer facts"
+      ]
+    },
+    "composition": {
+      "regions": [
+        {
+          "id": "bg",
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "id": "product",
+          "x": 0.15,
+          "y": 0.18,
+          "width": 0.7,
+          "height": 0.48
+        },
+        {
+          "id": "headline",
+          "x": 0.08,
+          "y": 0.68,
+          "width": 0.84,
+          "height": 0.12
+        },
+        {
+          "id": "supporting",
+          "x": 0.08,
+          "y": 0.8,
+          "width": 0.84,
+          "height": 0.08
+        },
+        {
+          "id": "cta",
+          "x": 0.3,
+          "y": 0.9,
+          "width": 0.4,
+          "height": 0.06
+        },
+        {
+          "id": "logo",
+          "x": 0.78,
+          "y": 0.04,
+          "width": 0.16,
+          "height": 0.08
+        }
+      ],
+      "safeArea": {
+        "id": "safe",
+        "x": 0.04,
+        "y": 0.04,
+        "width": 0.92,
+        "height": 0.92
+      },
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.42
+      },
+      "visualReferenceDifference": "W0A artwork has headline above product; committed catalog has headline below. Keep baseline geometry until owner resolves composition."
+    },
+    "branding": {
+      "source": "userBrandKitOrExplicitUnbranded",
+      "preserveLogo": true,
+      "neverUseDemoBrand": true
+    },
+    "typography": {
+      "headline": "Signature Red, Perfectly Matte",
+      "supporting": "ZoeArtisan Signature Red Matte Lipstick — couture color with all-day comfort.",
+      "cta": "Shop Now",
+      "fontSource": "brandKitOrUserSelection",
+      "minimumFontPx": 24,
+      "minimumContrast": 4.5,
+      "renderAsEditableLayers": true
+    },
+    "identity": {
+      "mode": "sourcePixels",
+      "generativeIdentityGuaranteed": false,
+      "protectedFeatures": [
+        "silhouette",
+        "packaging",
+        "label",
+        "logo",
+        "color",
+        "modelFace"
+      ],
+      "allowedTransforms": [
+        "translate",
+        "uniformScale",
+        "crop",
+        "rotate"
+      ],
+      "novelPose": "unsupported",
+      "humanReviewRequired": true
+    },
+    "editableLayers": [
+      {
+        "id": "background:bg:0",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "imageSlot:product:1",
+        "kind": "image",
+        "required": true
+      },
+      {
+        "id": "headline:headline:2",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "supporting:supporting:3",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "cta:cta:4",
+        "kind": "text",
+        "required": true
+      },
+      {
+        "id": "logoSlot:logo:5",
+        "kind": "logo",
+        "required": true
+      }
+    ],
+    "output": {
+      "formatId": "portrait_1080x1350",
+      "width": 1080,
+      "height": 1350,
+      "aspectRatio": "4:5",
+      "exports": [
+        "png",
+        "jpeg"
+      ],
+      "maxLayers": 80,
+      "sceneGraphVersion": "1.0"
+    },
+    "qualityChecks": [
+      {
+        "id": "productIdentity",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "sourceHash",
+        "acceptance": "Verify selected source asset/hash provenance only; this does not certify visible identity after integration."
+      },
+      {
+        "id": "packagingGeometry",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "geometryComparison",
+        "acceptance": "Compare silhouette, proportions and protected regions against source; uncertain results require human review."
+      },
+      {
+        "id": "logoLabelIntegrity",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review packaging labels, logo shapes and exact text against original; source hash alone is insufficient."
+      },
+      {
+        "id": "modelConsistency",
+        "verification": "humanReviewRequired",
+        "severity": "hard",
+        "evaluator": "visualComparison",
+        "acceptance": "Review supplied model face, clothing and crop when a model is selected; no generative guarantee."
+      },
+      {
+        "id": "brandColor",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "brandTokens",
+        "acceptance": "Compare configured scene color tokens to approved brand snapshot; photographed colors still need visual review."
+      },
+      {
+        "id": "brandTypography",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "fontResolution",
+        "acceptance": "Verify selected font ids, resolved fonts and editable typography tokens; inspect exported typography separately."
+      },
+      {
+        "id": "compositionFocalPoint",
+        "verification": "aiAssistedUncertain",
+        "severity": "review",
+        "evaluator": "visualComparison",
+        "acceptance": "Assess subject hierarchy and focal point against reference; human review for aesthetic acceptance."
+      },
+      {
+        "id": "safeAreas",
+        "verification": "automatic",
+        "severity": "hard",
+        "evaluator": "layoutBounds",
+        "acceptance": "Check text/logo bounds within output-safe regions and reject clipping."
+      },
+      {
+        "id": "textLegibility",
+        "verification": "aiAssistedUncertain",
+        "severity": "hard",
+        "evaluator": "contrastAndGlyphs",
+        "acceptance": "Measure font size/contrast/glyph coverage and review raster text against complex backgrounds; no preflight pass."
+      }
+    ],
+    "providerRequirements": [
+      {
+        "capability": "generateImage",
+        "reason": "Generate scene background only; preserve supplied subject pixels."
+      },
+      {
+        "capability": "referenceGuidedImage",
+        "reason": "Use approved reference for artistic scene guidance, not sample product identity."
+      },
+      {
+        "capability": "segmentForeground",
+        "reason": "Create validated alpha masks using existing segmentation infrastructure."
+      },
+      {
+        "capability": "sourcePixelComposite",
+        "reason": "Integrate exact supplied foreground with editable text/logo layers."
+      }
+    ]
+  }
+]

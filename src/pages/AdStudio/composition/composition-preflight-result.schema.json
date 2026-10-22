@@ -1,0 +1,301 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nxclip:composition-preflight-result:1.0.0",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "mode": {
+      "const": "nonBillablePreflight"
+    },
+    "featureEnabled": {
+      "type": "boolean"
+    },
+    "readyForCompositionPlanning": {
+      "type": "boolean"
+    },
+    "executionAuthorized": {
+      "const": false
+    },
+    "requiredAssets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "slotId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]*$"
+          },
+          "minCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "maxCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          }
+        },
+        "required": [
+          "slotId",
+          "minCount",
+          "maxCount"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 20
+    },
+    "missingAssets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "slotId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]*$"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          }
+        },
+        "required": [
+          "slotId",
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 20
+    },
+    "requiredCapabilities": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "generateImage",
+          "referenceGuidedImage",
+          "editImage",
+          "segmentForeground",
+          "sourcePixelComposite",
+          "inpaintImage",
+          "evaluateQuality"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 7,
+      "uniqueItems": true
+    },
+    "unsupportedCapabilities": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "generateImage",
+          "referenceGuidedImage",
+          "editImage",
+          "segmentForeground",
+          "sourcePixelComposite",
+          "inpaintImage",
+          "evaluateQuality"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 7,
+      "uniqueItems": true
+    },
+    "estimatedSteps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "understandAssets",
+              "planScene",
+              "generateImage",
+              "segmentForeground",
+              "integrateSourcePixels",
+              "validateQuality"
+            ]
+          },
+          "minCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 80
+          },
+          "maxCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 80
+          },
+          "execution": {
+            "const": "notExecuted"
+          }
+        },
+        "required": [
+          "operation",
+          "minCount",
+          "maxCount",
+          "execution"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 6
+    },
+    "credits": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "const": "unavailable"
+        },
+        "range": {
+          "const": null
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        }
+      },
+      "required": [
+        "status",
+        "range",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "qualityChecks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "productIdentity",
+              "packagingGeometry",
+              "logoLabelIntegrity",
+              "modelConsistency",
+              "brandColor",
+              "brandTypography",
+              "compositionFocalPoint",
+              "safeAreas",
+              "textLegibility"
+            ]
+          },
+          "verification": {
+            "type": "string",
+            "enum": [
+              "automatic",
+              "aiAssistedUncertain",
+              "humanReviewRequired"
+            ]
+          },
+          "status": {
+            "const": "notEvaluated"
+          }
+        },
+        "required": [
+          "id",
+          "verification",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 9
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]*$"
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "code",
+          "path",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 1000
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]*$"
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "code",
+          "path",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 1000
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "mode",
+    "featureEnabled",
+    "readyForCompositionPlanning",
+    "executionAuthorized",
+    "requiredAssets",
+    "missingAssets",
+    "requiredCapabilities",
+    "unsupportedCapabilities",
+    "estimatedSteps",
+    "credits",
+    "qualityChecks",
+    "warnings",
+    "blockers"
+  ],
+  "additionalProperties": false
+}
