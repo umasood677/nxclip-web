@@ -1,10 +1,27 @@
 # Deploy Vite + Express SPA to Cloud Run (same GCP project as backend).
+# Manual-only CD. Push/merge to main or master must NOT deploy.
+# Human approval: GitHub Environment `development` (required reviewer: umasood677).
 name: nxclip-web GCP Continuous Deployment (CD)
 
 on:
-  push:
-    branches: [main, master]
   workflow_dispatch:
+    inputs:
+      target_environment:
+        description: GitHub Environment (approval gate)
+        required: true
+        type: choice
+        options:
+          - development
+        default: development
+      git_ref:
+        description: Exact git ref to deploy (commit SHA preferred; tag or branch also allowed)
+        required: true
+        type: string
+        default: master
+
+concurrency:
+  group: gcp-deploy-web-${{ github.event.inputs.target_environment }}
+  cancel-in-progress: false
 
 env:
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -15,6 +32,7 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.target_environment }}
     permissions:
       contents: read
       id-token: write
@@ -22,6 +40,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.git_ref }}
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2

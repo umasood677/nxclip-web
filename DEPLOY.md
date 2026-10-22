@@ -21,9 +21,15 @@ The browser must call **api-gateway only**. Do not point `VITE_API_GATEWAY_URL` 
 
 Reuse `GCP_SA_KEY` from the backend repo (`NxClip`). That SA already pushes to Artifact Registry and deploys Cloud Run.
 
-## 2. Ship it
+## 2. Ship it (manual only)
 
-Push to `master` (or run **Actions → Frontend GCP Continuous Deployment → Run workflow**).
+Merges/pushes to `main` or `master` do **not** deploy. After an approved release:
+
+1. **Actions → nxclip-web GCP Continuous Deployment (CD) → Run workflow**
+2. Workflow file branch: usually `master` (the CD YAML on the default branch)
+3. **target_environment:** `development` (required reviewer: `umasood677`)
+4. **git_ref:** exact release commit SHA (preferred), or tag/branch tip
+5. Approve the pending environment deployment when prompted, then wait for Cloud Run
 
 First deploy prints the service URL in the job summary, like:
 
