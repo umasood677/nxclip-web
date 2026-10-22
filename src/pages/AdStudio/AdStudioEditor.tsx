@@ -93,6 +93,8 @@ export default function AdStudioEditor() {
   const saveStateRef = useRef(saveState);
   const dragBaselineRef = useRef<AdSceneGraph | null>(null);
   const saveInFlightRef = useRef<Promise<boolean> | null>(null);
+  /** Skip silent autosave when scene payload is unchanged (pairs with server hash no-op). */
+  const lastPersistedHashRef = useRef<string | null>(null);
   const persistConflictRef = useRef(false);
   const brandRefreshEpochRef = useRef(0);
 
@@ -152,6 +154,9 @@ export default function AdStudioEditor() {
     setFuture([]);
     editEpochRef.current = 0;
     dragBaselineRef.current = null;
+    lastPersistedHashRef.current = JSON.stringify(
+      sanitizeSceneGraphForClient(loaded) ?? loaded,
+    );
     await refreshBrandKit(creative.projectId ?? null);
   }, [creativeId, refreshBrandKit]);
 
@@ -239,16 +244,23 @@ export default function AdStudioEditor() {
         const epochAtStart = editEpochRef.current;
         const snapshot = graphRef.current!;
         const expectedVersion = versionRef.current;
+        const sceneGraph = sanitizeSceneGraphForClient(snapshot) ?? snapshot;
+        const payloadHash = JSON.stringify(sceneGraph);
+        if (opts?.silent && lastPersistedHashRef.current === payloadHash) {
+          setSaveState("saved");
+          return true;
+        }
         setSaving(true);
         setSaveState("saving");
         try {
           const updated = await adStudioApi.updateCreative(creativeId, {
             // Strip private keys from client payload; server rehydrates storageKeys.
-            sceneGraph: sanitizeSceneGraphForClient(snapshot) ?? snapshot,
+            sceneGraph,
             changeSummary: opts?.silent ? "Autosave" : "Editor save",
             expectedVersion,
           });
           const nextVersion = updated.currentVersion ?? expectedVersion + 1;
+          lastPersistedHashRef.current = payloadHash;
           if (editEpochRef.current === epochAtStart) {
             setGraph(updated.sceneGraph as AdSceneGraph);
             setCurrentVersion(nextVersion);

@@ -9,6 +9,7 @@ import {
   type AdStudioTemplateId,
   getTemplateDef,
 } from "../canvas/templateCatalog";
+import { templateSamplePreview } from "../lib/samplePreviewAssets";
 import { AD_FORMATS } from "../types";
 
 type Props = {
@@ -47,15 +48,16 @@ export function TemplateGallery({ selectedFormat, busy, onUseTemplate }: Props) 
   }, [selectedFormat]);
 
   return (
-    <section className="space-y-3 rounded-xl border border-border bg-card/40 p-4">
-      <div className="flex items-start gap-2">
-        <LayoutTemplate size={18} className="text-primary mt-0.5 shrink-0" aria-hidden />
-        <div>
-          <h2 className="text-sm font-semibold text-foreground">Template gallery</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Pick a catalog layout — no AI concepts required. Brand Kit optional; missing assets show
-            as editor hints.
-          </p>
+    <section className="space-y-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start gap-2">
+          <LayoutTemplate size={18} className="text-primary mt-0.5 shrink-0" aria-hidden />
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">Templates</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Preview-first layouts — pick a format, then create an editable draft.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -68,67 +70,84 @@ export function TemplateGallery({ selectedFormat, busy, onUseTemplate }: Props) 
               : tpl.formats[0]!);
           const def = getTemplateDef(tpl.templateId);
           const requiredSlots = def.slots.filter((s) => s.required).map((s) => s.label);
+          const preview = templateSamplePreview(tpl.templateId);
+          const isStory = tpl.templateId === "social-story";
 
           return (
             <article
               key={tpl.templateId}
-              className="flex flex-col rounded-lg border border-border/80 bg-background/60 p-3 gap-2"
+              className="flex flex-col rounded-xl border border-border/80 bg-card/40 overflow-hidden gap-0"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h3 className="text-sm font-medium leading-tight">{tpl.name}</h3>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {categoryFor(tpl.layoutFamily)} · {tpl.templateId}
-                  </p>
-                </div>
-                <Badge variant="secondary" className="text-[10px] shrink-0">
-                  {tpl.formats.length} formats
-                </Badge>
-              </div>
-
-              <div className="flex flex-wrap gap-1">
-                {tpl.formats.map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    disabled={busy}
-                    className={cn(
-                      "text-[10px] px-2 py-0.5 rounded-full border transition-colors",
-                      format === f
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border text-muted-foreground hover:border-primary/40",
-                    )}
-                    onClick={() =>
-                      setPickFormat((prev) => ({ ...prev, [tpl.templateId]: f }))
-                    }
-                  >
-                    {formatLabel(f)}
-                  </button>
-                ))}
-              </div>
-
-              {requiredSlots.length > 0 ? (
-                <p className="text-[10px] text-muted-foreground leading-snug">
-                  Expects: {requiredSlots.join(", ")}
-                </p>
-              ) : null}
-
-              <Button
-                type="button"
-                size="sm"
-                className="mt-auto w-full"
-                disabled={busy}
-                onClick={() => onUseTemplate(tpl.templateId, format)}
-              >
-                {busy ? (
-                  <>
-                    <Loader2 className="animate-spin mr-2" size={14} aria-hidden />
-                    Creating…
-                  </>
-                ) : (
-                  "Use template"
+              <div
+                className={cn(
+                  "relative bg-muted/40",
+                  isStory ? "aspect-[9/16] max-h-64 mx-auto w-full" : "aspect-[4/5]",
                 )}
-              </Button>
+              >
+                <img
+                  src={preview}
+                  alt={`${tpl.name} preview`}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+              <div className="flex flex-col gap-2 p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-medium leading-tight truncate">{tpl.name}</h3>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {categoryFor(tpl.layoutFamily)}
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="text-[10px] shrink-0">
+                    {tpl.formats.length} formats
+                  </Badge>
+                </div>
+
+                <div className="flex flex-wrap gap-1">
+                  {tpl.formats.map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      disabled={busy}
+                      className={cn(
+                        "text-[10px] px-2 py-0.5 rounded-full border transition-colors",
+                        format === f
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:border-primary/40",
+                      )}
+                      onClick={() =>
+                        setPickFormat((prev) => ({ ...prev, [tpl.templateId]: f }))
+                      }
+                    >
+                      {formatLabel(f)}
+                    </button>
+                  ))}
+                </div>
+
+                {requiredSlots.length > 0 ? (
+                  <p className="text-[10px] text-muted-foreground leading-snug">
+                    Expects: {requiredSlots.join(", ")}
+                  </p>
+                ) : null}
+
+                <Button
+                  type="button"
+                  size="sm"
+                  className="mt-auto w-full"
+                  disabled={busy}
+                  onClick={() => onUseTemplate(tpl.templateId, format)}
+                >
+                  {busy ? (
+                    <>
+                      <Loader2 className="animate-spin mr-2" size={14} aria-hidden />
+                      Creating…
+                    </>
+                  ) : (
+                    "Use template"
+                  )}
+                </Button>
+              </div>
             </article>
           );
         })}

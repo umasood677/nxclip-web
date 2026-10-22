@@ -209,6 +209,28 @@ describe("composeTemplateScene (UX-2A.2 M3)", () => {
     );
   });
 
+  it("multi-shade reserves empty shade cells without fabricating duplicates", () => {
+    const brand = fullBrand(); // 2 product images, maxCount 4
+    const result = composeTemplatePreview({
+      concept: concept({
+        conceptId: "ms",
+        templateId: "multi-shade-collection",
+      }),
+      brand,
+      outputFormat: "portrait_1080x1350",
+    });
+    assert.equal(result.status, "ready");
+    assert.ok(result.sceneGraph);
+    const images = result.sceneGraph!.layers.filter((l) => l.type === "image");
+    const empties = result.sceneGraph!.layers.filter((l) =>
+      String(l.name).includes("empty"),
+    );
+    assert.equal(images.length, 2);
+    assert.equal(empties.length, 2);
+    assert.equal(new Set(images.map((l) => l.assetId)).size, 2);
+    assert.ok(images[0]!.width < result.sceneGraph!.canvas.width * 0.5);
+  });
+
   it("prefers server sceneGraph when present", () => {
     const serverGraph = {
       schemaVersion: "1.0",

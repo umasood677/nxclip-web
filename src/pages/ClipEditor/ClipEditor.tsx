@@ -3607,7 +3607,7 @@ export default function ClipEditor() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-2">
       <audio ref={mixBgmRef} preload="none" hidden />
       {step === "polish" ? (
         <MixGraphTap
@@ -3652,7 +3652,7 @@ export default function ClipEditor() {
         onConfirmNicheChange={confirmNicheChange}
       />
         {/* Compact step strip — keep canvas / side panels as the focus */}
-        <div className="flex items-center justify-center gap-1 sm:gap-1.5 mb-3 md:mb-4 overflow-x-auto py-0.5 no-scrollbar">
+        <div className="flex items-center justify-center gap-1 sm:gap-1.5 overflow-x-auto py-0 no-scrollbar">
           {(() => {
             const sourceDone = Boolean(id);
             const coachDone = step === "polish" || Boolean(finalTrim);
@@ -3755,7 +3755,7 @@ export default function ClipEditor() {
           {!composeEnabled && id ? (
             <aside
               className={cn(
-                "order-2 lg:order-1 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-0.5",
+                "order-2 lg:order-1 lg:sticky lg:top-16 lg:max-h-[calc(100dvh-4.75rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-0.5",
                 editsLocked && "pointer-events-none select-none opacity-55",
               )}
             >
@@ -4029,7 +4029,7 @@ export default function ClipEditor() {
 
           <div className={cn("min-w-0", !composeEnabled && id && "order-1 lg:order-2")}>
         {step === "trim" && (
-          <div className="space-y-8">
+          <div className="space-y-3 md:space-y-4">
             {/* Video Player Area */}
             <div
               ref={trimPreviewRef}
@@ -4811,11 +4811,11 @@ export default function ClipEditor() {
 
         {step === "polish" && (
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
+            className="space-y-2"
           >
-            <div className="flex items-center justify-between mb-3 px-1">
+            <div className="flex items-center justify-between px-1">
               <Button
                 variant="ghost"
                 size="sm"
@@ -4824,10 +4824,10 @@ export default function ClipEditor() {
                   if (editsLocked) return;
                   mergeSearchParams({ step: "trim" });
                 }}
-                className="flex items-center gap-2 -ml-2 text-muted-foreground hover:text-foreground transition-all group active:scale-95"
+                className="flex items-center gap-2 -ml-2 h-8 text-muted-foreground hover:text-foreground transition-all group active:scale-95"
               >
-                <div className="w-7 h-7 rounded-full border border-border flex items-center justify-center group-hover:border-primary/50 transition-colors">
-                  <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+                <div className="w-6 h-6 rounded-full border border-border flex items-center justify-center group-hover:border-primary/50 transition-colors">
+                  <ChevronLeft size={12} className="group-hover:-translate-x-0.5 transition-transform" />
                 </div>
                 <span className="text-[11px] font-bold">{t('clip_editor.polish.editor')}</span>
               </Button>
@@ -4892,9 +4892,9 @@ export default function ClipEditor() {
               </div>
             ) : null}
 
-            <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] gap-6 lg:gap-8 pb-32 md:pb-0 lg:items-start">
+            <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] gap-4 lg:gap-5 pb-32 md:pb-0 lg:items-start">
               {/* Preview Column — stays visible while caption controls scroll */}
-              <div className="space-y-4 md:space-y-6 lg:sticky lg:top-20 lg:self-start">
+              <div className="space-y-3 md:space-y-4 lg:sticky lg:top-16 lg:self-start">
                 <div className="w-full flex flex-col items-center space-y-3">
                 <div
                   ref={polishPreviewRef}
@@ -5155,10 +5155,11 @@ export default function ClipEditor() {
                 />
             </div>
 
-            {/* Controls Column — open section expands fully and pushes Save/Render/Publish down */}
+            {/* Controls Column — independent scroll on lg (CLIP-SCROLL); canvas column stays sticky */}
             <div
               className={cn(
-                "relative flex flex-col gap-6 lg:pr-0",
+                "relative flex flex-col gap-3 lg:pr-0",
+                "lg:max-h-[calc(100dvh-4.75rem)] lg:overflow-y-auto lg:overscroll-contain",
                 editsLocked && "pointer-events-none select-none",
               )}
             >

@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import axios from "axios";
 
+dotenv.config({ path: ".env.local" });
 dotenv.config();
 
 async function startServer() {
@@ -478,7 +479,17 @@ async function startServer() {
   // Generic API Gateway Proxy to bypass CORS on the browser
   app.all("/api/gateway-proxy/*", async (req, res) => {
     const subPath = req.params[0] || req.path.replace(/^\/api\/gateway-proxy/, "");
-    const targetGatewayUrl = req.headers["x-target-gateway-url"] as string || "https://api-gateway-216098834386.us-central1.run.app";
+    // Prefer explicit proxy target header, then local/dev env, then Cloud Run.
+    // Missing header previously defaulted to Cloud Run and caused local Ad Studio
+    // render-job downloads to 404 (Package F F2).
+    const targetGatewayUrl =
+      (req.headers["x-target-gateway-url"] as string) ||
+      process.env.API_GATEWAY_URL ||
+      process.env.VITE_API_GATEWAY_URL ||
+      (String(process.env.VITE_FAIL_CLOSED_LOCAL || "").toLowerCase() === "true" ||
+      process.env.NODE_ENV !== "production"
+        ? "http://127.0.0.1:5000"
+        : "https://api-gateway-216098834386.us-central1.run.app");
     
     // Construct the full destination URL, maintaining any query params
     const queryStr = req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : "";

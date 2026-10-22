@@ -4,7 +4,7 @@ import { Download, Loader2 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Label } from "../../../components/ui/label";
 import { Badge } from "../../../components/ui/badge";
-import { adStudioApi } from "../../../services/apiClient";
+import { adStudioApi, resolveBaseGatewayUrl } from "../../../services/apiClient";
 import { buildGatewayProxyUrl } from "../../../lib/authenticatedMediaUrl";
 import { getAccessToken } from "../../../services/auth/authService";
 import { collectExportWarnings } from "../lib/exportWarnings";
@@ -23,8 +23,13 @@ async function downloadJob(jobId: string, fileName: string) {
   const path = `/ad-studio/render-jobs/${jobId}/download`;
   const url = buildGatewayProxyUrl(path);
   const token = getAccessToken();
+  // Same-origin gateway-proxy requires X-Target-Gateway-Url; without it the
+  // Node proxy defaults to Cloud Run and local render jobs 404.
   const res = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      "X-Target-Gateway-Url": resolveBaseGatewayUrl(),
+    },
     credentials: "include",
     cache: "no-store",
   });

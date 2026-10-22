@@ -8,13 +8,15 @@ export type FeaturedExample = {
   headline: string;
   supporting: string;
   cta: string;
-  /** Visual theme for CSS mock */
+  /** Visual theme fallback when previewImage missing */
   theme: {
     bgFrom: string;
     bgTo: string;
     accent: string;
     text: string;
   };
+  /** Public sample preview (see public/ad-studio/sample-assets/PROVENANCE.md) */
+  previewImage?: string;
   briefDefaults: Partial<AdBriefFormState>;
 };
 
@@ -32,6 +34,7 @@ export const FEATURED_EXAMPLES: FeaturedExample[] = [
       accent: "#38BDF8",
       text: "#F8FAFC",
     },
+    previewImage: "/ad-studio/sample-assets/w0a-product-launch.jpg",
     briefDefaults: {
       name: "Athletic Drop",
       productOrService: "Performance running shoes",
@@ -57,6 +60,7 @@ export const FEATURED_EXAMPLES: FeaturedExample[] = [
       accent: "#A5B4FC",
       text: "#F9FAFB",
     },
+    previewImage: "/ad-studio/sample-assets/w0a-minimal.jpg",
     briefDefaults: {
       name: "SaaS Launch",
       productOrService: "Team collaboration platform",
@@ -82,6 +86,7 @@ export const FEATURED_EXAMPLES: FeaturedExample[] = [
       accent: "#F472B6",
       text: "#FAFAFA",
     },
+    previewImage: "/ad-studio/sample-assets/w0a-social-story.jpg",
     briefDefaults: {
       name: "Night Event",
       productOrService: "Live music festival",
@@ -107,6 +112,7 @@ export const FEATURED_EXAMPLES: FeaturedExample[] = [
       accent: "#78716C",
       text: "#1C1917",
     },
+    previewImage: "/ad-studio/sample-assets/w0a-lifestyle.jpg",
     briefDefaults: {
       name: "Quiet Luxury",
       productOrService: "Premium home fragrance",
@@ -132,6 +138,7 @@ export const FEATURED_EXAMPLES: FeaturedExample[] = [
       accent: "#BE123C",
       text: "#FAFAF9",
     },
+    previewImage: "/ad-studio/sample-assets/w0a-product-hero.jpg",
     briefDefaults: {
       name: "ZoeArtisan Signature Red",
       productOrService: "ZoeArtisan Signature Red Matte Lipstick",

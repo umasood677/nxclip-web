@@ -1654,6 +1654,7 @@ export const contentApi = {
       segmentIds?: string[];
       durationSec?: number;
       voiceId?: string;
+      voiceQuality?: 'standard' | 'premium';
       segmentPatches?: Array<{
         id: string;
         text?: string;
@@ -3175,8 +3176,13 @@ export const adStudioApi = {
       `/ad-studio/animated-exports/${exportId}/download`,
     );
     const token = getAccessToken();
+    // Same-origin gateway-proxy requires X-Target-Gateway-Url (matches ExportPanel
+    // still downloads and axios interceptors) — without it Node defaults to Cloud Run.
     const res = await fetch(url, {
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        "X-Target-Gateway-Url": resolveBaseGatewayUrl(),
+      },
       credentials: "include",
       cache: "no-store",
     });

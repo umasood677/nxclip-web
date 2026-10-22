@@ -318,6 +318,69 @@ export function composeTemplatePreview(input: {
         continue;
       }
 
+      const isLogo = recipe.kind === "logoSlot";
+      const slotMax = Math.max(1, slotDef?.maxCount ?? 1);
+      const multiShade = recipe.kind === "imageSlot" && slotMax > 1;
+
+      // Multi-shade: always reserve distinct cells (filled + empty hints). Never
+      // stretch one asset across the whole grid or fabricate duplicate tiles.
+      if (multiShade) {
+        const tileCount = slotMax;
+        const corner = Math.round(Math.min(box.width, box.height) * 0.03);
+        for (let i = 0; i < tileCount; i++) {
+          const cell = gridCell(box, i, tileCount);
+          const asset = assets[i];
+          if (asset) {
+            layers.push({
+              id: layerId(templateId, "image", recipe.regionId, i),
+              type: "image",
+              name: asset.label ?? `Shade ${i + 1}`,
+              x: cell.x,
+              y: cell.y,
+              width: cell.width,
+              height: cell.height,
+              zIndex: recipe.zIndex + i,
+              assetId: asset.assetId,
+              objectFit: slotDef?.objectFit ?? "contain",
+            });
+          } else if (
+            def.missingAssetPolicy === "showSlotHint" ||
+            def.missingAssetPolicy !== "blockPreview"
+          ) {
+            layers.push({
+              id: layerId(
+                templateId,
+                "slotHint",
+                `${recipe.regionId}:${slotId}:${i}`,
+              ),
+              type: "shape",
+              name: `Shade ${i + 1} empty`,
+              shape: "roundedRectangle",
+              x: cell.x + 4,
+              y: cell.y + 4,
+              width: Math.max(8, cell.width - 8),
+              height: Math.max(8, cell.height - 8),
+              zIndex: recipe.zIndex + i,
+              fill: "rgba(15,23,42,0.06)",
+              strokeColor: palette.accent,
+              strokeWidth: 2,
+              cornerRadius: corner,
+              text: `Shade ${i + 1} empty`,
+              textColor: palette.text,
+              fontFamily: fonts.body,
+              fontSize: Math.max(10, Math.round(width * 0.022)),
+            });
+            // Empty optional shade cells are intentional UI when ≥1 product is
+            // bound; only treat as partial when the whole grid is empty.
+            if (assets.length === 0) {
+              emittedHint = true;
+            }
+          }
+        }
+        filledImageRegions.add(recipe.regionId);
+        continue;
+      }
+
       if (!assets.length) {
         if (
           def.missingAssetPolicy === "showSlotHint" ||
@@ -354,40 +417,20 @@ export function composeTemplatePreview(input: {
         continue;
       }
 
-      const isLogo = recipe.kind === "logoSlot";
-      if (assets.length === 1) {
-        const asset = assets[0]!;
-        layers.push({
-          id: layerId(templateId, isLogo ? "logo" : "image", recipe.regionId),
-          type: isLogo ? "logo" : "image",
-          name: asset.label ?? (isLogo ? "Brand logo" : slotDef?.label ?? slotId),
-          x: box.x,
-          y: box.y,
-          width: box.width,
-          height: box.height,
-          zIndex: recipe.zIndex,
-          assetId: asset.assetId,
-          objectFit: slotDef?.objectFit ?? (isLogo ? "contain" : "cover"),
-        });
-        if (recipe.kind === "imageSlot") {
-          filledImageRegions.add(recipe.regionId);
-        }
-      } else {
-        assets.forEach((asset, i) => {
-          const cell = gridCell(box, i, assets.length);
-          layers.push({
-            id: layerId(templateId, "image", recipe.regionId, i),
-            type: "image",
-            name: asset.label ?? `${slotId}-${i + 1}`,
-            x: cell.x,
-            y: cell.y,
-            width: cell.width,
-            height: cell.height,
-            zIndex: recipe.zIndex + i,
-            assetId: asset.assetId,
-            objectFit: slotDef?.objectFit ?? "contain",
-          });
-        });
+      const asset = assets[0]!;
+      layers.push({
+        id: layerId(templateId, isLogo ? "logo" : "image", recipe.regionId),
+        type: isLogo ? "logo" : "image",
+        name: asset.label ?? (isLogo ? "Brand logo" : slotDef?.label ?? slotId),
+        x: box.x,
+        y: box.y,
+        width: box.width,
+        height: box.height,
+        zIndex: recipe.zIndex,
+        assetId: asset.assetId,
+        objectFit: slotDef?.objectFit ?? (isLogo ? "contain" : "cover"),
+      });
+      if (recipe.kind === "imageSlot") {
         filledImageRegions.add(recipe.regionId);
       }
     }
