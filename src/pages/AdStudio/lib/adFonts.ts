@@ -3,8 +3,6 @@ export const AD_STUDIO_FONTS = [
   { id: "montserrat", family: "Montserrat", label: "Montserrat" },
   { id: "playfair_display", family: "Playfair Display", label: "Playfair Display" },
   { id: "inter", family: "Inter", label: "Inter" },
-  { id: "playfair_display", family: "Playfair Display", label: "Playfair Display" },
-  { id: "playfair", family: "Playfair Display", label: "Playfair Display" },
   { id: "anton", family: "Anton", label: "Anton" },
   { id: "bebas_neue", family: "Bebas Neue", label: "Bebas Neue" },
   { id: "impact", family: "Impact", label: "Impact" },

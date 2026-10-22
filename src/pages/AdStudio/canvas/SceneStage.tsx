@@ -307,7 +307,7 @@ function StageLayerVisual({
       <img
         src={url}
         alt=""
-        className="w-full h-full"
+        className="w-full h-full bg-transparent"
         style={{
           objectFit: img.objectFit ?? (layer.type === "logo" ? "contain" : "cover"),
         }}

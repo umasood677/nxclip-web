@@ -180,7 +180,7 @@ export function BrandKitPicker({
                     <img
                       src={logo}
                       alt=""
-                      className="h-9 w-9 rounded-lg object-contain bg-background border border-border"
+                      className="h-9 w-9 rounded-lg object-contain bg-transparent border border-border/60"
                     />
                   ) : (
                     <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-[11px] font-semibold">

@@ -354,7 +354,10 @@ function LayerVisual({
       <img
         src={url}
         alt=""
-        className="w-full h-full pointer-events-none"
+        className={cn(
+          "w-full h-full pointer-events-none bg-transparent",
+          layer.type === "logo" && "mix-blend-normal",
+        )}
         style={{
           objectFit: img.objectFit ?? (layer.type === "logo" ? "contain" : "cover"),
         }}

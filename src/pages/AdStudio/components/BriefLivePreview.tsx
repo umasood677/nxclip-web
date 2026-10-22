@@ -79,7 +79,7 @@ export function BriefLivePreview({ form, brand, className, compact }: Props) {
             <img
               src={logoUrl}
               alt=""
-              className="rounded-md object-contain bg-white/90"
+              className="rounded-md object-contain bg-transparent"
               style={{
                 width: Math.max(28, 56 * scale),
                 height: Math.max(28, 56 * scale),
@@ -180,6 +180,8 @@ export function ExampleCreativeThumb({
   cta,
   theme,
   label,
+  previewImage,
+  title,
   onClick,
 }: {
   headline: string;
@@ -187,6 +189,9 @@ export function ExampleCreativeThumb({
   cta: string;
   theme: { bgFrom: string; bgTo: string; accent: string; text: string };
   label: string;
+  /** Licensed/demo preview art (preferred over CSS-only gradient). */
+  previewImage?: string;
+  title?: string;
   onClick: () => void;
 }) {
   return (
@@ -195,29 +200,45 @@ export function ExampleCreativeThumb({
       onClick={onClick}
       className="group text-left rounded-xl border border-border overflow-hidden bg-card hover:border-primary/40 transition-colors shadow-soft"
     >
-      <div
-        className="relative aspect-[4/5] p-4 flex flex-col justify-between"
-        style={{
-          background: `linear-gradient(165deg, ${theme.bgFrom}, ${theme.bgTo})`,
-          color: theme.text,
-        }}
-      >
+      <div className="relative aspect-[4/5] overflow-hidden">
+        {previewImage ? (
+          <img
+            src={previewImage}
+            alt={title || headline}
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div
+            className="absolute inset-0 p-4 flex flex-col justify-between"
+            style={{
+              background: `linear-gradient(165deg, ${theme.bgFrom}, ${theme.bgTo})`,
+              color: theme.text,
+            }}
+          >
+            <div className="font-semibold text-lg leading-tight tracking-tight">{headline}</div>
+            <span
+              className="inline-flex rounded-full text-[10px] font-medium px-2.5 py-1 w-fit"
+              style={{ backgroundColor: theme.accent, color: theme.bgFrom }}
+            >
+              {cta}
+            </span>
+          </div>
+        )}
         <Badge
           variant="secondary"
-          className="w-fit text-[9px] uppercase bg-black/30 text-white border-0"
+          className="absolute top-2.5 left-2.5 z-[1] w-fit text-[9px] uppercase bg-black/55 text-white border-0"
         >
           Example · {label}
         </Badge>
-        <div>
-          <div className="font-semibold text-lg leading-tight tracking-tight">{headline}</div>
-          <p className="text-xs mt-1.5 opacity-80 line-clamp-2">{supporting}</p>
-          <span
-            className="inline-flex mt-3 rounded-full text-[10px] font-medium px-2.5 py-1"
-            style={{ backgroundColor: theme.accent, color: theme.bgFrom }}
-          >
-            {cta}
-          </span>
-        </div>
+        {previewImage ? (
+          <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/75 to-transparent text-white">
+            <div className="font-semibold text-sm leading-tight tracking-tight line-clamp-2">
+              {title || headline}
+            </div>
+            <p className="text-[11px] mt-1 opacity-80 line-clamp-2">{supporting}</p>
+          </div>
+        ) : null}
       </div>
       <div className="px-3 py-2 text-[11px] text-muted-foreground group-hover:text-foreground">
         Use as starting brief →
