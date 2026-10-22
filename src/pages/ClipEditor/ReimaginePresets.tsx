@@ -1,3 +1,5 @@
+import { Loader2 } from "lucide-react";
+
 const PRESETS: Array<{ id: string; name: string; hint: string }> = [
   { id: "live-sports-broadcast", name: "Live Sports Broadcast", hint: "Sports action" },
   { id: "esports-broadcast", name: "Esports Broadcast", hint: "Gaming" },
@@ -33,22 +35,33 @@ export function ReimaginePresets({
   const locked = Boolean(lockedUntilAnalyze);
   return (
     <div className="space-y-2">
-      <div className="flex items-baseline justify-between gap-2">
-        <div className="text-xs font-medium text-white/80">Creative leap · Reimagine as…</div>
+      <div className="flex flex-nowrap items-center justify-between gap-2 min-w-0">
+        <div className="text-xs font-medium text-white/80 whitespace-nowrap shrink-0">
+          Creative leap · Reimagine as…
+        </div>
         {locked ? (
-          <span className="text-[10px] text-amber-200/80">Analyze first</span>
+          <span className="text-[10px] text-amber-200/80 whitespace-nowrap shrink-0">Analyze first</span>
         ) : suggestedIds.length ? (
-          <span className="text-[10px] text-emerald-300/80">Best match for this clip</span>
+          <span className="text-[10px] text-emerald-300/80 whitespace-nowrap shrink-0">
+            Best match highlighted
+          </span>
         ) : null}
       </div>
-      <p className="text-[11px] text-white/45">
-        Full package in one tap. Prefer highlighted chips. Not the same as Advanced mode chips
-        (Auto / Broadcast / …).
-      </p>
-      <div className="flex flex-wrap gap-1.5">
+      {busy ? (
+        <div
+          className="flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-[11px] font-medium text-emerald-100"
+          role="status"
+          aria-live="polite"
+        >
+          <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-emerald-300" />
+          Reimagining sound package…
+        </div>
+      ) : null}
+      <div className="relative flex flex-wrap gap-1.5">
         {PRESETS.map((p) => {
           const suggested = suggestedIds.includes(p.id);
           const selected = lastPresetId === p.id;
+          const processing = Boolean(busy && selected);
           return (
             <button
               key={p.id}
@@ -58,12 +71,13 @@ export function ReimaginePresets({
               onClick={() => onSelect(p.id)}
               className={
                 selected
-                  ? "rounded-full bg-emerald-500/90 px-2.5 py-1 text-[11px] text-black disabled:opacity-40"
+                  ? "inline-flex items-center gap-1.5 rounded-full bg-emerald-500/90 px-2.5 py-1 text-[11px] text-black disabled:opacity-70"
                   : suggested
                     ? "rounded-full bg-emerald-500/25 px-2.5 py-1 text-[11px] text-emerald-100 ring-1 ring-emerald-400/40 hover:bg-emerald-500/40 disabled:opacity-40"
                     : "rounded-full bg-white/10 px-2.5 py-1 text-[11px] text-white/85 hover:bg-emerald-500/30 disabled:opacity-40"
               }
             >
+              {processing ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
               {p.name}
             </button>
           );

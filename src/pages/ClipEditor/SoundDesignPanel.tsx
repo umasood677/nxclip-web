@@ -316,6 +316,9 @@ export function SoundDesignPanel({
     suggestedMode?: string;
     commentaryStyle?: string;
   } | null>(null);
+  const [visualMoments, setVisualMoments] = useState<
+    Array<{ id: string; startMs: number; description: string }>
+  >([]);
   const [commentaryPersona, setCommentaryPersona] = useState("");
   const [planSummary, setPlanSummary] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<TimelineEdlItem[]>([]);
@@ -547,6 +550,7 @@ export function SoundDesignPanel({
         const tts = await contentApi.synthesizeSoundDesign(contentId, {
           durationSec: Math.max(0.5, durationSec),
           voiceId: commentaryVoiceId,
+          voiceQuality: premiumVoice ? "premium" : "standard",
           ...(segId ? { segmentIds: [segId] } : {}),
         });
         const edl = (tts.audioEdl as unknown[]) || [];
@@ -606,6 +610,7 @@ export function SoundDesignPanel({
       const tts = await contentApi.synthesizeSoundDesign(contentId, {
         durationSec: Math.max(0.5, durationSec),
         voiceId: commentaryVoiceId,
+        voiceQuality: premiumVoice ? "premium" : "standard",
         ...(opts?.segmentIds?.length ? { segmentIds: opts.segmentIds } : {}),
         ...(opts?.segmentPatches?.length
           ? { segmentPatches: opts.segmentPatches }
@@ -704,6 +709,26 @@ export function SoundDesignPanel({
           }
         : null;
       setRecommendation(rec);
+      const moments = (Array.isArray(res.visualEvents) ? res.visualEvents : [])
+        .map((raw) => {
+          const e = raw as {
+            id?: string;
+            startMs?: number;
+            description?: string;
+            type?: string;
+          };
+          const startMs = Number(e.startMs);
+          if (!Number.isFinite(startMs)) return null;
+          return {
+            id: String(e.id || `ve-${startMs}`),
+            startMs,
+            description: String(e.description || e.type || "moment").slice(0, 160),
+          };
+        })
+        .filter((e): e is { id: string; startMs: number; description: string } => Boolean(e))
+        .sort((a, b) => a.startMs - b.startMs)
+        .slice(0, 8);
+      setVisualMoments(moments);
       setAnalyzed(true);
       setLastPreset(null);
       setPlanSummary(null);
@@ -715,7 +740,11 @@ export function SoundDesignPanel({
       if (rec?.suggestedMode) {
         setMode(rec.suggestedMode as SoundDesignMode);
       }
-      toast.success("Clip understood — choose a treatment");
+      toast.success(
+        moments.length
+          ? `Clip understood — ${moments.length} action moment${moments.length === 1 ? "" : "s"} found`
+          : "Clip understood — choose a treatment",
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sound Design analyze failed");
     } finally {
@@ -887,6 +916,7 @@ export function SoundDesignPanel({
           const tts = await contentApi.synthesizeSoundDesign(contentId, {
             durationSec: Math.max(0.5, durationSec),
             voiceId: commentaryVoiceId,
+            voiceQuality: premiumVoice ? "premium" : "standard",
           });
           edl = (tts.audioEdl as unknown[]) || edl;
           setTtsDeferred(false);
@@ -954,6 +984,7 @@ export function SoundDesignPanel({
     }
     setBusy("reimagine");
     setLastPreset(presetId);
+    const loadingToast = toast.loading("Reimagining sound package…");
     try {
       const res = await contentApi.reimagineSoundDesign(contentId, {
         presetId,
@@ -989,10 +1020,10 @@ export function SoundDesignPanel({
           aiFoley: foley > 0 || c.aiFoley,
         }));
       }
-      toast.success(`Reimagined as ${res.preset?.name || presetId}`);
+      toast.success(`Reimagined as ${res.preset?.name || presetId}`, { id: loadingToast });
       notifyApplied(items);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Reimagine failed");
+      toast.error(err instanceof Error ? err.message : "Reimagine failed", { id: loadingToast });
     } finally {
       setBusy(null);
     }
@@ -1076,8 +1107,28 @@ export function SoundDesignPanel({
           </Button>
           {recommendation && (
             <div className="rounded-lg border border-emerald-500/20 bg-black/30 p-2.5 text-xs text-white/85">
-              <p className="font-medium text-emerald-300">What nxClip heard</p>
+              <p className="font-medium text-emerald-300">What nxClip saw &amp; heard</p>
               <p className="mt-1">{recommendation.summary}</p>
+              {visualMoments.length > 0 ? (
+                <div className="mt-2 space-y-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
+                    Action moments
+                  </p>
+                  <ul className="space-y-1">
+                    {visualMoments.map((m) => (
+                      <li
+                        key={m.id}
+                        className="flex gap-2 rounded-md bg-black/35 px-2 py-1 text-[11px] text-white/75"
+                      >
+                        <span className="shrink-0 font-mono text-emerald-300/80">
+                          {(m.startMs / 1000).toFixed(1)}s
+                        </span>
+                        <span className="min-w-0 leading-snug">{m.description}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
               <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-white/65">
                 {recommendation.bullets?.slice(0, 5).map((b) => (
                   <li key={b}>{b}</li>
@@ -1191,7 +1242,7 @@ export function SoundDesignPanel({
               <div className="border-t border-white/10 pt-3">
                 <ReimaginePresets
                   disabled={disabled}
-                  busy={Boolean(busy)}
+                  busy={busy === "reimagine"}
                   lockedUntilAnalyze={false}
                   suggestedIds={suggestedPresets}
                   lastPresetId={lastPreset}
@@ -1260,7 +1311,7 @@ export function SoundDesignPanel({
                         disabled={disabled || Boolean(busy)}
                         onChange={() => setPremiumVoice((v) => !v)}
                       />
-                      Estimate Premium TTS credits
+                      Premium TTS (ElevenLabs) — credit estimate only; no billing change
                     </label>
                   </div>
                 </div>
@@ -1326,8 +1377,8 @@ export function SoundDesignPanel({
                       </p>
                     ) : null}
                     <p className="mt-0.5 text-[10px] text-white/40">
-                      Mute SRC + BGM rails for commentary+Foley only · drag VO (keeps length) or set
-                      Start · ▶ to preview before Final Render.
+                      Select a VO/SFX note to Mute or Remove · mute SRC + BGM rails for
+                      commentary+Foley only · drag VO or set Start · ▶ to preview.
                     </p>
                     {ttsDeferred || voiceNeedsTts ? (
                       <p className="mt-0.5 text-[10px] text-amber-200/70">

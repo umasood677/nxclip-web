@@ -1,11 +1,5 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
-import { GripVertical, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { GripVertical, Pause, Play, Trash2, Volume2, VolumeX } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 export type TimelineEdlItem = {
@@ -344,6 +338,11 @@ export function AudioTimelineEditor({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [voiceDraft, setVoiceDraft] = useState("");
   const dragSpanRef = useRef(0);
+  /** Track lane element for drag math — must not use the clip button's box after setPointerCapture. */
+  const dragTrackRef = useRef<HTMLElement | null>(null);
+  /** Sync id for pointermove before React re-renders dragId state. */
+  const dragIdRef = useRef<string | null>(null);
+  const draftRef = useRef<TimelineEdlItem[] | null>(null);
   const widthMs = Math.max(1000, durationMs);
   const view = draft || items;
   const railW = comfortable ? "w-[5.5rem]" : "w-[4.75rem]";
@@ -379,12 +378,15 @@ export function AudioTimelineEditor({
   }, [selected?.id, selected?.type, selected?.metadata?.text]);
 
   const patchLocal = (id: string, patch: Partial<TimelineEdlItem>) => {
-    const next = view.map((it) => (it.id === id ? { ...it, ...patch } : it));
+    const base = draftRef.current || items;
+    const next = base.map((it) => (it.id === id ? { ...it, ...patch } : it));
+    draftRef.current = next;
     setDraft(next);
     return next;
   };
 
   const commit = (next: TimelineEdlItem[]) => {
+    draftRef.current = null;
     setDraft(null);
     onChange(next);
   };
@@ -395,14 +397,24 @@ export function AudioTimelineEditor({
     onChange(next);
   };
 
-  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>, id: string) => {
-    if (disabled || dragId !== id) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.min(Math.max(0, e.clientX - rect.left), rect.width);
+  const moveClipToClientX = (clientX: number, trackEl: HTMLElement, id: string) => {
+    if (disabled || dragIdRef.current !== id) return;
+    const rect = trackEl.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const x = Math.min(Math.max(0, clientX - rect.left), rect.width);
     const rawStart = Math.round((x / rect.width) * widthMs);
     const span = dragSpanRef.current || 180;
     const fitted = fitStartForSpan(rawStart, span, widthMs);
     patchLocal(id, { startMs: fitted.startMs, endMs: fitted.endMs });
+  };
+
+  const endClipDrag = () => {
+    const id = dragIdRef.current;
+    const next = draftRef.current;
+    dragIdRef.current = null;
+    dragTrackRef.current = null;
+    setDragId(null);
+    if (id && next) commit(next);
   };
 
   const commitSelectedStartSec = (rawSec: string) => {
@@ -558,6 +570,7 @@ export function AudioTimelineEditor({
               </div>
 
               <div
+                data-timeline-track={isGainLayer ? undefined : "lane"}
                 className={cn(
                   "relative min-w-0 flex-1",
                   isGainLayer
@@ -569,19 +582,6 @@ export function AudioTimelineEditor({
                     : rowH,
                   "bg-[#0c0f14]",
                 )}
-                onPointerMove={(e) => {
-                  if (!isGainLayer && dragId) onPointerMove(e, dragId);
-                }}
-                onPointerUp={() => {
-                  if (isGainLayer) return;
-                  if (dragId && draft) commit(draft);
-                  setDragId(null);
-                }}
-                onPointerLeave={() => {
-                  if (isGainLayer) return;
-                  if (dragId && draft) commit(draft);
-                  setDragId(null);
-                }}
               >
                 {!isGainLayer && (
                   <div
@@ -729,11 +729,39 @@ export function AudioTimelineEditor({
                           }\nDrag to move · double-click mute`}
                           onPointerDown={(e) => {
                             if (disabled) return;
+                            // Capture on the clip (same element that receives move/up). Parent-track
+                            // listeners never see captured events — that previously broke drag.
+                            const track = (e.currentTarget as HTMLElement).closest(
+                              "[data-timeline-track]",
+                            ) as HTMLElement | null;
+                            if (!track) return;
+                            e.preventDefault();
                             e.currentTarget.setPointerCapture(e.pointerId);
+                            dragTrackRef.current = track;
                             dragSpanRef.current = itemSpanMs(item);
+                            dragIdRef.current = item.id;
+                            draftRef.current = view;
                             setDragId(item.id);
                             setSelectedId(item.id);
                             setDraft(view);
+                          }}
+                          onPointerMove={(e) => {
+                            if (disabled || dragIdRef.current !== item.id) return;
+                            const trackEl = dragTrackRef.current;
+                            if (!trackEl) return;
+                            moveClipToClientX(e.clientX, trackEl, item.id);
+                          }}
+                          onPointerUp={() => {
+                            if (dragIdRef.current !== item.id) return;
+                            endClipDrag();
+                          }}
+                          onPointerCancel={() => {
+                            if (dragIdRef.current !== item.id) return;
+                            dragIdRef.current = null;
+                            dragTrackRef.current = null;
+                            draftRef.current = null;
+                            setDragId(null);
+                            setDraft(null);
                           }}
                           onDoubleClick={(e) => {
                             e.stopPropagation();
@@ -747,7 +775,7 @@ export function AudioTimelineEditor({
                             );
                           }}
                           className={cn(
-                            "flex min-w-0 flex-1 items-center gap-1 text-left",
+                            "flex min-w-0 flex-1 items-center gap-1 text-left touch-none",
                             "cursor-grab active:cursor-grabbing disabled:cursor-not-allowed",
                             isFoley ? "px-1" : "px-1.5",
                           )}
@@ -788,9 +816,21 @@ export function AudioTimelineEditor({
                 min={0}
                 step={0.1}
                 disabled={disabled}
+                aria-label="Commentary start seconds"
+                data-timeline-start="1"
                 className="h-6 w-16 rounded border border-white/15 bg-black/40 px-1 font-mono text-[10px] text-white"
-                defaultValue={(selected.startMs / 1000).toFixed(1)}
-                key={`start-${selected.id}-${selected.startMs}`}
+                value={(selected.startMs / 1000).toFixed(1)}
+                onChange={(e) => {
+                  // Live edit while typing; commit on blur/Enter.
+                  const sec = Number(e.target.value);
+                  if (!Number.isFinite(sec) || !selected) return;
+                  const span = itemSpanMs(selected);
+                  const fitted = fitStartForSpan(Math.round(sec * 1000), span, widthMs);
+                  patchLocal(selected.id, {
+                    startMs: fitted.startMs,
+                    endMs: fitted.endMs,
+                  });
+                }}
                 onBlur={(e) => commitSelectedStartSec(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -840,6 +880,49 @@ export function AudioTimelineEditor({
                 {previewingId === selected.id ? "Stop" : "Preview"}
               </button>
             ) : null}
+            {(selected.type === "voice" || selected.type === "foley") && (
+              <>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-semibold",
+                    selected.enabled
+                      ? "bg-white/10 text-white/80 hover:bg-white/15"
+                      : "bg-amber-500/20 text-amber-100 hover:bg-amber-500/30",
+                  )}
+                  onClick={() => {
+                    commit(
+                      view.map((it) =>
+                        it.id === selected.id
+                          ? { ...it, enabled: !it.enabled }
+                          : it,
+                      ),
+                    );
+                  }}
+                >
+                  {selected.enabled ? (
+                    <VolumeX className="h-3 w-3" />
+                  ) : (
+                    <Volume2 className="h-3 w-3" />
+                  )}
+                  {selected.enabled ? "Mute" : "Unmute"}
+                </button>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  className="inline-flex items-center gap-1 rounded-md bg-rose-500/20 px-1.5 py-0.5 font-semibold text-rose-100 hover:bg-rose-500/30 disabled:opacity-40"
+                  onClick={() => {
+                    const next = view.filter((it) => it.id !== selected.id);
+                    setSelectedId(null);
+                    commit(next);
+                  }}
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Remove
+                </button>
+              </>
+            )}
           </div>
           {selected.type === "voice" && onCommitVoiceText ? (
             <div className="space-y-1.5">
@@ -889,14 +972,14 @@ export function AudioTimelineEditor({
             </p>
           )}
           <p className="text-[9px] text-white/30">
-            Drag the note (keeps length) or set Start · mute SRC/AMB/BGM rails for VO+Foley only · ▶
+            Drag to place · Mute / Remove this note · mute SRC/AMB/BGM rails for VO+Foley only · ▶
             to preview
           </p>
         </div>
       ) : (
         <p className="border-t border-white/8 px-3 py-1.5 text-[9px] text-white/30">
-          Mute Original / Ambience / Music rails for commentary+Foley only · drag VO/SFX to place ·
-          Save &amp; Render for Final Preview
+          Select a commentary or Foley note for Mute / Remove · mute SRC/AMB/BGM rails for VO+Foley
+          only · Save &amp; Render for Final Preview
         </p>
       )}
     </div>
