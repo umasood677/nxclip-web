@@ -5,6 +5,47 @@ import {
   type IsolationCorrection, type IsolationCorrectionHistory,
 } from './product-isolation';
 
+/**
+ * Pixel-center brush semantics (F1):
+ * Continuous source-space (x,y) paints pixel (px,py) when the distance from (x,y)
+ * to the pixel center (px+0.5, py+0.5) is <= radius.
+ * If that disc would cover zero pixels (degenerate float cases), the nearest
+ * in-bounds pixel is painted so valid strokes never silently no-op.
+ */
+export function paintBrushDisk(
+  constraints: Int8Array,
+  width: number,
+  height: number,
+  x: number,
+  y: number,
+  radius: number,
+  value: number,
+): number {
+  let painted = 0;
+  const r2 = radius * radius;
+  const y0 = Math.max(0, Math.floor(y - radius));
+  const y1 = Math.min(height - 1, Math.ceil(y + radius));
+  const x0 = Math.max(0, Math.floor(x - radius));
+  const x1 = Math.min(width - 1, Math.ceil(x + radius));
+  for (let py = y0; py <= y1; py++) {
+    for (let px = x0; px <= x1; px++) {
+      const dx = px + 0.5 - x;
+      const dy = py + 0.5 - y;
+      if (dx * dx + dy * dy <= r2) {
+        constraints[py * width + px] = value;
+        painted++;
+      }
+    }
+  }
+  if (painted === 0) {
+    const px = Math.max(0, Math.min(width - 1, Math.floor(x)));
+    const py = Math.max(0, Math.min(height - 1, Math.floor(y)));
+    constraints[py * width + px] = value;
+    painted = 1;
+  }
+  return painted;
+}
+
 export function validateCorrectionHistory(history: IsolationCorrectionHistory, width: number, height: number, componentIds: readonly string[]): void {
   if (!history || history.schemaVersion !== PRODUCT_ISOLATION_VERSION ||
       !isolationSha256(history.sourceRasterSha256) || !Number.isSafeInteger(history.revision) || history.revision < 0 ||
@@ -41,11 +82,7 @@ export function rasterizeIsolationCorrections(history: IsolationCorrectionHistor
   const paint = (x: number, y: number, radius: number, value: number) => {
     paintedBudget += Math.min(width, Math.ceil(radius * 2 + 1)) * Math.min(height, Math.ceil(radius * 2 + 1));
     if (paintedBudget > 10_000_000) throw new Error('CORRECTION_RASTER_BUDGET');
-    for (let py = Math.max(0, Math.floor(y - radius)); py <= Math.min(height - 1, Math.ceil(y + radius)); py++) {
-      for (let px = Math.max(0, Math.floor(x - radius)); px <= Math.min(width - 1, Math.ceil(x + radius)); px++) {
-        if ((px - x) ** 2 + (py - y) ** 2 <= radius ** 2) constraints[py * width + px] = value;
-      }
-    }
+    paintBrushDisk(constraints, width, height, x, y, radius, value);
   };
   for (const event of history.events.slice(0, history.cursor)) {
     const value = event.kind === 'foregroundPoint' || event.kind === 'addStroke' ? 1 : -1;
@@ -60,5 +97,3 @@ export function rasterizeIsolationCorrections(history: IsolationCorrectionHistor
   }
   return constraints;
 }
-
-

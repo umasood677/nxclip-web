@@ -59,13 +59,21 @@ export interface IsolationProvenance {
   networkUsed: boolean;
   costPolicy: 'noPaidExecution';
 }
+export interface IsolationRawMaskQuality {
+  /** Measured on provider mask before corrections/protection overlays (F4). */
+  componentWitnesses: Array<{ componentId: string; total: number; retained: number }>;
+  completeness: 'failed' | 'witnessesRetained' | 'insufficientEvidence';
+  blockers: string[];
+}
 export interface IsolationQuality {
-
+  /** Independent raw-mask silhouette evidence; witness/coverage patches cannot override this. */
+  rawMask: IsolationRawMaskQuality;
   componentWitnesses: Array<{ componentId: string; total: number; retained: number }>;
   backgroundWitnesses: { total: number; leaked: number };
   excludedRegionLeakPixels: number | null;
   borderForegroundPixels: number;
   softAlphaPixels: number;
+  /** Refined completeness after corrections; never upgraded past rawMask failure. */
   componentCompleteness: 'witnessesOnly' | 'coverageWitnessesPassed' | 'failed';
   backgroundLeakage: 'unverified' | 'witnessesPassed' | 'failed';
   haloAssessment: 'humanReviewRequired';
