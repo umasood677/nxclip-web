@@ -5,9 +5,16 @@ import {
   W86_SYNTHETIC_COMPOSITION_ENABLED_DEFAULT,
   type W86SyntheticCompositionResultV1,
 } from "./w86-synthetic-composition";
+import {
+  W87_SYNTHETIC_EDITOR_ENABLED_DEFAULT,
+  toW87EditorViewModel,
+} from "./w87-synthetic-editor";
+import { W87SyntheticCompositionEditor } from "./W87SyntheticCompositionEditor";
 
 type Props = {
   enabled?: boolean;
+  /** Stage A editor handoff; defaults false — never beta-exposed. */
+  editorEnabled?: boolean;
   result: W86SyntheticCompositionResultV1;
   assetUrls: Readonly<Record<string, string>>;
 };
@@ -20,8 +27,9 @@ export function W86SyntheticCompositionReview(props: Props) {
   return <EnabledW86Review {...props} />;
 }
 
-function EnabledW86Review({ result, assetUrls }: Props) {
+function EnabledW86Review({ result, assetUrls, editorEnabled }: Props) {
   const [index, setIndex] = useState(0);
+  const [editorOpen, setEditorOpen] = useState(false);
   const variation = result.variations[index] ?? result.variations[0];
   const [graph, setGraph] = useState(variation.sceneGraph);
   React.useEffect(() => {
@@ -34,6 +42,43 @@ function EnabledW86Review({ result, assetUrls }: Props) {
     () => `${variation.label} · mock/synthetic`,
     [variation.label],
   );
+  const stageAEditorOn =
+    (editorEnabled ?? W87_SYNTHETIC_EDITOR_ENABLED_DEFAULT) === true;
+
+  if (stageAEditorOn && editorOpen) {
+    const model = toW87EditorViewModel({
+      selectedVariationId: variation.variationId,
+      isolationApproval: result.isolationApproval,
+      productPreservationOk: preservationOk,
+      providerGatesReady: true,
+      variations: result.variations.map((v) => ({
+        variationId: v.variationId,
+        intent: v.intent,
+        label: v.label,
+        productLayerId: v.productLayerId,
+        sceneGraph: v.sceneGraph,
+        backgroundSha256: v.backgroundSha256,
+        distinctivenessKey: v.distinctivenessKey,
+      })),
+    });
+    return (
+      <div className="space-y-3">
+        <button
+          type="button"
+          className="rounded border px-3 py-1 text-xs"
+          onClick={() => setEditorOpen(false)}
+        >
+          Back to variation review
+        </button>
+        <W87SyntheticCompositionEditor
+          enabled
+          model={model}
+          assetUrls={assetUrls}
+        />
+      </div>
+    );
+  }
+
   return (
     <section className="space-y-4 rounded-xl border border-amber-500/40 bg-card p-4">
       <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
@@ -61,6 +106,15 @@ function EnabledW86Review({ result, assetUrls }: Props) {
           </button>
         ))}
       </div>
+      {stageAEditorOn ? (
+        <button
+          type="button"
+          className="rounded border border-amber-600 px-3 py-1 text-xs font-medium"
+          onClick={() => setEditorOpen(true)}
+        >
+          Open selected variation in editor
+        </button>
+      ) : null}
       <div className="grid gap-4 md:grid-cols-2">
         <SceneStage graph={graph} assetUrls={assetUrls} size="hero" label={label} />
         <ul className="space-y-2 text-xs">

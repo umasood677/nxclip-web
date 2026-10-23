@@ -16,8 +16,8 @@ export type ExportWarningOptions = {
   allowPlaceholders?: boolean;
 };
 
-const KNOWN_FONT_IDS = new Set(AD_STUDIO_FONTS.map((f) => f.id));
-const KNOWN_FONT_FAMILIES = new Set(
+const KNOWN_FONT_IDS = new Set<string>(AD_STUDIO_FONTS.map((f) => f.id));
+const KNOWN_FONT_FAMILIES = new Set<string>(
   AD_STUDIO_FONTS.map((f) => f.family.toLowerCase()),
 );
 

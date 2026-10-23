@@ -55,9 +55,8 @@ export const ASSET_SLOTS: AssetSlotDef[] = [
   },
 ];
 
-export function findReadyAsset(
-  assets: Array<{ role?: string; status?: string; readUrl?: string | null }> | undefined,
-  role: string,
-) {
+export function findReadyAsset<
+  T extends { role?: string; status?: string; readUrl?: string | null },
+>(assets: T[] | undefined, role: string): T | undefined {
   return assets?.find((a) => a.role === role && a.status === "ready");
 }

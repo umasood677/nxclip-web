@@ -48,8 +48,8 @@ export function CreateBrandKitDialog({
   const [guidelines, setGuidelines] = useState("");
   const [primaryColor, setPrimaryColor] = useState(DEFAULT_PRIMARY);
   const [secondaryColor, setSecondaryColor] = useState(DEFAULT_SECONDARY);
-  const [headingFont, setHeadingFont] = useState(AD_STUDIO_FONTS[0].family);
-  const [bodyFont, setBodyFont] = useState(AD_STUDIO_FONTS[1].family);
+  const [headingFont, setHeadingFont] = useState<string>(AD_STUDIO_FONTS[0].family);
+  const [bodyFont, setBodyFont] = useState<string>(AD_STUDIO_FONTS[1].family);
   const [logoFile, setLogoFile] = useState<File | null>(null);
 
   useEffect(() => {

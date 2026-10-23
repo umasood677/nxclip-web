@@ -1,4 +1,4 @@
-import type { BrandKitSummary } from "../../BrandKits/CreateBrandKitDialog";
+import type { BrandKitSummary } from "../../BrandKits/lib/brandKitTypes";
 import type { AdConcept, ConceptLayoutFamily } from "../types";
 import { AD_FORMATS, CONCEPT_LAYOUT_FAMILY_LABELS } from "../types";
 

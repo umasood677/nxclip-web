@@ -53,8 +53,13 @@ import {
 } from "./lib/sceneGraph";
 import { AD_FORMATS, type AdSceneGraph, type AdSceneLayer } from "./types";
 import "../ImageStudio/components/image-edit-fonts.css";
+import { W87_SYNTHETIC_EDITOR_ENABLED_DEFAULT } from "./composition/w87-synthetic-editor";
+import { W87SyntheticCompositionEditor } from "./composition/W87SyntheticCompositionEditor";
 
 type SideTab = "properties" | "brand" | "variations" | "export" | "history";
+
+/** Stage A synthetic editor mount point — flag defaults false; never shown to beta. */
+const W87_STAGE_A_EDITOR_MOUNT = W87_SYNTHETIC_EDITOR_ENABLED_DEFAULT;
 
 function isConflictError(e: unknown): boolean {
   if (!e || typeof e !== "object") return false;
@@ -882,6 +887,23 @@ export default function AdStudioEditor() {
           Brand Kits
         </Link>
       </p>
+
+      {W87_STAGE_A_EDITOR_MOUNT ? (
+        <W87SyntheticCompositionEditor
+          enabled={false}
+          model={{
+            selectedVariationId: "",
+            isolationApproval: "pendingReview",
+            productPreservationOk: true,
+            providerGatesReady: false,
+            mockOnly: true,
+            featureEnabled: false,
+            executionAuthorized: false,
+            variations: [],
+          }}
+          assetUrls={{}}
+        />
+      ) : null}
     </div>
   );
 }

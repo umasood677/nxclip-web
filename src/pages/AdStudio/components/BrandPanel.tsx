@@ -175,7 +175,7 @@ export function BrandPanel({
         )}
       </div>
 
-      {(tone || preferredCta || snapshot.guidelines || voice.copyGuidance) && (
+      {(Boolean(tone || preferredCta || snapshot.guidelines || voice.copyGuidance)) && (
         <div>
           <div className="text-xs font-medium mb-1.5">Voice & guidelines</div>
           <div className="rounded-md border border-border bg-muted/30 px-2 py-2 text-[11px] space-y-1">

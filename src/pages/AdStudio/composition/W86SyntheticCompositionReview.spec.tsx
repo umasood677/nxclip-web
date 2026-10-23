@@ -100,4 +100,24 @@ describe("W8.6 synthetic composition review (SSR; not browser UAT)", () => {
     assert.ok(html.includes("source RGB protected"));
     assert.ok(html.includes("not beta") || html.includes("NOT LIVE"));
   });
+
+  it("exposes Stage A editor handoff only when editorEnabled", () => {
+    const off = renderToStaticMarkup(
+      <W86SyntheticCompositionReview
+        enabled
+        result={result}
+        assetUrls={{}}
+      />,
+    );
+    assert.equal(off.includes("Open selected variation in editor"), false);
+    const on = renderToStaticMarkup(
+      <W86SyntheticCompositionReview
+        enabled
+        editorEnabled
+        result={result}
+        assetUrls={{}}
+      />,
+    );
+    assert.ok(on.includes("Open selected variation in editor"));
+  });
 });

@@ -1,0 +1,35 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["react", "react-dom", "vite/client", "node"],
+    "typeRoots": ["./node_modules/@types"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "react": ["./node_modules/@types/react/index.d.ts"],
+      "react/jsx-runtime": ["./node_modules/@types/react/jsx-runtime.d.ts"],
+      "react/jsx-dev-runtime": ["./node_modules/@types/react/jsx-dev-runtime.d.ts"],
+      "react-dom": ["./node_modules/@types/react-dom/index.d.ts"],
+      "react-dom/client": ["./node_modules/@types/react-dom/client.d.ts"],
+      "react-dom/server": ["./node_modules/@types/react-dom/server.d.ts"]
+    }
+  },
+  "include": [
+    "src/vite-env.d.ts",
+    "src/lib/utils.ts",
+    "src/pages/AdStudio/types.ts",
+    "src/pages/AdStudio/lib/sceneGraph.ts",
+    "src/pages/AdStudio/lib/sceneGraph.spec.ts",
+    "src/pages/AdStudio/lib/adFonts.ts",
+    "src/pages/AdStudio/lib/exportWarnings.ts",
+    "src/pages/AdStudio/canvas/**/*.ts",
+    "src/pages/AdStudio/canvas/**/*.tsx",
+    "src/pages/AdStudio/composition/**/*.ts",
+    "src/pages/AdStudio/composition/**/*.tsx",
+    "src/pages/AdStudio/AdStudioEditor.tsx",
+    "src/pages/AdStudio/components/BrandPanel.tsx"
+  ]
+}

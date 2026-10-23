@@ -227,7 +227,12 @@ describe("composeTemplateScene (UX-2A.2 M3)", () => {
     );
     assert.equal(images.length, 2);
     assert.equal(empties.length, 2);
-    assert.equal(new Set(images.map((l) => l.assetId)).size, 2);
+    assert.equal(
+      new Set(
+        images.map((l) => (l as { assetId?: string }).assetId),
+      ).size,
+      2,
+    );
     assert.ok(images[0]!.width < result.sceneGraph!.canvas.width * 0.5);
   });
 
