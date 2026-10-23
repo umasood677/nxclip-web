@@ -405,12 +405,12 @@ export function ImageStudioTypographyControls({
           </div>
 
           <label className="space-y-1.5 text-[10px] font-bold text-muted-foreground block">
-            <span className="ml-1">Caption text</span>
+            <span className="ml-1">Layer text</span>
             <textarea
               className="min-h-[88px] w-full rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-xs font-medium text-foreground leading-relaxed focus:outline-none focus:border-primary/50 disabled:opacity-50"
               value={selected.text || ''}
               onChange={(e) => onUpdateSelectedLayer?.({ text: e.target.value })}
-              placeholder="Type this layer’s caption"
+              placeholder="Type this layer’s text"
               disabled={toolsLocked}
             />
           </label>
