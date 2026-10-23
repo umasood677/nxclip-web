@@ -38,7 +38,8 @@ export const CANONICAL_FILL_COLORS: Array<{ hex: string; label: string }> = [
   { hex: '#A8A29E', label: 'Warm gray' },
 ];
 
-const EFFECT_COLORS: Array<{ hex: string; label: string }> = [
+/** Stroke / shadow presets — shared with Image Studio for T3 parity. */
+export const CANONICAL_EFFECT_COLORS: Array<{ hex: string; label: string }> = [
   { hex: '#000000', label: 'Black' },
   { hex: '#111111', label: 'Near black' },
   { hex: '#FFFFFF', label: 'White' },
@@ -101,18 +102,52 @@ function CharacteristicSlider({
   );
 }
 
-function ColorSwatchRow({
+/**
+ * Swatch row + custom picker. Native `input[type=color]` fires React onChange on every
+ * drag frame; commit only on the native `change` event (picker dismiss) so canvas/preview
+ * stays responsive. Local draft updates the hex label while dragging.
+ */
+export function ColorSwatchRow({
   label,
   value,
   onChange,
   swatches,
+  disabled,
 }: {
   label: string;
   value: string;
   onChange: (hex: string) => void;
   swatches: Array<{ hex: string; label: string }>;
+  disabled?: boolean;
 }) {
-  const known = swatches.some((c) => c.hex.toUpperCase() === value.toUpperCase());
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const normalized = /^#[0-9a-fA-F]{6}$/i.test(value) ? value.toUpperCase() : '#000000';
+  const [draft, setDraft] = useState(normalized);
+  const known = swatches.some((c) => c.hex.toUpperCase() === normalized);
+
+  useEffect(() => {
+    setDraft(normalized);
+  }, [normalized]);
+
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    const commit = () => {
+      const hex = el.value.toUpperCase();
+      setDraft(hex);
+      onChangeRef.current(hex);
+    };
+    const preview = () => setDraft(el.value.toUpperCase());
+    el.addEventListener('change', commit);
+    el.addEventListener('input', preview);
+    return () => {
+      el.removeEventListener('change', commit);
+      el.removeEventListener('input', preview);
+    };
+  }, []);
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between px-0.5">
@@ -120,11 +155,11 @@ function ColorSwatchRow({
           <Palette size={12} className="text-primary" />
           {label}
         </label>
-        <span className="text-[10px] font-mono font-bold text-foreground">{value.toUpperCase()}</span>
+        <span className="text-[10px] font-mono font-bold text-foreground">{draft}</span>
       </div>
       <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto pb-0.5">
         {swatches.map((swatch) => {
-          const selected = value.toUpperCase() === swatch.hex.toUpperCase();
+          const selected = normalized === swatch.hex.toUpperCase();
           return (
             <button
               key={swatch.hex}
@@ -132,9 +167,10 @@ function ColorSwatchRow({
               title={swatch.label}
               aria-label={swatch.label}
               aria-pressed={selected}
+              disabled={disabled}
               onClick={() => onChange(swatch.hex)}
               className={cn(
-                'h-6 w-6 shrink-0 rounded-full border-2 shadow-sm transition-transform',
+                'h-6 w-6 shrink-0 rounded-full border-2 shadow-sm transition-transform disabled:opacity-50',
                 selected ? 'border-primary scale-110 ring-2 ring-primary/30' : 'border-border/60 hover:scale-105',
               )}
               style={{ backgroundColor: swatch.hex }}
@@ -146,16 +182,21 @@ function ColorSwatchRow({
             'relative h-6 w-6 shrink-0 cursor-pointer overflow-hidden rounded-full border-2 border-dashed border-primary/40',
             'flex items-center justify-center bg-muted/40 hover:border-primary',
             !known && 'ring-2 ring-primary/30 border-primary',
+            disabled && 'pointer-events-none opacity-50',
           )}
           title="Custom color"
         >
           <span className="text-[9px] font-black text-primary">+</span>
           <input
+            ref={inputRef}
             type="color"
-            value={/^#[0-9a-fA-F]{6}$/.test(value) ? value : '#000000'}
-            onChange={(e) => onChange(e.target.value.toUpperCase())}
+            value={draft}
+            onChange={() => {
+              /* commit handled by native `change` listener — avoid per-frame parent updates */
+            }}
             className="absolute inset-0 cursor-pointer opacity-0"
             aria-label={`Custom ${label.toLowerCase()}`}
+            disabled={disabled}
           />
         </label>
       </div>
@@ -582,7 +623,7 @@ export function CanonicalTypographyControls({
         <ColorSwatchRow
           label="Stroke color"
           value={active.outlineColor || '#000000'}
-          swatches={EFFECT_COLORS}
+          swatches={CANONICAL_EFFECT_COLORS}
           onChange={(outlineColor) => onPatchActive({ outlineColor })}
         />
         <CharacteristicSlider
@@ -597,7 +638,7 @@ export function CanonicalTypographyControls({
         <ColorSwatchRow
           label="Shadow color"
           value={active.shadowColor || '#000000'}
-          swatches={EFFECT_COLORS}
+          swatches={CANONICAL_EFFECT_COLORS}
           onChange={(shadowColor) => onPatchActive({ shadowColor })}
         />
         <CharacteristicSlider

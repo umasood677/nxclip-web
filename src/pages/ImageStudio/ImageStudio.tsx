@@ -49,7 +49,6 @@ import { GeneratePanel } from "./components/GeneratePanel";
 import { parseImageBrief, structuredImagePromptsEnabled, type ImageComposition, type ImagePromptContext } from "./lib/imagePromptContext";
 import { CanvasPanel } from "./components/CanvasPanel";
 import { EditPanel } from "./components/EditPanel";
-import { useCanonicalTypographyAuthorized } from "../../lib/clipTypography/useCanonicalTypographyAuthorized";
 import {
   DEFAULT_TEXT_LAYER_STYLE,
   faceIdToEditFontId,
@@ -313,7 +312,6 @@ export default function ImageStudio() {
     applyDuePrompt,
     hasWeekPlan,
   } = useCreatorStudioContext(studioTool);
-  const { authorized: t3Authorized } = useCanonicalTypographyAuthorized();
   const [memeMode, setMemeModeState] = useState<"ai" | "template" | "hybrid">("ai");
   const setMemeMode = (next: "ai" | "template" | "hybrid") => {
     setMemeModeState(next);
@@ -1808,7 +1806,7 @@ export default function ImageStudio() {
   const handleAddTextLayer = () => {
     if (editToolsDisabled || editLayers.length >= 24) return;
     const id = `text-${Date.now()}`;
-    const faceId = t3Authorized ? DEFAULT_TEXT_LAYER_STYLE.faceId : undefined;
+    const faceId = DEFAULT_TEXT_LAYER_STYLE.faceId;
     const layer: ImageEditTextLayer = {
       id,
       type: "text",
@@ -1816,7 +1814,7 @@ export default function ImageStudio() {
       text: t("image_studio.edit.default_text"),
       ...DEFAULT_TEXT_LAYER_STYLE,
       faceId,
-      fontId: faceId ? faceIdToEditFontId(faceId) : "impact",
+      fontId: faceIdToEditFontId(faceId),
     };
     setEditLayers((prev) => [...prev, layer]);
     setSelectedLayerId(id);
@@ -3051,7 +3049,7 @@ export default function ImageStudio() {
               selectedLayerId={selectedLayerId}
               onSelectLayer={setSelectedLayerId}
               onUpdateLayerPosition={handleUpdateLayerPosition}
-              useCanonicalTypography={t3Authorized}
+              useCanonicalTypography
               editBaseImage={editBaseImage}
             />
           </TabsContent>
@@ -3079,7 +3077,7 @@ export default function ImageStudio() {
               handleApplyToImage={handleApplyToImage}
               hasPendingAdjust={hasPendingAdjust}
               hasPendingText={hasPendingText || hasComposedTextLayers}
-              useCanonicalTypography={t3Authorized}
+              useCanonicalTypography
               editLayers={editLayers}
               selectedLayerId={selectedLayerId}
               onSelectLayer={setSelectedLayerId}
@@ -3247,7 +3245,7 @@ export default function ImageStudio() {
           selectedLayerId={selectedLayerId}
           onSelectLayer={setSelectedLayerId}
           onUpdateLayerPosition={handleUpdateLayerPosition}
-          useCanonicalTypography={t3Authorized}
+          useCanonicalTypography
           editBaseImage={editBaseImage}
         />
 
@@ -3273,7 +3271,7 @@ export default function ImageStudio() {
           handleApplyToImage={handleApplyToImage}
           hasPendingAdjust={hasPendingAdjust}
           hasPendingText={hasPendingText || hasComposedTextLayers}
-          useCanonicalTypography={t3Authorized}
+          useCanonicalTypography
           editLayers={editLayers}
           selectedLayerId={selectedLayerId}
           onSelectLayer={setSelectedLayerId}

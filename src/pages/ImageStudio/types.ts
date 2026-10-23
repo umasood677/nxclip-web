@@ -314,7 +314,7 @@ export interface EditPanelProps {
   editDisabledReason?: string;
   /** Allows applying an empty stack to remove previously baked text. */
   hasComposedText?: boolean;
-  /** Smart Typography faces when the account is allowlisted. */
+  /** Smart Typography faces (full approved T3 catalog when enabled for the environment). */
   useCanonicalTypography?: boolean;
   onPublishClick?: () => void;
   onAnimateAsClipClick?: () => void;

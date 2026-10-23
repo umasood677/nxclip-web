@@ -357,9 +357,10 @@ export default function ClipEditor() {
   const [captionFontId, setCaptionFontId] = useState<ClipCaptionFontId>(CLIP_CAPTION_FONT_DEFAULT);
   const [canonicalTypographyRaw, setCanonicalTypographyRaw] = useState<unknown>(undefined);
   const { authorized: t3Authorized } = useCanonicalTypographyAuthorized();
+  // Always validate for studio preview/authoring. Env kill switch gates server save/export.
   const canonicalTypography = useMemo(
-    () => editorTypography(canonicalTypographyRaw, t3Authorized),
-    [canonicalTypographyRaw, t3Authorized],
+    () => editorTypography(canonicalTypographyRaw, true),
+    [canonicalTypographyRaw],
   );
   const [t3Composition, setT3Composition] = useState<CanonicalCompositionDraft>(() =>
     createEmptyComposition(),
@@ -373,7 +374,6 @@ export default function ClipEditor() {
 
   const rebuildCanonicalFromComposition = useCallback(
     async (draft: CanonicalCompositionDraft) => {
-      if (!t3Authorized) return;
       const seq = ++t3RebuildSeq.current;
       setT3LayoutBusy(true);
       setT3LayoutError(null);
@@ -395,6 +395,9 @@ export default function ClipEditor() {
           setTopText(primary.text.slice(0, 50));
           setBottomText('');
         }
+        if (primary?.faceId && CLIP_CAPTION_FONTS.some((f) => f.id === primary.faceId)) {
+          setCaptionFontId(primary.faceId as ClipCaptionFontId);
+        }
       } catch (err) {
         if (seq !== t3RebuildSeq.current) return;
         const message = err instanceof Error ? err.message : 'Typography layout failed';
@@ -408,7 +411,7 @@ export default function ClipEditor() {
         if (seq === t3RebuildSeq.current) setT3LayoutBusy(false);
       }
     },
-    [t3Authorized, trimEnd, trimStart],
+    [trimEnd, trimStart],
   );
 
   const onT3CompositionChange = useCallback(
@@ -2438,7 +2441,7 @@ export default function ClipEditor() {
         : undefined,
       creatorContext: prompt ? sanitizeCreatorContext(prompt) || undefined : undefined,
       extras: {
-        ...(t3Authorized ? typographyExtras(canonicalTypographyRaw) : {}),
+        ...typographyExtras(canonicalTypographyRaw),
         hashtags: hashtags.length ? hashtags : undefined,
         // Always send transitions (incl. []) so clearing them invalidates prior burn-in.
         transitions: appliedTransitions,
@@ -2471,7 +2474,6 @@ export default function ClipEditor() {
     memeCaptionStyle,
     captionFontId,
     canonicalTypographyRaw,
-    t3Authorized,
     captionTextColor,
     hooks,
     silenceEnabled,
@@ -3138,11 +3140,11 @@ export default function ClipEditor() {
       bottomOverlay,
       memeCaptionStyle,
       captionFontId,
-      ...(t3Authorized ? typographyExtras(canonicalTypographyRaw) : {}),
+      ...typographyExtras(canonicalTypographyRaw),
       updatedAt: new Date().toISOString()
     };
     safeLocalStorage.setItem(`nexaclip_editor_autosave:${id}`, safeStringify(data));
-  }, [id, trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, canonicalTypographyRaw, t3Authorized]);
+  }, [id, trimStart, trimEnd, selectedTrackId, topText, bottomText, topOverlay, bottomOverlay, memeCaptionStyle, captionFontId, canonicalTypographyRaw]);
 
   // Periodic autosave every 30 seconds (local + server blueprint)
   useEffect(() => {
@@ -3766,6 +3768,23 @@ export default function ClipEditor() {
                   if (editsLocked) return;
                   setPrompt(v.slice(0, 500));
                 }}
+                categoryLabel={categoryLabel}
+                niches={niches}
+                suggestedBrief={applyDuePrompt()}
+                onApplySuggestedBrief={() => {
+                  if (editsLocked) return;
+                  const brief = applyDuePrompt()?.trim();
+                  if (!brief) {
+                    toast.message("No day brief available", {
+                      description: "Create or open a Creator Coach week plan first.",
+                    });
+                    return;
+                  }
+                  setPrompt(brief.slice(0, 500));
+                  toast.success("Day brief applied to Creator Context", {
+                    description: "Re-analyze so Coach uses this brief for cuts and music.",
+                  });
+                }}
                 duration={DURATION}
                 layout="sidebar"
                 captionFontId={captionFontId}
@@ -4139,8 +4158,8 @@ export default function ClipEditor() {
                 raw={canonicalTypographyRaw}
                 timeMs={Math.max(0, (currentTime - trimStart) * 1000)}
                 locked={editsLocked}
-                enabled={t3Authorized}
-                interactive={t3Authorized && !editsLocked}
+                enabled={canonicalTypography.active}
+                interactive={canonicalTypography.active && !editsLocked}
                 layers={t3Composition.layers.map((layer) => ({
                   id: layer.id,
                   positionX: layer.positionX,
@@ -5081,8 +5100,8 @@ export default function ClipEditor() {
                   timeMs={Math.max(0, (currentTime - trimStart) * 1000)}
                   locked={editsLocked}
                   finalRender={showingFinalRender}
-                  enabled={t3Authorized}
-                  interactive={t3Authorized && !editsLocked && !showingFinalRender}
+                  enabled={canonicalTypography.active}
+                  interactive={canonicalTypography.active && !editsLocked && !showingFinalRender}
                   layers={t3Composition.layers.map((layer) => ({
                     id: layer.id,
                     positionX: layer.positionX,
@@ -5590,7 +5609,7 @@ export default function ClipEditor() {
                       <AccordionTrigger className="py-2.5 px-2 hover:no-underline rounded-lg bg-muted/35 hover:bg-muted/50 data-panel-open:bg-primary/10">
                         <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
                           <Type size={14} className="shrink-0" />
-                          {t('clip_editor.polish.tabs.meme')}
+                          {t('clip_editor.polish.tabs.meme', { defaultValue: 'Typography' })}
                           <Badge variant="outline" className="normal-case tracking-wider text-[9px] font-bold px-1.5 py-0 border-primary/20 text-primary bg-primary/5">
                             {t('clip_editor.polish.meme.beta')}
                           </Badge>
@@ -5601,174 +5620,25 @@ export default function ClipEditor() {
                       <div className="space-y-6">
                         {!t3Authorized ? (
                           <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Smart Typography is turned off in this environment (kill switch). Authoring
+                            preview still works; save/export of canonical layout requires the environment
+                            feature to be enabled.
+                          </p>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
                             {t("clip_editor.polish.meme.drag_hint")}
                           </p>
-                        ) : null}
+                        )}
                         <div className="space-y-4">
-                          {t3Authorized ? (
-                            <CanonicalTypographyControls
-                              draft={t3Composition}
-                              durationMs={t3DurationMs}
-                              playheadMs={t3PlayheadMs}
-                              busy={t3LayoutBusy}
-                              error={t3LayoutError}
-                              onChange={onT3CompositionChange}
-                              onPatchActive={onT3PatchActive}
-                            />
-                          ) : (
-                            <>
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between px-1">
-                              <label className="text-[10px] font-bold text-muted-foreground">{t('clip_editor.polish.meme.top_text')}</label>
-                              <span className={cn(
-                                "text-[9px] font-mono transition-colors",
-                                topText.length >= 45 ? "text-amber-500" : "text-muted-foreground"
-                              )}>
-                                {topText.length}/50
-                              </span>
-                            </div>
-                            <Input 
-                              placeholder={t('clip_editor.polish.meme.top_placeholder')} 
-                              value={topText}
-                              onChange={(e) => {
-                                const text = e.target.value.slice(0, 50);
-                                setTopText(text);
-                                if (hooks.length) {
-                                  const next = [...hooks];
-                                  next[0] = { ...next[0]!, text: text.slice(0, 80) };
-                                  setHooks(next);
-                                } else if (text.trim()) {
-                                  setHooks([
-                                    {
-                                      text: text.slice(0, 80),
-                                      startMs: Math.round((finalTrim?.start ?? trimStart) * 1000),
-                                      durationMs: 2800,
-                                      styleId: memeCaptionStyle,
-                                    },
-                                  ]);
-                                }
-                              }}
-                              className="h-10 text-xs bg-muted/30 border-border/50 rounded-lg focus:border-primary/50"
-                            />
-                          </div>
-                          
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between px-1">
-                              <label className="text-[10px] font-bold text-muted-foreground">{t('clip_editor.polish.meme.bottom_text')}</label>
-                              <span className={cn(
-                                "text-[9px] font-mono transition-colors",
-                                bottomText.length >= 45 ? "text-amber-500" : "text-muted-foreground"
-                              )}>
-                                {bottomText.length}/50
-                              </span>
-                            </div>
-                            <Input 
-                              placeholder={t('clip_editor.polish.meme.bottom_placeholder')} 
-                              value={bottomText}
-                              onChange={(e) => setBottomText(e.target.value.slice(0, 50))}
-                              className="h-10 text-xs bg-muted/30 border-border/50 rounded-lg focus:border-primary/50"
-                            />
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-muted-foreground ml-1">{t('clip_editor.polish.meme.caption_style')}</label>
-                            <Select
-                              value={memeCaptionStyle}
-                              onValueChange={setMemeCaptionStyle}
-                              items={Object.fromEntries(
-                                CAPTION_STYLE_OPTIONS.map((opt) => [
-                                  opt.value,
-                                  t(opt.labelKey, { defaultValue: opt.fallback }),
-                                ]),
-                              )}
-                            >
-                              <SelectTrigger className="h-10 w-full text-xs bg-muted/30 border-border/50 rounded-lg">
-                                <SelectValue placeholder={t('clip_editor.polish.meme.caption_style')}>
-                                  {(value: string | null) => {
-                                    const opt = CAPTION_STYLE_OPTIONS.find((o) => o.value === value);
-                                    return opt
-                                      ? t(opt.labelKey, { defaultValue: opt.fallback })
-                                      : t('clip_editor.polish.meme.caption_style');
-                                  }}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {CAPTION_STYLE_OPTIONS.map((opt) => {
-                                  const label = t(opt.labelKey, { defaultValue: opt.fallback });
-                                  return (
-                                    <SelectItem key={opt.value} value={opt.value} label={label}>
-                                      {label}
-                                    </SelectItem>
-                                  );
-                                })}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-muted-foreground ml-1">
-                              {t('clip_editor.polish.meme.caption_font', { defaultValue: 'Caption font' })}
-                            </label>
-                            <Select
-                              value={captionFontId}
-                              onValueChange={(v) => setCaptionFontId(v as ClipCaptionFontId)}
-                              items={Object.fromEntries(CLIP_CAPTION_FONTS.map((font) => [font.id, font.label]))}
-                            >
-                              <SelectTrigger className="h-10 w-full text-xs bg-muted/30 border-border/50 rounded-lg">
-                                <SelectValue placeholder={t('clip_editor.polish.meme.caption_font', { defaultValue: 'Caption font' })}>
-                                  {(value: string | null) =>
-                                    CLIP_CAPTION_FONTS.find((font) => font.id === value)?.label ??
-                                    t('clip_editor.polish.meme.caption_font', { defaultValue: 'Caption font' })
-                                  }
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {CLIP_CAPTION_FONTS.map((font) => (
-                                  <SelectItem key={font.id} value={font.id} label={font.label}>
-                                    <span style={{ fontFamily: font.cssFamily, fontWeight: font.previewWeight }}>
-                                      {font.label}
-                                    </span>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <p className="text-[10px] text-muted-foreground px-1">
-                              Burned into Download/Render via media-worker (OFL pack).
-                            </p>
-                        </div>
-
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-muted-foreground ml-1">
-                              {t("clip_editor.polish.meme.text_color", {
-                                defaultValue: "Text color",
-                              })}
-                            </label>
-                            <div className="flex flex-wrap gap-2 px-1">
-                              {CAPTION_TEXT_COLORS.map((swatch) => {
-                                const selected =
-                                  captionTextColor.toUpperCase() === swatch.hex.toUpperCase();
-                                return (
-                                  <button
-                                    key={swatch.hex}
-                                    type="button"
-                                    title={swatch.label}
-                                    aria-label={swatch.label}
-                                    aria-pressed={selected}
-                                    onClick={() => setCaptionTextColor(swatch.hex)}
-                                    className={cn(
-                                      "h-7 w-7 rounded-full border-2 shadow-sm transition-transform",
-                                      selected
-                                        ? "border-primary scale-110"
-                                        : "border-border hover:scale-105",
-                                    )}
-                                    style={{ backgroundColor: swatch.hex }}
-                                  />
-                                );
-                              })}
-                            </div>
-                          </div>
-                            </>
-                          )}
+                          <CanonicalTypographyControls
+                            draft={t3Composition}
+                            durationMs={t3DurationMs}
+                            playheadMs={t3PlayheadMs}
+                            busy={t3LayoutBusy}
+                            error={t3LayoutError}
+                            onChange={onT3CompositionChange}
+                            onPatchActive={onT3PatchActive}
+                          />
 
                           <div className="flex flex-wrap gap-2">
                             <Button
@@ -5830,7 +5700,7 @@ export default function ClipEditor() {
                             <p className="text-[10px] font-bold text-foreground">{t('clip_editor.polish.meme.pro_tip')}</p>
                           </div>
                           <p className="text-[11px] text-muted-foreground leading-relaxed">
-                              Captions, hooks, BGM, and silence cuts burn into the exported MP4 on Download/Render — not just this preview.
+                              Typography overlays, hooks, BGM, and silence cuts burn into the exported MP4 on Download/Render — not just this preview.
                           </p>
                           </div>
                         </div>

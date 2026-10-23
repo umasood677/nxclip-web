@@ -2,8 +2,14 @@ import { useEffect, useState } from 'react';
 import { identityApi } from '../../services/apiClient';
 
 /**
- * Server-authoritative T3 capability from GET /auth/me → features.canonicalTypography.
- * Fail-closed when missing/false. Never treat a local boolean as authorization.
+ * Environment-level T3 capability from GET /auth/me → features.canonicalTypography.
+ *
+ * After the access-unification policy change, this bit reflects the environment kill
+ * switch for every authenticated user (not per-user allowlisting). Fail-closed when
+ * missing/false. Never treat a local boolean as authorization.
+ *
+ * @deprecated Prefer treating features.canonicalTypography as a transitional env flag;
+ * clients already render canonical Typography controls for all authenticated sessions.
  */
 export function useCanonicalTypographyAuthorized(): {
   authorized: boolean;

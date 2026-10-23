@@ -1638,7 +1638,7 @@ const resources = {
           "insane_clutch": "INSANE CLUTCH!",
           "tabs": {
             "details": "Details",
-            "meme": "Captions",
+            "meme": "Typography",
             "captions": "Captions",
             "audio": "Audio",
             "enhance": "Enhance"
@@ -1666,17 +1666,17 @@ const resources = {
             "cut_silence": "Cut dead air (silence)"
           },
           "meme": {
-            "title": "Captions / Overlays",
+            "title": "Typography / Overlays",
             "beta": "Beta",
             "top_text": "Top Text",
             "top_placeholder": "ENTER TOP TEXT",
             "bottom_text": "Bottom Text",
             "bottom_placeholder": "ENTER BOTTOM TEXT",
             "drag_hint": "Drag top and bottom text on the preview to place them. Download/Render burns the same positions.",
-            "caption_style": "Caption Style",
-            "caption_font": "Caption font",
+            "caption_style": "Text Style",
+            "caption_font": "Font",
             "pro_tip": "Pro Tip",
-            "tip_content": "Meme text works best with short, punchy captions. Use 'Impact' for that classic viral look!",
+            "tip_content": "Overlay text works best short and punchy. Use Anton/Impact for a classic viral look!",
             "styles": {
               "kinetic": "Kinetic (Hormozi)",
               "clean": "Clean subtitle",
@@ -3735,7 +3735,7 @@ const resources = {
           "insane_clutch": "لقطة جنونية!",
           "tabs": {
             "details": "التفاصيل",
-            "meme": "التعليقات",
+            "meme": "الخطوط",
             "captions": "التعليقات",
             "audio": "الصوت",
             "enhance": "تحسين"
@@ -3763,15 +3763,15 @@ const resources = {
             "cut_silence": "قص الصمت (الهواء الميت)"
           },
           "meme": {
-            "title": "التعليقات / الطبقات",
+            "title": "الخطوط / الطبقات",
             "beta": "تجريبي",
             "top_text": "النص العلوي",
             "top_placeholder": "أدخل النص العلوي",
             "bottom_text": "النص السفلي",
             "bottom_placeholder": "أدخل النص السفلي",
             "drag_hint": "اسحب النص العلوي والسفلي على المعاينة لوضعهما. التحميل/التصدير يحرق نفس المواضع.",
-            "caption_style": "نمط التعليق",
-            "caption_font": "خط التعليق",
+            "caption_style": "نمط النص",
+            "caption_font": "الخط",
             "pro_tip": "نصيحة احترافية",
             "tip_content": "نصوص الميمات تعمل بشكل أفضل مع التعليقات القصيرة والقوية. استخدم 'Impact' للحصول على هذا المظهر الشائع الكلاسيكي!",
             "styles": {

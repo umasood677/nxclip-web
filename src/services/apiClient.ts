@@ -65,12 +65,13 @@ export function resolveBaseGatewayUrl(overrideEnv?: string): string {
     return GATEWAY_CONFIG.PRODUCTION_FALLBACK;
   }
   
-  // Under user instructions: use https://api-gateway-216098834386.us-central1.run.app and do not use local anywhere
+  // Development: honor explicit gateway URL, including local loopback full-stack.
   const envUrl = import.meta.env.VITE_API_GATEWAY_URL || import.meta.env.VITE_API_URL;
-  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1") && envUrl !== "") {
-    return envUrl;
+  if (envUrl && envUrl.trim() !== "") {
+    return envUrl.replace(/\/$/, "");
   }
-  
+
+  // No VITE_API_GATEWAY_URL set — fall back to Cloud Run DEV gateway.
   return "https://api-gateway-216098834386.us-central1.run.app";
 }
 
