@@ -12,6 +12,10 @@ export function sanitizeSceneGraphForClient(
     schemaVersion: graph.schemaVersion || "1.0",
     canvas: { ...graph.canvas },
     layers: graph.layers.map(stripLayerSecrets),
+    ...(graph.creativeMetadata ? {creativeMetadata:{
+      ...(typeof graph.creativeMetadata.mood === 'string' ? {mood:graph.creativeMetadata.mood} : {}),
+      ...(typeof graph.creativeMetadata.lighting === 'string' ? {lighting:graph.creativeMetadata.lighting} : {}),
+    }} : {}),
     ...(typeof (graph as { templateId?: string }).templateId === "string"
       ? { templateId: (graph as { templateId?: string }).templateId }
       : {}),

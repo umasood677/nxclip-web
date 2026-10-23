@@ -61,6 +61,7 @@ export interface AdShapeLayer extends AdSceneLayerBase {
 export type AdSceneLayer = AdTextLayer | AdImageLayer | AdShapeLayer | AdSceneLayerBase;
 
 export interface AdSceneGraph {
+  creativeMetadata?: { mood?: string; lighting?: string };
   schemaVersion: string;
   canvas: AdSceneCanvas;
   layers: AdSceneLayer[];

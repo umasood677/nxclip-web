@@ -12,7 +12,10 @@ import {
   type W87SyntheticEditorViewModel,
 } from "./w87-synthetic-editor";
 
+export interface W87EnhancementSlot { graph: AdSceneGraph; revision: number; variationId: string; productLayerId: string; commit: (graph: AdSceneGraph) => void; createVariation: (graph: AdSceneGraph, id: string, label: string) => void }
 type Props = {
+  /** Local disabled prototype extension only; existing production callers provide nothing. */
+  renderEnhancements?: (slot: W87EnhancementSlot) => React.ReactNode;
   enabled?: boolean;
   model: W87SyntheticEditorViewModel;
   assetUrls: Readonly<Record<string, string>>;
@@ -30,7 +33,7 @@ export function W87SyntheticCompositionEditor(props: Props) {
   return <EnabledEditor {...props} />;
 }
 
-function EnabledEditor({ model, assetUrls, onModelChange }: Props) {
+function EnabledEditor({ model, assetUrls, onModelChange, renderEnhancements }: Props) {
   const [local, setLocal] = useState(model);
   const selected = local.variations.find((v) => v.variationId === local.selectedVariationId)!;
   const [history, setHistory] = useState<AdSceneGraph[]>([]);
@@ -95,6 +98,11 @@ function EnabledEditor({ model, assetUrls, onModelChange }: Props) {
     onModelChange?.(next);
   };
 
+  const createVariation = (graph: AdSceneGraph, id: string, label: string) => {
+    if (local.variations.some(v => v.variationId === id)) throw new Error('DUPLICATE_VARIATION');
+    const next = {...local, variations: [...local.variations, {...selected, variationId: id, label, graph: structuredClone(graph), revision: 0}]};
+    setLocal(next); onModelChange?.(next);
+  };
   const productLayerId = selected.productLayerId;
   const disclosure = useMemo(
     () =>
@@ -125,7 +133,7 @@ function EnabledEditor({ model, assetUrls, onModelChange }: Props) {
             }`}
             onClick={() => switchVariation(v.variationId)}
           >
-            {v.intent} (r{v.revision})
+            {v.label.startsWith('Adapted ') ? v.label : v.intent} (r{v.revision})
           </button>
         ))}
       </div>
@@ -203,6 +211,7 @@ function EnabledEditor({ model, assetUrls, onModelChange }: Props) {
           })}
         </ul>
       </div>
+      {renderEnhancements?.({graph:selected.graph,revision:selected.revision,variationId:selected.variationId,productLayerId,commit,createVariation})}
     </section>
   );
 }
