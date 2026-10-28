@@ -56,7 +56,17 @@ export default function DashboardLayout() {
     } else if (path.startsWith("/create/image") || path === "/image-studio") {
       setTitle(t("nav.image_studio"));
     } else if (path.startsWith("/create/ad")) {
-      setTitle(t("nav.ad_studio", { defaultValue: "Ad Studio" }));
+      // AppShell TopBar is the page top heading — append Editor Canvas on creative routes.
+      const isEditorCanvas =
+        path !== "/create/ad" &&
+        !path.startsWith("/create/ad/animated");
+      setTitle(
+        isEditorCanvas
+          ? t("nav.ad_studio_editor_canvas", {
+              defaultValue: "Ad Studio · Editor Canvas",
+            })
+          : t("nav.ad_studio", { defaultValue: "Ad Studio" }),
+      );
     } else if (path.startsWith("/create/clip")) {
       setTitle(t("nav.clip_editor"));
     } else {

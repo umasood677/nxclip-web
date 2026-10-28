@@ -46,9 +46,9 @@ export function BrandPanel({
   const body = fontByRole(snapshot, "body");
 
   return (
-    <div className="space-y-4 p-1">
-      <div>
-        <div className="flex items-center gap-2 flex-wrap">
+    <div className="space-y-4 p-1 pb-3 min-w-0 overflow-x-hidden">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
           <span className="text-sm font-semibold truncate">{snapshot.name}</span>
           <Badge variant="secondary" className="text-[10px]">
             Snapshot
@@ -124,25 +124,29 @@ export function BrandPanel({
       )}
 
       {snapshot.typography.length > 0 && (
-        <div>
-          <div className="text-xs font-medium mb-1.5">Typography</div>
-          <div className="space-y-1">
+        <div className="min-w-0">
+          <div className="text-xs font-medium mb-1.5">Brand fonts</div>
+          <div className="space-y-1 max-h-[140px] overflow-y-auto overscroll-contain pr-0.5">
             {snapshot.typography.map((t) => (
               <button
                 key={`${t.role}-${t.family}`}
                 type="button"
                 disabled={!hasSelection}
-                className="w-full text-left rounded-md border border-border px-2 py-1.5 text-xs hover:border-primary/40 disabled:opacity-40"
+                className="w-full text-left rounded-md border border-border px-2 py-1.5 text-xs hover:border-primary/40 disabled:opacity-40 min-w-0"
                 onClick={() => onApplyFont(t.family)}
               >
-                <span className="font-medium">{t.role ?? "font"}</span>
-                <span className="text-muted-foreground"> · {t.family}</span>
+                <span className="font-medium truncate block">
+                  {t.role ?? "font"}
+                </span>
+                <span className="text-muted-foreground truncate block">
+                  {t.family}
+                </span>
               </button>
             ))}
           </div>
           {(heading || body) && (
             <p className="text-[10px] text-muted-foreground mt-1">
-              Tip: select a text layer, then click a font role.
+              Tip: select a text layer, then click a brand font.
             </p>
           )}
         </div>

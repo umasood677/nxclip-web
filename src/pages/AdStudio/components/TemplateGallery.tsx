@@ -1,25 +1,53 @@
 import React, { useMemo, useState } from "react";
-import { LayoutTemplate, Loader2 } from "lucide-react";
-import { Badge } from "../../../components/ui/badge";
-import { Button } from "../../../components/ui/button";
+import { Loader2 } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import {
   TEMPLATE_CATALOG_V1,
   type AdSceneOutputFormatId,
   type AdStudioTemplateId,
-  getTemplateDef,
 } from "../canvas/templateCatalog";
+import type { BrandTemplatePresentation } from "../lib/brandHomeCatalog";
 import { templateSamplePreview } from "../lib/samplePreviewAssets";
 import { AD_FORMATS } from "../types";
+import type { NormalizedBrandContext } from "../../BrandKits/lib/brandContext";
+import {
+  BrandHomePreview,
+  aspectForFormat,
+} from "./BrandHomePreview";
 
 type Props = {
   selectedFormat: string;
   busy?: boolean;
   onUseTemplate: (templateId: AdStudioTemplateId, format: AdSceneOutputFormatId) => void;
+  /** W0A premium card presentation (default). */
+  presentation?: "w0a" | "legacy";
+  /** Hide internal section header when parent already shows one. */
+  hideHeader?: boolean;
+  /** Brand-kit AI overlays for the 10 catalog layouts. */
+  brandTemplates?: BrandTemplatePresentation[];
+  catalogLabel?: string;
+  /** Active Brand Kit visual context (assets / palette). */
+  brandContext?: NormalizedBrandContext | null;
+  /** Remount key when Brand Kit changes. */
+  catalogKey?: string;
+  /** Suppress default golden note (parent may render its own). */
+  hideNote?: boolean;
 };
 
-function formatLabel(formatId: string): string {
-  return AD_FORMATS.find((f) => f.id === formatId)?.label ?? formatId;
+/** Correct aspect labels — never use includes("9") (false-positives → 9:16). */
+export function formatChip(formatId: string): string {
+  switch (formatId) {
+    case "vertical_1080x1920":
+      return "9:16";
+    case "square_1080":
+      return "1:1";
+    case "portrait_1080x1350":
+      return "4:5";
+    case "landscape_1920x1080":
+      return "16:9";
+    default:
+      return AD_FORMATS.find((f) => f.id === formatId)?.label ?? formatId;
+  }
 }
 
 function categoryFor(layoutFamily: string): string {
@@ -39,7 +67,18 @@ function categoryFor(layoutFamily: string): string {
   }
 }
 
-export function TemplateGallery({ selectedFormat, busy, onUseTemplate }: Props) {
+export function TemplateGallery({
+  selectedFormat,
+  busy,
+  onUseTemplate,
+  presentation = "w0a",
+  hideHeader = true,
+  brandTemplates,
+  catalogLabel,
+  brandContext = null,
+  catalogKey = "neutral",
+  hideNote = false,
+}: Props) {
   const [pickFormat, setPickFormat] = useState<Record<string, AdSceneOutputFormatId>>({});
 
   const defaultFormat = useMemo(() => {
@@ -47,106 +86,124 @@ export function TemplateGallery({ selectedFormat, busy, onUseTemplate }: Props) 
     return (hit?.id ?? "portrait_1080x1350") as AdSceneOutputFormatId;
   }, [selectedFormat]);
 
-  return (
-    <section className="space-y-3">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-2">
-          <LayoutTemplate size={18} className="text-primary mt-0.5 shrink-0" aria-hidden />
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">Templates</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Preview-first layouts — pick a format, then create an editable draft.
-            </p>
-          </div>
-        </div>
-      </div>
+  const overlayById = useMemo(() => {
+    const map = new Map<string, BrandTemplatePresentation>();
+    for (const t of brandTemplates ?? []) map.set(t.templateId, t);
+    return map;
+  }, [brandTemplates]);
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+  if (presentation === "w0a") {
+    return (
+      <section
+        id="ad-studio-catalog"
+        aria-label="Template gallery"
+        key={catalogKey}
+      >
+        {!hideHeader ? (
+          <div className="w0a-section-title">
+            <h2>Visual Template Gallery</h2>
+          </div>
+        ) : null}
+        {!hideNote ? (
+          <div className="w0a-note">
+            {catalogLabel && catalogLabel !== "Neutral"
+              ? `${catalogLabel} Brand Kit is live on these cards — logo, product, and palette from your kit. Pick 1:1 · 4:5 · 9:16 · 16:9 then Use template.`
+              : "Neutral catalog — switch Brand Kit in the header to preview kit assets on every template. Formats: 1:1 · 4:5 · 9:16 · 16:9."}
+          </div>
+        ) : null}
+        <div className="w0a-grid w0a-grid-3">
+          {TEMPLATE_CATALOG_V1.map((tpl) => {
+            const format =
+              pickFormat[tpl.templateId] ??
+              (tpl.formats.includes(defaultFormat as AdSceneOutputFormatId)
+                ? (defaultFormat as AdSceneOutputFormatId)
+                : tpl.formats[0]!);
+            const preview = templateSamplePreview(tpl.templateId);
+            const overlay = overlayById.get(tpl.templateId);
+            const title = overlay?.displayName ?? tpl.name;
+            const meta = overlay?.tagline
+              ? overlay.tagline
+              : `${categoryFor(tpl.layoutFamily)} · ${formatChip(format)}`;
+
+            return (
+              <article key={`${catalogKey}-${tpl.templateId}`} className="w0a-card">
+                <BrandHomePreview
+                  fallbackSrc={preview}
+                  alt={`${title} visual preview`}
+                  brand={brandContext}
+                  aspect={aspectForFormat(format)}
+                  headline={overlay?.headline}
+                />
+                <div className="w0a-card-body">
+                  <h3>{title}</h3>
+                  <div className="w0a-meta">{meta}</div>
+                  <div className="w0a-formats" role="group" aria-label="Aspect ratio">
+                    {tpl.formats.map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        disabled={busy}
+                        className={cn("w0a-chip", format === f && "on")}
+                        onClick={() =>
+                          setPickFormat((prev) => ({ ...prev, [tpl.templateId]: f }))
+                        }
+                      >
+                        {formatChip(f)}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="w0a-btn"
+                    disabled={busy}
+                    onClick={() => onUseTemplate(tpl.templateId, format)}
+                  >
+                    {busy ? (
+                      <>
+                        <Loader2 className="animate-spin mr-2" size={14} aria-hidden />
+                        Creating…
+                      </>
+                    ) : (
+                      "Use template"
+                    )}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="space-y-3" key={catalogKey}>
+      <div className="w0a-grid w0a-grid-3">
         {TEMPLATE_CATALOG_V1.map((tpl) => {
           const format =
             pickFormat[tpl.templateId] ??
             (tpl.formats.includes(defaultFormat as AdSceneOutputFormatId)
               ? (defaultFormat as AdSceneOutputFormatId)
               : tpl.formats[0]!);
-          const def = getTemplateDef(tpl.templateId);
-          const requiredSlots = def.slots.filter((s) => s.required).map((s) => s.label);
           const preview = templateSamplePreview(tpl.templateId);
-          const isStory = tpl.templateId === "social-story";
-
           return (
-            <article
-              key={tpl.templateId}
-              className="flex flex-col rounded-xl border border-border/80 bg-card/40 overflow-hidden gap-0"
-            >
-              <div
-                className={cn(
-                  "relative bg-muted/40",
-                  isStory ? "aspect-[9/16] max-h-64 mx-auto w-full" : "aspect-[4/5]",
-                )}
-              >
-                <img
-                  src={preview}
-                  alt={`${tpl.name} preview`}
-                  className="absolute inset-0 h-full w-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-              <div className="flex flex-col gap-2 p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-medium leading-tight truncate">{tpl.name}</h3>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {categoryFor(tpl.layoutFamily)}
-                    </p>
-                  </div>
-                  <Badge variant="secondary" className="text-[10px] shrink-0">
-                    {tpl.formats.length} formats
-                  </Badge>
-                </div>
-
-                <div className="flex flex-wrap gap-1">
-                  {tpl.formats.map((f) => (
-                    <button
-                      key={f}
-                      type="button"
-                      disabled={busy}
-                      className={cn(
-                        "text-[10px] px-2 py-0.5 rounded-full border transition-colors",
-                        format === f
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-muted-foreground hover:border-primary/40",
-                      )}
-                      onClick={() =>
-                        setPickFormat((prev) => ({ ...prev, [tpl.templateId]: f }))
-                      }
-                    >
-                      {formatLabel(f)}
-                    </button>
-                  ))}
-                </div>
-
-                {requiredSlots.length > 0 ? (
-                  <p className="text-[10px] text-muted-foreground leading-snug">
-                    Expects: {requiredSlots.join(", ")}
-                  </p>
-                ) : null}
-
-                <Button
+            <article key={tpl.templateId} className="w0a-card">
+              <BrandHomePreview
+                fallbackSrc={preview}
+                alt=""
+                brand={brandContext}
+                aspect={aspectForFormat(format)}
+              />
+              <div className="w0a-card-body">
+                <h3>{tpl.name}</h3>
+                <button
                   type="button"
-                  size="sm"
-                  className="mt-auto w-full"
+                  className="w0a-btn"
                   disabled={busy}
                   onClick={() => onUseTemplate(tpl.templateId, format)}
                 >
-                  {busy ? (
-                    <>
-                      <Loader2 className="animate-spin mr-2" size={14} aria-hidden />
-                      Creating…
-                    </>
-                  ) : (
-                    "Use template"
-                  )}
-                </Button>
+                  Use template
+                </button>
               </div>
             </article>
           );

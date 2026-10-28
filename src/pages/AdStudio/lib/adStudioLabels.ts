@@ -31,6 +31,13 @@ export const AD_CTA_SUGGESTIONS = [
 import type { BriefBrandPreviewCache } from "../../BrandKits/lib/brandContext";
 
 export type AdBriefFormState = {
+  campaignIdea?: string;
+  exampleBriefId?: string;
+  exampleBriefTitle?: string;
+  exampleObjective?: string;
+  productCategory?: string;
+  creativeDirection?: string;
+  productFocus?: string;
   name: string;
   brandKitId: string;
   /** Signed URL / palette cache from active kit — cleared when brandKitId changes. */

@@ -2,6 +2,10 @@ import type { AdBriefFormState } from "./adStudioLabels";
 
 /** Deterministic featured examples — not user projects, not AI output. */
 export type FeaturedExample = {
+  exampleObjective?: string;
+  productCategory?: string;
+  creativeDirection?: string;
+  productFocus?: string;
   id: string;
   title: string;
   category: string;
@@ -69,7 +73,7 @@ export const FEATURED_EXAMPLES: FeaturedExample[] = [
       targetAudience: "Product and engineering leads",
       desiredTone: "confident",
       platform: "linkedin",
-      outputFormat: "square_1080",
+      outputFormat: "landscape_1920x1080",
       cta: "Get Started",
     },
   },

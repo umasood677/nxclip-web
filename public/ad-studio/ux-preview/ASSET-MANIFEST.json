@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 2,
+  "purpose": "M2A + consolidated M2B development-only interactive UX prototype",
+  "privateUserAssetsUsed": false,
+  "verifiedProductInventory": false,
+  "assets": [
+    {
+      "id": "demo-cinematic-background",
+      "path": "/ad-studio/ux-preview/cinematic-background.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "4500e11cbf5754e501d9488b8e220cfa918347876c42b5d98127fc1ac25cbead",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-cinematic",
+      "path": "/ad-studio/ux-preview/cinematic.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "bcce4a7c77a02f1cc664cbe8354245473d485357f79767baa4eb5a20496e66d1",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-collection-background",
+      "path": "/ad-studio/ux-preview/collection-background.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "cb9cf2234be8221cbab5f9e7e08eaa56a8ec80c34e2293e841e4ef5aeb460253",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-collection",
+      "path": "/ad-studio/ux-preview/collection.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "8da2cc0808649cffd568dc470fcbbbb1325a52602289ab7b159ee9742b41fc29",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-editorial-background",
+      "path": "/ad-studio/ux-preview/editorial-background.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "63273bf562a585cc722eec47c4e599bb3de62450fbe33e82b143eefa88149cab",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-editorial",
+      "path": "/ad-studio/ux-preview/editorial.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "242e481c20809f8fe001d200f9341ae32a03ca5f1cbc1e71a213e79e2a2bcd6a",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-industry-corporate-foreground",
+      "path": "/ad-studio/ux-preview/industry-corporate-foreground.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "237c8609195510563a7058a166cb8b74cdee11f66ec0a07aff55640b02687efb",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-industry-corporate",
+      "path": "/ad-studio/ux-preview/industry-corporate.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "00edad8ce05c4ed1412c737ec055a2698fc06c1a571943aa9505686626a322ea",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-industry-fashion-foreground",
+      "path": "/ad-studio/ux-preview/industry-fashion-foreground.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "86533707b29c92eb781434b01c66b350b24a2046d1b1eeaa098d33bf8a1c51d7",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-industry-fashion",
+      "path": "/ad-studio/ux-preview/industry-fashion.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "5c7b9896ef6a0f22a3c1201dca727d046ad11d0a07bd47f3f209b8827d796153",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-industry-gaming-foreground",
+      "path": "/ad-studio/ux-preview/industry-gaming-foreground.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "bcdcb2f5e385654d2f20db04a57b4e6e813d91aed7cc4a9339eb3277873bd6af",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-industry-gaming",
+      "path": "/ad-studio/ux-preview/industry-gaming.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "a1c7b51323a11837c3badc2c6c4dccff861c8634b10ffe71da8310aa1f63b41f",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-industry-generic-foreground",
+      "path": "/ad-studio/ux-preview/industry-generic-foreground.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "6d915337e410bf6b3a115adf9666a616835bdf92e93a27aa4242a9139906c028",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-industry-generic",
+      "path": "/ad-studio/ux-preview/industry-generic.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "6f672666c17d9b8f6062ee49be9d6455db9c85907d99701a5ee1e82f40655da7",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-industry-travel-foreground",
+      "path": "/ad-studio/ux-preview/industry-travel-foreground.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "8767a2812b6cc4eb2e50d29a19891be1e069c44ef9692a374a987b9373fd6338",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-industry-travel",
+      "path": "/ad-studio/ux-preview/industry-travel.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "86b06270675fbd54119a3949bfa795f0d2cb3919a027231e43accecc3e13db0f",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-product-isolated",
+      "path": "/ad-studio/ux-preview/product-isolated.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "72398a73848b6ad5944be9a4ab19b0fc7d05d9a753e869fc7565d003c82260a4",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-spotlight-background",
+      "path": "/ad-studio/ux-preview/spotlight-background.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "3f767a4856d32f3bd973f25885a86885ba3f7e78358b2076a82cc8233513ef60",
+      "modelUse": false,
+      "variants": "None verified"
+    },
+    {
+      "id": "demo-spotlight",
+      "path": "/ad-studio/ux-preview/spotlight.svg",
+      "source": "Original hand-authored SVG; foreground/background derivatives from these same local illustrations",
+      "classification": "Illustrative mockup, not verified photography, logo, product inventory or approved reference artwork",
+      "sha256": "77bd0bbb8a93ee80dd45aa6856adc04ed1f6f305be014f4ab88ca3301858a916",
+      "modelUse": false,
+      "variants": "None verified"
+    }
+  ]
+}

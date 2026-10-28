@@ -20,6 +20,18 @@ function isReady(asset: BrandAssetEntry): boolean {
   return !asset.status || asset.status === "ready";
 }
 
+/**
+ * Absolute http(s), same-origin gateway-proxy path (JWT via ?token=),
+ * or blob: object URLs from authenticated media hydration.
+ */
+function isBrowserAssetUrl(url: string): boolean {
+  return (
+    /^https?:\/\//i.test(url) ||
+    url.startsWith("/api/gateway-proxy/") ||
+    url.startsWith("blob:")
+  );
+}
+
 /** Map assetId → readUrl for ready assets that have a signed/public read URL. */
 export function buildBrandAssetUrlMap(
   brand?: BrandKitSummary | null,
@@ -67,7 +79,7 @@ export function resolveLayerAssetUrl(
   const key = layer.storageKey?.trim();
   if (!key || /^https?:\/\//i.test(key)) return null;
   const byKey = storageKeyUrls?.[key];
-  if (byKey && /^https?:\/\//i.test(byKey)) return byKey;
+  if (byKey && isBrowserAssetUrl(byKey)) return byKey;
   return null;
 }
 
@@ -108,6 +120,6 @@ export function resolveAssetUrl(
 ): string | null {
   if (!assetId) return null;
   const url = assetUrls?.[assetId];
-  if (!url || !/^https?:\/\//i.test(url)) return null;
+  if (!url || !isBrowserAssetUrl(url)) return null;
   return url;
 }

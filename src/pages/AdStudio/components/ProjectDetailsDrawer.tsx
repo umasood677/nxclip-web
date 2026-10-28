@@ -24,6 +24,7 @@ import {
 import { BrandKitPicker } from "./BrandKitPicker";
 
 type Props = {
+  brandLocked?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   form: AdBriefFormState;
@@ -89,6 +90,7 @@ export function ProjectDetailsDrawer({
   onSaveBrief,
   saving,
   projectReady,
+  brandLocked = false,
 }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -173,7 +175,7 @@ export function ProjectDetailsDrawer({
             </div>
           </div>
 
-          <BrandKitPicker
+          {brandLocked ? <div className="rounded-lg border border-border p-3 text-sm"><Label>Project Brand</Label><p className="mt-1">{brands.find(b => b.id === form.brandKitId)?.name ?? (form.brandKitId ? "Selected Brand Kit" : "Default Brand")}</p><p className="text-xs text-muted-foreground mt-1">This advertisement uses your project’s Brand Kit selection.</p></div> : <BrandKitPicker
             brands={brands}
             selectedId={form.brandKitId}
             loading={brandsLoading}
@@ -183,7 +185,7 @@ export function ProjectDetailsDrawer({
             onEdit={onEditBrand}
             onImport={onImportBrand}
             onRetry={onRetryBrands}
-          />
+          />}
 
           <div>
             <Label>Call to action</Label>

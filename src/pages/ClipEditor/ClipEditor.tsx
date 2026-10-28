@@ -41,6 +41,7 @@ import {
   type CanonicalLayerDraft,
 } from '../../lib/clipTypography/canonicalAuthoring';
 import { useCanonicalTypographyAuthorized } from '../../lib/clipTypography/useCanonicalTypographyAuthorized';
+import { isOverlayActiveAtKeepMs, voiceOverlayStartOffsetSec } from './lib/voiceOverlayTiming';
 import { useSearchParams, useParams, useNavigate } from "react-router-dom";
 import {
   contentApi,
@@ -552,6 +553,7 @@ export default function ClipEditor() {
       endMs?: number;
       url: string;
       gain: number;
+      type: "voice" | "foley";
     }> = [];
     for (const raw of edl) {
       if (!raw || typeof raw !== "object") continue;
@@ -590,6 +592,7 @@ export default function ClipEditor() {
         endMs: typeof it.endMs === "number" ? it.endMs : undefined,
         url,
         gain,
+        type: it.type,
       });
     }
     return out;
@@ -1371,21 +1374,39 @@ export default function ClipEditor() {
       const keepMs = Math.max(0, (playheadSec - trimStart) * 1000);
       const activeIds = new Set<string>();
       for (const clip of soundOverlayClips) {
-        const end = clip.endMs ?? clip.startMs + 60_000;
-        if (keepMs < clip.startMs - 60 || keepMs >= end) continue;
-        activeIds.add(clip.id);
         let audio = soundOverlayAudiosRef.current.get(clip.id);
         if (!audio) {
           audio = new Audio();
           audio.preload = "auto";
           soundOverlayAudiosRef.current.set(clip.id, audio);
         }
+        if (audio.src !== clip.url) audio.src = clip.url;
+        // Prefer decoded duration for voice so short/stale EDL endMs cannot mute the tail.
+        const mediaDurationSec =
+          Number.isFinite(audio.duration) && audio.duration > 0
+            ? audio.duration
+            : null;
+        if (
+          !isOverlayActiveAtKeepMs(
+            {
+              id: clip.id,
+              startMs: clip.startMs,
+              endMs: clip.endMs,
+              type: clip.type,
+              mediaDurationSec,
+            },
+            keepMs,
+          )
+        ) {
+          continue;
+        }
+        activeIds.add(clip.id);
         audio.volume = Math.min(1, clip.gain * master);
         const needsStart =
           !soundOverlayFiredRef.current.has(clip.id) || audio.paused;
         if (!needsStart) continue;
-        if (audio.src !== clip.url) audio.src = clip.url;
-        const offsetSec = Math.max(0, (keepMs - clip.startMs) / 1000);
+        if(audio.ended && soundOverlayFiredRef.current.has(clip.id))continue;
+        const offsetSec = voiceOverlayStartOffsetSec(clip.startMs,keepMs,!soundOverlayFiredRef.current.has(clip.id));
         try {
           audio.currentTime = offsetSec;
         } catch {
@@ -1411,6 +1432,10 @@ export default function ClipEditor() {
     ],
   );
 
+  // Preload every accepted voice before its event instead of loading only on the first active tick.
+  useEffect(()=>{const wanted=new Set(soundOverlayClips.map(c=>c.id));for(const clip of soundOverlayClips){let audio=soundOverlayAudiosRef.current.get(clip.id);if(!audio){audio=new Audio();audio.preload='auto';soundOverlayAudiosRef.current.set(clip.id,audio);}if(audio.src!==clip.url){audio.src=clip.url;audio.load();}}for(const [id,audio]of soundOverlayAudiosRef.current){if(!wanted.has(id)){audio.pause();audio.removeAttribute('src');soundOverlayAudiosRef.current.delete(id);}}},[soundOverlayClips]);
+  // timeupdate can be ~250ms apart; use video playback frames for all overlay starts.
+  useEffect(()=>{let frame=0;const tick=()=>{const video=videoRef.current;if(video&&!video.paused)syncSoundOverlays(video.currentTime,true);frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);return ()=>cancelAnimationFrame(frame);},[syncSoundOverlays]);
   useEffect(() => () => stopSoundOverlays(), [stopSoundOverlays]);
 
   useEffect(() => {

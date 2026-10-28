@@ -10,13 +10,16 @@ export function buildGatewayProxyUrl(src: string, retryToken?: number): string {
   const isGatewayUrl =
     targetUrl.startsWith("/content/") ||
     targetUrl.startsWith("/ad-studio/") ||
+    targetUrl.startsWith("/brands/") ||
     targetUrl.startsWith("/api/gateway") ||
     targetUrl.startsWith(baseGateway) ||
     targetUrl.includes("api-gateway-") ||
     targetUrl.includes("/content/") ||
     targetUrl.includes("/ad-studio/") ||
+    targetUrl.includes("/brands/") ||
     targetUrl.includes("nxclip.ai") ||
-    /\/content\/[^/]+\/media/.test(targetUrl);
+    /\/content\/[^/]+\/media/.test(targetUrl) ||
+    /\/brands\/[^/]+\/assets\/[^/]+\/media/.test(targetUrl);
 
   if (!isGatewayUrl) {
     return targetUrl;

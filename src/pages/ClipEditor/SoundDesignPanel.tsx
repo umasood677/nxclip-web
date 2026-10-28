@@ -50,6 +50,7 @@ export type PersistedSoundDesign = {
     commentary?: { segments?: unknown[] };
   };
   audioEdl?: unknown[];
+  lastDiagnostics?: {commentarySchedule?: {findings:Array<{id:string;code:string;message:string;blocking:boolean}>}};
 };
 
 /** Map Advanced mode → TTS voice style when Analyze did not set one. */
@@ -298,6 +299,8 @@ export function SoundDesignPanel({
   onRegisterOriginalSync,
   onRegisterMusicSync,
 }: Props) {
+  const [scheduleFindings,setScheduleFindings]=useState<NonNullable<NonNullable<PersistedSoundDesign['lastDiagnostics']>['commentarySchedule']>['findings']>([]);
+  const absorbSchedule=(result:unknown)=>{const sd=(result as {soundDesign?:PersistedSoundDesign})?.soundDesign;setScheduleFindings(sd?.lastDiagnostics?.commentarySchedule?.findings??[]);};
   const [mode, setMode] = useState<SoundDesignMode>("auto");
   const [components, setComponents] = useState<SoundDesignComponents>(DEFAULT_COMPONENTS);
   const [busy, setBusy] = useState<"analyze" | "plan" | "tts" | "reimagine" | "edl" | null>(null);
@@ -338,6 +341,7 @@ export function SoundDesignPanel({
     hydratedRef.current = true;
 
     const sd = initialSoundDesign;
+    setScheduleFindings(sd.lastDiagnostics?.commentarySchedule?.findings??[]);
     if (sd.mode && MODES.some(([m]) => m === sd.mode)) {
       setMode(sd.mode as SoundDesignMode);
     }
@@ -439,6 +443,7 @@ export function SoundDesignPanel({
   const snapshotSoundDesign = (edlOverride?: TimelineEdlItem[]): PersistedSoundDesign => ({
     mode,
     components,
+    lastDiagnostics:{commentarySchedule:{findings:scheduleFindings}},
     recommendation: recommendation || undefined,
     audioEdl: (edlOverride || timeline).map((it) => ({
       id: it.id,
@@ -553,7 +558,8 @@ export function SoundDesignPanel({
           voiceQuality: premiumVoice ? "premium" : "standard",
           ...(segId ? { segmentIds: [segId] } : {}),
         });
-        const edl = (tts.audioEdl as unknown[]) || [];
+        absorbSchedule(tts);
+      const edl = (tts.audioEdl as unknown[]) || [];
         const items = toTimelineItems(edl);
         setTimeline(items);
         setPlanSummary(
@@ -616,6 +622,7 @@ export function SoundDesignPanel({
           ? { segmentPatches: opts.segmentPatches }
           : {}),
       });
+      absorbSchedule(tts);
       const edl = (tts.audioEdl as unknown[]) || [];
       const items = toTimelineItems(edl);
       setTimeline(items);
@@ -900,6 +907,7 @@ export function SoundDesignPanel({
       });
       const foley = res.audioStoryPlan?.foleyEvents?.filter((f) => f.enabled).length ?? 0;
       const voice = res.audioStoryPlan?.commentary?.segments?.length ?? 0;
+      absorbSchedule(res);
       let edl = (res.audioEdl as unknown[]) || [];
       const synth = (res as { synthesize?: { provider?: string; synthesized?: number; failed?: number } })
         .synthesize;
@@ -918,6 +926,7 @@ export function SoundDesignPanel({
             voiceId: commentaryVoiceId,
             voiceQuality: premiumVoice ? "premium" : "standard",
           });
+          absorbSchedule(tts);
           edl = (tts.audioEdl as unknown[]) || edl;
           setTtsDeferred(false);
           setTtsInfo(
@@ -1040,6 +1049,7 @@ export function SoundDesignPanel({
       />
 
       <div className="relative space-y-4 p-4">
+        {scheduleFindings.length>0&&<div role="status" className="rounded border border-amber-400/30 p-2 text-xs text-amber-200"><p>Commentary timing: {scheduleFindings.filter(f=>f.blocking).length?'manual correction required':'some automatic notes withheld to keep speech complete'}.</p><ul>{scheduleFindings.slice(0,3).map((finding,i)=><li key={finding.id+':'+i}>{finding.message}</li>)}</ul></div>}
         <header className="space-y-2">
           <div className="flex items-start justify-between gap-2">
             <div>

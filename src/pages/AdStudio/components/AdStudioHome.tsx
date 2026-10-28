@@ -1,23 +1,30 @@
-import React from "react";
+import React, { useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
   Clock3,
   FolderOpen,
-  Lightbulb,
   Loader2,
-  Palette,
   Sparkles,
   Trash2,
 } from "lucide-react";
-import { Badge } from "../../../components/ui/badge";
-import { Button } from "../../../components/ui/button";
 import type { BrandKitSummary } from "../../BrandKits/CreateBrandKitDialog";
-import { FEATURED_EXAMPLES, type FeaturedExample } from "../lib/exampleCreatives";
-import { ExampleCreativeThumb } from "./BriefLivePreview";
-import { BrandKitPicker } from "./BrandKitPicker";
+import { normalizeBrandContext } from "../../BrandKits/lib/brandContext";
+import type { FeaturedExample } from "../lib/exampleCreatives";
+import { resolveBrandHomeCatalog } from "../lib/brandHomeCatalog";
+import { BrandKitHeaderControl } from "./BrandKitHeaderControl";
+import { BrandHomePreview, aspectForFormat } from "./BrandHomePreview";
 import { TemplateGallery } from "./TemplateGallery";
 import { SceneThumb } from "./SceneThumb";
+import {
+  AdStudioTopNav,
+  scrollAdStudioSection,
+  type AdStudioNavId,
+} from "./AdStudioTopNav";
+import {
+  buildBrandAssetUrlMap,
+  buildBrandAssetUrlMapByStorageKey,
+} from "../canvas/brandAssetUrls";
 import type { AdSceneOutputFormatId, AdStudioTemplateId } from "../canvas/templateCatalog";
 import type { AdSceneGraph } from "../types";
 
@@ -61,12 +68,64 @@ type Props = {
   ) => void;
 };
 
+const DEFAULT_HERO_FRAMES = [
+  { src: "/ad-studio/sample-assets/w0a-model-editorial.jpg", cls: "w0a-ads-hero__frame--a" },
+  { src: "/ad-studio/sample-assets/w0a-product-hero.jpg", cls: "w0a-ads-hero__frame--b" },
+  { src: "/ad-studio/sample-assets/w0a-social-story.jpg", cls: "w0a-ads-hero__frame--c" },
+  { src: "/ad-studio/sample-assets/w0a-seasonal.jpg", cls: "w0a-ads-hero__frame--d" },
+] as const;
+
+const HERO_FRAME_CLS = [
+  "w0a-ads-hero__frame--a",
+  "w0a-ads-hero__frame--b",
+  "w0a-ads-hero__frame--c",
+  "w0a-ads-hero__frame--d",
+] as const;
+
+/**
+ * Hero collage for Home: Brand Kit brief/layout imagery when present,
+ * Brand Kit product/model assets as fillers, else Neutral defaults.
+ */
+function resolveHeroFrames(
+  catalog: ReturnType<typeof resolveBrandHomeCatalog>,
+  brand: ReturnType<typeof normalizeBrandContext> | null,
+): { src: string; cls: string }[] {
+  if (catalog.catalogKey === "neutral") {
+    return DEFAULT_HERO_FRAMES.map((f) => ({ src: f.src, cls: f.cls }));
+  }
+  const seen = new Set<string>();
+  const srcs: string[] = [];
+  const push = (src?: string | null) => {
+    const s = (src || "").trim();
+    if (!s || seen.has(s)) return;
+    seen.add(s);
+    srcs.push(s);
+  };
+  for (const ex of catalog.examples) push(ex.previewImage);
+  if (brand) {
+    push(brand.assets.productUrl);
+    push(brand.assets.modelUrl);
+  }
+  for (const d of DEFAULT_HERO_FRAMES) {
+    if (srcs.length >= 4) break;
+    push(d.src);
+  }
+  while (srcs.length < 4) {
+    push(DEFAULT_HERO_FRAMES[srcs.length % DEFAULT_HERO_FRAMES.length].src);
+  }
+  return srcs.slice(0, 4).map((src, i) => ({ src, cls: HERO_FRAME_CLS[i] }));
+}
+
+function briefAspect(ex: FeaturedExample) {
+  const fmt = ex.briefDefaults.outputFormat || "portrait_1080x1350";
+  return aspectForFormat(fmt);
+}
+
 export function AdStudioHome({
   projects,
   creatives,
   brands,
   brandsLoading,
-  brandsError,
   selectedBrandId,
   selectedFormat,
   deletingProjectId = null,
@@ -76,255 +135,361 @@ export function AdStudioHome({
   onContinueProject,
   onDeleteProject,
   onOpenCreative,
-  onCreateBrand,
-  onEditBrand,
-  onImportBrand,
-  onRetryBrands,
   templatesV1Enabled = false,
   templateBusy = false,
   onUseTemplate,
 }: Props) {
   const recentProjects = projects.slice(0, 6);
   const recentCreatives = creatives.slice(0, 8);
+  const recentCreativeId = recentCreatives[0]?.id ?? null;
+
+  const selectedBrand =
+    brands.find((b) => b.id === selectedBrandId) ?? null;
+  const brandContext = useMemo(
+    () => normalizeBrandContext(selectedBrand),
+    [selectedBrand],
+  );
+  const homeCatalog = useMemo(
+    () => resolveBrandHomeCatalog(selectedBrand),
+    [selectedBrand],
+  );
+  const isNeutral = homeCatalog.catalogKey === "neutral";
+  const heroFrames = useMemo(
+    () => resolveHeroFrames(homeCatalog, brandContext),
+    [homeCatalog, brandContext],
+  );
+  const heroStyle = useMemo(() => {
+    if (isNeutral || !brandContext) return undefined;
+    const primary = brandContext.colors.primary || "#8b1e3f";
+    const secondary = brandContext.colors.secondary || "#0c0d10";
+    const accent = brandContext.colors.accent || "#c4a574";
+    return {
+      ["--w0a-hero-primary" as string]: primary,
+      ["--w0a-hero-secondary" as string]: secondary,
+      ["--w0a-hero-accent" as string]: accent,
+      background: `
+        radial-gradient(ellipse 80% 70% at 70% 40%, color-mix(in srgb, ${primary} 42%, transparent), transparent 55%),
+        radial-gradient(ellipse 60% 50% at 15% 80%, color-mix(in srgb, ${accent} 28%, transparent), transparent 50%),
+        linear-gradient(165deg, ${secondary} 0%, #0c0d10 45%, #10131a 100%)
+      `,
+    } as React.CSSProperties;
+  }, [isNeutral, brandContext]);
+
+  const onSectionNav = useCallback((id: AdStudioNavId) => {
+    if (id === "home") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (id === "concepts") {
+      onStartIdea();
+      return;
+    }
+    scrollAdStudioSection(id);
+  }, [onStartIdea]);
 
   return (
-    <div className="space-y-8 pb-10 max-w-[100vw] overflow-x-hidden">
-      {/* World-of-ads hero — W0A baseline */}
-      <section
-        className="relative overflow-hidden rounded-2xl border border-border min-h-[min(72vh,560px)]"
-        aria-label="Ad Studio"
-      >
-        <div className="pointer-events-none absolute inset-0 bg-[#0c0d10]">
-          <div
-            className="absolute inset-0 opacity-90"
-            style={{
-              background:
-                "radial-gradient(ellipse 80% 70% at 70% 40%, rgba(139,30,63,0.35), transparent 55%), radial-gradient(ellipse 60% 50% at 15% 80%, rgba(196,165,116,0.18), transparent 50%)",
-            }}
-          />
-          <img
-            src="/ad-studio/sample-assets/w0a-model-editorial.jpg"
-            alt=""
-            className="absolute w-[min(22vw,200px)] aspect-[4/5] object-cover rounded-lg shadow-2xl opacity-90 -rotate-6 top-[12%] left-[6%] border border-white/10"
-          />
-          <img
-            src="/ad-studio/sample-assets/w0a-product-hero.jpg"
-            alt=""
-            className="absolute w-[min(18vw,168px)] aspect-[4/5] object-cover rounded-lg shadow-2xl opacity-90 rotate-6 top-[16%] right-[8%] border border-white/10"
-          />
-          <img
-            src="/ad-studio/sample-assets/w0a-social-story.jpg"
-            alt=""
-            className="absolute w-[min(14vw,128px)] aspect-[9/16] object-cover rounded-lg shadow-2xl opacity-85 rotate-3 bottom-[10%] left-[16%] border border-white/10 hidden sm:block"
-          />
-          <img
-            src="/ad-studio/sample-assets/w0a-seasonal.jpg"
-            alt=""
-            className="absolute w-[min(16vw,148px)] aspect-[4/5] object-cover rounded-lg shadow-2xl opacity-85 -rotate-3 bottom-[8%] right-[14%] border border-white/10"
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(90deg, rgba(12,13,16,0.88) 0%, rgba(12,13,16,0.4) 45%, rgba(12,13,16,0.65) 100%), linear-gradient(180deg, rgba(12,13,16,0.15) 0%, transparent 35%, rgba(12,13,16,0.8) 100%)",
-            }}
-          />
-        </div>
-        <div className="relative z-[1] flex flex-col justify-end min-h-[min(72vh,560px)] p-6 sm:p-8 md:p-10">
-          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight text-white leading-[0.95] max-w-[12ch]">
-            Ad Studio
-          </h1>
-          <p className="mt-3 text-base sm:text-lg text-white/65 max-w-[28ch]">
-            Campaigns that look like they belong in the world.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Button
-              type="button"
-              size="lg"
-              className="rounded-full bg-white text-neutral-900 hover:bg-white/90"
-              onClick={onStartIdea}
-            >
-              <Lightbulb size={16} className="mr-2" aria-hidden />
-              Start from an idea
-            </Button>
-            <Button
-              type="button"
-              size="lg"
-              variant="outline"
-              className="rounded-full border-white/25 bg-white/5 text-white hover:bg-white/10"
-              onClick={onCreateBrand}
-            >
-              <Palette size={16} className="mr-2" aria-hidden />
-              Brand Kit
-            </Button>
-            <Button
-              type="button"
-              size="lg"
-              variant="ghost"
-              className="rounded-full text-white/80 hover:text-white hover:bg-white/10"
-              asChild
-            >
-              <Link to="/brands">Manage kits</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-border glass p-4 md:p-5">
-        <BrandKitPicker
-          brands={brands}
-          selectedId={selectedBrandId}
-          loading={brandsLoading}
-          error={brandsError}
-          onSelect={onSelectBrand}
-          onCreate={onCreateBrand}
-          onEdit={onEditBrand}
-          onImport={onImportBrand}
-          onRetry={onRetryBrands}
-        />
-      </section>
-
-      {templatesV1Enabled && onUseTemplate ? (
-        <TemplateGallery
-          selectedFormat={selectedFormat}
-          busy={templateBusy}
-          onUseTemplate={onUseTemplate}
-        />
-      ) : null}
-
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold tracking-tight">Example briefs</h2>
-          <Badge variant="outline" className="text-[10px]">
-            Example
-          </Badge>
-        </div>
-        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {FEATURED_EXAMPLES.map((ex) => (
-            <ExampleCreativeThumb
-              key={ex.id}
-              headline={ex.headline}
-              supporting={ex.supporting}
-              cta={ex.cta}
-              theme={ex.theme}
-              label={ex.category}
-              previewImage={ex.previewImage}
-              title={ex.title}
-              onClick={() => onUseExample(ex)}
+    <div className="ad-studio-w0a" id="ad-studio-home">
+      <div className="w0a-shell home">
+        <AdStudioTopNav
+          hideBrand
+          active="home"
+          onSectionNav={onSectionNav}
+          recentCreativeId={recentCreativeId}
+          onCreateProject={onStartIdea}
+          trailing={
+            <BrandKitHeaderControl
+              brands={brands}
+              selectedId={selectedBrandId}
+              loading={brandsLoading}
+              onSelect={onSelectBrand}
             />
-          ))}
-        </div>
-      </section>
+          }
+        />
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        <section className="space-y-3">
-          <div className="flex items-center gap-2">
-            <FolderOpen size={16} className="text-muted-foreground" />
-            <h2 className="text-sm font-semibold tracking-tight">Recent projects</h2>
+        <header
+          className={`w0a-ads-hero${isNeutral ? "" : " w0a-ads-hero--branded"}`}
+          aria-label={isNeutral ? "Ad Studio" : `${homeCatalog.label} Ad Studio`}
+          style={heroStyle}
+          key={`hero-${homeCatalog.catalogKey}-${selectedBrandId || "neutral"}`}
+        >
+          <div className="w0a-ads-hero__world" aria-hidden="true">
+            {heroFrames.map((f) => (
+              <div key={`${f.cls}-${f.src}`} className={`w0a-ads-hero__frame ${f.cls}`}>
+                <img
+                  src={f.src}
+                  alt=""
+                  onError={(e) => {
+                    e.currentTarget.src = DEFAULT_HERO_FRAMES[0].src;
+                  }}
+                />
+              </div>
+            ))}
+            <div className="w0a-ads-hero__veil" />
           </div>
-          {recentProjects.length ? (
-            <div className="space-y-2">
-              {recentProjects.map((p) => {
-                const deleting = deletingProjectId === p.id;
-                return (
-                  <div
-                    key={p.id}
-                    className="flex items-stretch gap-1 rounded-xl border border-border hover:border-primary/40 transition-colors"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => onContinueProject(p.id)}
-                      disabled={deleting}
-                      className="min-w-0 flex-1 flex items-center justify-between gap-3 px-4 py-3 text-left disabled:opacity-60"
-                    >
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium truncate">{p.name}</div>
-                        <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-                          <Clock3 size={11} />
+          <div className="w0a-ads-hero__copy">
+            {!isNeutral && brandContext?.assets.logoUrl ? (
+              <img
+                className="w0a-ads-hero__kit-logo"
+                src={brandContext.assets.logoUrl}
+                alt=""
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+            ) : null}
+            {!isNeutral ? (
+              <p className="w0a-ads-hero__kit-label">{homeCatalog.label}</p>
+            ) : null}
+            <h1 className="w0a-ads-hero__brand">Ad Studio</h1>
+            <p className="w0a-ads-hero__line">
+              {isNeutral
+                ? "Campaigns that look like they belong in the world."
+                : `${homeCatalog.label} templates & example briefs — switch Brand Kit above to reshape this home.`}
+            </p>
+            <button
+              type="button"
+              className="w0a-ads-hero__cta"
+              onClick={() => scrollAdStudioSection("templates")}
+            >
+              {isNeutral ? "Enter the gallery" : `Browse ${homeCatalog.label} gallery`}{" "}
+              <span>→</span>
+            </button>
+          </div>
+        </header>
+
+        <div className="w0a-home-body">
+          <section
+            id="ad-studio-projects"
+            className="w0a-home-section w0a-home-section--projects-rail"
+            aria-labelledby="ad-studio-projects-heading"
+          >
+            <header className="w0a-section-hero w0a-section-hero--compact">
+              <p className="w0a-section-hero__eyebrow">Continue</p>
+              <h2 id="ad-studio-projects-heading" className="w0a-section-hero__title">
+                Recent projects
+              </h2>
+            </header>
+            {recentProjects.length ? (
+              <div className="w0a-project-rail">
+                {recentProjects.map((p) => {
+                  const deleting = deletingProjectId === p.id;
+                  return (
+                    <div key={p.id} className="w0a-project-card">
+                      <div className="w0a-project-card__icon" aria-hidden>
+                        <FolderOpen size={18} />
+                      </div>
+                      <button
+                        type="button"
+                        disabled={deleting}
+                        onClick={() => onContinueProject(p.id)}
+                        className="w0a-project-card__main"
+                      >
+                        <span className="w0a-project-card__name">{p.name}</span>
+                        <span className="w0a-project-card__meta">
+                          <Clock3 size={12} />
                           {p.updatedAt
                             ? new Date(p.updatedAt).toLocaleString()
                             : "Open brief & concepts"}
-                        </div>
-                      </div>
-                      <ArrowRight size={16} className="text-muted-foreground shrink-0" />
-                    </button>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-auto w-10 shrink-0 rounded-none rounded-r-xl text-muted-foreground hover:text-destructive"
-                      disabled={deleting}
-                      aria-label={`Delete project ${p.name}`}
-                      onClick={() => onDeleteProject({ id: p.id, name: p.name })}
-                    >
-                      {deleting ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : (
-                        <Trash2 size={16} />
-                      )}
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-              No projects yet.
-              <div className="mt-3">
-                <Button type="button" onClick={onStartIdea}>
-                  <Sparkles size={14} className="mr-1" /> Create first project
-                </Button>
+                        </span>
+                        <span className="w0a-project-card__cta">
+                          Continue <ArrowRight size={14} />
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={deleting}
+                        aria-label={`Delete project ${p.name}`}
+                        onClick={() => onDeleteProject({ id: p.id, name: p.name })}
+                        className="w0a-project-card__delete"
+                      >
+                        {deleting ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={16} />
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          )}
-        </section>
+            ) : (
+              <div className="w0a-project-empty">
+                <p className="w0a-meta mb-3">No projects yet — start your first campaign.</p>
+                <button
+                  type="button"
+                  className="w0a-create-project"
+                  style={{ margin: "0 auto" }}
+                  onClick={onStartIdea}
+                >
+                  <span className="w0a-create-project__glow" aria-hidden />
+                  <Sparkles size={14} aria-hidden />
+                  Create project
+                </button>
+              </div>
+            )}
+          </section>
 
-        <section className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Sparkles size={16} className="text-muted-foreground" />
-            <h2 className="text-sm font-semibold tracking-tight">Recent creatives</h2>
-          </div>
-          {recentCreatives.length ? (
-            <div className="grid sm:grid-cols-2 gap-2">
-              {recentCreatives.map((c) => {
-                const graph = c.sceneGraph as AdSceneGraph | null | undefined;
-                const badge = c.parentCreativeId
-                  ? "Variant"
-                  : c.status === "exported"
-                    ? "Exported"
-                    : "Draft";
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => onOpenCreative(c.id)}
-                    className="rounded-xl border border-border p-2 text-left hover:border-primary/40 transition-colors"
-                  >
-                    <div className="mb-2 flex justify-center rounded-lg overflow-hidden bg-muted/40 border border-border min-h-[140px] items-center">
-                      {graph?.canvas ? (
-                        <SceneThumb graph={graph} maxWidth={140} maxHeight={175} />
-                      ) : (
-                        <div className="aspect-[4/5] w-full max-w-[140px] bg-muted/60 flex items-center justify-center text-[10px] text-muted-foreground">
-                          No preview
-                        </div>
-                      )}
-                    </div>
-                    <div className="px-1">
-                      <div className="text-sm font-medium truncate">{c.name}</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        {badge} · v{c.currentVersion ?? 1}
+          <section
+            id="ad-studio-templates"
+            className="w0a-home-section w0a-home-section--templates"
+            aria-labelledby="ad-studio-templates-heading"
+          >
+            <header className="w0a-section-hero">
+              <p className="w0a-section-hero__eyebrow">Gallery</p>
+              <h2 id="ad-studio-templates-heading" className="w0a-section-hero__title">
+                {isNeutral ? "Template studio" : `${homeCatalog.label} templates`}
+              </h2>
+              <button
+                type="button"
+                className="w0a-link w0a-section-hero__link"
+                onClick={() => scrollAdStudioSection("catalog")}
+              >
+                View all 10 →
+              </button>
+            </header>
+            <div className="w0a-note">
+              {isNeutral
+                ? "Each card keeps its layout. Pick 1:1 · 4:5 · 9:16 · 16:9, then Use template — or select a Brand Kit to badge kits on top."
+                : `${homeCatalog.label} is badged on each layout (logo · palette · product inset). Layouts stay intact — pick 1:1 · 4:5 · 9:16 · 16:9.`}
+            </div>
+            {templatesV1Enabled && onUseTemplate ? (
+              <TemplateGallery
+                key={`templates-${homeCatalog.catalogKey}-${selectedBrandId || "neutral"}`}
+                selectedFormat={selectedFormat}
+                busy={templateBusy}
+                onUseTemplate={onUseTemplate}
+                presentation="w0a"
+                brandTemplates={homeCatalog.templates}
+                catalogLabel={homeCatalog.label}
+                brandContext={brandContext}
+                catalogKey={homeCatalog.catalogKey}
+                hideNote
+              />
+            ) : (
+              <p className="w0a-lede">Templates unlock when template mode is enabled.</p>
+            )}
+          </section>
+
+          <section
+            id="ad-studio-briefs"
+            className="w0a-home-section w0a-home-section--briefs"
+            aria-labelledby="ad-studio-briefs-heading"
+            key={`briefs-${homeCatalog.catalogKey}`}
+          >
+            <header className="w0a-section-hero">
+              <p className="w0a-section-hero__eyebrow">Starting points</p>
+              <h2 id="ad-studio-briefs-heading" className="w0a-section-hero__title">
+                {isNeutral ? "Example briefs" : `${homeCatalog.label} example briefs`}
+              </h2>
+              <span className="w0a-section-hero__badge">
+                {isNeutral ? "Neutral set" : "Brand Kit set"}
+              </span>
+            </header>
+            <div className="w0a-note">
+              {isNeutral
+                ? "Ready-made briefs for common campaign types. Open one to seed Concept Gallery — or switch Brand Kit for kit-badged briefs."
+                : `${homeCatalog.label} briefs keep their layout art; kit logo, palette, and product inset show on top. Open one to start with this Brand Kit.`}
+            </div>
+            {homeCatalog.examples.length ? (
+              <div className="w0a-grid w0a-grid-3">
+                {homeCatalog.examples.map((ex) => {
+                  const preview =
+                    ex.previewImage ||
+                    "/ad-studio/sample-assets/w0a-product-hero.jpg";
+                  return (
+                    <article key={ex.id} className="w0a-card w0a-rel w0a-brief-card">
+                      <span className="w0a-example-tag">Example</span>
+                      <BrandHomePreview
+                        fallbackSrc={preview}
+                        alt=""
+                        brand={brandContext}
+                        aspect={briefAspect(ex)}
+                        headline={ex.headline}
+                      />
+                      <div className="w0a-card-body">
+                        <h3>{ex.title}</h3>
+                        <div className="w0a-meta">{ex.category}</div>
+                        <p className="text-[11px] text-[var(--w0a-muted)] mt-1 line-clamp-2">
+                          {ex.headline}
+                        </p>
+                        <button
+                          type="button"
+                          className="w0a-btn ghost"
+                          onClick={() => onUseExample(ex)}
+                        >
+                          Use as starting brief →
+                        </button>
                       </div>
-                    </div>
-                  </button>
-                );
-              })}
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="w0a-note">
+                No briefs for this kit yet. Neutral templates stay available above.
+              </div>
+            )}
+          </section>
+
+          <section id="ad-studio-library" className="w0a-home-section">
+            <div className="w0a-section-title">
+              <h2>Recent creatives</h2>
+              <span className="w0a-meta">Library</span>
             </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-              Editable creatives appear here after you open a template or concept.
-            </div>
-          )}
-        </section>
+            {recentCreatives.length ? (
+              <div className="w0a-grid w0a-grid-4">
+                {recentCreatives.map((c) => {
+                  const graph = c.sceneGraph as AdSceneGraph | null | undefined;
+                  const assetUrls = buildBrandAssetUrlMap(selectedBrand);
+                  const storageKeyUrls =
+                    buildBrandAssetUrlMapByStorageKey(selectedBrand);
+                  const badge = c.parentCreativeId
+                    ? "Variant"
+                    : c.status === "exported"
+                      ? "Exported"
+                      : "Draft";
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className="w0a-card"
+                      onClick={() => onOpenCreative(c.id)}
+                    >
+                      <div className="bg-[#222] min-h-[160px] flex items-center justify-center overflow-hidden">
+                        {graph?.canvas ? (
+                          <SceneThumb
+                            graph={graph}
+                            maxWidth={220}
+                            maxHeight={275}
+                            assetUrls={assetUrls}
+                            storageKeyUrls={storageKeyUrls}
+                          />
+                        ) : (
+                          <img
+                            className="w0a-thumb"
+                            src="/ad-studio/sample-assets/w0a-minimal.jpg"
+                            alt=""
+                          />
+                        )}
+                      </div>
+                      <div className="w0a-card-body">
+                        <h3>{c.name}</h3>
+                        <div className="w0a-meta">
+                          {badge} · v{c.currentVersion ?? 1}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="w0a-lede">
+                Editable creatives appear here after you open a template or concept.
+              </p>
+            )}
+          </section>
+
+        </div>
       </div>
     </div>
   );

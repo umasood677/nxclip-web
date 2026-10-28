@@ -157,11 +157,10 @@ export function ConceptGallery({
                 }
               }}
               className={cn(
-                "rounded-2xl border bg-card/60 p-3 space-y-3 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                "w0a-card p-3 space-y-3 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w0a-accent)]",
                 selected
-                  ? "border-primary shadow-soft-md ring-1 ring-primary/30"
-                  : "border-border hover:border-primary/40",
-                "motion-safe:transition-shadow",
+                  ? "ring-1 ring-[rgba(196,165,116,0.45)] border-[rgba(196,165,116,0.5)]"
+                  : "hover:border-[rgba(196,165,116,0.35)]",
               )}
             >
               <div className="flex gap-3">

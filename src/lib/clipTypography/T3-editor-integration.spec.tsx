@@ -6,6 +6,7 @@ import ts from 'typescript';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {editorTypography,typographyExtras} from './editorTypography';
+import {isOverlayActiveAtKeepMs,voiceOverlayStartOffsetSec} from '../../pages/ClipEditor/lib/voiceOverlayTiming';
 import {ClipTypographyOverlay} from '../../pages/ClipEditor/ClipTypographyOverlay';
 const source=readFileSync(new URL('../../pages/ClipEditor/ClipEditor.tsx',import.meta.url),'utf8');
 const tree=ts.createSourceFile('ClipEditor.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
@@ -14,7 +15,7 @@ function callback(name:string,context:Record<string,unknown>) {
   function visit(node:ts.Node){if(ts.isVariableDeclaration(node)&&node.name.getText(tree)===name&&node.initializer&&ts.isCallExpression(node.initializer))expression=node.initializer.arguments[0];ts.forEachChild(node,visit);}
   visit(tree);assert.ok(expression,`Actual editor callback ${name} missing`);
   const js=ts.transpileModule(`const fn = ${expression.getText(tree)}; fn;`,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText;
-  return vm.runInNewContext(js,context) as (...args:unknown[])=>unknown;
+  return vm.runInNewContext(js,{isOverlayActiveAtKeepMs,voiceOverlayStartOffsetSec,...context}) as (...args:unknown[])=>unknown;
 }
 function state(raw?:unknown) {return {trimStart:2,trimEnd:6,colorCorrection:0,categoryLabel:'',niches:[],title:'Title',description:'Description',selectedTrackId:'bed',isClipMuted:true,clipVolume:0.8,isMusicMuted:true,musicVolume:0.7,masterVolume:1,topText:'Legacy caption',bottomText:'',memeCaptionStyle:'kinetic_hormozi',captionFontId:'impact',captionTextColor:'#FFFFFF',topOverlay:{x:50,y:10},bottomOverlay:{x:50,y:85},hooks:[],silenceEnabled:false,cropMode:'center',transcriptPreview:'Real transcript',prompt:'',hashtags:[],isNoiseReduced:false,appliedTransitions:[],canonicalTypographyRaw:raw,typographyExtras};}
 describe('T3 integrated editor and Sound Design compatibility',()=>{

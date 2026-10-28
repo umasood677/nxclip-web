@@ -58,11 +58,24 @@ describe("brandAssetUrls", () => {
     assert.ok(!("storageKey" in logos[0]!));
   });
 
-  it("resolveAssetUrl rejects non-http", () => {
+  it("resolveAssetUrl rejects non-http (allows gateway-proxy and blob)", () => {
     assert.equal(resolveAssetUrl({ x: "brands/x" }, "x"), null);
     assert.equal(
       resolveAssetUrl({ x: "https://ok.example/a.png" }, "x"),
       "https://ok.example/a.png",
+    );
+    assert.equal(
+      resolveAssetUrl(
+        {
+          x: "/api/gateway-proxy/brands/k/assets/a/media?token=t",
+        },
+        "x",
+      ),
+      "/api/gateway-proxy/brands/k/assets/a/media?token=t",
+    );
+    assert.equal(
+      resolveAssetUrl({ x: "blob:http://127.0.0.1:3000/abc" }, "x"),
+      "blob:http://127.0.0.1:3000/abc",
     );
   });
 

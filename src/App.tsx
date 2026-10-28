@@ -24,6 +24,15 @@ import { getPersistedUser, setPersistedUser, useAuthToken } from "./services/aut
 import { contentPlanFromOnboarding, isRenewingWeekPlan } from "./lib/weekPlan";
 import { creatorFieldsFromIdentityMe } from "./lib/onboardingSnapshot";
 import { isAdStudioAnimatedEnabled } from "./pages/AdStudio/lib/adStudioAnimatedFlag";
+import { AdStudioLoader } from "./pages/AdStudio/components/AdStudioLoader";
+
+function AdStudioRouteFallback({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<AdStudioLoader label="Opening Ad Studio…" />}>
+      {children}
+    </Suspense>
+  );
+}
 
 const PageLoader = () => {
   return (
@@ -68,7 +77,9 @@ const PageLoader = () => {
 // --- Lazy Load Pages ---
 const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
 const ImageStudio = lazy(() => import("./pages/ImageStudio/ImageStudio"));
+const AdStudioUXPreview = lazy(() => import("./pages/AdStudio/uxPreview/AdStudioUXPreview"));
 const AdStudio = lazy(() => import("./pages/AdStudio/AdStudio"));
+const AdProjectWorkspace = lazy(() => import("./pages/AdStudio/AdProjectWorkspace"));
 const AdStudioEditor = lazy(() => import("./pages/AdStudio/AdStudioEditor"));
 const AnimatedAdStudioEditor = lazy(
   () => import("./pages/AdStudio/AnimatedAdStudioEditor"),
@@ -76,6 +87,8 @@ const AnimatedAdStudioEditor = lazy(
 const AnimatedAdStudioUnavailable = lazy(
   () => import("./pages/AdStudio/AnimatedAdStudioUnavailable"),
 );
+const BrandTemplateLibrary = lazy(() => import("./pages/BrandKits/templates/BrandTemplateLibrary"));
+const GuidedBrandKit = lazy(() => import("./pages/BrandKits/guided/GuidedBrandKit"));
 const BrandKits = lazy(() => import("./pages/BrandKits/BrandKits"));
 const BrandKitEditor = lazy(() => import("./pages/BrandKits/BrandKitEditor"));
 const Analytics = lazy(() => import("./pages/Analytics/Analytics"));
@@ -376,6 +389,7 @@ export default function App() {
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   {/* Public Routes */}
+                  {import.meta.env.DEV && <Route path="/create/ad/ux-preview" element={<AdStudioRouteFallback><AdStudioUXPreview /></AdStudioRouteFallback>} />}
                   <Route path="/" element={<HomeV2 />} />
                   <Route path="/home-old" element={<Home />} />
                   <Route path="/home-2" element={<Navigate to="/" replace />} />
@@ -416,19 +430,43 @@ export default function App() {
                     <Route path="/create" element={<CreateHub />} />
                     <Route path="/create/image" element={<ImageStudio />} />
                     <Route path="/image-studio" element={<ImageStudio />} />
-                    <Route path="/create/ad" element={<AdStudio />} />
+                    <Route
+                      path="/create/ad"
+                      element={
+                        <AdStudioRouteFallback>
+                          <AdStudio />
+                        </AdStudioRouteFallback>
+                      }
+                    />
+                    <Route
+                      path="/create/ad/projects/:projectId"
+                      element={<AdStudioRouteFallback><AdProjectWorkspace /></AdStudioRouteFallback>}
+                    />
                     <Route
                       path="/create/ad/animated/:animatedId"
                       element={
-                        isAdStudioAnimatedEnabled() ? (
-                          <AnimatedAdStudioEditor />
-                        ) : (
-                          <AnimatedAdStudioUnavailable />
-                        )
+                        <AdStudioRouteFallback>
+                          {isAdStudioAnimatedEnabled() ? (
+                            <AnimatedAdStudioEditor />
+                          ) : (
+                            <AnimatedAdStudioUnavailable />
+                          )}
+                        </AdStudioRouteFallback>
                       }
                     />
-                    <Route path="/create/ad/:creativeId" element={<AdStudioEditor />} />
+                    <Route
+                      path="/create/ad/:creativeId"
+                      element={
+                        <AdStudioRouteFallback>
+                          <AdStudioEditor />
+                        </AdStudioRouteFallback>
+                      }
+                    />
                     <Route path="/brands" element={<BrandKits />} />
+                    <Route path="/brands/new/guided" element={<GuidedBrandKit />} />
+                    <Route path="/brands/:brandId/guided" element={<GuidedBrandKit />} />
+                    <Route path="/brands/:brandId/templates" element={<BrandTemplateLibrary />} />
+                    <Route path="/brands/:brandId/templates/:templateId" element={<BrandTemplateLibrary />} />
                     <Route path="/brands/:brandId" element={<BrandKitEditor />} />
                     <Route path="/create/brands" element={<Navigate to="/brands" replace />} />
                     <Route path="/create/clip" element={<ClipUpload />} />

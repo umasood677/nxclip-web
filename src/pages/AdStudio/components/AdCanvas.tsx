@@ -131,14 +131,14 @@ export function AdCanvas({
   return (
     <div
       className={cn(
-        "flex-1 flex items-center justify-center overflow-auto bg-muted/30 rounded-xl border border-border p-6",
+        "flex-1 flex items-center justify-center overflow-hidden bg-muted/30 rounded-xl border border-border p-3",
         className,
       )}
       onClick={() => onSelectLayer(null)}
     >
       <div
         ref={stageRef}
-        className="relative shadow-soft-xl bg-background"
+        className="w0a-ad-stage relative shadow-soft-xl bg-background shrink-0 rounded-xl overflow-hidden"
         style={{
           width: width * zoom,
           height: height * zoom,

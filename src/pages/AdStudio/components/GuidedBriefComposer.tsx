@@ -18,6 +18,7 @@ import {
 } from "./ConceptLivePreview";
 import { ProjectDetailsDrawer } from "./ProjectDetailsDrawer";
 import type { AdConcept } from "../types";
+import { WorkingBriefPanel } from "./WorkingBriefPanel";
 import { TemplateGallery } from "./TemplateGallery";
 import type { AdSceneOutputFormatId, AdStudioTemplateId } from "../canvas/templateCatalog";
 
@@ -49,7 +50,8 @@ type Props = {
   conceptImages?: Record<string, string>;
   creatives: Array<{ id: string; name: string; currentVersion?: number }>;
   onOpenConcept: (conceptId: string) => void;
-  onGenerateBackground: (conceptId: string) => void;
+  onGenerateBackground?: (conceptId: string) => void;
+  brandLocked?: boolean;
   onOpenCreative: (id: string) => void;
   templatesV1Enabled?: boolean;
   onUseTemplate?: (
@@ -91,6 +93,7 @@ export function GuidedBriefComposer({
   creatives,
   onOpenConcept,
   onGenerateBackground,
+  brandLocked = false,
   onOpenCreative,
   templatesV1Enabled = false,
   onUseTemplate,
@@ -118,15 +121,32 @@ export function GuidedBriefComposer({
   ]);
 
   return (
-    <div className="space-y-4 pb-8">
+    <div className="ad-studio-w0a space-y-4 pb-8" id="ad-studio-concepts">
+      <div className="w0a-shell" style={{ paddingBottom: 24 }}>
+        <div className="w0a-topnav">
+          <div className="w0a-brand">Concept Gallery</div>
+          <nav className="w0a-navlinks" aria-label="Ad Studio">
+            <button type="button" onClick={onBack}>Home</button>
+            <button type="button" className="active">Concept Gallery</button>
+          </nav>
+        </div>
+        <h1 style={{ fontFamily: "var(--w0a-font-display)", fontSize: "clamp(1.6rem, 3vw, 2.2rem)", margin: "8px 0" }}>
+          Concept Gallery &amp; live preview
+        </h1>
+        <p className="w0a-lede">
+          Keep the working SceneStage composition path. Improve typography hierarchy, CTA fit, and
+          logo safe margins so enlarged previews match export quality targets.
+        </p>
+      </div>
+
       {/* Compact project header */}
-      <header className="rounded-2xl border border-border glass px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
+      <header className="w0a-card mx-4 md:mx-5 px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
         <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <Button type="button" variant="ghost" size="sm" onClick={onBack}>
             <ArrowLeft size={16} className="mr-1" /> Home
           </Button>
           <div className="min-w-0">
-            <h1 className="text-sm font-semibold truncate max-w-[220px] sm:max-w-md">
+            <h1 className="text-sm font-semibold truncate max-w-[220px] sm:max-w-md" style={{ fontFamily: "var(--w0a-font-display)" }}>
               {form.name.trim() || "Untitled project"}
             </h1>
             <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
@@ -203,14 +223,17 @@ export function GuidedBriefComposer({
         </p>
       ) : null}
 
+      <div className="mx-4 md:mx-5"><WorkingBriefPanel form={form} onChange={onChange} busy={busy} onSave={projectId && onSaveBrief ? () => { void onSaveBrief(); } : undefined} /></div>
       {/* Primary: gallery + live preview */}
-      <div className="grid lg:grid-cols-12 gap-5 min-h-[calc(100vh-220px)]">
-        <div className="lg:col-span-7 rounded-2xl border border-border glass p-5 space-y-4 order-2 lg:order-1">
+      <div className="grid lg:grid-cols-12 gap-5 min-h-[calc(100vh-220px)] px-4 md:px-5">
+        <div className="lg:col-span-7 w0a-pane space-y-4 order-2 lg:order-1">
           {templatesV1Enabled && onUseTemplate ? (
             <TemplateGallery
               selectedFormat={form.outputFormat}
               busy={busy}
               onUseTemplate={onUseTemplate}
+              presentation="w0a"
+              hideHeader={false}
             />
           ) : null}
           <ConceptGallery
@@ -254,7 +277,8 @@ export function GuidedBriefComposer({
           )}
         </div>
 
-        <div className="lg:col-span-5 rounded-2xl border border-border glass p-5 flex flex-col sticky top-4 self-start order-1 lg:order-2">
+        <div className="lg:col-span-5 w0a-pane flex flex-col sticky top-4 self-start order-1 lg:order-2">
+          <h4 className="w0a-pane-title">Selected · hero preview</h4>
           <ConceptLivePreview
             state={previewState}
             form={form}
@@ -271,6 +295,7 @@ export function GuidedBriefComposer({
       </div>
 
       <ProjectDetailsDrawer
+        brandLocked={brandLocked}
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
         form={form}

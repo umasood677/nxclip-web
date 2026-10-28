@@ -1,5 +1,9 @@
 import React, { useMemo } from "react";
 import { cn } from "../../../lib/utils";
+import {
+  resolveLayerAssetUrl,
+  type BrandAssetUrlMap,
+} from "../canvas/brandAssetUrls";
 import { resolveAdFontFamily } from "../lib/adFonts";
 import { sortLayers } from "../lib/sceneGraph";
 import type { AdSceneGraph } from "../types";
@@ -10,6 +14,9 @@ type Props = {
   maxWidth?: number;
   maxHeight?: number;
   label?: string;
+  /** When provided, image/logo layers use Brand Kit readUrls instead of slate tiles. */
+  assetUrls?: BrandAssetUrlMap;
+  storageKeyUrls?: BrandAssetUrlMap;
 };
 
 /** Lightweight CSS thumbnail of a scene graph for variation galleries. Not export-parity. */
@@ -19,6 +26,8 @@ export function SceneThumb({
   maxWidth = 120,
   maxHeight = 150,
   label,
+  assetUrls,
+  storageKeyUrls,
 }: Props) {
   const dims = graph?.canvas;
   const scale = useMemo(() => {
@@ -110,6 +119,35 @@ export function SceneThumb({
                   {s.text}
                 </div>
               );
+            }
+            if (layer.type === "image" || layer.type === "logo") {
+              const url = resolveLayerAssetUrl(
+                assetUrls,
+                storageKeyUrls,
+                layer as { assetId?: string; storageKey?: string },
+              );
+              if (url) {
+                return (
+                  <img
+                    key={layer.id}
+                    src={url}
+                    alt=""
+                    className="absolute object-cover"
+                    style={{
+                      left: layer.x,
+                      top: layer.y,
+                      width: layer.width,
+                      height: layer.height,
+                      opacity: layer.opacity ?? 1,
+                      objectFit:
+                        (layer as { objectFit?: string }).objectFit === "contain"
+                          ? "contain"
+                          : "cover",
+                    }}
+                    draggable={false}
+                  />
+                );
+              }
             }
             return (
               <div

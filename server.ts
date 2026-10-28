@@ -573,37 +573,51 @@ async function startServer() {
     let routedService = "cloud-gateway";
 
     if (targetGatewayUrl.includes("localhost") || targetGatewayUrl.includes("127.0.0.1")) {
-      // Check for feed-service engagement or follow routes
-      const isFeedEngagement = 
-        /^(content|users)\/[^\/]+\/(like|comment|comments|follow|profile)/.test(cleanSubPath) ||
-        cleanSubPath.startsWith("feed");
+      // Legacy direct-service split only for classic local gateway :5000.
+      // W8 Integration (:5100) must stay on the gateway — :5001/:5002 are wrong ports.
+      let gatewayPort = "";
+      try {
+        gatewayPort = new URL(targetGatewayUrl).port || "80";
+      } catch {
+        gatewayPort = "";
+      }
+      const useLegacyServiceSplit = gatewayPort === "5000" || gatewayPort === "";
 
-      if (isFeedEngagement) {
-        finalDestinationUrl = `http://localhost:5003/${cleanSubPath}${queryStr}`;
-        routedService = "feed-service (5003)";
-      } else if (cleanSubPath.startsWith("auth") || cleanSubPath === "users/me" || cleanSubPath.startsWith("users/me/")) {
-        finalDestinationUrl = `http://localhost:5001/${cleanSubPath}${queryStr}`;
-        routedService = "identity-service (5001)";
-      } else if (cleanSubPath.startsWith("content")) {
-        finalDestinationUrl = `http://localhost:5002/${cleanSubPath}${queryStr}`;
-        routedService = "content-service (5002)";
-      } else if (cleanSubPath.startsWith("analytics")) {
-        finalDestinationUrl = `http://localhost:5005/${cleanSubPath}${queryStr}`;
-        routedService = "analytics-service (5005)";
-      } else if (cleanSubPath.startsWith("notifications")) {
-        finalDestinationUrl = `http://localhost:5006/${cleanSubPath}${queryStr}`;
-        routedService = "notification-service (5006)";
-      } else if (cleanSubPath.startsWith("ai-coach")) {
-        finalDestinationUrl = `http://localhost:5004/${cleanSubPath}${queryStr}`;
-        routedService = "ai-coach-service (5004)";
-      } else if (cleanSubPath.startsWith("users/")) {
-        if (cleanSubPath.endsWith("/profile")) {
+      if (useLegacyServiceSplit) {
+        // Check for feed-service engagement or follow routes
+        const isFeedEngagement =
+          /^(content|users)\/[^\/]+\/(like|comment|comments|follow|profile)/.test(cleanSubPath) ||
+          cleanSubPath.startsWith("feed");
+
+        if (isFeedEngagement) {
           finalDestinationUrl = `http://localhost:5003/${cleanSubPath}${queryStr}`;
           routedService = "feed-service (5003)";
-        } else {
+        } else if (cleanSubPath.startsWith("auth") || cleanSubPath === "users/me" || cleanSubPath.startsWith("users/me/")) {
           finalDestinationUrl = `http://localhost:5001/${cleanSubPath}${queryStr}`;
           routedService = "identity-service (5001)";
+        } else if (cleanSubPath.startsWith("content")) {
+          finalDestinationUrl = `http://localhost:5002/${cleanSubPath}${queryStr}`;
+          routedService = "content-service (5002)";
+        } else if (cleanSubPath.startsWith("analytics")) {
+          finalDestinationUrl = `http://localhost:5005/${cleanSubPath}${queryStr}`;
+          routedService = "analytics-service (5005)";
+        } else if (cleanSubPath.startsWith("notifications")) {
+          finalDestinationUrl = `http://localhost:5006/${cleanSubPath}${queryStr}`;
+          routedService = "notification-service (5006)";
+        } else if (cleanSubPath.startsWith("ai-coach")) {
+          finalDestinationUrl = `http://localhost:5004/${cleanSubPath}${queryStr}`;
+          routedService = "ai-coach-service (5004)";
+        } else if (cleanSubPath.startsWith("users/")) {
+          if (cleanSubPath.endsWith("/profile")) {
+            finalDestinationUrl = `http://localhost:5003/${cleanSubPath}${queryStr}`;
+            routedService = "feed-service (5003)";
+          } else {
+            finalDestinationUrl = `http://localhost:5001/${cleanSubPath}${queryStr}`;
+            routedService = "identity-service (5001)";
+          }
         }
+      } else {
+        routedService = `local-gateway (:${gatewayPort})`;
       }
     } else {
       // In cloud mode, check if we need to split engagement/follow requests

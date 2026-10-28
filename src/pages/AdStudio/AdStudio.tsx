@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
 import { SEO } from "../../components/SEO";
+import { CreateAdProjectDialog } from "./components/CreateAdProjectDialog";
+import { exampleBriefContext, projectWorkspacePath, saveWorkspaceBrief, generateProjectConcepts } from "./lib/projectWorkspace";
+import { AdStudioLoader } from "./components/AdStudioLoader";
 import { adStudioApi, brandApi } from "../../services/apiClient";
 import {
   CreateBrandKitDialog,
@@ -21,19 +23,26 @@ import {
 } from "./lib/adStudioLabels";
 import type { FeaturedExample } from "./lib/exampleCreatives";
 import {
-  readSelectedConceptId,
   writeSelectedConceptId,
 } from "./lib/selectedConceptStorage";
+import {
+  readStoredBrandKitId,
+  resolveBrandHomeCatalog,
+  templatePresentationFor,
+  writeStoredBrandKitId,
+} from "./lib/brandHomeCatalog";
 import type { AdConcept } from "./types";
 import { getTemplateDef } from "./canvas/templateCatalog";
 import type { AdSceneOutputFormatId, AdStudioTemplateId } from "./canvas/templateCatalog";
 import { isAdStudioTemplatesV1Enabled } from "./lib/adStudioTemplatesFlag";
 import "../ImageStudio/components/image-edit-fonts.css";
+import "./styles/ad-studio-w0a.css";
 
 type StudioView = "home" | "compose";
 
 export default function AdStudio() {
   const navigate = useNavigate();
+  const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [view, setView] = useState<StudioView>("home");
   const [projects, setProjects] = useState<any[]>([]);
   const [recentCreatives, setRecentCreatives] = useState<RecentCreative[]>([]);
@@ -77,36 +86,14 @@ export default function AdStudio() {
     }
   }, []);
 
-  const buildBriefPayload = useCallback(
-    (state: AdBriefFormState) => ({
-      productOrService: state.productOrService.trim(),
-      advertisingObjective: state.advertisingObjective,
-      targetAudience: state.targetAudience.trim(),
-      coreMessage: state.coreMessage.trim(),
-      desiredTone: state.desiredTone.trim(),
-      platform: state.platform,
-      outputFormat: state.outputFormat,
-      cta: state.cta.trim() || "Learn more",
-    }),
-    [],
-  );
-
-  /** Sync brief (+ name / brand) so regenerate uses the form the user sees. */
-  const syncProjectBrief = useCallback(
-    async (pid: string, state: AdBriefFormState = form) => {
-      const updated = await adStudioApi.updateProject(pid, {
-        name: state.name.trim() || undefined,
-        brandKitId: state.brandKitId || undefined,
-        clearBrandKit: !state.brandKitId || undefined,
-        brief: buildBriefPayload(state),
-      });
-      setProjects((prev) =>
-        prev.map((p) => (p.id === pid ? { ...p, ...updated } : p)),
-      );
-      return updated;
-    },
-    [buildBriefPayload, form],
-  );
+  /** Both entry points use the same preserving, verified project save. */
+  const syncProjectBrief = useCallback(async (pid: string, state: AdBriefFormState = form) => {
+    const current = await adStudioApi.getProject(pid);
+    if (current.id !== pid) throw Error("The project could not be verified. Reload before saving.");
+    const updated = await saveWorkspaceBrief(adStudioApi, current, state, { allowBrandChange: true });
+    setProjects(prev => prev.map(p => p.id === pid ? { ...p, ...updated } : p));
+    return updated;
+  }, [form]);
 
   const saveBrief = useCallback(async () => {
     if (!projectId) return;
@@ -131,6 +118,7 @@ export default function AdStudio() {
 
   const selectBrand = useCallback(
     (id: string) => {
+      writeStoredBrandKitId(id);
       setForm((prev) => ({
         ...prev,
         ...applyBrandKitToBriefForm(prev.brandKitId, id, brands, prev),
@@ -150,6 +138,20 @@ export default function AdStudio() {
       const b = await brandApi.listKits();
       const items = (b.items ?? []) as BrandKitSummary[];
       setBrands(items);
+      // Restore last Brand Kit (or stay Neutral) once kits are known.
+      const stored = readStoredBrandKitId();
+      const valid = stored && items.some((k) => k.id === stored) ? stored : "";
+      setForm((prev) => {
+        if (prev.brandKitId === valid) return prev;
+        if (!valid) {
+          writeStoredBrandKitId("");
+          return { ...prev, brandKitId: "" };
+        }
+        return {
+          ...prev,
+          ...applyBrandKitToBriefForm(prev.brandKitId, valid, items, prev),
+        };
+      });
       return items;
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to load Brand Kits";
@@ -219,6 +221,13 @@ export default function AdStudio() {
         name: form.name.trim(),
         brandKitId: form.brandKitId || undefined,
         brief: {
+          campaignIdea: form.campaignIdea ?? form.coreMessage,
+          exampleBriefId: form.exampleBriefId,
+          exampleBriefTitle: form.exampleBriefTitle,
+          exampleObjective: form.exampleObjective,
+          productCategory: form.productCategory,
+          creativeDirection: form.creativeDirection,
+          productFocus: form.productFocus,
           productOrService: form.productOrService.trim(),
           advertisingObjective: form.advertisingObjective,
           targetAudience: form.targetAudience.trim(),
@@ -237,6 +246,7 @@ export default function AdStudio() {
       setGenerationSource(null);
       setView("compose");
       toast.success("Project created");
+      navigate(projectWorkspacePath(project.id));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Create failed");
     } finally {
@@ -254,8 +264,11 @@ export default function AdStudio() {
     setConceptsLoading(true);
     setConceptsError(null);
     try {
-      await syncProjectBrief(projectId);
-      const res = await adStudioApi.generateConcepts(projectId, { conceptCount: 4 });
+      const current = await adStudioApi.getProject(projectId);
+      if (current.id !== projectId) throw Error("The project could not be verified. Reload before generating.");
+      const generated = await generateProjectConcepts(adStudioApi, current, form, { allowBrandChange: true });
+      setProjects(prev => prev.map(p => p.id === projectId ? { ...p, ...generated.project } : p));
+      const res = generated.result;
       const next = (res.concepts ?? []) as AdConcept[];
       setConcepts(next);
       const pick = next[0]?.conceptId ?? null;
@@ -280,16 +293,63 @@ export default function AdStudio() {
     }
   };
 
+  /**
+   * Ensure a project exists for Home template use.
+   * Auto-creates with the selected Brand Kit (or Neutral) so gallery CTAs work from Home.
+   */
   const ensureProjectForTemplate = useCallback(
-    async (format: string): Promise<string> => {
+    async (
+      format: string,
+      seed?: {
+        name?: string;
+        headline?: string;
+        supporting?: string;
+        cta?: string;
+      },
+    ): Promise<string> => {
+      const kit = brands.find((b) => b.id === form.brandKitId) ?? null;
+      const catalog = resolveBrandHomeCatalog(kit);
+      const seeded = kit
+        ? seedBriefFromBrand(kit, {
+            name: form.name,
+            productOrService: form.productOrService,
+            coreMessage: form.coreMessage,
+            targetAudience: form.targetAudience,
+            desiredTone: form.desiredTone,
+            cta: form.cta,
+          })
+        : {};
       const briefState: AdBriefFormState = {
         ...form,
         outputFormat: format,
-        name: form.name.trim() || "Template draft",
-        productOrService: form.productOrService.trim() || "Your product or service",
-        coreMessage: form.coreMessage.trim() || "Your core message",
-        targetAudience: form.targetAudience.trim() || "Your target audience",
-        desiredTone: form.desiredTone.trim() || "Confident and clear",
+        name:
+          seed?.name?.trim() ||
+          form.name.trim() ||
+          (catalog.catalogKey === "neutral"
+            ? "Template draft"
+            : `${catalog.label} template`),
+        productOrService:
+          form.productOrService.trim() ||
+          seeded.productOrService ||
+          "Your product or service",
+        coreMessage:
+          seed?.headline?.trim() ||
+          form.coreMessage.trim() ||
+          seeded.coreMessage ||
+          "Your core message",
+        targetAudience:
+          form.targetAudience.trim() ||
+          seeded.targetAudience ||
+          "Your target audience",
+        desiredTone:
+          form.desiredTone.trim() ||
+          seeded.desiredTone ||
+          "Confident and clear",
+        cta:
+          seed?.cta?.trim() ||
+          form.cta.trim() ||
+          seeded.cta ||
+          "Learn more",
       };
       patchForm(briefState);
 
@@ -300,19 +360,25 @@ export default function AdStudio() {
 
       const project = await adStudioApi.createProject({
         name: briefState.name.trim(),
-        brandKitId: briefState.brandKitId || undefined,
-        brief: buildBriefPayload(briefState),
+        brandKitId: form.brandKitId || undefined,
+        brief: {
+          productOrService: briefState.productOrService.trim(),
+          advertisingObjective: briefState.advertisingObjective,
+          targetAudience: briefState.targetAudience.trim(),
+          coreMessage: briefState.coreMessage.trim(),
+          desiredTone: briefState.desiredTone.trim(),
+          platform: briefState.platform,
+          outputFormat: briefState.outputFormat,
+          cta: briefState.cta.trim() || "Learn more",
+        },
         routingProfile: "BALANCED",
       });
       setProjectId(project.id);
       setProjects((prev) => [project, ...prev.filter((x) => x.id !== project.id)]);
-      setConcepts([]);
-      setCreatives([]);
-      setGenerationSource(null);
-      setView("compose");
+      await syncProjectBrief(project.id, briefState);
       return project.id;
     },
-    [buildBriefPayload, form, patchForm, projectId, syncProjectBrief],
+    [brands, form, patchForm, projectId, syncProjectBrief],
   );
 
   const openFromTemplate = useCallback(
@@ -323,15 +389,29 @@ export default function AdStudio() {
       }
       setBusy(true);
       try {
-        const pid = await ensureProjectForTemplate(format);
+        const kit = brands.find((b) => b.id === form.brandKitId) ?? null;
+        const catalog = resolveBrandHomeCatalog(kit);
+        const overlay = templatePresentationFor(catalog, templateId);
         const tpl = getTemplateDef(templateId);
+        const pid = await ensureProjectForTemplate(format, {
+          name: overlay?.displayName
+            ? `${overlay.displayName} draft`
+            : `${tpl.name} draft`,
+          headline: overlay?.headline,
+          supporting: overlay?.supporting,
+          cta: overlay?.cta,
+        });
         const creative = await adStudioApi.createFromTemplate(pid, {
           templateId,
           format,
-          name: `${tpl.name} draft`,
-          primaryHeadline: form.coreMessage.trim() || undefined,
-          supportingCopy: form.productOrService.trim() || undefined,
-          cta: form.cta.trim() || undefined,
+          name: overlay?.displayName
+            ? `${overlay.displayName} draft`
+            : `${tpl.name} draft`,
+          primaryHeadline:
+            overlay?.headline || form.coreMessage.trim() || undefined,
+          supportingCopy:
+            overlay?.supporting || form.productOrService.trim() || undefined,
+          cta: overlay?.cta || form.cta.trim() || undefined,
         });
         navigate(`/create/ad/${creative.id}`);
       } catch (e) {
@@ -341,7 +421,9 @@ export default function AdStudio() {
       }
     },
     [
+      brands,
       ensureProjectForTemplate,
+      form.brandKitId,
       form.coreMessage,
       form.cta,
       form.productOrService,
@@ -389,56 +471,6 @@ export default function AdStudio() {
       toast.error(e instanceof Error ? e.message : "Failed to delete project");
     } finally {
       setDeletingProjectId(null);
-    }
-  };
-
-  const selectProject = async (id: string) => {
-    setProjectId(id);
-    setView("compose");
-    const project = projects.find((p) => p.id === id);
-    if (project) {
-      const brief = (project.brief ?? {}) as Partial<AdBriefFormState>;
-      setForm((prev) => ({
-        ...prev,
-        name: project.name || prev.name,
-        brandKitId: project.brandKitId || prev.brandKitId || "",
-        outputFormat: project.outputFormat || brief.outputFormat || prev.outputFormat,
-        productOrService: brief.productOrService ?? prev.productOrService,
-        coreMessage: brief.coreMessage ?? prev.coreMessage,
-        targetAudience: brief.targetAudience ?? prev.targetAudience,
-        advertisingObjective:
-          brief.advertisingObjective ?? prev.advertisingObjective,
-        platform: brief.platform ?? prev.platform,
-        cta: brief.cta ?? prev.cta,
-        desiredTone: brief.desiredTone ?? prev.desiredTone,
-      }));
-    }
-    setConceptsError(null);
-    setConceptsLoading(true);
-    try {
-      const [listed, creativeList] = await Promise.all([
-        adStudioApi.listConcepts(id),
-        adStudioApi.listCreatives(id),
-      ]);
-      const next = (listed.concepts ?? []) as AdConcept[];
-      setConcepts(next);
-      const stored = readSelectedConceptId(id);
-      const pick =
-        (stored && next.some((c) => c.conceptId === stored) ? stored : null) ??
-        next[0]?.conceptId ??
-        null;
-      setSelectedConceptId(pick);
-      if (pick) writeSelectedConceptId(id, pick);
-      setGenerationSource(listed.generationSource ?? listed.provider ?? null);
-      setCreatives(creativeList.items ?? []);
-    } catch (e) {
-      setConcepts([]);
-      setCreatives([]);
-      setConceptsError(
-        e instanceof Error ? e.message : "Failed to load project concepts",
-      );
-    } finally {
-      setConceptsLoading(false);
     }
   };
 
@@ -501,38 +533,36 @@ export default function AdStudio() {
     setCreateBrandOpen(true);
   };
 
-  const startIdea = () => {
-    setProjectId(null);
-    setConcepts([]);
-    setCreatives([]);
-    setGenerationSource(null);
-    setForm((prev) => ({
-      ...DEFAULT_AD_BRIEF,
-      brandKitId: prev.brandKitId,
-      outputFormat: prev.outputFormat,
-    }));
-    setView("compose");
-  };
-
   const useExample = (example: FeaturedExample) => {
     setProjectId(null);
     setConcepts([]);
     setCreatives([]);
     setGenerationSource(null);
+    // Zoe example briefs bind the ZoeArtisan kit when present.
+    let brandKitId = form.brandKitId;
+    if (
+      example.id.startsWith("zoe-") ||
+      example.id === "ex-zoe-artisan"
+    ) {
+      const zoe = brands.find(
+        (b) => resolveBrandHomeCatalog(b).catalogKey === "zoe-artisan",
+      );
+      if (zoe) {
+        brandKitId = zoe.id;
+        writeStoredBrandKitId(zoe.id);
+      }
+    }
     setForm({
       ...DEFAULT_AD_BRIEF,
       ...example.briefDefaults,
-      brandKitId: form.brandKitId,
+      ...exampleBriefContext(example),
+      brandKitId,
     });
     setView("compose");
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[50vh] text-muted-foreground gap-2">
-        <Loader2 className="animate-spin" size={18} /> Loading Ad Studio…
-      </div>
-    );
+    return <AdStudioLoader label="Composing your studio…" />;
   }
 
   return (
@@ -551,9 +581,9 @@ export default function AdStudio() {
           deletingProjectId={deletingProjectId}
           onSelectBrand={selectBrand}
           onSelectFormat={(formatId) => patchForm({ outputFormat: formatId })}
-          onStartIdea={startIdea}
+          onStartIdea={() => setNewProjectOpen(true)}
           onUseExample={useExample}
-          onContinueProject={(id) => void selectProject(id)}
+          onContinueProject={(id) => navigate(projectWorkspacePath(id))}
           onDeleteProject={(p) => void deleteProject(p)}
           onOpenCreative={(id) => navigate(`/create/ad/${id}`)}
           onCreateBrand={openCreateBrand}
@@ -600,6 +630,7 @@ export default function AdStudio() {
         />
       )}
 
+      <CreateAdProjectDialog open={newProjectOpen} onOpenChange={setNewProjectOpen} brands={brands} brandsLoading={brandsLoading} brandsError={brandsError} onRetryBrands={() => void refreshBrands()} />
       <CreateBrandKitDialog
         open={createBrandOpen}
         onOpenChange={(open) => {
