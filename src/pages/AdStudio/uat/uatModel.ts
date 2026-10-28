@@ -56,8 +56,8 @@ const extra = [
   [
     "Default Brand isolation",
     "Campaign & concepts",
-    "Create a project without a Brand Kit after opening a ZOE project.",
-    "The new project does not silently inherit the previous Brand Kit.",
+    "1. Open a ZOE campaign and note its product/logo. 2. Return to Ad Studio Home. 3. Select Default Brand in the hero selector. 4. Click + Create project, leave Brand Kit set to Default Brand, enter a unique test name and idea, then create. 5. Open Working Brief, Sources and saved creatives. 6. Save/reopen, then return Home.",
+    "The project states Default Brand, has no ZOE logo/product/palette or saved ZOE templates, and retains that state after reopening. Home Recent projects shows only Default Brand projects. No Account B assets transfer to another account.",
   ],
   [
     "Save failure & concurrent edits",

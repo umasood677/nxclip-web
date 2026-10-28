@@ -1,3 +1,5 @@
+import { useAuthenticatedBrandAssetUrls } from "../../AdStudio/canvas/useAuthenticatedBrandAssetUrls";
+import { BrandKitBrochure } from "./BrandKitBrochure";
 import {
   BrandVoiceSection,
   voiceDraftFromKit,
@@ -130,6 +132,7 @@ export function GuidedBrandKitWorkspace({
       setVersionsLoading(false);
     }
   };
+  const sourceUrls = useAuthenticatedBrandAssetUrls(kit);
   useEffect(() => {
     let active = true;
     if (!brandId) {
@@ -327,7 +330,7 @@ export function GuidedBrandKitWorkspace({
               onClick={() => void persist(false, step)}
             >
               <Save size={15} />
-              {saving ? "Saving…" : "Save draft"}
+              {saving ? "Saving…" : "Save Brand Kit"}
             </button>
           </div>
         </header>
@@ -385,8 +388,46 @@ export function GuidedBrandKitWorkspace({
                   </select>
                 </label>
                 {field("Website — optional, not analyzed", "website", 2048)}
-                <label className="xp-field">Industry — optional<input value={String(guidedPayload(draft,kit).voice.industry || "")} maxLength={200} onChange={event=>edit({voiceExtras:{...draft.voiceExtras,industry:event.target.value},identityApproved:false})}/></label>
-                <label className="xp-field">Signature product — approved details only<input value={String(guidedPayload(draft,kit).voice.signatureProduct || "")} maxLength={500} onChange={event=>edit({voiceExtras:{...draft.voiceExtras,signatureProduct:event.target.value},identityApproved:false})}/><small>Describe your actual product. This does not verify shades, inventory or asset permissions.</small></label>
+                <label className="xp-field">
+                  Industry — optional
+                  <input
+                    value={String(
+                      guidedPayload(draft, kit).voice.industry || "",
+                    )}
+                    maxLength={200}
+                    onChange={(event) =>
+                      edit({
+                        voiceExtras: {
+                          ...draft.voiceExtras,
+                          industry: event.target.value,
+                        },
+                        identityApproved: false,
+                      })
+                    }
+                  />
+                </label>
+                <label className="xp-field">
+                  Signature product — approved details only
+                  <input
+                    value={String(
+                      guidedPayload(draft, kit).voice.signatureProduct || "",
+                    )}
+                    maxLength={500}
+                    onChange={(event) =>
+                      edit({
+                        voiceExtras: {
+                          ...draft.voiceExtras,
+                          signatureProduct: event.target.value,
+                        },
+                        identityApproved: false,
+                      })
+                    }
+                  />
+                  <small>
+                    Describe your actual product. This does not verify shades,
+                    inventory or asset permissions.
+                  </small>
+                </label>
                 {field("Business description — optional", "description", 2000)}
                 <button
                   className="xp-secondary"
@@ -573,7 +614,7 @@ export function GuidedBrandKitWorkspace({
                     className="xp-primary"
                     onClick={() => void persist(false, "assets")}
                   >
-                    Save draft & add assets
+                    Save Brand Kit & add assets
                   </button>
                 </>
               ) : (
@@ -612,7 +653,21 @@ export function GuidedBrandKitWorkspace({
                             })
                           }
                         />
-                        {asset.label || asset.fileName || "Brand asset"}
+                        {sourceUrls[asset.id] &&
+                          asset.mimeType?.startsWith("image/") !== false && (
+                            <img
+                              className="bp-source-thumb"
+                              src={sourceUrls[asset.id]}
+                              alt=""
+                            />
+                          )}
+                        <span>
+                          {asset.label || asset.fileName || "Brand asset"}
+                          <small className="block">
+                            {asset.role} / uploaded and ready; source permission
+                            is your explicit choice
+                          </small>
+                        </span>
                       </label>
                     ))}
                 </div>
@@ -804,6 +859,14 @@ export function GuidedBrandKitWorkspace({
                 Detailed creative guidelines
               </summary>
               <CreativeGuidelinesSection
+                categoryLabel={[
+                  BRAND_TAXONOMY.find((c) => c.id === draft.categoryId)?.label,
+                  BRAND_TAXONOMY.find(
+                    (c) => c.id === draft.categoryId,
+                  )?.niches.find((n) => n.id === draft.nicheId)?.label,
+                ]
+                  .filter(Boolean)
+                  .join(" / ")}
                 value={guidelinesDraftFromKit(
                   guidedPayload(draft, kit).voice.creative,
                   draft.guidelines,
@@ -838,9 +901,7 @@ export function GuidedBrandKitWorkspace({
                     ))}
                   </div>
                   <p>
-                    {draft.colors
-                      .map((c) => c.role + ": " + c.hex)
-                      .join(" Â· ")}
+                    {draft.colors.map((c) => c.role + ": " + c.hex).join(" · ")}
                   </p>
                   <h3>Fonts</h3>
                   <p>
@@ -852,7 +913,7 @@ export function GuidedBrandKitWorkspace({
                 <div>
                   <h3>Voice / personality</h3>
                   <p>
-                    {draft.tone} Â· {draft.personality}
+                    {draft.tone} · {draft.personality}
                   </p>
                   <h3>Assets</h3>
                   <p>
@@ -863,20 +924,7 @@ export function GuidedBrandKitWorkspace({
                   </p>
                 </div>
               </div>
-              <label className="xp-field">
-                Usage rules and optional restrictions
-                <textarea
-                  rows={4}
-                  value={draft.guidelines}
-                  maxLength={20000}
-                  onChange={(e) =>
-                    edit({
-                      guidelines: e.target.value,
-                      guidelinesApproved: false,
-                    })
-                  }
-                />
-              </label>
+
               <label className="xp-check">
                 <input
                   type="checkbox"
@@ -901,7 +949,7 @@ export function GuidedBrandKitWorkspace({
             </section>
           )}
           {step === "ready" && (
-            <div className="xp-split">
+            <div className="bp-ready-layout">
               <section className="xp-panel">
                 <h2>{kit?.name || draft.name}</h2>
                 <p>
@@ -933,7 +981,7 @@ export function GuidedBrandKitWorkspace({
                   <button className="xp-secondary" onClick={() => go("assets")}>
                     Manage assets
                   </button>
-                  {kit && isBrandTemplatesEnabled() && (
+                  {kit && (
                     <Link
                       className="xp-primary"
                       to={"/brands/" + kit.id + "/templates"}
@@ -946,37 +994,44 @@ export function GuidedBrandKitWorkspace({
                     Open Ad Studio →
                   </Link>
                 </div>
-                <h3>Brand Kit versions</h3>
-                {versionsLoading ? (
-                  <Skeleton className="h-32 w-full" />
-                ) : versionsError ? (
-                  <div role="alert">
-                    <p>{versionsError}</p>
-                    <button
-                      className="xp-secondary"
-                      onClick={() => kit && void loadVersions(kit.id)}
-                    >
-                      Retry history
-                    </button>
-                  </div>
-                ) : !versions.length ? (
-                  <EmptyState
-                    title="No version history available"
-                    description="Save the Brand Kit to create a version snapshot."
-                  />
-                ) : (
-                  <ol className="bp-versions">
-                    {versions.map((v) => (
-                      <li key={v.id}>
-                        <strong>Version {v.version}</strong>
-                        <span>{v.changeSummary || "Brand Kit update"}</span>
-                        <time>{new Date(v.createdAt).toLocaleString()}</time>
-                      </li>
-                    ))}
-                  </ol>
-                )}
+                <details className="bp-version-history">
+                  <summary>Version history ({versions.length})</summary>
+                  {versionsLoading ? (
+                    <Skeleton className="h-32 w-full" />
+                  ) : versionsError ? (
+                    <div role="alert">
+                      <p>{versionsError}</p>
+                      <button
+                        className="xp-secondary"
+                        onClick={() => kit && void loadVersions(kit.id)}
+                      >
+                        Retry history
+                      </button>
+                    </div>
+                  ) : !versions.length ? (
+                    <EmptyState
+                      title="No version history available"
+                      description="Save the Brand Kit to create a version snapshot."
+                    />
+                  ) : (
+                    <ol className="bp-versions">
+                      {versions.map((v) => (
+                        <li key={v.id}>
+                          <strong>Version {v.version}</strong>
+                          <span>{v.changeSummary || "Brand Kit update"}</span>
+                          <time>{new Date(v.createdAt).toLocaleString()}</time>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </details>
               </section>
-              {preview}
+              {kit && (
+                <BrandKitBrochure
+                  kit={kit}
+                  dirty={JSON.stringify(draft) !== saved.current}
+                />
+              )}
             </div>
           )}
         </fieldset>

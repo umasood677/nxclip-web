@@ -183,7 +183,7 @@ test("explicit project save performs one write, never creates a creative and nev
   assert.equal(writes, 2);
 });
 test("an uploaded model is not assumed authorized for template generation", () => {
-  assert.equal(selectedBrandAssetReadiness(null, ["brand_model"]).length, 0);
+  assert.equal(selectedBrandAssetReadiness(null, ["brand_model"]).length, 1);
   assert.equal(
     selectedBrandAssetReadiness(
       {
@@ -201,5 +201,40 @@ test("an uploaded model is not assumed authorized for template generation", () =
       ["brand_model"],
     ).length,
     1,
+  );
+});
+
+test("required product/model sources block an unbranded template before project creation", () => {
+  assert.equal(
+    selectedBrandAssetReadiness(null, ["product_image", "brand_model"]).length,
+    2,
+  );
+  assert.deepEqual(selectedBrandAssetReadiness(null, []), []);
+});
+
+test("ready uploads require explicit source approval before template project creation", () => {
+  const kit = {
+    id: "kit",
+    name: "Kit",
+    assets: [{ id: "product", role: "product_image", status: "ready" }],
+  };
+  assert.equal(selectedBrandAssetReadiness(kit, ["product_image"]).length, 1);
+  const reviewed = {
+    ...kit,
+    voice: {
+      studio: {
+        schemaVersion: 1 as const,
+        categoryId: "general",
+        nicheId: "test",
+        businessGoals: [],
+        identityApproved: true,
+        guidelinesApproved: true,
+        approvedAssetIds: ["product"],
+      },
+    },
+  };
+  assert.deepEqual(
+    selectedBrandAssetReadiness(reviewed, ["product_image"]),
+    [],
   );
 });

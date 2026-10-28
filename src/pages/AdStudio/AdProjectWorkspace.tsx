@@ -326,7 +326,7 @@ export default function AdProjectWorkspace() {
             projectId={project.id}
             canCreate={false}
             onCreateProject={() => undefined}
-            onGenerateConcepts={generateConcepts}
+            onGenerateConcepts={() => void generateConcepts()}
             onSaveBrief={() =>
               run(async () => {
                 await saveBrief();

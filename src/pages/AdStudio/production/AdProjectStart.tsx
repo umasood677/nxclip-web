@@ -26,6 +26,10 @@ export default function AdProjectStart() {
     [kit, setKit] = useState<BrandKitSummary | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
+  const [selectedBrandId, setSelectedBrandId] = useState(brandId),
+    [selectedKit, setSelectedKit] = useState<BrandKitSummary | null>(null),
+    [kitLoading, setKitLoading] = useState(false),
+    [kitError, setKitError] = useState("");
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -56,6 +60,42 @@ export default function AdProjectStart() {
       active = false;
     };
   }, [brandId]);
+  useEffect(() => {
+    let active = true;
+    setSelectedKit(null);
+    setKitError("");
+    if (loading) return;
+    if (!selectedBrandId) {
+      setKitLoading(false);
+      return;
+    }
+    if (!brands.some((b) => b.id === selectedBrandId)) {
+      setKitError("Choose an available owned Brand Kit.");
+      return;
+    }
+    setKitLoading(true);
+    void brandApi
+      .getKit(selectedBrandId)
+      .then((detail) => {
+        if (active) {
+          if (detail.id !== selectedBrandId)
+            throw Error("Brand context mismatch");
+          setSelectedKit(detail);
+        }
+      })
+      .catch(() => {
+        if (active)
+          setKitError(
+            "The selected Brand Kit could not load. Choose it again before creating the project.",
+          );
+      })
+      .finally(() => {
+        if (active) setKitLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedBrandId, loading, brands]);
   const example = exampleId
     ? resolveBrandHomeCatalog(kit).examples.find(
         (item) => item.id === exampleId,
@@ -65,6 +105,11 @@ export default function AdProjectStart() {
     ? getTemplateDef(templateId)
     : null;
   const blockers = [
+    ...(kitError ? [kitError] : []),
+    ...(selectedBrandId && selectedKit?.id !== selectedBrandId
+      ? ["Wait for the selected Brand Kit to finish loading."]
+      : []),
+    ...(kitLoading ? ["Checking selected Brand Kit sources..."] : []),
     ...(exampleId && !example
       ? [
           "This Example Brief is not available for the selected Brand Kit. Return Home and select it again.",
@@ -80,7 +125,7 @@ export default function AdProjectStart() {
       : []),
     ...(template
       ? selectedBrandAssetReadiness(
-          kit,
+          selectedKit,
           template.slots
             .filter((slot) => slot.required)
             .map((slot) =>
@@ -127,6 +172,8 @@ export default function AdProjectStart() {
             <AdProjectCreateForm
               brands={brands}
               initialBrandId={brandId}
+              onBrandChange={setSelectedBrandId}
+              brandsLoading={kitLoading}
               example={example}
               format={format || undefined}
               blockers={blockers}

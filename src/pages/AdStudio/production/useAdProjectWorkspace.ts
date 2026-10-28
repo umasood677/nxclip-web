@@ -278,13 +278,15 @@ export function useAdProjectWorkspace() {
     setSavedForm(JSON.stringify(form));
     return updated as WorkspaceProject;
   };
-  const generateConcepts = () =>
-    void run(async () => {
+  const generateConcepts = async () => {
+    let succeeded = false;
+    await run(async () => {
       if (!project) throw Error("Open a project before generating.");
       const generated = await generateProjectConcepts(
         adStudioApi,
         project,
         form,
+        {allowCampaignIdeaEdit:true},
       );
       setProject(generated.project);
       setSavedForm(JSON.stringify(form));
@@ -292,7 +294,10 @@ export function useAdProjectWorkspace() {
       setConcepts(result.concepts ?? []);
       setSource(result.generationSource ?? result.provider ?? null);
       toast.success("Concepts ready");
+      succeeded = true;
     });
+    return succeeded;
+  };
 
   const catalog = resolveBrandHomeCatalog(brand);
   const back = () => {

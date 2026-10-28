@@ -10,15 +10,16 @@ import type { BrandTemplatePresentation } from "../lib/brandHomeCatalog";
 import { templateSamplePreview } from "../lib/samplePreviewAssets";
 import { AD_FORMATS } from "../types";
 import type { NormalizedBrandContext } from "../../BrandKits/lib/brandContext";
-import {
-  BrandHomePreview,
-  aspectForFormat,
-} from "./BrandHomePreview";
+import { BrandHomePreview, aspectForFormat } from "./BrandHomePreview";
 
 type Props = {
+  limit?: number;
   selectedFormat: string;
   busy?: boolean;
-  onUseTemplate: (templateId: AdStudioTemplateId, format: AdSceneOutputFormatId) => void;
+  onUseTemplate: (
+    templateId: AdStudioTemplateId,
+    format: AdSceneOutputFormatId,
+  ) => void;
   /** W0A premium card presentation (default). */
   presentation?: "w0a" | "legacy";
   /** Hide internal section header when parent already shows one. */
@@ -69,6 +70,7 @@ function categoryFor(layoutFamily: string): string {
 
 export function TemplateGallery({
   selectedFormat,
+  limit,
   busy,
   onUseTemplate,
   presentation = "w0a",
@@ -79,7 +81,9 @@ export function TemplateGallery({
   catalogKey = "neutral",
   hideNote = false,
 }: Props) {
-  const [pickFormat, setPickFormat] = useState<Record<string, AdSceneOutputFormatId>>({});
+  const [pickFormat, setPickFormat] = useState<
+    Record<string, AdSceneOutputFormatId>
+  >({});
 
   const defaultFormat = useMemo(() => {
     const hit = AD_FORMATS.find((f) => f.id === selectedFormat);
@@ -112,7 +116,7 @@ export function TemplateGallery({
           </div>
         ) : null}
         <div className="w0a-grid w0a-grid-3">
-          {TEMPLATE_CATALOG_V1.map((tpl) => {
+          {TEMPLATE_CATALOG_V1.slice(0, limit).map((tpl) => {
             const format =
               pickFormat[tpl.templateId] ??
               (tpl.formats.includes(defaultFormat as AdSceneOutputFormatId)
@@ -126,7 +130,10 @@ export function TemplateGallery({
               : `${categoryFor(tpl.layoutFamily)} · ${formatChip(format)}`;
 
             return (
-              <article key={`${catalogKey}-${tpl.templateId}`} className="w0a-card">
+              <article
+                key={`${catalogKey}-${tpl.templateId}`}
+                className="w0a-card"
+              >
                 <BrandHomePreview
                   fallbackSrc={preview}
                   alt={`${title} visual preview`}
@@ -137,7 +144,11 @@ export function TemplateGallery({
                 <div className="w0a-card-body">
                   <h3>{title}</h3>
                   <div className="w0a-meta">{meta}</div>
-                  <div className="w0a-formats" role="group" aria-label="Aspect ratio">
+                  <div
+                    className="w0a-formats"
+                    role="group"
+                    aria-label="Aspect ratio"
+                  >
                     {tpl.formats.map((f) => (
                       <button
                         key={f}
@@ -145,7 +156,10 @@ export function TemplateGallery({
                         disabled={busy}
                         className={cn("w0a-chip", format === f && "on")}
                         onClick={() =>
-                          setPickFormat((prev) => ({ ...prev, [tpl.templateId]: f }))
+                          setPickFormat((prev) => ({
+                            ...prev,
+                            [tpl.templateId]: f,
+                          }))
                         }
                       >
                         {formatChip(f)}
@@ -160,7 +174,11 @@ export function TemplateGallery({
                   >
                     {busy ? (
                       <>
-                        <Loader2 className="animate-spin mr-2" size={14} aria-hidden />
+                        <Loader2
+                          className="animate-spin mr-2"
+                          size={14}
+                          aria-hidden
+                        />
                         Creating…
                       </>
                     ) : (
@@ -179,7 +197,7 @@ export function TemplateGallery({
   return (
     <section className="space-y-3" key={catalogKey}>
       <div className="w0a-grid w0a-grid-3">
-        {TEMPLATE_CATALOG_V1.map((tpl) => {
+        {TEMPLATE_CATALOG_V1.slice(0, limit).map((tpl) => {
           const format =
             pickFormat[tpl.templateId] ??
             (tpl.formats.includes(defaultFormat as AdSceneOutputFormatId)

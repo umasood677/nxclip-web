@@ -1,3 +1,4 @@
+import {generateProjectConcepts} from "./projectWorkspace";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { newWorkspaceProject, projectBriefForm, workspaceBrief, loadWorkspace, createProjectTemplate, createProjectConcept, projectWorkspacePath, creativeEditorPath, type WorkspaceProject, type WorkspaceCreative } from "./projectWorkspace";
@@ -179,3 +180,5 @@ test('approved presentation can explicitly edit Campaign Idea while legacy saves
  const updated=await saveWorkspaceBrief(api,project,form,{allowCampaignIdeaEdit:true});assert.equal(updated.brief?.campaignIdea,form.campaignIdea);
  await assert.rejects(()=>saveWorkspaceBrief(api,project,{...form,campaignIdea:'   '},{allowCampaignIdeaEdit:true}),/Campaign Idea/);
 });
+
+test("modern save-and-generate consumes an explicitly edited campaign idea only after verified persistence",async()=>{const edited=projectBriefForm(project);edited.campaignIdea="A newly edited campaign idea";const calls:string[]=[];let saved:WorkspaceProject=project;await generateProjectConcepts({updateProject:async(id,body)=>{calls.push("save");saved={...project,...body,brief:{...project.brief,...body.brief as object}} as WorkspaceProject;return saved;},generateConcepts:async()=>{calls.push("generate");assert.equal(saved.brief?.campaignIdea,edited.campaignIdea);return {concepts:[]};}},project,edited,{allowCampaignIdeaEdit:true});assert.deepEqual(calls,["save","generate"]);});

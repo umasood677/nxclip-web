@@ -29,6 +29,7 @@ type FormProps = {
   onRetryBrands?: () => void;
   onCancel: () => void;
   onCreated?: (project: WorkspaceProject) => void;
+  onBrandChange?: (id: string) => void;
   initialBrandId?: string;
   example?: FeaturedExample;
   format?: string;
@@ -41,6 +42,7 @@ export function AdProjectCreateForm({
   onRetryBrands,
   onCancel,
   onCreated,
+  onBrandChange,
   initialBrandId = "",
   example,
   format,
@@ -125,8 +127,11 @@ export function AdProjectCreateForm({
         <select
           id="project-brand"
           value={brandId}
-          onChange={(e) => setBrandId(e.target.value)}
-          disabled={busy || brandsLoading || !!example || !!format}
+          onChange={(e) => {
+            setBrandId(e.target.value);
+            onBrandChange?.(e.target.value);
+          }}
+          disabled={busy || brandsLoading}
           className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
         >
           <option value="">Default Brand — no Brand Kit</option>
@@ -137,9 +142,8 @@ export function AdProjectCreateForm({
           ))}
         </select>
         <p className="text-xs text-muted-foreground">
-          {example || format
-            ? "This starting point keeps the Brand Kit you selected on Home. Go back to choose another."
-            : "Default Brand does not inherit assets from any previous project."}
+          Default Brand does not inherit previous assets. Changing Brand Kit
+          keeps your typed campaign idea and rechecks source requirements.
         </p>
         {brandsLoading && <p role="status">Loading Brand Kits…</p>}
         {brandsError && (

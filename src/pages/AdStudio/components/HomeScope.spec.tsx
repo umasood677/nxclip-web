@@ -1,3 +1,4 @@
+import { brandMenuPosition } from "./BrandKitHeaderControl";
 import React from "react";
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -117,4 +118,73 @@ test("approved saved recipes render their actual scene and authorized asset IDs,
   assert.match(html, /Actual saved recipe/);
   assert.match(html, /blob:authorized-product/);
   assert.doesNotMatch(html, /Unapproved recipe|sample-assets/);
+});
+
+test("Home keeps creation in the hero, removes extra navigation and limits template cards", () => {
+  const html = renderToStaticMarkup(
+    <MemoryRouter>
+      <AdStudioHome
+        {...actions}
+        projects={[]}
+        brands={[]}
+        brandsLoading={false}
+        selectedBrandId=""
+        selectedFormat="square_1080"
+        templatesV1Enabled
+        onUseTemplate={() => undefined}
+      />
+    </MemoryRouter>,
+  );
+  assert.doesNotMatch(
+    html,
+    /Enter the gallery|Open a project to view, edit and export|<nav/,
+  );
+  assert.match(html, /w0a-hero-actions/);
+  assert.ok(html.indexOf("w0a-ads-hero__brand") < html.indexOf("w0a-ads-hero__line"));
+  assert.ok(html.indexOf("w0a-ads-hero__line") < html.indexOf("w0a-hero-actions"));
+  assert.match(html, /All Templates/);
+  assert.match(html, /All Example Briefs/);
+  assert.equal((html.match(/Use template<\/button>/g) || []).length, 6);
+});
+test("full catalog opens all standard layouts with return navigation", () => {
+  const html = renderToStaticMarkup(
+    <MemoryRouter initialEntries={["/create/ad?catalog=templates"]}>
+      <AdStudioHome
+        {...actions}
+        projects={[]}
+        brands={[]}
+        brandsLoading={false}
+        selectedBrandId=""
+        selectedFormat="square_1080"
+        templatesV1Enabled
+        onUseTemplate={() => undefined}
+      />
+    </MemoryRouter>,
+  );
+  assert.match(html, /Back to Ad Studio/);
+  assert.equal((html.match(/Use template<\/button>/g) || []).length, 10);
+});
+
+test("Brand Kit menu avoids the mobile bottom navigation and clamps horizontal placement", () => {
+  const mobile = brandMenuPosition(
+    { top: 459, bottom: 495, left: 32 },
+    { width: 384, height: 668 },
+    { width: 240, height: 150 },
+  );
+  assert.equal(mobile.top, "auto");
+  assert.equal(mobile.bottom, "calc(100% + 8px)");
+  assert.equal(mobile.left, 0);
+  const right = brandMenuPosition(
+    { top: 80, bottom: 116, left: 340 },
+    { width: 390, height: 800 },
+    { width: 240, height: 150 },
+  );
+  assert.ok(340 + Number(right.left) + 240 <= 374);
+  assert.equal(right.top, "calc(100% + 8px)");
+  const long = brandMenuPosition(
+    { top: 100, bottom: 136, left: 20 },
+    { width: 1440, height: 900 },
+    { width: 240, height: 900 },
+  );
+  assert.ok(Number(long.maxHeight) <= 360);
 });

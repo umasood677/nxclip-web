@@ -29,6 +29,7 @@ export function BrandKitJsonTools({
   const [open, setOpen] = useState(false),
     [text, setText] = useState(""),
     [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
   const [mapped, setMapped] = useState<MappedImportKit | null>(null);
   function review(value: unknown) {
     const items = mapImportDocument(value);
@@ -48,7 +49,7 @@ export function BrandKitJsonTools({
         <FileJson size={15} /> Import / export JSON
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto">
+        <DialogContent className="sm:max-w-4xl max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Bring your brand into NxClip</DialogTitle>
             <DialogDescription>
@@ -56,7 +57,7 @@ export function BrandKitJsonTools({
               Existing uploads and permissions stay attached to the same kit.
             </DialogDescription>
           </DialogHeader>
-          <details className="rounded-lg border p-3">
+          <details open className="rounded-lg border p-4 bg-muted/30">
             <summary className="cursor-pointer font-medium">
               How to prepare compatible JSON
             </summary>
@@ -67,11 +68,29 @@ export function BrandKitJsonTools({
               information. Assets are descriptions, not uploads or consent
               grants.
             </p>
-            <pre className="text-xs max-h-48 overflow-auto mt-3">
+            <pre className="text-xs max-h-64 overflow-auto mt-3 p-4 rounded-lg bg-zinc-950 text-emerald-200 whitespace-pre">
               {stringifyExport(BRAND_KIT_JSON_SAMPLE)}
             </pre>
           </details>
+          <h3 className="font-semibold">Sample and export</h3>
           <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(
+                    stringifyExport(BRAND_KIT_JSON_SAMPLE),
+                  );
+                  setCopied(true);
+                } catch {
+                  setError(
+                    "Clipboard unavailable. Download the sample instead.",
+                  );
+                }
+              }}
+            >
+              {copied ? "Sample copied" : "Copy sample"}
+            </Button>
             <Button
               variant="outline"
               onClick={() =>
@@ -117,6 +136,11 @@ export function BrandKitJsonTools({
               />
             </label>
           </div>
+          <h3 className="font-semibold">Import your JSON</h3>
+          <p className="text-sm text-muted-foreground">
+            Choose a file above or paste below. Validate, apply to draft, then
+            explicitly save your Brand Kit.
+          </p>
           <Textarea
             aria-label="Brand Kit JSON"
             rows={10}

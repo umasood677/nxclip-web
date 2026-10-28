@@ -1,5 +1,10 @@
-import {buildBrandAssetUrlMapByStorageKey} from "../canvas/brandAssetUrls";
-import { SavedBrandTemplates, useSavedBrandTemplates } from "../components/SavedBrandTemplates";
+import { BrandHomePreview } from "../components/BrandHomePreview";
+import { normalizeBrandContext } from "../../BrandKits/lib/brandContext";
+import { buildBrandAssetUrlMapByStorageKey } from "../canvas/brandAssetUrls";
+import {
+  SavedBrandTemplates,
+  useSavedBrandTemplates,
+} from "../components/SavedBrandTemplates";
 import { Plus as CreatePlus } from "lucide-react";
 import { ProductionImageGeneration } from "./ProductionImageGeneration";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -41,11 +46,40 @@ export default function ProductionProjectWorkspace({
 }: {
   controller: AdProjectWorkspaceController;
 }) {
-  const storageKeyUrls = useMemo(()=>buildBrandAssetUrlMapByStorageKey(c.brand?{...c.brand,assets:c.brand.assets?.map(asset=>({...asset,readUrl:c.assetUrls[asset.id]||null}))}:null),[c.brand,c.assetUrls]);
+  const storageKeyUrls = useMemo(
+    () =>
+      buildBrandAssetUrlMapByStorageKey(
+        c.brand
+          ? {
+              ...c.brand,
+              assets: c.brand.assets?.map((asset) => ({
+                ...asset,
+                readUrl: c.assetUrls[asset.id] || null,
+              })),
+            }
+          : null,
+      ),
+    [c.brand, c.assetUrls],
+  );
   const [query] = useSearchParams(),
     screen = parseExperienceScreen(query.get("view")),
     title = useRef<HTMLHeadingElement>(null);
-  const savedBrandTemplates = useSavedBrandTemplates(screen === "templates" ? c.project?.brandKitId || "" : "");
+  const savedBrandTemplates = useSavedBrandTemplates(
+    screen === "templates" ? c.project?.brandKitId || "" : "",
+  );
+  const brandVisual = useMemo(
+    () =>
+      c.brand
+        ? normalizeBrandContext({
+            ...c.brand,
+            assets: c.brand.assets?.map((a) => ({
+              ...a,
+              readUrl: c.assetUrls[a.id] || null,
+            })),
+          })
+        : null,
+    [c.brand, c.assetUrls],
+  );
   const [comparison, setComparison] = useState<string[]>([]);
   const concept =
     c.concepts.find((item) => item.conceptId === query.get("concept")) ||
@@ -118,7 +152,10 @@ export default function ProductionProjectWorkspace({
   }, [template, bindingBrand, c.form]);
   if (c.loading)
     return (
-      <main className="xp-root nxclip-production bp-guided-root" aria-busy="true">
+      <main
+        className="xp-root nxclip-production bp-guided-root"
+        aria-busy="true"
+      >
         <div className="xp-main">
           <Skeleton className="h-16 w-2/3" />
           <div className="grid gap-6 md:grid-cols-2">
@@ -196,6 +233,9 @@ export default function ProductionProjectWorkspace({
       )}
     </label>
   );
+  const generateDirections = async () => {
+    if (await c.generateConcepts()) go("concepts");
+  };
   const selectConcept = (id: string) => {
     c.setSelectedConceptId(id);
     go("detail", { conceptId: id });
@@ -220,9 +260,13 @@ export default function ProductionProjectWorkspace({
       {!c.concepts.length ? (
         <EmptyState
           title="Your creative direction starts with a brief"
-          description="No saved concepts exist for this project. Review the Working Brief and configured generation controls."
-          actionLabel="Review Working Brief"
-          onAction={editBrief}
+          description="Save your Working Brief and generate campaign directions. Concepts are planning proposals; image generation is a separate step. Provider provenance is shown on each result."
+          actionLabel={
+            c.busy ? "Generating directions..." : "Generate from Working Brief"
+          }
+          onAction={() => {
+            if (!c.busy) void generateDirections();
+          }}
         />
       ) : (
         <div className="xp-gallery">
@@ -297,7 +341,7 @@ export default function ProductionProjectWorkspace({
             <FolderOpen size={15} /> Workspace
           </button>
         </div>
-        <div className="xp-actions">{import.meta.env.DEV && <Link className="xp-secondary" to="/create/ad/uat">UAT checklist</Link>}
+        <nav className="bp-workspace-nav" aria-label="Campaign workspace">
           <button className="xp-secondary" onClick={editBrief}>
             Working Brief
           </button>
@@ -318,7 +362,40 @@ export default function ProductionProjectWorkspace({
               Brand intelligence
             </Link>
           )}
-        </div>
+        </nav>
+        {project.brandKitId && c.brand && (
+          <section
+            className="bp-campaign-brand"
+            aria-label="Campaign Brand Kit"
+          >
+            <div>
+              {brandVisual?.assets.logoUrl && (
+                <img src={brandVisual.assets.logoUrl} alt="" />
+              )}
+              <strong>{c.brand.name}</strong>
+              <small>
+                Version {c.brand.version || 1} / {c.brand.assets?.length || 0}{" "}
+                uploaded assets / {bindingBrand?.assets?.length || 0} approved
+                sources
+              </small>
+            </div>
+            <div className="bp-brand-swatches">
+              {(c.brand.colors || []).slice(0, 5).map((color, i) => (
+                <span
+                  key={i}
+                  title={`${color.role}: ${color.hex}`}
+                  style={{ background: color.hex }}
+                />
+              ))}
+            </div>
+            <Link
+              className="xp-secondary"
+              to={`/brands/${encodeURIComponent(c.brand.id)}/guided?step=ready`}
+            >
+              Review Brand Kit
+            </Link>
+          </section>
+        )}
         {c.error && (
           <p className="xp-notice" role="alert">
             {c.error}
@@ -418,7 +495,30 @@ export default function ProductionProjectWorkspace({
               <div className="xp-form-grid">
                 {field("Product category", "productCategory")}
                 {field("Desired tone", "desiredTone")}
-                {field("Call to action", "cta")}
+                <label className="xp-field">
+                  Call to action
+                  <input
+                    list="campaign-cta-options"
+                    value={c.form.cta}
+                    onChange={(e) =>
+                      c.setForm((old) => ({ ...old, cta: e.target.value }))
+                    }
+                  />
+                  <datalist id="campaign-cta-options">
+                    {[
+                      "Learn more",
+                      "Shop now",
+                      "Discover the collection",
+                      "Book now",
+                      "Get started",
+                      "Sign up",
+                      "Contact us",
+                    ].map((label) => (
+                      <option key={label} value={label} />
+                    ))}
+                  </datalist>
+                  <small>Choose a suggestion or enter your own.</small>
+                </label>
                 <label className="xp-field">
                   Format
                   <select
@@ -467,23 +567,37 @@ export default function ProductionProjectWorkspace({
                 These existing creative briefs provide strategy; they are
                 distinct from visual templates and category studies.
               </p>
-              {c.catalog.examples.map((example) => (
-                <button
-                  className="xp-asset-choice"
-                  key={example.id}
-                  onClick={() => {
-                    c.setForm(exampleBriefForm(project, example));
-                    c.setCompose(true);
-                  }}
-                >
-                  <span>
-                    <strong>{example.title}</strong>
-                    <small>
-                      {example.exampleObjective || example.supporting}
-                    </small>
-                  </span>
-                </button>
-              ))}
+              <div className="bp-brief-options">
+                {c.catalog.examples.map((example) => (
+                  <button
+                    className="xp-asset-choice"
+                    key={example.id}
+                    onClick={() => {
+                      c.setForm(exampleBriefForm(project, example));
+                      c.setCompose(true);
+                    }}
+                  >
+                    <div className="bp-brief-thumbnail">
+                      <BrandHomePreview
+                        brand={brandVisual}
+                        fallbackSrc={
+                          example.previewImage ||
+                          "/ad-studio/sample-assets/w0a-product-hero.jpg"
+                        }
+                        aspect="portrait"
+                        alt={example.title}
+                        headline={example.headline}
+                      />
+                    </div>
+                    <span>
+                      <strong>{example.title}</strong>
+                      <small>
+                        {example.exampleObjective || example.supporting}
+                      </small>
+                    </span>
+                  </button>
+                ))}
+              </div>
             </aside>
           </div>
         )}
@@ -494,15 +608,24 @@ export default function ProductionProjectWorkspace({
               reviewed brand assets. Catalog reference previews are not
               generated advertisements.
             </p>
-            {project.brandKitId ? <SavedBrandTemplates brandId={project.brandKitId} data={savedBrandTemplates} assetUrls={c.assetUrls} project={project}/> : <TemplateGallery
-              selectedFormat={c.form.outputFormat}
-              busy={c.busy}
-              hideHeader
-              onUseTemplate={(id, format) => {
-                c.setForm((old) => ({ ...old, outputFormat: format }));
-                go("template", { templateId: id });
-              }}
-            />}
+            {project.brandKitId ? (
+              <SavedBrandTemplates
+                brandId={project.brandKitId}
+                data={savedBrandTemplates}
+                assetUrls={c.assetUrls}
+                project={project}
+              />
+            ) : (
+              <TemplateGallery
+                selectedFormat={c.form.outputFormat}
+                busy={c.busy}
+                hideHeader
+                onUseTemplate={(id, format) => {
+                  c.setForm((old) => ({ ...old, outputFormat: format }));
+                  go("template", { templateId: id });
+                }}
+              />
+            )}
             {project.brandKitId && (
               <Link
                 className="xp-secondary"
@@ -599,6 +722,14 @@ export default function ProductionProjectWorkspace({
               ) : (
                 c.brand.assets.map((asset) => (
                   <div className="xp-asset-choice" key={asset.id}>
+                    {c.assetUrls[asset.id] &&
+                      asset.mimeType?.startsWith("image/") !== false && (
+                        <img
+                          className="bp-source-thumb"
+                          src={c.assetUrls[asset.id]}
+                          alt={asset.label || asset.role || "Brand source"}
+                        />
+                      )}
                     <span>
                       <strong>
                         {asset.label || asset.fileName || asset.role}
@@ -643,10 +774,17 @@ export default function ProductionProjectWorkspace({
               <p className="xp-lede">
                 Compare direction before committing to a creative. Unrendered
                 concepts are shown as strategy, with no illustrative image
-                presented as live AI output.
+                presented as live AI output. Select “Compare direction” on at
+                least two cards to enable comparison.
               </p>
               <button
                 className="xp-secondary"
+                disabled={screen === "concepts" && comparison.length < 2}
+                title={
+                  comparison.length < 2
+                    ? "Select at least two concept directions below"
+                    : "Compare selected concepts"
+                }
                 onClick={() =>
                   go(screen === "concepts" ? "compare" : "concepts")
                 }
@@ -896,50 +1034,73 @@ export default function ProductionProjectWorkspace({
         {screen === "preflight" && (
           <div className="xp-split">
             <section className="xp-panel">
-              <h2>Know the source of every decision.</h2>
-              <ul>
-                <li>Owned project: loaded through existing authorization.</li>
-                <li>
-                  Brand:{" "}
-                  {project.brandKitName ||
-                    c.brand?.name ||
-                    "Default Brand; no inherited kit"}
-                </li>
-                <li>
-                  Reviewed ready source assets:{" "}
-                  {bindingBrand?.assets?.length || 0}
-                </li>
-                <li>Saved concepts: {c.concepts.length}</li>
-                <li>
-                  Existing template engine:{" "}
-                  {c.templatesEnabled ? "enabled" : "disabled"}
-                </li>
-                <li>
-                  New AI execution: separate reviewed cost authorization
-                  required.
-                </li>
-              </ul>
-              <p className="xp-notice">
-                This is local readiness information, not provider availability,
-                a credit quote, identity approval or creative-quality PASS. Real
-                AI execution controls remain gated until that slice is verified.
+              <h2>Your campaign readiness</h2>
+              <p>
+                Review what is saved and what still needs your decision before
+                creating an advertisement.
               </p>
+              <div className="bp-readiness-grid">
+                <article>
+                  <strong>Campaign project</strong>
+                  <span>Saved / authorized account access</span>
+                  <small>{project.name}</small>
+                </article>
+                <article>
+                  <strong>Brand identity</strong>
+                  <span>{c.brand?.name || "Default Brand"}</span>
+                  <small>
+                    {c.brand?.voice?.studio?.identityApproved
+                      ? "Identity reviewed"
+                      : c.brand
+                        ? "Identity review required in Brand Kit"
+                        : "No previous kit inherited"}
+                  </small>
+                </article>
+                <article>
+                  <strong>Creative sources</strong>
+                  <span>
+                    {bindingBrand?.assets?.length || 0} approved ready sources
+                  </span>
+                  <small>
+                    Uploaded files require a separate usage decision. Human
+                    models require likeness permission.
+                  </small>
+                </article>
+                <article>
+                  <strong>Working Brief</strong>
+                  <span>
+                    {c.draftDirty ? "Unsaved changes" : "Saved brief"}
+                  </span>
+                  <small>
+                    Generating concepts saves and verifies the brief first. A
+                    failed save stops the request.
+                  </small>
+                </article>
+                <article>
+                  <strong>Creative directions</strong>
+                  <span>{c.concepts.length} saved concepts</span>
+                  <small>
+                    Concepts are strategy proposals; image generation is a
+                    separate, explicitly initiated operation.
+                  </small>
+                </article>
+              </div>
               <button className="xp-primary" onClick={() => go("templates")}>
                 Use an existing native template →
               </button>
               <button
-                className="xp-secondary"
-                onClick={() => {
-                  if (c.confirmLeave())
-                    c.navigate(
-                      "/create/ad/projects/" +
-                        encodeURIComponent(project.id) +
-                        "?view=legacy",
-                    );
-                }}
+                className="xp-primary"
+                disabled={c.busy}
+                onClick={() => void generateDirections()}
               >
-                Open existing project generation controls →
+                Save brief & generate concepts
               </button>
+              <p className="xp-notice">
+                Concept planning uses the configured provider and displays its
+                provenance. A heuristic direction is not an AI-generated image.
+                Source approvals remain required for image and template
+                execution.
+              </p>
             </section>
             <aside className="xp-panel">
               <h2>Save before generation.</h2>

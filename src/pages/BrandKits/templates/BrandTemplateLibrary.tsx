@@ -293,10 +293,31 @@ export default function BrandTemplateLibrary() {
     });
   if (!enabled)
     return (
-      <EmptyState
-        title="Brand Template integration is not enabled"
-        description="The existing Template Gallery and projects remain available. Schema provisioning and production acceptance are required before this gated library is activated."
-      />
+      <main className="xp-root nxclip-production bp-guided-root">
+        <div className="xp-main">
+          <Link className="xp-breadcrumb" to="/create/ad">
+            Ad Studio
+          </Link>
+          <section className="xp-panel">
+            <span className="xp-kicker">BRAND TEMPLATE STUDIO</span>
+            <h1>Your identity. A collection of editable layouts.</h1>
+            <EmptyState
+              title="Prepare your brand for its template collection"
+              description="Review identity, product sources, logo and permissions in your existing Brand Kit. Native template preparation becomes available after local activation; it does not require paid image generation."
+              actionLabel="Review Brand Kit"
+              onAction={() =>
+                navigate(
+                  `/brands/${encodeURIComponent(brandId)}/guided?step=ready`,
+                )
+              }
+            />
+            <p className="xp-notice">
+              Template preparation is currently disabled in this local frontend.
+              Your saved Brand Kit and projects are unchanged.
+            </p>
+          </section>
+        </div>
+      </main>
     );
   if (loading)
     return (

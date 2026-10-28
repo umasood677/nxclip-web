@@ -1039,7 +1039,7 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(12, 13, 16, 0.82) 0%, rgba(12, 13, 16, 0.35) 42%, rgba(12, 13, 16, 0.55) 100%),
+    linear-gradient(90deg, rgba(12, 13, 16, 0.5) 0%, rgba(12, 13, 16, 0.12) 42%, rgba(12, 13, 16, 0.24) 100%),
     linear-gradient(180deg, rgba(12, 13, 16, 0.2) 0%, transparent 30%, rgba(12, 13, 16, 0.75) 100%);
 }
 .ad-studio-w0a .w0a-ads-hero__copy {
@@ -1529,3 +1529,19 @@
   font-size: 0.78rem;
   color: #e8d9a0;
 }
+
+.ad-studio-w0a .w0a-hero-actions {display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin:18px 0 0;width:fit-content;padding:0;border:0;background:transparent}
+.ad-studio-w0a .w0a-ads-hero__brand,.ad-studio-w0a .w0a-ads-hero__line{text-shadow:0 2px 24px #000}
+
+.ad-studio-w0a [hidden]{display:none!important}
+
+/* Hero controls must escape the artwork crop and remain usable on narrow screens. */
+.ad-studio-w0a .w0a-ads-hero{overflow:visible;z-index:5}
+.ad-studio-w0a .w0a-ads-hero__world{overflow:hidden}
+.ad-studio-w0a .w0a-ads-hero__line{max-width:none;white-space:nowrap;font-size:clamp(11px,2.8vw,19px);margin:0;letter-spacing:-.02em}
+.ad-studio-w0a .w0a-ads-hero__kit-label{color:var(--w0a-hero-accent,var(--w0a-accent))}
+.ad-studio-w0a .w0a-hero-actions .w0a-brand-chip__btn,.ad-studio-w0a .w0a-hero-actions .w0a-create-project{border:0;box-shadow:none}
+.ad-studio-w0a .w0a-hero-actions .w0a-brand-chip__btn{background:#191b22e6}
+.ad-studio-w0a .w0a-hero-actions .w0a-brand-chip__menu{left:0;right:auto;min-width:min(240px,calc(100vw - 64px));max-width:min(320px,calc(100vw - 64px));max-height:min(360px,45vh);z-index:80}
+.ad-studio-w0a .w0a-hero-actions button:focus-visible{outline:2px solid var(--w0a-accent);outline-offset:4px}
+@media(max-width:420px){.ad-studio-w0a .w0a-hero-actions{gap:18px}}

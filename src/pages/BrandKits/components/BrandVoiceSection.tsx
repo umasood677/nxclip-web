@@ -22,7 +22,9 @@ type Props = {
   onChange: (next: VoiceDraft) => void;
 };
 
-export function voiceDraftFromKit(voice: BrandVoiceFields | null | undefined): VoiceDraft {
+export function voiceDraftFromKit(
+  voice: BrandVoiceFields | null | undefined,
+): VoiceDraft {
   return {
     personality: voice?.personality ?? "",
     tone: voice?.tone ?? "",
@@ -62,12 +64,12 @@ export function BrandVoiceSection({ value, onChange }: Props) {
   const set = (patch: Partial<VoiceDraft>) => onChange({ ...value, ...patch });
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 bp-detail-form">
       <div>
         <h2 className="font-display text-lg font-semibold">Brand Voice</h2>
         <p className="text-sm text-muted-foreground">
-          Tone, vocabulary, and copy patterns for Ad Studio briefs. Saves into Brand
-          Voice JSON — identity fields on other tabs are preserved.
+          Tone, vocabulary, and copy patterns for Ad Studio briefs. Saves into
+          Brand Voice JSON — identity fields on other tabs are preserved.
         </p>
       </div>
 
@@ -159,7 +161,9 @@ export function BrandVoiceSection({ value, onChange }: Props) {
             value={value.exampleHeadlines}
             onChange={(e) => set({ exampleHeadlines: e.target.value })}
             rows={3}
-            placeholder={"One headline per line\nSignature Red, Perfectly Matte"}
+            placeholder={
+              "One headline per line\nSignature Red, Perfectly Matte"
+            }
           />
         </div>
         <div className="sm:col-span-2">

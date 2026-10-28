@@ -9,6 +9,7 @@ export function AdStudioLoader({ label = "Opening Ad Studio" }: Props) {
   return (
     <div
       className="ad-studio-w0a ad-studio-loader"
+      style={{ minHeight: "50vh", display: "grid", placeContent: "center" }}
       role="status"
       aria-live="polite"
       aria-label={label}
@@ -19,8 +20,6 @@ export function AdStudioLoader({ label = "Opening Ad Studio" }: Props) {
         <span className="ad-studio-loader__frame ad-studio-loader__frame--c" />
         <span className="ad-studio-loader__orb" />
       </div>
-      <p className="ad-studio-loader__brand">Ad Studio</p>
-      <p className="ad-studio-loader__label">{label}</p>
       <div className="ad-studio-loader__bar" aria-hidden>
         <span />
       </div>

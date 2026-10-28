@@ -23,23 +23,31 @@ export type GuidelinesDraft = {
 };
 
 type Props = {
+  categoryLabel?: string;
   value: GuidelinesDraft;
   onChange: (next: GuidelinesDraft) => void;
 };
 
-const ZOE_EXAMPLE: Partial<GuidelinesDraft> = {
-  visualStyle: "Luxury beauty editorial; dark burgundy atmosphere",
-  photographyDirection: "Soft beauty lighting, shallow depth, couture stills",
-  lighting: "Soft key with gentle rim; avoid harsh flash",
-  composition: "Centered product hero or three-quarter beauty portrait",
-  backgroundPreferences: "Deep neutrals or studio gradient; no clutter",
-  colorUsage: "Lead with signature red; keep neutrals supporting",
-  typographyUsage: "Elegant headline; restrained body; high contrast CTA",
-  logoPlacement: "Bottom corner with clear space equal to logo height",
-  productRepresentation: "Show true packaging and shade; no invented logos",
-  restrictedTreatments: "No heavy filters that alter lipstick shade",
-  prohibitedClaims: "No medical, clinical, or permanent results claims",
-};
+export function categoryGuidelineStarter(
+  categoryLabel = "your category",
+): Partial<GuidelinesDraft> {
+  return {
+    visualStyle: `A distinctive ${categoryLabel} campaign grounded in the saved brand identity`,
+    photographyDirection: `Show approved ${categoryLabel} products or services clearly in a credible setting`,
+    lighting: "Consistent, natural-looking light with readable product details",
+    composition: "One clear focal point; room for headline, logo and CTA",
+    backgroundPreferences:
+      "An uncluttered setting appropriate to the campaign and audience",
+    colorUsage: "Use the saved brand palette with sufficient text contrast",
+    typographyUsage: "Use saved headline and body roles with a clear hierarchy",
+    logoPlacement: "Respect the original logo and clear space",
+    productRepresentation:
+      "Preserve actual packaging, proportions and approved product details",
+    restrictedTreatments:
+      "Do not invent products, labels, shades or endorsements",
+    prohibitedClaims: "Only use substantiated, owner-approved claims",
+  };
+}
 
 export function guidelinesDraftFromKit(
   creative: BrandCreativeGuidelines | null | undefined,
@@ -62,7 +70,9 @@ export function guidelinesDraftFromKit(
   };
 }
 
-export function creativeFromDraft(draft: GuidelinesDraft): BrandCreativeGuidelines {
+export function creativeFromDraft(
+  draft: GuidelinesDraft,
+): BrandCreativeGuidelines {
   const pick = (v: string) => v.trim() || undefined;
   return {
     visualStyle: pick(draft.visualStyle),
@@ -80,10 +90,19 @@ export function creativeFromDraft(draft: GuidelinesDraft): BrandCreativeGuidelin
   };
 }
 
-export function CreativeGuidelinesSection({ value, onChange }: Props) {
-  const set = (patch: Partial<GuidelinesDraft>) => onChange({ ...value, ...patch });
+export function CreativeGuidelinesSection({
+  value,
+  onChange,
+  categoryLabel,
+}: Props) {
+  const set = (patch: Partial<GuidelinesDraft>) =>
+    onChange({ ...value, ...patch });
 
-  const fields: Array<{ key: keyof GuidelinesDraft; label: string; rows?: number }> = [
+  const fields: Array<{
+    key: keyof GuidelinesDraft;
+    label: string;
+    rows?: number;
+  }> = [
     { key: "visualStyle", label: "Visual style" },
     { key: "photographyDirection", label: "Photography direction" },
     { key: "lighting", label: "Lighting" },
@@ -99,22 +118,26 @@ export function CreativeGuidelinesSection({ value, onChange }: Props) {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 bp-detail-form">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-display text-lg font-semibold">Creative Guidelines</h2>
+          <h2 className="font-display text-lg font-semibold">
+            Creative Guidelines
+          </h2>
           <p className="text-sm text-muted-foreground">
-            Structured advertising preferences plus optional freeform notes. Examples
-            are suggestions — insert only if useful.
+            Category-aware starter guidance is deterministic, not AI analysis.
+            Review and edit every suggestion before saving.
           </p>
         </div>
         <Button
           type="button"
           size="sm"
           variant="outline"
-          onClick={() => onChange({ ...value, ...ZOE_EXAMPLE })}
+          onClick={() =>
+            onChange({ ...value, ...categoryGuidelineStarter(categoryLabel) })
+          }
         >
-          Insert luxury beauty examples
+          Insert {categoryLabel || "category"} starter guidance
         </Button>
       </div>
 
@@ -124,17 +147,23 @@ export function CreativeGuidelinesSection({ value, onChange }: Props) {
             key={f.key}
             className={f.rows && f.rows > 1 ? "sm:col-span-2" : undefined}
           >
-            <Label>{f.label}</Label>
+            <Label htmlFor={`cg-${f.key}`}>{f.label}</Label>
             {f.rows && f.rows > 1 ? (
               <Textarea
+                id={`cg-${f.key}`}
                 value={String(value[f.key] ?? "")}
-                onChange={(e) => set({ [f.key]: e.target.value } as Partial<GuidelinesDraft>)}
+                onChange={(e) =>
+                  set({ [f.key]: e.target.value } as Partial<GuidelinesDraft>)
+                }
                 rows={f.rows}
               />
             ) : (
               <Input
+                id={`cg-${f.key}`}
                 value={String(value[f.key] ?? "")}
-                onChange={(e) => set({ [f.key]: e.target.value } as Partial<GuidelinesDraft>)}
+                onChange={(e) =>
+                  set({ [f.key]: e.target.value } as Partial<GuidelinesDraft>)
+                }
               />
             )}
           </div>

@@ -1,0 +1,184 @@
+import type { BrandKitSummary } from "../lib/brandKitTypes";
+export function brochureSections(kit: BrandKitSummary) {
+  const voice = kit.voice || {},
+    creative = voice.creative || {};
+  const labels: Record<string, string> = {
+    tone: "Tone",
+    personality: "Personality",
+    doSay: "Preferred language",
+    dontSay: "Avoid",
+    tagline: "Tagline",
+    industry: "Industry",
+    website: "Website",
+    targetAudience: "Audience",
+    signatureProduct: "Signature product",
+    writingStyle: "Writing style",
+    preferredCta: "Preferred CTA",
+    exampleHeadlines: "Example headlines",
+    copyGuidance: "Copy guidance",
+  };
+  const rows = (
+    record: Record<string, unknown>,
+    names?: Record<string, string>,
+  ): [string, string][] =>
+    Object.entries(record)
+      .filter(
+        ([key, value]) =>
+          (!names || key in names) &&
+          (typeof value === "string" || Array.isArray(value)) &&
+          String(value).trim(),
+      )
+      .map(([key, value]) => [
+        names?.[key] || key.replace(/[A-Z]/g, (c) => " " + c.toLowerCase()),
+        Array.isArray(value) ? value.join("; ") : String(value),
+      ]);
+  return [
+    {
+      title: "Brand profile",
+      rows: rows({
+        category: voice.studio?.categoryId,
+        niche: voice.studio?.nicheId,
+        businessGoals: voice.studio?.businessGoals,
+        businessType: voice.studio?.businessType,
+      }),
+    },
+    { title: "Brand voice", rows: rows(voice, labels) },
+    {
+      title: "Creative guidelines",
+      rows: [
+        ...rows(creative),
+        ...(kit.guidelines
+          ? [["Usage rules", kit.guidelines] as [string, string]]
+          : []),
+      ],
+    },
+  ];
+}
+export async function exportBrochure(
+  kit: BrandKitSummary,
+  urls: Record<string, string>,
+  format: "pdf" | "png",
+) {
+  const pages: HTMLCanvasElement[] = [];
+  let canvas: HTMLCanvasElement,
+    ctx: CanvasRenderingContext2D,
+    y = 0;
+  const page = () => {
+    if (pages.length >= 40) throw Error("Brochure exceeds local export limit");
+    canvas = document.createElement("canvas");
+    canvas.width = 1000;
+    canvas.height = 1414;
+    const context = canvas.getContext("2d");
+    if (!context) throw Error("Canvas unavailable");
+    ctx = context;
+    ctx.fillStyle = "#faf8f3";
+    ctx.fillRect(0, 0, 1000, 1414);
+    ctx.fillStyle = "#222327";
+    y = 72;
+    pages.push(canvas);
+  };
+  page();
+  const line = (text: string, size = 23) => {
+    ctx.font = `${size}px sans-serif`;
+    const words = text
+      .split(/\s+/)
+      .flatMap((word) =>
+        word.length > 50 ? word.match(/.{1,50}/gu) || [] : [word],
+      );
+    let row = "";
+    for (const word of words) {
+      if (ctx.measureText(row + word).width > 856 && row) {
+        if (y > 1300) page();
+        ctx.font = `${size}px sans-serif`;
+        ctx.fillText(row, 72, y);
+        y += size * 1.5;
+        row = "";
+      }
+      row += word + " ";
+    }
+    if (y > 1300) page();
+    ctx.font = `${size}px sans-serif`;
+    ctx.fillText(row, 72, y);
+    y += size * 1.5;
+  };
+  line(kit.name, 42);
+  line(`Brand Kit / saved version ${kit.version || 1}`, 18);
+  line(kit.description || "Brand identity and creative guidance");
+  y += 20;
+  for (const color of kit.colors || []) {
+    if (y > 1260) page();
+    if (/^#[0-9a-f]{6}$/i.test(color.hex)) {
+      ctx.fillStyle = color.hex;
+      ctx.fillRect(72, y, 40, 28);
+      ctx.fillStyle = "#222327";
+    }
+    y += 36;
+    line(`${color.role || "Brand color"}: ${color.hex}`, 20);
+  }
+  line("Typography", 30);
+  for (const t of kit.typography || [])
+    line(`${t.role || "Type"}: ${t.family} / ${t.weight || "Regular"}`, 21);
+  for (const section of brochureSections(kit)) {
+    y += 20;
+    line(section.title, 30);
+    for (const [label, value] of section.rows) line(`${label}: ${value}`, 21);
+  }
+  for (const asset of kit.assets || []) {
+    page();
+    line(asset.label || asset.fileName || asset.role || "Brand asset", 30);
+    line(`${asset.role || "Asset"} / ${asset.status || "Processing"}`, 19);
+    line(
+      kit.voice?.studio?.approvedAssetIds?.includes(asset.id)
+        ? "Approved creative source"
+        : "Usage review required",
+      19,
+    );
+    if (asset.mimeType && !asset.mimeType.startsWith("image/")) {
+      line("Non-image attachment; preserved in Brand Kit", 19);
+      continue;
+    }
+    const url = urls[asset.id];
+    if (!url) throw Error("Asset preview not ready");
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const scale = Math.min(856 / img.naturalWidth, 1000 / img.naturalHeight);
+    ctx.drawImage(
+      img,
+      72,
+      y,
+      img.naturalWidth * scale,
+      img.naturalHeight * scale,
+    );
+  }
+  const filename = kit.name.replace(/[^a-z0-9_-]/gi, "-") + "-brand-kit";
+  if (format === "pdf") {
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    pages.forEach((p, i) => {
+      if (i) doc.addPage();
+      doc.addImage(p.toDataURL("image/png"), "PNG", 0, 0, 595.28, 841.89);
+    });
+    doc.save(filename + ".pdf");
+  } else {
+    const full = document.createElement("canvas");
+    full.width = 1000;
+    full.height = 1414 * pages.length;
+    if (full.height > 30000) throw Error("Brochure too large; use PDF");
+    const target = full.getContext("2d");
+    if (!target) throw Error("Canvas unavailable");
+    pages.forEach((p, i) => target.drawImage(p, 0, 1414 * i));
+    const blob = await new Promise<Blob>((resolve, reject) =>
+      full.toBlob(
+        (b) => (b ? resolve(b) : reject(Error("Export failed"))),
+        "image/png",
+      ),
+    );
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename + ".png";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+}

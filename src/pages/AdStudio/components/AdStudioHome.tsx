@@ -1,3 +1,4 @@
+import { Link, useSearchParams } from "react-router-dom";
 import { brandApi } from "../../../services/apiClient";
 import { useAuthenticatedBrandAssetUrls } from "../canvas/useAuthenticatedBrandAssetUrls";
 import {
@@ -5,7 +6,7 @@ import {
   useSavedBrandTemplates,
 } from "./SavedBrandTemplates";
 import { scopedHomeProjects } from "../lib/homeEntryFlow";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   Clock3,
@@ -21,11 +22,6 @@ import { resolveBrandHomeCatalog } from "../lib/brandHomeCatalog";
 import { BrandKitHeaderControl } from "./BrandKitHeaderControl";
 import { BrandHomePreview, aspectForFormat } from "./BrandHomePreview";
 import { TemplateGallery } from "./TemplateGallery";
-import {
-  AdStudioTopNav,
-  scrollAdStudioSection,
-  type AdStudioNavId,
-} from "./AdStudioTopNav";
 
 import type {
   AdSceneOutputFormatId,
@@ -158,6 +154,10 @@ export function AdStudioHome({
   templateBusy = false,
   onUseTemplate,
 }: Props) {
+  const [catalogQuery] = useSearchParams();
+  const fullCatalog = catalogQuery.get("catalog");
+  const templatesOnly = fullCatalog === "templates",
+    briefsOnly = fullCatalog === "briefs";
   const recentProjects = scopedHomeProjects(projects, selectedBrandId).slice(
     0,
     6,
@@ -233,52 +233,26 @@ export function AdStudioHome({
     } as React.CSSProperties;
   }, [isNeutral, brandContext]);
 
-  const onSectionNav = useCallback(
-    (id: AdStudioNavId) => {
-      if (id === "home") {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        return;
-      }
-      if (id === "library" || id === "canvas") {
-        document
-          .getElementById("ad-studio-projects")
-          ?.scrollIntoView({ behavior: "smooth" });
-        return;
-      }
-      if (id === "concepts") {
-        onStartIdea();
-        return;
-      }
-      scrollAdStudioSection(id);
-    },
-    [onStartIdea],
-  );
-
   return (
     <div className="ad-studio-w0a" id="ad-studio-home">
       <div className="w0a-shell home">
-        <AdStudioTopNav
-          hideBrand
-          active="home"
-          catalogLabel={selectedBrandId ? "Brand Templates" : "10 Templates"}
-          onSectionNav={onSectionNav}
-          onCreateProject={onStartIdea}
-          trailing={
-            <BrandKitHeaderControl
-              brands={brands}
-              selectedId={selectedBrandId}
-              loading={brandsLoading}
-              onSelect={onSelectBrand}
-            />
-          }
-        />
-
         {brandLoadError && (
           <p role="alert" className="w0a-note">
             {brandLoadError}
           </p>
         )}
+        {(templatesOnly || briefsOnly) && (
+          <header className="w0a-home-section">
+            <Link className="w0a-link" to="/create/ad">
+              Back to Ad Studio
+            </Link>
+            <h1>
+              {templatesOnly ? "Template library" : "Example Brief library"}
+            </h1>
+          </header>
+        )}
         <header
+          hidden={templatesOnly || briefsOnly}
           className={`w0a-ads-hero${isNeutral ? "" : " w0a-ads-hero--branded"}`}
           aria-label={
             isNeutral ? "Ad Studio" : `${homeCatalog.label} Ad Studio`
@@ -319,25 +293,30 @@ export function AdStudioHome({
             ) : null}
             <h1 className="w0a-ads-hero__brand">Ad Studio</h1>
             <p className="w0a-ads-hero__line">
-              {isNeutral
-                ? "Campaigns that look like they belong in the world."
-                : `${homeCatalog.label} templates & example briefs — switch Brand Kit above to reshape this home.`}
+              Campaigns that look like they belong in the world.
             </p>
-            <button
-              type="button"
-              className="w0a-ads-hero__cta"
-              onClick={() => scrollAdStudioSection("templates")}
-            >
-              {isNeutral
-                ? "Enter the gallery"
-                : `Browse ${homeCatalog.label} gallery`}{" "}
-              <span>→</span>
-            </button>
+            <div className="w0a-hero-actions">
+              <BrandKitHeaderControl
+                brands={brands}
+                selectedId={selectedBrandId}
+                loading={brandsLoading}
+                onSelect={onSelectBrand}
+              />
+              <button
+                type="button"
+                className="w0a-create-project"
+                onClick={onStartIdea}
+              >
+                <Plus size={16} aria-hidden />
+                Create project
+              </button>
+            </div>
           </div>
         </header>
 
         <div className="w0a-home-body">
           <section
+            hidden={templatesOnly || briefsOnly}
             id="ad-studio-projects"
             className="w0a-home-section w0a-home-section--projects-rail"
             aria-labelledby="ad-studio-projects-heading"
@@ -351,7 +330,6 @@ export function AdStudioHome({
                 Recent projects
               </h2>
             </header>
-            <p className="w0a-meta">Open a project to view, edit and export its saved creatives.</p>
             {recentProjects.length ? (
               <div className="w0a-project-rail">
                 {recentProjects.map((p) => {
@@ -417,6 +395,7 @@ export function AdStudioHome({
           </section>
 
           <section
+            hidden={briefsOnly}
             id="ad-studio-templates"
             className="w0a-home-section w0a-home-section--templates"
             aria-labelledby="ad-studio-templates-heading"
@@ -431,16 +410,18 @@ export function AdStudioHome({
                   ? "Template studio"
                   : `${homeCatalog.label} templates`}
               </h2>
-              <button
-                type="button"
-                className="w0a-link w0a-section-hero__link"
-                disabled={!isNeutral && !nativeTemplates.enabled}
-                onClick={() => scrollAdStudioSection(isNeutral ? "catalog" : "templates")}
-              >
-                {isNeutral
-                  ? "View standard layouts →"
-                  : "Saved Brand Templates"}
-              </button>
+              {!templatesOnly && (
+                <Link
+                  className="w0a-link w0a-section-hero__link"
+                  to={
+                    selectedBrandId
+                      ? `/brands/${encodeURIComponent(selectedBrandId)}/templates`
+                      : "/create/ad?catalog=templates"
+                  }
+                >
+                  All Templates &rarr;
+                </Link>
+              )}
             </header>
             <div className="w0a-note">
               {isNeutral
@@ -449,6 +430,7 @@ export function AdStudioHome({
             </div>
             {selectedBrandId ? (
               <SavedBrandTemplates
+                limit={templatesOnly ? undefined : 6}
                 brandId={selectedBrandId}
                 data={nativeTemplates}
                 assetUrls={assetUrls}
@@ -465,6 +447,7 @@ export function AdStudioHome({
                 brandContext={brandContext}
                 catalogKey={homeCatalog.catalogKey}
                 hideNote
+                limit={templatesOnly ? undefined : 6}
               />
             ) : (
               <p className="w0a-lede">
@@ -474,6 +457,7 @@ export function AdStudioHome({
           </section>
 
           <section
+            hidden={templatesOnly}
             id="ad-studio-briefs"
             className="w0a-home-section w0a-home-section--briefs"
             aria-labelledby="ad-studio-briefs-heading"
@@ -489,9 +473,14 @@ export function AdStudioHome({
                   ? "Example briefs"
                   : `${homeCatalog.label} example briefs`}
               </h2>
-              <span className="w0a-section-hero__badge">
-                {isNeutral ? "Neutral set" : "Brand Kit set"}
-              </span>
+              {!briefsOnly && (
+                <Link
+                  className="w0a-link w0a-section-hero__link"
+                  to="/create/ad?catalog=briefs"
+                >
+                  All Example Briefs &rarr;
+                </Link>
+              )}
             </header>
             <div className="w0a-note">
               {isNeutral
@@ -516,43 +505,45 @@ export function AdStudioHome({
             )}
             {homeCatalog.examples.length ? (
               <div className="w0a-grid w0a-grid-3">
-                {homeCatalog.examples.map((ex) => {
-                  const preview =
-                    ex.previewImage ||
-                    "/ad-studio/sample-assets/w0a-product-hero.jpg";
-                  return (
-                    <article
-                      key={ex.id}
-                      className="w0a-card w0a-rel w0a-brief-card"
-                    >
-                      <span className="w0a-example-tag">Example</span>
-                      <BrandHomePreview
-                        fallbackSrc={preview}
-                        alt=""
-                        brand={brandContext}
-                        aspect={briefAspect(ex)}
-                        headline={ex.headline}
-                      />
-                      <div className="w0a-card-body">
-                        <h3>{ex.title}</h3>
-                        <div className="w0a-meta">
-                          {ex.category} · illustrative brief reference, not a
-                          saved template
+                {homeCatalog.examples
+                  .slice(0, briefsOnly ? undefined : 6)
+                  .map((ex) => {
+                    const preview =
+                      ex.previewImage ||
+                      "/ad-studio/sample-assets/w0a-product-hero.jpg";
+                    return (
+                      <article
+                        key={ex.id}
+                        className="w0a-card w0a-rel w0a-brief-card"
+                      >
+                        <span className="w0a-example-tag">Example</span>
+                        <BrandHomePreview
+                          fallbackSrc={preview}
+                          alt=""
+                          brand={brandContext}
+                          aspect={briefAspect(ex)}
+                          headline={ex.headline}
+                        />
+                        <div className="w0a-card-body">
+                          <h3>{ex.title}</h3>
+                          <div className="w0a-meta">
+                            {ex.category} · illustrative brief reference, not a
+                            saved template
+                          </div>
+                          <p className="text-[11px] text-[var(--w0a-muted)] mt-1 line-clamp-2">
+                            {ex.headline}
+                          </p>
+                          <button
+                            type="button"
+                            className="w0a-btn ghost"
+                            onClick={() => onUseExample(ex)}
+                          >
+                            Use as starting brief →
+                          </button>
                         </div>
-                        <p className="text-[11px] text-[var(--w0a-muted)] mt-1 line-clamp-2">
-                          {ex.headline}
-                        </p>
-                        <button
-                          type="button"
-                          className="w0a-btn ghost"
-                          onClick={() => onUseExample(ex)}
-                        >
-                          Use as starting brief →
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })}
+                      </article>
+                    );
+                  })}
               </div>
             ) : (
               <div className="w0a-note">

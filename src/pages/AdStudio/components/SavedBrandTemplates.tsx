@@ -64,7 +64,9 @@ export function SavedBrandTemplates({
   data,
   assetUrls,
   project,
+  limit,
 }: {
+  limit?: number;
   brandId: string;
   data: ReturnType<typeof useSavedBrandTemplates>;
   assetUrls: BrandAssetUrlMap;
@@ -126,10 +128,29 @@ export function SavedBrandTemplates({
     );
   if (data.error)
     return (
-      <div role="alert" className="w0a-note">
-        {data.error}
-        <button onClick={data.retry}>Retry</button>
-      </div>
+      <section className="w0a-card p-6" aria-label="Brand Template setup">
+        <EmptyState
+          badge="Brand setup"
+          title="Build a template collection for your brand"
+          description="Review your Brand Kit identity and approved source assets, then prepare editable layouts in the Template Studio. Your existing Brand Kit is retained."
+          actionLabel="Open Brand Kit readiness"
+          onAction={() =>
+            navigate(`/brands/${encodeURIComponent(brandId)}/guided?step=ready`)
+          }
+        />
+        <div className="flex gap-4 flex-wrap mt-4">
+          <Link className="w0a-link" to={reviewPath}>
+            Open Template Studio &rarr;
+          </Link>
+          <button className="w0a-link" onClick={data.retry}>
+            Check availability again
+          </button>
+        </div>
+        <details className="w0a-meta mt-3">
+          <summary>Service status</summary>
+          <p>{data.error}</p>
+        </details>
+      </section>
     );
   return (
     <>
@@ -167,7 +188,7 @@ export function SavedBrandTemplates({
         />
       ) : (
         <div className="w0a-grid w0a-grid-3">
-          {items.map((template) => (
+          {items.slice(0, limit).map((template) => (
             <article key={template.id} className="w0a-card">
               <div className="flex justify-center items-center min-h-56 bg-black/20">
                 <SceneThumb

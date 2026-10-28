@@ -83,7 +83,11 @@ export function selectedBrandAssetReadiness(
   kit: BrandKitSummary | null,
   roles: string[],
 ): string[] {
-  if (!kit) return [];
+  if (!kit)
+    return roles.map(
+      (role) =>
+        `A Brand Kit with an authorized ${role.replace(/_/g, " ")} is required for this layout. Choose another layout or review a Brand Kit before creating the project.`,
+    );
   return roles
     .filter((role) => {
       const aliases =
@@ -95,7 +99,9 @@ export function selectedBrandAssetReadiness(
       const candidates =
         kit.assets?.filter(
           (asset) =>
-            aliases.includes(asset.role || "") && asset.status === "ready",
+            aliases.includes(asset.role || "") &&
+            asset.status === "ready" &&
+            (kit.voice?.studio?.approvedAssetIds || []).includes(asset.id),
         ) || [];
       if (role !== "brand_model") return !candidates.length;
       return !candidates.some((asset) =>
@@ -111,6 +117,6 @@ export function selectedBrandAssetReadiness(
     .map((role) =>
       role === "brand_model"
         ? "A ready model reference with approved Ad Studio commercial/likeness authorization is required."
-        : `Missing uploaded ${role.replace(/_/g, " ")}. Review this Brand Kit before creating the creative.`,
+        : `Missing approved, ready ${role.replace(/_/g, " ")}. Review this Brand Kit before creating the creative.`,
     );
 }
