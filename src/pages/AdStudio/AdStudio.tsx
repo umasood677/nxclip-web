@@ -6,10 +6,9 @@ import { CreateAdProjectDialog } from "./components/CreateAdProjectDialog";
 import { exampleBriefContext, projectWorkspacePath, saveWorkspaceBrief, generateProjectConcepts } from "./lib/projectWorkspace";
 import { AdStudioLoader } from "./components/AdStudioLoader";
 import { adStudioApi, brandApi } from "../../services/apiClient";
-import {
-  CreateBrandKitDialog,
-  type BrandKitSummary,
-} from "../BrandKits/CreateBrandKitDialog";
+import type { BrandKitSummary } from "../BrandKits/CreateBrandKitDialog";
+import { GuidedBrandKitWorkspace } from "../BrandKits/guided/GuidedBrandKit";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../../components/ui/dialog";
 import { BrandKitImportDialog } from "../BrandKits/components/BrandKitImportDialog";
 import {
   applyBrandKitToBriefForm,
@@ -631,15 +630,11 @@ export default function AdStudio() {
       )}
 
       <CreateAdProjectDialog open={newProjectOpen} onOpenChange={setNewProjectOpen} brands={brands} brandsLoading={brandsLoading} brandsError={brandsError} onRetryBrands={() => void refreshBrands()} />
-      <CreateBrandKitDialog
-        open={createBrandOpen}
-        onOpenChange={(open) => {
-          setCreateBrandOpen(open);
-          if (!open) setEditingBrand(null);
-        }}
-        initialKit={editingBrand}
-        onCreated={(kit) => void handleBrandCreated(kit)}
-      />
+      <Dialog open={createBrandOpen} onOpenChange={(open) => { setCreateBrandOpen(open); if (!open) setEditingBrand(null); }}>
+        <DialogContent className="max-w-6xl max-h-[92dvh] overflow-y-auto p-3 sm:p-6"><DialogHeader><DialogTitle>{editingBrand ? "Edit Brand Kit" : "Create Brand Kit"}</DialogTitle><DialogDescription>Build your identity in the new Brand Kit workspace. Your current advertisement brief stays open.</DialogDescription></DialogHeader>
+          {createBrandOpen && <GuidedBrandKitWorkspace key={editingBrand?.id || "new"} embedded initialBrandId={editingBrand?.id} onSaved={kit => { setCreateBrandOpen(false); void handleBrandCreated(kit); }} />}
+        </DialogContent>
+      </Dialog>
       <BrandKitImportDialog
         open={importBrandOpen}
         onOpenChange={setImportBrandOpen}

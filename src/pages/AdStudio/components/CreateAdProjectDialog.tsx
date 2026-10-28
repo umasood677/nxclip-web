@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, FolderPlus } from "lucide-react";
+import { Loader2, FolderPlus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { adStudioApi } from "../../../services/apiClient";
 import { Button } from "../../../components/ui/button";
@@ -67,7 +67,7 @@ export function CreateAdProjectDialog({ open, onOpenChange, brands, brandsLoadin
         </div>
         {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
         <DialogFooter><Button type="button" variant="outline" onClick={() => close(false)} disabled={busy}>Cancel</Button>
-          <Button type="submit" disabled={busy || !name.trim() || !idea.trim()}>{busy ? <Loader2 className="mr-2 animate-spin" size={16} /> : null}{busy ? "Creating project…" : "Create project"}</Button></DialogFooter>
+          <Button type="submit" disabled={busy || !name.trim() || !idea.trim()}>{busy ? <Loader2 className="mr-2 animate-spin" size={16} /> : <Plus size={16} aria-hidden className="mr-2"/>}{busy ? "Creating project…" : "Create project"}</Button></DialogFooter>
       </form>
     </DialogContent>
   </Dialog>;

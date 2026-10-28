@@ -1,3 +1,4 @@
+import { Plus as CreatePlus } from "lucide-react";
 import { ProductionImageGeneration } from "./ProductionImageGeneration";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
@@ -359,9 +360,19 @@ export default function ProductionProjectWorkspace({
             </div>
             <div className="xp-actions">
               <button className="xp-primary" onClick={editBrief}>
+                <CreatePlus
+                  size={15}
+                  aria-hidden="true"
+                  className="inline-block mr-1.5 shrink-0"
+                />
                 Create with AI / review brief <Sparkles size={15} />
               </button>
               <button className="xp-secondary" onClick={() => go("templates")}>
+                <CreatePlus
+                  size={15}
+                  aria-hidden="true"
+                  className="inline-block mr-1.5 shrink-0"
+                />
                 Create from a visual template
               </button>
               <button className="xp-secondary" onClick={() => go("assets")}>
@@ -542,6 +553,11 @@ export default function ProductionProjectWorkspace({
                     )
                   }
                 >
+                  <CreatePlus
+                    size={15}
+                    aria-hidden="true"
+                    className="inline-block mr-1.5 shrink-0"
+                  />
                   Create Editable Creative →
                 </button>
                 {!c.templatesEnabled && (
@@ -702,6 +718,11 @@ export default function ProductionProjectWorkspace({
                     disabled={c.busy || c.draftDirty}
                     onClick={() => c.openConcept(concept.conceptId)}
                   >
+                    <CreatePlus
+                      size={15}
+                      aria-hidden="true"
+                      className="inline-block mr-1.5 shrink-0"
+                    />
                     Create Editable Creative →
                   </button>
                   <button
@@ -757,6 +778,11 @@ export default function ProductionProjectWorkspace({
                     creative && go("visual-lab", { creativeId: creative.id })
                   }
                 >
+                  <CreatePlus
+                    size={15}
+                    aria-hidden="true"
+                    className="inline-block mr-1.5 shrink-0"
+                  />
                   Create or refine AI background
                 </button>
                 <button
@@ -796,9 +822,7 @@ export default function ProductionProjectWorkspace({
             </section>
           </div>
         )}
-        {["formats", "adaptation", "variations"].includes(
-          screen,
-        ) &&
+        {["formats", "adaptation", "variations"].includes(screen) &&
           (creative ? (
             <ProductionCreativeExtensions
               key={creative.id + screen}

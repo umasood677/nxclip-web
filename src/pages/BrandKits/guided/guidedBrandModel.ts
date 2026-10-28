@@ -49,6 +49,7 @@ export const GUIDED_STEPS = [
 ] as const;
 export type GuidedStep = (typeof GUIDED_STEPS)[number];
 export interface GuidedBrandDraft {
+  voiceExtras?: BrandVoiceFields;
   name: string;
   description: string;
   website: string;
@@ -170,6 +171,7 @@ export function guidedPayload(
 ) {
   const voice: BrandVoiceFields = {
     ...(existing?.voice || {}),
+    ...(draft.voiceExtras || {}),
     website: draft.website,
     personality: draft.personality,
     tone: draft.tone,
@@ -187,7 +189,10 @@ export function guidedPayload(
     },
   };
   // Draft creation before taxonomy review omits the profile until it is valid.
-  if (!draft.categoryId || !draft.nicheId) delete voice.studio;
+  if (!draft.categoryId || !draft.nicheId) {
+    if (existing?.voice?.studio) voice.studio = existing.voice.studio;
+    else delete voice.studio;
+  }
   return {
     name: draft.name.trim(),
     description: draft.description.trim(),

@@ -1,3 +1,4 @@
+import { Plus as CreatePlus } from "lucide-react";
 import React, { useState } from "react";
 import { Eye, Loader2, RotateCcw, Sparkles } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
@@ -15,7 +16,10 @@ import { cn } from "../../../lib/utils";
 import type { BrandKitSummary } from "../../BrandKits/CreateBrandKitDialog";
 import type { AdConcept } from "../types";
 import { ConceptTemplatePreview } from "../canvas/ConceptTemplatePreview";
-import { resolveConceptPalette, resolveConceptVisualStyle } from "../lib/conceptVisual";
+import {
+  resolveConceptPalette,
+  resolveConceptVisualStyle,
+} from "../lib/conceptVisual";
 
 type Props = {
   concepts: AdConcept[];
@@ -56,9 +60,7 @@ export function ConceptGallery({
   const detailsStyle = details
     ? resolveConceptVisualStyle(details, brand)
     : null;
-  const detailsPalette = details
-    ? resolveConceptPalette(details, brand)
-    : null;
+  const detailsPalette = details ? resolveConceptPalette(details, brand) : null;
 
   if (loading) {
     return (
@@ -84,7 +86,8 @@ export function ConceptGallery({
     return (
       <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center space-y-3">
         <p className="text-sm text-muted-foreground">
-          No concepts yet. Generate when your brief feels ready — this uses the existing AI concept workflow.
+          No concepts yet. Generate when your brief feels ready — this uses the
+          existing AI concept workflow.
         </p>
         <Button type="button" onClick={onRegenerate} disabled={busy}>
           {busy ? (
@@ -111,7 +114,12 @@ export function ConceptGallery({
         </div>
         <div className="flex flex-wrap gap-2">
           {onReturnToBrief ? (
-            <Button type="button" size="sm" variant="ghost" onClick={onReturnToBrief}>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={onReturnToBrief}
+            >
               Back to brief
             </Button>
           ) : null}
@@ -219,6 +227,11 @@ export function ConceptGallery({
                     onCreateCreative(concept.conceptId);
                   }}
                 >
+                  <CreatePlus
+                    size={15}
+                    aria-hidden="true"
+                    className="inline-block mr-1.5 shrink-0"
+                  />
                   Create editable creative
                 </Button>
                 <Button
@@ -252,13 +265,18 @@ export function ConceptGallery({
         })}
       </div>
 
-      <Dialog open={!!details} onOpenChange={(open) => !open && setDetailsId(null)}>
+      <Dialog
+        open={!!details}
+        onOpenChange={(open) => !open && setDetailsId(null)}
+      >
         <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
           {details && detailsStyle && detailsPalette ? (
             <>
               <DialogHeader>
                 <DialogTitle>{details.title}</DialogTitle>
-                <DialogDescription>{details.creativeDirection}</DialogDescription>
+                <DialogDescription>
+                  {details.creativeDirection}
+                </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col sm:flex-row gap-4">
                 <ConceptTemplatePreview
@@ -284,7 +302,9 @@ export function ConceptGallery({
                     <div className="text-xs text-muted-foreground uppercase tracking-wide">
                       Composition
                     </div>
-                    <p className="text-muted-foreground">{details.composition}</p>
+                    <p className="text-muted-foreground">
+                      {details.composition}
+                    </p>
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground uppercase tracking-wide">
@@ -331,6 +351,11 @@ export function ConceptGallery({
                     setDetailsId(null);
                   }}
                 >
+                  <CreatePlus
+                    size={15}
+                    aria-hidden="true"
+                    className="inline-block mr-1.5 shrink-0"
+                  />
                   Create editable creative
                 </Button>
               </DialogFooter>

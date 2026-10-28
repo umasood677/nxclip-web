@@ -1,3 +1,15 @@
+import {
+  BrandVoiceSection,
+  voiceDraftFromKit,
+  voicePatchFromDraft,
+} from "../components/BrandVoiceSection";
+import {
+  CreativeGuidelinesSection,
+  guidelinesDraftFromKit,
+  creativeFromDraft,
+} from "../components/CreativeGuidelinesSection";
+import { BrandKitJsonTools } from "./BrandKitJsonTools";
+import { mergeBrandJsonDraft } from "./guidedBrandImport";
 import { BrandAnalysisPanel } from "../analysis/BrandAnalysisPanel";
 import {
   applyBrandAnalysisProposal,
@@ -31,7 +43,6 @@ import {
   changeGuidedCategory,
   guidedErrors,
   guidedPayload,
-  isGuidedBrandEnabled,
   type GuidedBrandDraft,
   type GuidedStep,
 } from "./guidedBrandModel";
@@ -63,22 +74,23 @@ type Version = {
   createdAt: string;
 };
 export default function GuidedBrandKit() {
-  if (!isGuidedBrandEnabled())
-    return (
-      <EmptyState
-        title="Guided Brand Kit is not enabled"
-        description="Your existing Brand Kit tools remain available while the guided integration is verified."
-        actionLabel="Open Brand Kits"
-        onAction={() => window.location.assign("/brands")}
-      />
-    );
   return <GuidedBrandKitWorkspace />;
 }
-export function GuidedBrandKitWorkspace() {
-  const { brandId } = useParams<{ brandId: string }>(),
+export function GuidedBrandKitWorkspace({
+  embedded = false,
+  initialBrandId,
+  onSaved,
+}: {
+  embedded?: boolean;
+  initialBrandId?: string;
+  onSaved?: (kit: BrandKitSummary) => void;
+} = {}) {
+  const { brandId: routeBrandId } = useParams<{ brandId: string }>(),
     navigate = useNavigate(),
     [params, setParams] = useSearchParams();
-  const raw = params.get("step"),
+  const brandId = initialBrandId || routeBrandId;
+  const [embeddedStep, setEmbeddedStep] = useState<GuidedStep>("brand");
+  const raw = embedded ? embeddedStep : params.get("step"),
     step: GuidedStep = GUIDED_STEPS.includes(raw as GuidedStep)
       ? (raw as GuidedStep)
       : "brand",
@@ -99,7 +111,8 @@ export function GuidedBrandKitWorkspace() {
     saved = useRef("");
   const go = (next: GuidedStep) => {
     setMessage("");
-    setParams({ step: next });
+    if (embedded) setEmbeddedStep(next);
+    else setParams({ step: next });
   };
   const edit = (patch: Partial<GuidedBrandDraft>) =>
     setDraft((prev) => ({ ...prev, ...patch }));
@@ -198,7 +211,8 @@ export function GuidedBrandKitWorkspace() {
           );
         }
       }
-      if (!brandId)
+      if (embedded) onSaved?.(result);
+      else if (!brandId)
         navigate("/brands/" + result.id + "/guided?step=" + target, {
           replace: true,
         });
@@ -293,14 +307,28 @@ export function GuidedBrandKitWorkspace() {
               {TITLES[index]}
             </h1>
           </div>
-          <button
-            className="xp-secondary"
-            disabled={saving}
-            onClick={() => void persist(false, step)}
-          >
-            <Save size={15} />
-            {saving ? "Saving…" : "Save draft"}
-          </button>
+          <div className="xp-actions">
+            <BrandKitJsonTools
+              kit={{
+                ...(kit || { id: "", name: draft.name }),
+                ...guidedPayload(draft, kit),
+              }}
+              onImport={(mapped) => {
+                setDraft((current) => mergeBrandJsonDraft(current, mapped));
+                setMessage(
+                  "JSON applied to this draft. Review and save when ready; existing assets are preserved.",
+                );
+              }}
+            />
+            <button
+              className="xp-secondary"
+              disabled={saving}
+              onClick={() => void persist(false, step)}
+            >
+              <Save size={15} />
+              {saving ? "Saving…" : "Save draft"}
+            </button>
+          </div>
         </header>
         <nav className="xp-wizard-steps" aria-label="Brand Kit creation steps">
           {GUIDED_STEPS.map((id, i) => (
@@ -356,6 +384,8 @@ export function GuidedBrandKitWorkspace() {
                   </select>
                 </label>
                 {field("Website — optional, not analyzed", "website", 2048)}
+                <label className="xp-field">Industry — optional<input value={String(guidedPayload(draft,kit).voice.industry || "")} maxLength={200} onChange={event=>edit({voiceExtras:{...draft.voiceExtras,industry:event.target.value},identityApproved:false})}/></label>
+                <label className="xp-field">Signature product — approved details only<input value={String(guidedPayload(draft,kit).voice.signatureProduct || "")} maxLength={500} onChange={event=>edit({voiceExtras:{...draft.voiceExtras,signatureProduct:event.target.value},identityApproved:false})}/><small>Describe your actual product. This does not verify shades, inventory or asset permissions.</small></label>
                 {field("Business description — optional", "description", 2000)}
                 <button
                   className="xp-secondary"
@@ -745,6 +775,51 @@ export function GuidedBrandKitWorkspace() {
               {preview}
             </div>
           )}
+          {step === "identity" && (
+            <details className="xp-panel">
+              <summary className="cursor-pointer font-medium">
+                Voice, messaging & copy details
+              </summary>
+              <BrandVoiceSection
+                value={voiceDraftFromKit(guidedPayload(draft, kit).voice)}
+                onChange={(next) =>
+                  edit({
+                    voiceExtras: {
+                      ...draft.voiceExtras,
+                      ...voicePatchFromDraft(next),
+                    },
+                    personality: next.personality,
+                    tone: next.tone,
+                    audience: next.targetAudience,
+                    identityApproved: false,
+                  })
+                }
+              />
+            </details>
+          )}
+          {step === "guidelines" && (
+            <details className="xp-panel">
+              <summary className="cursor-pointer font-medium">
+                Detailed creative guidelines
+              </summary>
+              <CreativeGuidelinesSection
+                value={guidelinesDraftFromKit(
+                  guidedPayload(draft, kit).voice.creative,
+                  draft.guidelines,
+                )}
+                onChange={(next) =>
+                  edit({
+                    voiceExtras: {
+                      ...draft.voiceExtras,
+                      creative: creativeFromDraft(next),
+                    },
+                    guidelines: next.freeformGuidelines,
+                    guidelinesApproved: false,
+                  })
+                }
+              />
+            </details>
+          )}
           {step === "guidelines" && (
             <section className="xp-panel">
               <h2>{draft.name || "Your brand"} / Identity summary</h2>
@@ -762,7 +837,9 @@ export function GuidedBrandKitWorkspace() {
                     ))}
                   </div>
                   <p>
-                    {draft.colors.map((c) => c.role + ": " + c.hex).join(" · ")}
+                    {draft.colors
+                      .map((c) => c.role + ": " + c.hex)
+                      .join(" Â· ")}
                   </p>
                   <h3>Fonts</h3>
                   <p>
@@ -774,7 +851,7 @@ export function GuidedBrandKitWorkspace() {
                 <div>
                   <h3>Voice / personality</h3>
                   <p>
-                    {draft.tone} · {draft.personality}
+                    {draft.tone} Â· {draft.personality}
                   </p>
                   <h3>Assets</h3>
                   <p>
@@ -863,11 +940,7 @@ export function GuidedBrandKitWorkspace() {
                       Review / prepare Brand Templates →
                     </Link>
                   )}
-                  {kit && (
-                    <Link className="xp-secondary" to={"/brands/" + kit.id}>
-                      Open existing Brand Kit editor
-                    </Link>
-                  )}
+
                   <Link className="xp-primary" to="/create/ad">
                     Open Ad Studio →
                   </Link>

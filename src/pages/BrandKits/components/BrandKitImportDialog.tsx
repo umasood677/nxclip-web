@@ -1,3 +1,5 @@
+import { BRAND_KIT_JSON_SAMPLE } from "../lib/brandKitJsonSample";
+import { downloadJson, stringifyExport } from "../lib/brandKitExport";
 import React, { useMemo, useState } from "react";
 import { Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -84,7 +86,7 @@ export function BrandKitImportDialog({
 
   const onParsePaste = () => {
     const parsed = parseBrandKitJsonText(paste);
-    if (!parsed.ok) {
+    if (parsed.ok === false) {
       setParseError(parsed.error);
       return;
     }
@@ -93,7 +95,7 @@ export function BrandKitImportDialog({
 
   const onFile = async (file: File) => {
     const parsed = await readJsonFile(file);
-    if (!parsed.ok) {
+    if (parsed.ok === false) {
       setParseError(parsed.error);
       toast.error(parsed.error);
       return;
@@ -105,9 +107,8 @@ export function BrandKitImportDialog({
   const selectedCount = plans.filter((p) => p.selected).length;
   const updateConflicts = useMemo(
     () =>
-      plans.filter(
-        (p) => p.selected && p.mode === "update" && p.existingId,
-      ).length,
+      plans.filter((p) => p.selected && p.mode === "update" && p.existingId)
+        .length,
     [plans],
   );
 
@@ -166,10 +167,30 @@ export function BrandKitImportDialog({
         <DialogHeader>
           <DialogTitle>Import Brand Kits</DialogTitle>
           <DialogDescription>
-            Upload or paste JSON (canonical NxClip format or seed format). Assets
-            require re-upload after import — URLs and IDs are never fetched.
+            Upload or paste JSON (canonical NxClip format or seed format).
+            Assets require re-upload after import — URLs and IDs are never
+            fetched.
           </DialogDescription>
         </DialogHeader>
+        <div className="rounded-lg border p-3 text-sm">
+          <p>
+            Need a compatible format? Replace the sample fields with your own
+            brand details. Upload images separately; JSON never grants asset
+            permissions.
+          </p>
+          <Button
+            type="button"
+            variant="link"
+            onClick={() =>
+              downloadJson(
+                "nxclip-brand-kit-sample.json",
+                stringifyExport(BRAND_KIT_JSON_SAMPLE),
+              )
+            }
+          >
+            Download NxClip JSON sample
+          </Button>
+        </div>
 
         {step === "input" ? (
           <div className="space-y-4">
@@ -190,7 +211,10 @@ export function BrandKitImportDialog({
                 if (file) void onFile(file);
               }}
             >
-              <Upload className="mx-auto mb-2 text-muted-foreground" size={22} />
+              <Upload
+                className="mx-auto mb-2 text-muted-foreground"
+                size={22}
+              />
               <p className="text-sm text-muted-foreground mb-3">
                 Drop a .json file here
               </p>
@@ -216,8 +240,8 @@ export function BrandKitImportDialog({
         {step === "preview" ? (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Review each kit before saving. Existing names can be created as new
-              or explicitly updated.
+              Review each kit before saving. Existing names can be created as
+              new or explicitly updated.
             </p>
             {plans.map((plan, idx) => {
               const m = plan.mapped;
@@ -307,7 +331,8 @@ export function BrandKitImportDialog({
                   ) : null}
                   {m.unsupportedFields.length ? (
                     <p className="text-[11px] text-muted-foreground">
-                      Unsupported fields ignored: {m.unsupportedFields.join(", ")}
+                      Unsupported fields ignored:{" "}
+                      {m.unsupportedFields.join(", ")}
                     </p>
                   ) : null}
                   {existing && plan.selected ? (
@@ -390,17 +415,29 @@ export function BrandKitImportDialog({
         <DialogFooter className="gap-2">
           {step === "input" ? (
             <>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancel
               </Button>
-              <Button type="button" onClick={onParsePaste} disabled={!paste.trim()}>
+              <Button
+                type="button"
+                onClick={onParsePaste}
+                disabled={!paste.trim()}
+              >
                 Preview import
               </Button>
             </>
           ) : null}
           {step === "preview" ? (
             <>
-              <Button type="button" variant="outline" onClick={() => setStep("input")}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep("input")}
+              >
                 Back
               </Button>
               <Button
@@ -408,7 +445,9 @@ export function BrandKitImportDialog({
                 disabled={busy || !selectedCount}
                 onClick={() => void runImport()}
               >
-                {busy ? <Loader2 className="mr-1 animate-spin" size={16} /> : null}
+                {busy ? (
+                  <Loader2 className="mr-1 animate-spin" size={16} />
+                ) : null}
                 Import {selectedCount} kit{selectedCount === 1 ? "" : "s"}
               </Button>
             </>

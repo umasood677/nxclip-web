@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import type { BrandKitSummary } from "../../BrandKits/lib/brandKitTypes";
 import { getAccessToken } from "../../../services/auth/authService";
-import {
-  buildBrandAssetUrlMap,
-  type BrandAssetUrlMap,
-} from "./brandAssetUrls";
+import { buildBrandAssetUrlMap, type BrandAssetUrlMap } from "./brandAssetUrls";
 
-const AUTH_MEDIA_RE = /\/brands\/[^/]+\/assets\/[^/]+\/media(?:\?|$)/i;
+import { resolveBaseGatewayUrl } from "../../../services/apiClient";
+import {
+  protectedBrandMediaPath,
+  isUsableBrandImage,
+} from "../../BrandKits/lib/secureBrandMedia";
 
 /**
  * Brand Kit `readUrl` values for local/gateway media require Authorization.
@@ -27,8 +28,8 @@ export function useAuthenticatedBrandAssetUrls(
     setUrls(base);
 
     const token = getAccessToken();
-    const entries = Object.entries(base).filter(([, url]) =>
-      AUTH_MEDIA_RE.test(url),
+    const entries = Object.entries(base).filter(
+      ([, url]) => protectedBrandMediaPath(url, brandKit?.id || "") !== null,
     );
     if (!token || entries.length === 0) {
       return () => {
@@ -41,24 +42,19 @@ export function useAuthenticatedBrandAssetUrls(
       await Promise.all(
         entries.map(async ([id, url]) => {
           try {
-            const parsedUrl = new URL(url, window.location.origin);
-
-            const isProtectedBrandMedia =
-              /^\/brands\/[^/]+\/assets\/[^/]+\/media\/?$/i.test(parsedUrl.pathname);
-
-            const fetchUrl = isProtectedBrandMedia
-              ? `/api/gateway-proxy${parsedUrl.pathname}${parsedUrl.search}`
-              : url;
-
+            const path = protectedBrandMediaPath(url, brandKit?.id || "");
+            if (!path) return;
+            const fetchUrl = `/api/gateway-proxy${path}`;
             const res = await fetch(fetchUrl, {
               headers: {
                 Authorization: `Bearer ${token}`,
+                "X-Target-Gateway-Url": resolveBaseGatewayUrl(),
               },
               redirect: "error",
             });
             if (!res.ok) return;
             const blob = await res.blob();
-            if (!blob.type.startsWith("image/") && blob.size < 32) return;
+            if (cancelled || !isUsableBrandImage(blob)) return;
             const obj = URL.createObjectURL(blob);
             created.push(obj);
             next[id] = obj;

@@ -1,3 +1,4 @@
+import { useAuthenticatedBrandAssetUrls } from "../../AdStudio/canvas/useAuthenticatedBrandAssetUrls";
 import React from "react";
 import { cn } from "../../../lib/utils";
 import { findReadyAsset } from "../lib/assetSlots";
@@ -15,23 +16,32 @@ type Props = {
   className?: string;
 };
 
-function color(
-  kit: BrandKitSummary,
-  role: string,
-  fallback: string,
-): string {
+function color(kit: BrandKitSummary, role: string, fallback: string): string {
   return kit.colors?.find((c) => c.role === role)?.hex ?? fallback;
 }
 
 function SampleBadge() {
   return (
     <span className="absolute left-2 top-2 z-10 rounded bg-black/55 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-white">
-      Sample layout · not AI
+      Sample layout Â· not AI
     </span>
   );
 }
 
-export function BrandKitLivePreview({ kit, mode, onModeChange, className }: Props) {
+export function BrandKitLivePreview({
+  kit,
+  mode,
+  onModeChange,
+  className,
+}: Props) {
+  const assetUrls = useAuthenticatedBrandAssetUrls(kit);
+  kit = {
+    ...kit,
+    assets: kit.assets?.map((asset) => ({
+      ...asset,
+      readUrl: assetUrls[asset.id] || null,
+    })),
+  };
   const primary = color(kit, "primary", "#0F172A");
   const secondary = color(kit, "secondary", "#38BDF8");
   const accent = color(kit, "accent", "#F59E0B");
@@ -39,8 +49,10 @@ export function BrandKitLivePreview({ kit, mode, onModeChange, className }: Prop
   const text = color(kit, "text", primary);
   const heading =
     kit.typography?.find((t) => t.role === "heading")?.family ?? "Montserrat";
-  const body = kit.typography?.find((t) => t.role === "body")?.family ?? "Inter";
-  const ctaFont = kit.typography?.find((t) => t.role === "cta")?.family ?? heading;
+  const body =
+    kit.typography?.find((t) => t.role === "body")?.family ?? "Inter";
+  const ctaFont =
+    kit.typography?.find((t) => t.role === "cta")?.family ?? heading;
   const logo =
     findReadyAsset(kit.assets, "logo_primary") ||
     findReadyAsset(kit.assets, "logo_dark") ||
@@ -135,8 +147,8 @@ export function BrandKitLivePreview({ kit, mode, onModeChange, className }: Prop
             className="text-sm"
             style={{ fontFamily: resolveBrandFontFamily(body) }}
           >
-            Body copy uses your selected type. The quick brown fox jumps over the
-            lazy dog — 0123456789.
+            Body copy uses your selected type. The quick brown fox jumps over
+            the lazy dog — 0123456789.
           </p>
           <p
             className="inline-flex rounded-md px-3 py-1.5 text-sm font-semibold text-white"
@@ -166,7 +178,9 @@ export function BrandKitLivePreview({ kit, mode, onModeChange, className }: Prop
                   className="aspect-square rounded-lg border border-border"
                   style={{ backgroundColor: hex }}
                 />
-                <p className="text-[10px] text-muted-foreground truncate">{label}</p>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  {label}
+                </p>
                 <p className="text-[10px] font-mono truncate">{hex}</p>
               </div>
             ))}
@@ -235,7 +249,10 @@ export function BrandKitLivePreview({ kit, mode, onModeChange, className }: Prop
               >
                 {headline}
               </p>
-              <p className="text-[10px] opacity-90" style={{ fontFamily: resolveBrandFontFamily(body) }}>
+              <p
+                className="text-[10px] opacity-90"
+                style={{ fontFamily: resolveBrandFontFamily(body) }}
+              >
                 Sample story frame
               </p>
               <span

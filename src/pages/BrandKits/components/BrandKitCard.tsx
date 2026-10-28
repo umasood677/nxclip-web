@@ -1,5 +1,6 @@
+import { useAuthenticatedBrandAssetUrls } from "../../AdStudio/canvas/useAuthenticatedBrandAssetUrls";
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Archive,
   Copy,
@@ -46,6 +47,8 @@ export function BrandKitCard({
   onDelete,
   onExport,
 }: Props) {
+  const navigate = useNavigate();
+  const assetUrls = useAuthenticatedBrandAssetUrls(kit);
   const primary = kit.colors?.find((c) => c.role === "primary")?.hex;
   const secondary = kit.colors?.find((c) => c.role === "secondary")?.hex;
   const accent = kit.colors?.find((c) => c.role === "accent")?.hex;
@@ -60,7 +63,7 @@ export function BrandKitCard({
   return (
     <article
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-2xl border border-border glass transition-colors",
+        "bk-brand-card group relative flex flex-col overflow-hidden rounded-2xl border border-border glass transition-colors",
         archived && "opacity-70",
         selected && "ring-2 ring-primary/40",
       )}
@@ -82,9 +85,9 @@ export function BrandKitCard({
               color: secondary || "#fff",
             }}
           >
-            {logo?.readUrl ? (
+            {logo && assetUrls[logo.id] ? (
               <img
-                src={logo.readUrl}
+                src={assetUrls[logo.id]}
                 alt=""
                 className="h-full w-full object-contain bg-background p-1"
               />
@@ -124,10 +127,11 @@ export function BrandKitCard({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link to={`/brands/${kit.id}`}>
-                      <Pencil size={14} className="mr-2" /> Edit
-                    </Link>
+                  <DropdownMenuItem
+                    onClick={() => navigate(`/brands/${kit.id}`)}
+                  >
+                    <Pencil size={14} className="mr-2" />
+                    Open Brand Kit
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onDuplicate(kit)}>
                     <Copy size={14} className="mr-2" /> Duplicate
@@ -188,7 +192,9 @@ export function BrandKitCard({
               />
             ))
           ) : (
-            <span className="text-[11px] text-muted-foreground">No palette</span>
+            <span className="text-[11px] text-muted-foreground">
+              No palette
+            </span>
           )}
           {(kit.colors?.length ?? 0) > 3 ? (
             <span className="text-[11px] text-muted-foreground">
@@ -197,10 +203,21 @@ export function BrandKitCard({
           ) : null}
         </div>
 
+        <p className="text-xs text-muted-foreground">
+          {kit.assets?.filter((a) => !a.status || a.status === "ready")
+            .length || 0}{" "}
+          uploaded assets · {kit.typography?.length || 0} typography roles
+        </p>
         <div className="mt-auto flex gap-2 pt-1">
-          <Button type="button" size="sm" variant="outline" className="flex-1" asChild>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="flex-1"
+            asChild
+          >
             <Link to={`/brands/${kit.id}`}>
-              <Pencil size={12} className="mr-1" /> Edit
+              <Pencil size={12} className="mr-1" /> Open Brand Kit
             </Link>
           </Button>
         </div>

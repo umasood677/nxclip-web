@@ -5,8 +5,6 @@ import {
   Copy as CopyIcon,
   Download,
   FileJson,
-  LayoutTemplate,
-  Loader2,
   Megaphone,
   Palette,
   Plus,
@@ -18,8 +16,9 @@ import { SEO } from "../../components/SEO";
 import { brandApi } from "../../services/apiClient";
 import { BrandKitCard } from "./components/BrandKitCard";
 import { BrandKitImportDialog } from "./components/BrandKitImportDialog";
-import { BrandKitTemplateDialog } from "./components/BrandKitTemplateDialog";
-import { CreateBrandKitDialog } from "./CreateBrandKitDialog";
+import { Skeleton } from "../../components/ui/skeleton";
+import "../AdStudio/uxPreview/preview.css";
+import "./guided/brandKitLibrary.css";
 import {
   downloadJson,
   exportBrandKit,
@@ -28,7 +27,6 @@ import {
   stringifyExport,
 } from "./lib/brandKitExport";
 import { duplicateBrandKit } from "./lib/duplicateBrandKit";
-import { isGuidedBrandEnabled } from "./guided/guidedBrandModel";
 import type { BrandKitSummary } from "./lib/brandKitTypes";
 
 export default function BrandKitDashboard() {
@@ -37,9 +35,7 @@ export default function BrandKitDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const [templateOpen, setTemplateOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -50,7 +46,8 @@ export default function BrandKitDashboard() {
       const res = await brandApi.listKits();
       setKits((res.items ?? []) as BrandKitSummary[]);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to load Brand Kits";
+      const message =
+        e instanceof Error ? e.message : "Failed to load Brand Kits";
       setError(message);
       setKits([]);
       toast.error(message);
@@ -180,7 +177,9 @@ export default function BrandKitDashboard() {
           stringifyExport(exportBrandKitBundle(full)),
         );
       }
-      toast.success(`Exported ${full.length} kit${full.length === 1 ? "" : "s"}`);
+      toast.success(
+        `Exported ${full.length} kit${full.length === 1 ? "" : "s"}`,
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Export failed");
     }
@@ -214,17 +213,10 @@ export default function BrandKitDashboard() {
   };
 
   return (
-    <div className="space-y-6 pb-10 max-w-[100vw] overflow-x-hidden">
+    <div className="xp-root bk-library space-y-6">
       <SEO title="Brand Kit Studio | NxClip" />
 
-      <section className="relative overflow-hidden rounded-2xl border border-border glass p-4 sm:p-6 md:p-8">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-70"
-          style={{
-            background:
-              "radial-gradient(ellipse at 0% 0%, color-mix(in srgb, var(--primary) 18%, transparent), transparent 55%), radial-gradient(ellipse at 100% 100%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 45%)",
-          }}
-        />
+      <section className="bk-library-hero">
         <div className="relative flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="space-y-3 max-w-xl">
             <div className="flex items-center gap-2 text-primary">
@@ -234,11 +226,12 @@ export default function BrandKitDashboard() {
               </span>
             </div>
             <h1 className="text-3xl md:text-4xl font-display font-semibold tracking-tight text-foreground leading-[1.1]">
-              Own your brand identity once. Reuse it everywhere ads are made.
+              Every brand has a signature. Make yours unmistakable.
             </h1>
             <p className="text-sm md:text-base text-muted-foreground">
-              Create manually, import JSON, start from a template, or export kits
-              for backup and round-trip editing.
+              Your identity, products and creative direction — together in one
+              place. Open any Brand Kit to refine its palette, voice and asset
+              library.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -247,14 +240,14 @@ export default function BrandKitDashboard() {
                 <Megaphone size={16} className="mr-2" /> Ad Studio
               </Link>
             </Button>
-            <Button type="button" variant="outline" onClick={() => setTemplateOpen(true)}>
-              <LayoutTemplate size={16} className="mr-2" /> Templates
-            </Button>
-            <Button type="button" variant="outline" onClick={() => setImportOpen(true)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setImportOpen(true)}
+            >
               <FileJson size={16} className="mr-2" /> Import JSON
             </Button>
-            {isGuidedBrandEnabled()&&<Link className="inline-flex items-center rounded-md border border-amber-200/30 bg-amber-100/10 px-4 py-2 text-sm text-amber-100" to="/brands/new/guided">Create guided Brand Kit</Link>}
-            <Button type="button" onClick={() => setCreateOpen(true)}>
+            <Button type="button" className="bk-create-brand" onClick={() => navigate("/brands/new")}>
               <Plus size={16} className="mr-2" /> Create Brand Kit
             </Button>
           </div>
@@ -306,13 +299,23 @@ export default function BrandKitDashboard() {
       </div>
 
       {loading ? (
-        <div className="flex h-[40vh] items-center justify-center gap-2 text-muted-foreground">
-          <Loader2 className="animate-spin" size={18} /> Loading Brand Kits…
+        <div
+          className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+          aria-label="Loading Brand Kits"
+          aria-busy="true"
+        >
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-72 rounded-2xl" />
+          ))}
         </div>
       ) : error ? (
         <div className="rounded-2xl border border-border glass p-8 text-center space-y-3">
           <p className="text-sm text-destructive">{error}</p>
-          <Button type="button" variant="outline" onClick={() => void loadKits()}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void loadKits()}
+          >
             Retry
           </Button>
         </div>
@@ -322,20 +325,23 @@ export default function BrandKitDashboard() {
             <Palette size={22} />
           </div>
           <div className="space-y-1">
-            <h2 className="font-display text-lg font-semibold">No Brand Kits yet</h2>
+            <h2 className="font-display text-lg font-semibold">
+              No Brand Kits yet
+            </h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Create one manually, start from a template, or import the four seed
-              Brand Kits from JSON.
+              Build your identity step by step or import
+              your own compatible Brand Kit JSON.
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-2">
-            <Button type="button" onClick={() => setCreateOpen(true)}>
+            <Button type="button" className="bk-create-brand" onClick={() => navigate("/brands/new")}>
               <Plus size={16} className="mr-1" /> Create
             </Button>
-            <Button type="button" variant="outline" onClick={() => setTemplateOpen(true)}>
-              Templates
-            </Button>
-            <Button type="button" variant="outline" onClick={() => setImportOpen(true)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setImportOpen(true)}
+            >
               Import JSON
             </Button>
           </div>
@@ -361,14 +367,6 @@ export default function BrandKitDashboard() {
         </div>
       )}
 
-      <CreateBrandKitDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onCreated={(kit) => {
-          upsertKits([kit as BrandKitSummary]);
-          navigate(`/brands/${kit.id}`);
-        }}
-      />
       <BrandKitImportDialog
         open={importOpen}
         onOpenChange={setImportOpen}
@@ -378,14 +376,7 @@ export default function BrandKitDashboard() {
           if (incoming[0]?.id) navigate(`/brands/${incoming[0].id}`);
         }}
       />
-      <BrandKitTemplateDialog
-        open={templateOpen}
-        onOpenChange={setTemplateOpen}
-        onCreated={(kit) => {
-          upsertKits([kit]);
-          navigate(`/brands/${kit.id}`);
-        }}
-      />
+
     </div>
   );
 }

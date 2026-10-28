@@ -5,10 +5,19 @@
  * Never accepts or returns private storageKey values.
  */
 
-import type { BrandAssetEntry, BrandKitSummary } from "../../BrandKits/lib/brandKitTypes";
+import type {
+  BrandAssetEntry,
+  BrandKitSummary,
+} from "../../BrandKits/lib/brandKitTypes";
 
 const ROLE_ALIASES: Record<string, string[]> = {
-  logo: ["logo_primary", "logo_mark", "logo_secondary", "logo_light", "logo_dark"],
+  logo: [
+    "logo_primary",
+    "logo_mark",
+    "logo_secondary",
+    "logo_light",
+    "logo_dark",
+  ],
   product: ["product_image"],
   model: ["brand_model"],
   campaign: ["campaign_reference"],
@@ -42,7 +51,14 @@ export function buildBrandAssetUrlMap(
     const url = typeof asset.readUrl === "string" ? asset.readUrl.trim() : "";
     if (!url) continue;
     // Reject accidental storage-key-shaped values leaking into readUrl.
-    if (url.startsWith("brands/") || !/^https?:\/\//i.test(url)) continue;
+    if (
+      url.startsWith("brands/") ||
+      !(
+        /^https?:\/\//i.test(url) ||
+        /^\/(?:api\/gateway-proxy\/)?brands\//.test(url)
+      )
+    )
+      continue;
     out[asset.id] = url;
   }
   return out;
@@ -60,7 +76,8 @@ export function buildBrandAssetUrlMapByStorageKey(
   for (const asset of brand?.assets ?? []) {
     if (!asset?.id || !isReady(asset)) continue;
     const url = typeof asset.readUrl === "string" ? asset.readUrl.trim() : "";
-    if (!url || !/^https?:\/\//i.test(url) || url.startsWith("brands/")) continue;
+    if (!url || !/^https?:\/\//i.test(url) || url.startsWith("brands/"))
+      continue;
     const key = (asset as { storageKey?: string }).storageKey?.trim();
     if (key && !/^https?:\/\//i.test(key)) {
       out[key] = url;

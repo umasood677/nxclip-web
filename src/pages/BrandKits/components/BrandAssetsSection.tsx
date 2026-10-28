@@ -1,4 +1,6 @@
-import React, { useRef, useState } from "react";
+import { BrandContentLibraryPicker } from "./BrandContentLibraryPicker";
+import { useAuthenticatedBrandAssetUrls } from "../../AdStudio/canvas/useAuthenticatedBrandAssetUrls";
+import React, { useMemo, useRef, useState } from "react";
 import { ImagePlus, Loader2, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../../../components/ui/button";
@@ -20,9 +22,28 @@ function slotAsset(assets: BrandAssetEntry[], role: string) {
 }
 
 export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
+  const kit = useMemo(
+    () => ({ id: brandId, name: "", assets }),
+    [brandId, assets],
+  );
+  const assetUrls = useAuthenticatedBrandAssetUrls(kit);
+  const [selectedByRole, setSelectedByRole] = useState<Record<string, string>>(
+    {},
+  );
+  const [libraryRole, setLibraryRole] = useState<string | null>(null);
+  const chosen = (role: string) =>
+    assets.find(
+      (a) =>
+        a.id === selectedByRole[role] &&
+        a.role === role &&
+        a.status === "ready",
+    ) || slotAsset(assets, role);
   const [busyRole, setBusyRole] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<
-    Record<string, { label: string; description: string; usageGuidance: string }>
+    Record<
+      string,
+      { label: string; description: string; usageGuidance: string }
+    >
   >({});
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -38,9 +59,13 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
 
   const setDraft = (
     role: string,
-    patch: Partial<{ label: string; description: string; usageGuidance: string }>,
+    patch: Partial<{
+      label: string;
+      description: string;
+      usageGuidance: string;
+    }>,
   ) => {
-    const current = draftFor(role, slotAsset(assets, role));
+    const current = draftFor(role, chosen(role));
     setDrafts((prev) => ({ ...prev, [role]: { ...current, ...patch } }));
   };
 
@@ -49,7 +74,7 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
       toast.error("Upload an image file (PNG, JPEG, WebP, or SVG)");
       return;
     }
-    const draft = draftFor(role, slotAsset(assets, role));
+    const draft = draftFor(role, chosen(role));
     setBusyRole(role);
     try {
       const uploadMeta = await brandApi.requestAssetUploadUrl(brandId, {
@@ -61,22 +86,28 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
         description: draft.description.trim() || undefined,
         usageGuidance: draft.usageGuidance.trim() || undefined,
       });
-      await putToUploadUrl(uploadMeta.uploadUrl, file, file.type || "image/png");
+      await putToUploadUrl(
+        uploadMeta.uploadUrl,
+        file,
+        file.type || "image/png",
+      );
       const kit = (await brandApi.confirmAsset(
         brandId,
         uploadMeta.assetId,
       )) as BrandKitSummary;
       onKitUpdated(kit);
       toast.success("Asset uploaded");
+      setSelectedByRole((prev) => ({ ...prev, [role]: uploadMeta.assetId }));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
+      throw e;
     } finally {
       setBusyRole(null);
     }
   };
 
   const saveMeta = async (role: string) => {
-    const asset = slotAsset(assets, role);
+    const asset = chosen(role);
     if (!asset) {
       toast.message("Upload an image first, then save guidance");
       return;
@@ -92,19 +123,24 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
       onKitUpdated(kit);
       toast.success("Asset details saved");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to save asset details");
+      toast.error(
+        e instanceof Error ? e.message : "Failed to save asset details",
+      );
     } finally {
       setBusyRole(null);
     }
   };
 
   const remove = async (role: string) => {
-    const asset = slotAsset(assets, role);
+    const asset = chosen(role);
     if (!asset) return;
     if (!window.confirm("Remove this asset from the Brand Kit?")) return;
     setBusyRole(role);
     try {
-      const kit = (await brandApi.deleteAsset(brandId, asset.id)) as BrandKitSummary;
+      const kit = (await brandApi.deleteAsset(
+        brandId,
+        asset.id,
+      )) as BrandKitSummary;
       onKitUpdated(kit);
       setDrafts((prev) => {
         const next = { ...prev };
@@ -124,15 +160,19 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
       <div>
         <h2 className="font-display text-lg font-semibold">Logos & Assets</h2>
         <p className="text-sm text-muted-foreground">
-          Upload logos, product photos, and brand-model imagery. Usage guidance is
-          editorial instruction — not an AI identity guarantee. Files stay in secure
-          storage (not Brand Kit JSON).
+          Upload logos, product photos, and brand-model imagery. Usage guidance
+          is editorial instruction — not an AI identity guarantee. Files stay in
+          secure storage (not Brand Kit JSON).
         </p>
       </div>
 
+      <p className="text-xs text-muted-foreground">
+        {assets.length} attached assets. Selecting a candidate changes only this
+        preview, not its role or approval.
+      </p>
       <div className="space-y-4">
         {ASSET_SLOTS.map((slot) => {
-          const asset = slotAsset(assets, slot.role);
+          const asset = chosen(slot.role);
           const draft = draftFor(slot.role, asset);
           const busy = busyRole === slot.role;
           return (
@@ -146,7 +186,7 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
               onDrop={(e) => {
                 e.preventDefault();
                 const file = e.dataTransfer.files?.[0];
-                if (file) void upload(slot.role, file);
+                if (file) void upload(slot.role, file).catch(() => undefined);
               }}
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
@@ -159,17 +199,53 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
                 </span>
               </div>
 
+              {assets.filter(
+                (a) => a.role === slot.role && a.status === "ready",
+              ).length > 1 && (
+                <label className="block text-xs">
+                  Uploaded candidates
+                  <select
+                    aria-label={`${slot.label} candidate`}
+                    className="block w-full mt-1 rounded-md border bg-background p-2"
+                    value={asset?.id || ""}
+                    onChange={(e) => {
+                      setSelectedByRole((prev) => ({
+                        ...prev,
+                        [slot.role]: e.target.value,
+                      }));
+                      setDrafts((prev) => {
+                        const next = { ...prev };
+                        delete next[slot.role];
+                        return next;
+                      });
+                    }}
+                  >
+                    {assets
+                      .filter(
+                        (a) => a.role === slot.role && a.status === "ready",
+                      )
+                      .map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.label || a.fileName || a.id}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              )}
               <div className="grid gap-3 sm:grid-cols-[140px_minmax(0,1fr)]">
                 <div className="relative flex h-32 items-center justify-center overflow-hidden rounded-lg border border-dashed border-border bg-muted/30">
-                  {asset?.readUrl ? (
+                  {asset && assetUrls[asset.id] ? (
                     <img
-                      src={asset.readUrl}
+                      src={assetUrls[asset.id]}
                       alt={draft.label || slot.label}
                       className="max-h-full max-w-full object-contain"
                     />
                   ) : (
                     <div className="text-center px-2 text-muted-foreground">
-                      <ImagePlus className="mx-auto mb-1 opacity-60" size={22} />
+                      <ImagePlus
+                        className="mx-auto mb-1 opacity-60"
+                        size={22}
+                      />
                       <p className="text-[11px]">Drop image or upload</p>
                     </div>
                   )}
@@ -182,17 +258,21 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
 
                 <div className="space-y-2 min-w-0">
                   <div>
-                    <Label>Display name</Label>
+                    <Label htmlFor={`${brandId}-${slot.role}-label`}> Display name</Label>
                     <Input
+                      id={`${brandId}-${slot.role}-label`}
                       value={draft.label}
-                      onChange={(e) => setDraft(slot.role, { label: e.target.value })}
+                      onChange={(e) =>
+                        setDraft(slot.role, { label: e.target.value })
+                      }
                       placeholder={slot.exampleLabel || slot.label}
                       disabled={busy}
                     />
                   </div>
                   <div>
-                    <Label>Description</Label>
+                    <Label htmlFor={`${brandId}-${slot.role}-description`}> Description</Label>
                     <Input
+                      id={`${brandId}-${slot.role}-description`}
                       value={draft.description}
                       onChange={(e) =>
                         setDraft(slot.role, { description: e.target.value })
@@ -202,14 +282,17 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
                     />
                   </div>
                   <div>
-                    <Label>Usage guidance</Label>
+                    <Label htmlFor={`${brandId}-${slot.role}-usageGuidance`}> Usage guidance</Label>
                     <Textarea
+                      id={`${brandId}-${slot.role}-usageGuidance`}
                       value={draft.usageGuidance}
                       onChange={(e) =>
                         setDraft(slot.role, { usageGuidance: e.target.value })
                       }
                       rows={2}
-                      placeholder={slot.exampleGuidance || "How this asset should be used"}
+                      placeholder={
+                        slot.exampleGuidance || "How this asset should be used"
+                      }
                       disabled={busy}
                     />
                   </div>
@@ -224,7 +307,8 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         e.target.value = "";
-                        if (file) void upload(slot.role, file);
+                        if (file)
+                          void upload(slot.role, file).catch(() => undefined);
                       }}
                     />
                     <Button
@@ -236,6 +320,16 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
                     >
                       <Upload size={14} className="mr-1" />
                       {asset ? "Replace" : "Upload"}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => setLibraryRole(slot.role)}
+                    >
+                      <ImagePlus size={14} className="mr-1" />
+                      Content Library
                     </Button>
                     {asset ? (
                       <>
@@ -266,6 +360,41 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
           );
         })}
       </div>
+      {assets.some((a) => !ASSET_SLOTS.some((s) => s.role === a.role)) && (
+        <section className="rounded-xl border p-4">
+          <h3 className="font-medium mb-3">Other attached assets</h3>
+          {assets
+            .filter((a) => !ASSET_SLOTS.some((s) => s.role === a.role))
+            .map((a) => (
+              <div key={a.id} className="flex gap-3 items-center py-2">
+                {assetUrls[a.id] && (
+                  <img
+                    src={assetUrls[a.id]}
+                    className="w-14 h-14 object-contain"
+                    alt={a.label || a.role || "Brand asset"}
+                  />
+                )}
+                <div>
+                  <p>{a.label || a.fileName || "Attached asset"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {a.role || "Unassigned role"} ·{" "}
+                    {a.status || "Status unavailable"}
+                  </p>
+                </div>
+              </div>
+            ))}
+        </section>
+      )}
+      {libraryRole && (
+        <BrandContentLibraryPicker
+          roleLabel={
+            ASSET_SLOTS.find((s) => s.role === libraryRole)?.label ||
+            libraryRole
+          }
+          onClose={() => setLibraryRole(null)}
+          onSelect={(file) => upload(libraryRole, file)}
+        />
+      )}
     </div>
   );
 }

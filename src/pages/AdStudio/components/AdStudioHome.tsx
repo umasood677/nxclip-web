@@ -1,11 +1,10 @@
 import React, { useCallback, useMemo } from "react";
-import { Link } from "react-router-dom";
 import {
   ArrowRight,
   Clock3,
   FolderOpen,
   Loader2,
-  Sparkles,
+  Plus,
   Trash2,
 } from "lucide-react";
 import type { BrandKitSummary } from "../../BrandKits/CreateBrandKitDialog";
@@ -322,7 +321,7 @@ export function AdStudioHome({
                   onClick={onStartIdea}
                 >
                   <span className="w0a-create-project__glow" aria-hidden />
-                  <Sparkles size={14} aria-hidden />
+                  <Plus size={14} aria-hidden />
                   Create project
                 </button>
               </div>

@@ -90,7 +90,6 @@ const AnimatedAdStudioUnavailable = lazy(
 const BrandTemplateLibrary = lazy(() => import("./pages/BrandKits/templates/BrandTemplateLibrary"));
 const GuidedBrandKit = lazy(() => import("./pages/BrandKits/guided/GuidedBrandKit"));
 const BrandKits = lazy(() => import("./pages/BrandKits/BrandKits"));
-const BrandKitEditor = lazy(() => import("./pages/BrandKits/BrandKitEditor"));
 const Analytics = lazy(() => import("./pages/Analytics/Analytics"));
 const CreatorCoach = lazy(() => import("./pages/CreatorCoach/CreatorCoach"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel/AdminPanel"));
@@ -467,7 +466,8 @@ export default function App() {
                     <Route path="/brands/:brandId/guided" element={<GuidedBrandKit />} />
                     <Route path="/brands/:brandId/templates" element={<BrandTemplateLibrary />} />
                     <Route path="/brands/:brandId/templates/:templateId" element={<BrandTemplateLibrary />} />
-                    <Route path="/brands/:brandId" element={<BrandKitEditor />} />
+                    <Route path="/brands/:brandId" element={<GuidedBrandKit />} />
+                    <Route path="/brands/new" element={<GuidedBrandKit />} />
                     <Route path="/create/brands" element={<Navigate to="/brands" replace />} />
                     <Route path="/create/clip" element={<ClipUpload />} />
                     <Route path="/create/clip/:id/edit" element={<ClipEditor />} />
