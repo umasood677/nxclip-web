@@ -1,3 +1,4 @@
+import { importBrandStudio } from "../guided/brandStudioPortable";
 import {
   adaptLegacySeedEnvelope,
   isLegacySeedEnvelope,
@@ -182,6 +183,7 @@ export function extractPortableKits(value: unknown): {
           "typography",
           "voice",
           "creativeGuidelines",
+          "studio",
           "advertisingPreferences",
           "assets",
           "guidelines",
@@ -207,6 +209,7 @@ export function extractPortableKits(value: unknown): {
         signatureProduct: asString(brandRaw.signatureProduct, 200),
         personality: asString(brandRaw.personality, 280),
       },
+      studio: obj.studio as PortableBrandKit["studio"],
       colors: (obj.colors as PortableColors) || undefined,
       typography: (obj.typography as PortableBrandKit["typography"]) || undefined,
       voice: (obj.voice as PortableBrandKit["voice"]) || undefined,
@@ -336,6 +339,7 @@ export function mapPortableKit(kit: PortableBrandKit): MappedImportKit {
     copyGuidance: kit.voice?.copyGuidance,
     creative: kit.creativeGuidelines,
   };
+  if(kit.studio){const studio=importBrandStudio(kit.studio);if(studio)voice.studio=studio;issues.push({level:"warning",path:"studio",message:studio?"Guided identity and character design imported as drafts. Asset references and usage permissions require fresh review.":"Guided metadata uses an unsupported category, niche or schema and was not imported."});}
   // Drop undefined
   for (const key of Object.keys(voice)) {
     if (voice[key] === undefined) delete voice[key];

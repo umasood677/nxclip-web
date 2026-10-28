@@ -1,0 +1,399 @@
+{
+  "purpose": "Exact public source taxonomy snapshot; no replacement taxonomy",
+  "sources": [
+    {
+      "path": "D:/NxClip-W8-Integration/apps/ai-service/src/coach/seed/niche-categories.v1.json",
+      "sha256": "bfda5673d2bec7fe8c46a4c9e3fe13cc072fdd0c277c46420543811f40821bdd"
+    },
+    {
+      "path": "D:/NxClip-W8-Integration/apps/ai-service/src/coach/seed/niche-categories.v2.json",
+      "sha256": "e9905089335a6a468e9d59b29ee2a5f687d2cab917159e081456d46fc4b1507f"
+    },
+    {
+      "path": "D:/NxClip-W8-Integration/apps/ai-service/src/coach/seed/niche-categories.v3.json",
+      "sha256": "dbccce20b218ceeb82d32a0abf29b15fd175f48fda1baf9606155e4f025325b6"
+    }
+  ],
+  "categories": [
+    {
+      "category": "quiet-luxury-minimalism",
+      "label": "Quiet Luxury & Minimalism",
+      "niches": [
+        {
+          "id": "capsule-wardrobes-essential-style",
+          "label": "Capsule Wardrobes & Essential Style"
+        },
+        {
+          "id": "monochromatic-neutral-aesthetics",
+          "label": "Monochromatic & Neutral Aesthetics"
+        },
+        {
+          "id": "minimalist-home-architecture",
+          "label": "Minimalist Home & Architecture"
+        },
+        {
+          "id": "elevated-everyday-living",
+          "label": "Elevated Everyday Living"
+        }
+      ]
+    },
+    {
+      "category": "gourmet-culinary-aesthetics",
+      "label": "Gourmet & Culinary Aesthetics",
+      "niches": [
+        {
+          "id": "fine-dining-michelin-experience",
+          "label": "Fine Dining & Michelin Experience"
+        },
+        {
+          "id": "aesthetic-food-plating-asmr",
+          "label": "Aesthetic Food Plating & ASMR"
+        },
+        {
+          "id": "craft-cocktails-sommelier-culture",
+          "label": "Craft Cocktails & Sommelier Culture"
+        },
+        {
+          "id": "luxury-hosting-tablescapes",
+          "label": "Luxury Hosting & Tablescapes"
+        }
+      ]
+    },
+    {
+      "category": "fashion-personal-styling",
+      "label": "Fashion & Personal Styling",
+      "niches": [
+        {
+          "id": "high-fashion-haute-couture",
+          "label": "High Fashion & Haute Couture"
+        },
+        {
+          "id": "outfit-vs-venue",
+          "label": "Outfit vs. Venue (Contextual Styling)"
+        },
+        {
+          "id": "seasonal-color-palette-rules",
+          "label": "Seasonal Color & Palette Rules"
+        },
+        {
+          "id": "luxury-accessories-jewelry",
+          "label": "Luxury Accessories & Jewelry"
+        }
+      ]
+    },
+    {
+      "category": "interior-spatial-design",
+      "label": "Interior & Spatial Design",
+      "niches": [
+        {
+          "id": "modern-architectural-home-tours",
+          "label": "Modern Architectural Home Tours"
+        },
+        {
+          "id": "luxury-interior-decorating",
+          "label": "Luxury Interior Decorating"
+        },
+        {
+          "id": "ambient-living-spaces",
+          "label": "Ambient Living Spaces"
+        },
+        {
+          "id": "furniture-product-design",
+          "label": "Furniture & Product Design"
+        }
+      ]
+    },
+    {
+      "category": "futuristic-digital-lifestyle",
+      "label": "Futuristic & Digital Lifestyle",
+      "niches": [
+        {
+          "id": "digital-garments-ai-fashion",
+          "label": "Digital Garments & AI Fashion"
+        },
+        {
+          "id": "avant-garde-conceptual-design",
+          "label": "Avant-Garde & Conceptual Design"
+        },
+        {
+          "id": "future-living-smart-home-aesthetics",
+          "label": "Future Living & Smart Home Aesthetics"
+        },
+        {
+          "id": "cyber-luxe-aesthetics",
+          "label": "Cyber-Luxe Aesthetics"
+        }
+      ]
+    },
+    {
+      "category": "digital-creator",
+      "label": "Digital Creator",
+      "niches": [
+        {
+          "id": "personal-brand-faceless",
+          "label": "Personal Brand & Faceless Content"
+        },
+        {
+          "id": "ugc-brand-collabs",
+          "label": "UGC & Brand Collabs"
+        },
+        {
+          "id": "short-form-storytelling",
+          "label": "Short-Form Storytelling"
+        },
+        {
+          "id": "behind-the-scenes",
+          "label": "Behind-the-Scenes & Day-in-the-Life"
+        },
+        {
+          "id": "multi-platform-repurposing",
+          "label": "Multi-Platform Repurposing"
+        },
+        {
+          "id": "newsletter-community",
+          "label": "Newsletter & Community Building"
+        }
+      ]
+    },
+    {
+      "category": "ai-content",
+      "label": "AI Content & Tools",
+      "niches": [
+        {
+          "id": "ai-art-visual-generation",
+          "label": "AI Art & Visual Generation"
+        },
+        {
+          "id": "prompt-engineering-tutorials",
+          "label": "Prompt Engineering Tutorials"
+        },
+        {
+          "id": "ai-tool-reviews",
+          "label": "AI Tool Reviews & Comparisons"
+        },
+        {
+          "id": "ai-video-motion",
+          "label": "AI Video & Motion Workflows"
+        },
+        {
+          "id": "automation-productivity",
+          "label": "Automation & Productivity Stacks"
+        },
+        {
+          "id": "ai-news-updates",
+          "label": "AI News & Model Updates"
+        }
+      ]
+    },
+    {
+      "category": "tech-saas",
+      "label": "Tech & SaaS Reviews",
+      "niches": [
+        {
+          "id": "smartphones-gadgets",
+          "label": "Smartphones & Gadgets"
+        },
+        {
+          "id": "laptops-pc-builds",
+          "label": "Laptops & PC Builds"
+        },
+        {
+          "id": "saas-productivity",
+          "label": "SaaS & Productivity Apps"
+        },
+        {
+          "id": "ai-software-apis",
+          "label": "AI Software & APIs"
+        },
+        {
+          "id": "smart-home-wearables",
+          "label": "Smart Home & Wearables"
+        },
+        {
+          "id": "creator-gear-studio",
+          "label": "Creator Gear & Studio Setup"
+        }
+      ]
+    },
+    {
+      "category": "fitness-wellness",
+      "label": "Fitness & Wellness",
+      "niches": [
+        {
+          "id": "strength-hypertrophy",
+          "label": "Strength & Hypertrophy"
+        },
+        {
+          "id": "home-workouts-calisthenics",
+          "label": "Home Workouts & Calisthenics"
+        },
+        {
+          "id": "yoga-mobility",
+          "label": "Yoga & Mobility"
+        },
+        {
+          "id": "running-endurance",
+          "label": "Running & Endurance"
+        },
+        {
+          "id": "nutrition-meal-prep",
+          "label": "Nutrition & Meal Prep"
+        },
+        {
+          "id": "mindset-recovery",
+          "label": "Mindset & Recovery"
+        }
+      ]
+    },
+    {
+      "category": "beauty-skincare",
+      "label": "Beauty & Skincare",
+      "niches": [
+        {
+          "id": "skincare-routines",
+          "label": "Skincare Routines & Science"
+        },
+        {
+          "id": "makeup-grwm",
+          "label": "Makeup Tutorials & GRWM"
+        },
+        {
+          "id": "hair-care-styling",
+          "label": "Hair Care & Styling"
+        },
+        {
+          "id": "clean-beauty",
+          "label": "Clean Beauty & Ingredients"
+        },
+        {
+          "id": "mens-grooming",
+          "label": "Men's Grooming"
+        },
+        {
+          "id": "k-beauty-trends",
+          "label": "K-Beauty & Trends"
+        }
+      ]
+    },
+    {
+      "category": "finance-business",
+      "label": "Finance & Business",
+      "niches": [
+        {
+          "id": "personal-finance-budgeting",
+          "label": "Personal Finance & Budgeting"
+        },
+        {
+          "id": "investing-markets",
+          "label": "Investing & Markets"
+        },
+        {
+          "id": "side-hustles-online-income",
+          "label": "Side Hustles & Online Income"
+        },
+        {
+          "id": "entrepreneurship-startups",
+          "label": "Entrepreneurship & Startups"
+        },
+        {
+          "id": "real-estate-wealth",
+          "label": "Real Estate & Wealth Building"
+        },
+        {
+          "id": "career-salary",
+          "label": "Career Growth & Salary Negotiation"
+        }
+      ]
+    },
+    {
+      "category": "education-how-to",
+      "label": "Education & How-To",
+      "niches": [
+        {
+          "id": "language-communication",
+          "label": "Language & Communication"
+        },
+        {
+          "id": "coding-no-code",
+          "label": "Coding & No-Code"
+        },
+        {
+          "id": "design-creative-skills",
+          "label": "Design & Creative Skills"
+        },
+        {
+          "id": "study-productivity",
+          "label": "Study Tips & Productivity"
+        },
+        {
+          "id": "career-interview-prep",
+          "label": "Career & Interview Prep"
+        },
+        {
+          "id": "life-skills-diy",
+          "label": "Life Skills & DIY How-To"
+        }
+      ]
+    },
+    {
+      "category": "entertainment-culture",
+      "label": "Entertainment & Pop Culture",
+      "niches": [
+        {
+          "id": "movies-tv-breakdowns",
+          "label": "Movies & TV Breakdowns"
+        },
+        {
+          "id": "music-artist-commentary",
+          "label": "Music & Artist Commentary"
+        },
+        {
+          "id": "celebrity-pop-culture",
+          "label": "Celebrity & Pop Culture News"
+        },
+        {
+          "id": "gaming-lore-fandom",
+          "label": "Gaming Lore & Fandom"
+        },
+        {
+          "id": "sports-highlights",
+          "label": "Sports Highlights & Hot Takes"
+        },
+        {
+          "id": "memes-viral-trends",
+          "label": "Memes & Viral Trend Commentary"
+        }
+      ]
+    },
+    {
+      "category": "Gaming",
+      "label": "Gaming",
+      "niches": [
+        {
+          "id": "esports-competitive-highlights",
+          "label": "Esports & Competitive Highlights"
+        },
+        {
+          "id": "game-launches-trailers",
+          "label": "Game Launches & Trailers"
+        },
+        {
+          "id": "stream-highlights-clips",
+          "label": "Stream Highlights & Clips"
+        },
+        {
+          "id": "community-memes-culture",
+          "label": "Community Memes & Culture"
+        },
+        {
+          "id": "studio-marketing-brand-films",
+          "label": "Studio Marketing & Brand Films"
+        },
+        {
+          "id": "devlogs-behind-the-scenes",
+          "label": "Devlogs & Behind-the-Scenes"
+        }
+      ]
+    }
+  ]
+}

@@ -28,6 +28,7 @@ import {
   stringifyExport,
 } from "./lib/brandKitExport";
 import { duplicateBrandKit } from "./lib/duplicateBrandKit";
+import { isGuidedBrandEnabled } from "./guided/guidedBrandModel";
 import type { BrandKitSummary } from "./lib/brandKitTypes";
 
 export default function BrandKitDashboard() {
@@ -252,6 +253,7 @@ export default function BrandKitDashboard() {
             <Button type="button" variant="outline" onClick={() => setImportOpen(true)}>
               <FileJson size={16} className="mr-2" /> Import JSON
             </Button>
+            {isGuidedBrandEnabled()&&<Link className="inline-flex items-center rounded-md border border-amber-200/30 bg-amber-100/10 px-4 py-2 text-sm text-amber-100" to="/brands/new/guided">Create guided Brand Kit</Link>}
             <Button type="button" onClick={() => setCreateOpen(true)}>
               <Plus size={16} className="mr-2" /> Create Brand Kit
             </Button>

@@ -78,7 +78,13 @@ export type PortableAssetRef = {
   externalHint?: string;
 };
 
+export type PortableBrandStudio = {
+ schemaVersion:1;categoryId:string;nicheId:string;businessType?:string;businessGoals:string[];
+ characters?:Array<{name:string;kind:"human-model"|"mascot"|"fictional-character";appearance:string;style:string;wardrobe:string;expressions:string;consistencyRules:string}>;
+};
 export type PortableBrandKit = {
+  /** Character design only; asset bindings and usage permissions never transfer. */
+  studio?: PortableBrandStudio;
   schemaVersion: typeof BRAND_KIT_SCHEMA_VERSION;
   type: typeof BRAND_KIT_TYPE;
   brand: PortableBrandIdentity;

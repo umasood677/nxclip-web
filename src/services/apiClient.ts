@@ -2862,6 +2862,12 @@ export const brandApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     }),
+  creativeContext: async (id:string,scope:"ad-studio"|"image-studio"|"ad-animation"):Promise<{brandKitId:string;brandKitVersion:number;scope:string;characters:Array<Omit<import("../pages/BrandKits/lib/brandKitTypes").BrandCharacterProfile,"permissions"|"status">>}> =>
+    performApiRequest(`/brands/${id}/creative-context?scope=${encodeURIComponent(scope)}`,{method:"GET"}),
+  listVersions: async (id: string): Promise<{ items: Array<{ id: string; version: number; changeSummary: string | null; createdAt: string }> }> =>
+    performApiRequest(`/brands/${id}/versions`, { method: "GET" }),
+  createVersion: async (id: string, changeSummary: string): Promise<unknown> =>
+    performApiRequest(`/brands/${id}/versions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ changeSummary }) }),
   deleteKit: async (id: string): Promise<void> =>
     performApiRequest(`/brands/${id}`, { method: "DELETE" }),
   replaceColors: async (
@@ -3207,4 +3213,26 @@ export const adStudioApi = {
       URL.revokeObjectURL(objectUrl);
     }
   },
+};
+
+/** Editable brand template lifecycle; backend gate and ownership checks remain authoritative. */
+export const brandTemplateApi = {
+ customize: (kit:string,id:string,body:{expectedRevision:number;name:string;templateId:string;format:string;primaryHeadline:string;supportingCopy:string;cta:string}):Promise<import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplate>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/${encodeURIComponent(id)}/customize`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),
+ list: (kit:string):Promise<{items:import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplate[]}>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates`,{method:'GET'}),
+ get: (kit:string,id:string):Promise<import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplate>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/${encodeURIComponent(id)}`,{method:'GET'}),
+ generate: (kit:string,expectedBrandVersion:number,format:string):Promise<{items:import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplate[];method:'native-template-engine'}>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/generate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({expectedBrandVersion,format})}),
+ action: (kit:string,id:string,expectedRevision:number,action:import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplateAction):Promise<import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplate>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/${encodeURIComponent(id)}/actions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({expectedRevision,action})}),
+ edit: (kit:string,id:string,body:{expectedRevision:number;name:string;sceneGraph:import('../pages/AdStudio/types').AdSceneGraph}):Promise<import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplate>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/${encodeURIComponent(id)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),
+ reuse: (kit:string,id:string,projectId:string):Promise<{id:string}>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/${encodeURIComponent(id)}/reuse`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectId})}),
+};
+/** Real brand analysis is gated and requires a fresh quote plus explicit cost approval. */
+export const brandAnalysisApi = {
+ quote:(kit:string,expectedBrandVersion:number,maxEstimatedCostUsd:number):Promise<import('../pages/BrandKits/analysis/brandAnalysisModel').BrandAnalysisQuote>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/analysis/quote`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({expectedBrandVersion,maxEstimatedCostUsd})}),
+ execute:(kit:string,body:{expectedBrandVersion:number;maxEstimatedCostUsd:number;requestId:string;approvedQuoteHash:string;allowPaidProvider:boolean}):Promise<import('../pages/BrandKits/analysis/brandAnalysisModel').BrandAnalysisResult>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/analysis/execute`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),
+ status:(kit:string,requestId:string):Promise<{jobId:string;status:'queued'|'processing'|'completed'|'failed';result:import('../pages/BrandKits/analysis/brandAnalysisModel').BrandAnalysisResult|null}>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/analysis/requests/${encodeURIComponent(requestId)}`,{method:'GET'}),
+};/** Owner-resolved, explicitly quoted real concepts. No brief/assets are accepted from this view. */
+export const quotedConceptApi={
+ quote:(project:string,maxEstimatedCostUsd:number):Promise<import('../pages/AdStudio/production/conceptExecutionModel').ConceptQuote>=>performApiRequest(`/ad-studio/projects/${encodeURIComponent(project)}/concepts/quote`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({maxEstimatedCostUsd,conceptCount:4})}),
+ execute:(project:string,body:{maxEstimatedCostUsd:number;requestId:string;approvedQuoteHash:string;allowPaidProvider:boolean}):Promise<import('../pages/AdStudio/production/conceptExecutionModel').QuotedConceptResult>=>performApiRequest(`/ad-studio/projects/${encodeURIComponent(project)}/concepts/execute`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,conceptCount:4})}),
+ status:(project:string,requestId:string):Promise<{jobId:string;status:string;result:import('../pages/AdStudio/production/conceptExecutionModel').QuotedConceptResult|null}>=>performApiRequest(`/ad-studio/projects/${encodeURIComponent(project)}/concepts/requests/${encodeURIComponent(requestId)}?readAt=${Date.now()}`,{method:'GET'}),
 };

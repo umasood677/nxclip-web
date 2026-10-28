@@ -9,6 +9,8 @@ import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 import { SEO } from "../../components/SEO";
 import { cn } from "../../lib/utils";
+import { BrandCharactersSection } from "./guided/BrandCharactersSection";
+import { isGuidedBrandEnabled } from "./guided/guidedBrandModel";
 import { brandApi } from "../../services/apiClient";
 import { BrandAssetsSection } from "./components/BrandAssetsSection";
 import {
@@ -351,6 +353,7 @@ export default function BrandKitEditor() {
 
   return (
     <div className="space-y-4 pb-10 max-w-[100vw] overflow-x-hidden">
+      {isGuidedBrandEnabled()&&<Link className="inline-flex rounded-md border border-amber-200/30 px-3 py-2 text-sm text-amber-100" to={"/brands/"+brandId+"/guided"}>Open guided Brand Kit</Link>}
       <SEO title={`${identity.name || "Brand Kit"} | Brand Kit Studio`} />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -393,7 +396,7 @@ export default function BrandKitEditor() {
 
       <div className="grid gap-4 lg:grid-cols-[200px_minmax(0,1fr)_300px]">
         <nav className="rounded-2xl border border-border glass p-2 h-fit lg:sticky lg:top-4">
-          {EDITOR_SECTIONS.map((s) => (
+          {EDITOR_SECTIONS.filter(s=>s.id!=="characters"||isGuidedBrandEnabled()).map((s) => (
             <button
               key={s.id}
               type="button"
@@ -676,6 +679,8 @@ export default function BrandKitEditor() {
               }}
             />
           ) : null}
+
+          {section === "characters" && isGuidedBrandEnabled() ? <BrandCharactersSection kit={kit} disabled={dirty} onKitUpdated={applyKit}/> : null}
 
           {section === "voice" ? (
             <BrandVoiceSection value={voice} onChange={setVoice} />

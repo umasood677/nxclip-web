@@ -1,3 +1,4 @@
+import { exportBrandStudio } from "../guided/brandStudioPortable";
 import {
   BRAND_KIT_BUNDLE_TYPE,
   BRAND_KIT_SCHEMA_VERSION,
@@ -78,6 +79,7 @@ export function exportBrandKit(kit: BrandKitSummary): PortableBrandKit {
       exampleHeadlines: voice.exampleHeadlines as string[] | undefined,
       copyGuidance: voice.copyGuidance as string | undefined,
     },
+    studio: exportBrandStudio(kit.voice?.studio),
     creativeGuidelines: voice.creative as PortableBrandKit["creativeGuidelines"],
     guidelines: kit.guidelines ?? undefined,
     assets: assetRefs(kit),

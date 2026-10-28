@@ -1,3 +1,11 @@
+export type BrandCharacterScope = "ad-studio" | "image-studio" | "ad-animation";
+export type BrandCharacterProfile = {
+ id:string; name:string; kind:"human-model"|"mascot"|"fictional-character"; status:"draft"|"approved"|"archived";
+ referenceAssetIds:string[]; appearance:string; style:string; wardrobe:string; expressions:string; consistencyRules:string;
+ permissions:{commercialUse:boolean;likenessConsent:boolean;origin:"unverified"|"owner-created"|"licensed"|"consented";scopes:BrandCharacterScope[];evidence:string;expiresAt?:string};
+};
+export type BrandStudioProfile = { approvedAssetIds?: string[]; characters?: BrandCharacterProfile[]; schemaVersion: 1; categoryId: string; nicheId: string; businessType?: string; businessGoals: string[]; identityApproved: boolean; guidelinesApproved: boolean };
+
 export type BrandCreativeGuidelines = {
   visualStyle?: string;
   photographyDirection?: string;
@@ -14,6 +22,7 @@ export type BrandCreativeGuidelines = {
 };
 
 export type BrandVoiceFields = {
+  studio?: BrandStudioProfile;
   tone?: string;
   personality?: string;
   doSay?: string[];
@@ -39,6 +48,8 @@ export type BrandColorEntry = {
 };
 
 export type BrandTypographyEntry = {
+  fallbackStack?: string | null;
+  assetId?: string | null;
   role?: string;
   family: string;
   weight?: string;
@@ -47,6 +58,7 @@ export type BrandTypographyEntry = {
 };
 
 export type BrandAssetEntry = {
+  mimeType?: string;
   id: string;
   role?: string;
   status?: string;
@@ -75,6 +87,7 @@ export type EditorSection =
   | "identity"
   | "colors"
   | "typography"
+  | "characters"
   | "assets"
   | "voice"
   | "guidelines"
@@ -85,6 +98,7 @@ export const EDITOR_SECTIONS: Array<{ id: EditorSection; label: string }> = [
   { id: "colors", label: "Colors" },
   { id: "typography", label: "Typography" },
   { id: "assets", label: "Logos & Assets" },
+  { id: "characters", label: "Models & Mascots" },
   { id: "voice", label: "Brand Voice" },
   { id: "guidelines", label: "Creative Guidelines" },
   { id: "review", label: "Review" },

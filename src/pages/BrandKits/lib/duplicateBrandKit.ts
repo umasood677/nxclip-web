@@ -1,3 +1,4 @@
+import { characterProfilesForDuplicate } from "../guided/brandCharacterModel";
 import { brandApi } from "../../../services/apiClient";
 import type { BrandKitSummary } from "./brandKitTypes";
 
@@ -12,7 +13,8 @@ export async function duplicateBrandKit(source: BrandKitSummary): Promise<BrandK
   const baseName = (full.name || source.name || "Brand Kit").trim();
   const copyName = `${baseName} (copy)`.slice(0, 120);
 
-  const voice = full.voice ? { ...full.voice } : undefined;
+  const voice = full.voice ? structuredClone(full.voice) : undefined;
+  if(voice?.studio){voice.studio={...voice.studio,approvedAssetIds:[],characters:characterProfilesForDuplicate(voice.studio.characters||[]),identityApproved:false,guidelinesApproved:false};}
   // Drop any accidental asset id references if present in voice blobs
   if (voice && "assetId" in voice) {
     delete (voice as Record<string, unknown>).assetId;
