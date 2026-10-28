@@ -1,3 +1,4 @@
+import { useCreativeAssetUrls } from './canvas/useCreativeAssetUrls';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -237,7 +238,9 @@ export default function AdStudioEditor() {
     [graph, selectedLayerId],
   );
 
-  const assetUrls = useAuthenticatedBrandAssetUrls(brandKit);
+  const brandAssetUrls = useAuthenticatedBrandAssetUrls(brandKit);
+  const generatedUrls = useCreativeAssetUrls(creativeId && graph?.layers.some(l=>l.id.startsWith('ai-background-'))?[creativeId]:[]);
+  const assetUrls = useMemo(()=>({...brandAssetUrls,...generatedUrls}),[brandAssetUrls,generatedUrls]);
   // Do not pass auth-gated gateway media via storageKey map into <img src>.
   // assetId → blob hydration in useAuthenticatedBrandAssetUrls is the preview path.
   const storageKeyUrls = useMemo(() => ({}), [brandKit]);

@@ -1,3 +1,4 @@
+import { useCreativeAssetUrls } from "../canvas/useCreativeAssetUrls";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -51,7 +52,15 @@ export function useAdProjectWorkspace() {
   const [ideaError, setIdeaError] = useState<string | null>(null);
   const [exportCreative, setExportCreative] =
     useState<WorkspaceCreative | null>(null);
-  const assetUrls = useAuthenticatedBrandAssetUrls(brand);
+  const brandAssetUrls = useAuthenticatedBrandAssetUrls(brand);
+  const generatedUrls = useCreativeAssetUrls(
+    creatives
+      .filter((c) =>
+        c.sceneGraph?.layers.some((l) => l.id.startsWith("ai-background-")),
+      )
+      .map((c) => c.id),
+  );
+  const assetUrls = { ...brandAssetUrls, ...generatedUrls };
   const templatesEnabled = isAdStudioTemplatesV1Enabled();
   const draftDirty =
     (compose && JSON.stringify(form) !== savedForm) ||

@@ -30,12 +30,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-home.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "not-integrated",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "brief",
       "intendedProductionRoute": "/create/ad/projects/:projectId?view=brief",
-      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "status": "Source-connected to existing project controller; source integration; local M2B frontend gate enabled, end-to-end and visual acceptance pending",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -60,12 +68,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brief.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "templates",
       "intendedProductionRoute": "/create/ad?view=templates",
-      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "status": "Source-connected to existing project controller; source integration; local M2B frontend gate enabled, end-to-end and visual acceptance pending",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -90,12 +106,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-templates.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "template",
       "intendedProductionRoute": "/create/ad?templateId=:templateId",
-      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "status": "Source-connected to existing project controller; source integration; local M2B frontend gate enabled, end-to-end and visual acceptance pending",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -120,12 +144,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-template.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "assets",
       "intendedProductionRoute": "/create/ad/projects/:projectId?view=assets",
-      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "status": "Source-connected to existing project controller; source integration; local M2B frontend gate enabled, end-to-end and visual acceptance pending",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -150,12 +182,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-assets.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "progress",
       "intendedProductionRoute": "/create/ad/projects/:projectId?view=jobs",
-      "status": "Not yet production-integrated",
+      "status": "Partial: actual concept/image request progress and retained status; no simulated production percentage; live execution unverified.",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -180,12 +220,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-progress.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "concepts",
       "intendedProductionRoute": "/create/ad/projects/:projectId?view=concepts",
-      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "status": "Source-connected to existing project controller; source integration; local M2B frontend gate enabled, end-to-end and visual acceptance pending",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -210,12 +258,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-concepts.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "detail",
       "intendedProductionRoute": "/create/ad/projects/:projectId?conceptId=:conceptId",
-      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "status": "Source-connected to existing project controller; source integration; local M2B frontend gate enabled, end-to-end and visual acceptance pending",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -240,12 +296,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-detail.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "compare",
       "intendedProductionRoute": "/create/ad/projects/:projectId?view=compare",
-      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "status": "Source-connected to existing project controller; source integration; local M2B frontend gate enabled, end-to-end and visual acceptance pending",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -270,12 +334,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-compare.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "preview",
       "intendedProductionRoute": "/create/ad/:creativeId?view=preview",
-      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "status": "Source-connected to existing project controller; source integration; local M2B frontend gate enabled, end-to-end and visual acceptance pending",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -300,12 +372,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-preview.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "edit",
       "intendedProductionRoute": "/create/ad/:creativeId",
-      "status": "Not yet production-integrated",
+      "status": "Existing production Canvas reused with private generated-asset loading; new background save/reopen tested with mocks; generated runtime/export not verified.",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -330,7 +410,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-edit.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "variations",
@@ -360,12 +448,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-variations.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "workspace",
       "intendedProductionRoute": "/create/ad/projects/:projectId",
-      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "status": "Source-connected to existing project controller; source integration; local M2B frontend gate enabled, end-to-end and visual acceptance pending",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -390,7 +486,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-workspace.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "formats",
@@ -420,12 +524,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-formats.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "export",
       "intendedProductionRoute": "/create/ad/:creativeId?view=export",
-      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "status": "Source-connected to existing project controller; source integration; local M2B frontend gate enabled, end-to-end and visual acceptance pending",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -450,7 +562,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-export.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "performance",
@@ -480,12 +600,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-performance.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "not-integrated",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "director",
       "intendedProductionRoute": "/create/ad/projects/:projectId?view=director",
-      "status": "Not yet production-integrated",
+      "status": "Partial: quoted Gemini/Vertex concept execution and retained status implemented and mocked-tested; campaign review/improvement is incomplete; real concepts remain gated.",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -510,7 +638,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-director.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "brand-intelligence",
@@ -540,7 +676,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-intelligence.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "not-integrated",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "product-lab",
@@ -570,12 +714,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-product-lab.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "not-integrated",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "visual-lab",
       "intendedProductionRoute": "/create/ad/projects/:projectId?view=visuals",
-      "status": "Not yet production-integrated",
+      "status": "Partial: provider-backed background generation and natural-language refinement wired to child creative persistence; gates off; no live paid or visual acceptance.",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -600,12 +752,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-visual-lab.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "composition",
       "intendedProductionRoute": "/create/ad/:creativeId?view=composition",
-      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "status": "Source-connected to existing project controller; source integration; local M2B frontend gate enabled, end-to-end and visual acceptance pending",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -630,12 +790,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-composition.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "advanced-canvas",
       "intendedProductionRoute": "/create/ad/:creativeId",
-      "status": "Not yet production-integrated",
+      "status": "Existing Canvas reused; approved advanced tool parity incomplete; no duplicate editor.",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -660,12 +828,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-advanced-canvas.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "variation-lab",
       "intendedProductionRoute": "/create/ad/:creativeId?view=variations",
-      "status": "Partial source integration: existing deterministic workflow connected; AI and visual acceptance pending",
+      "status": "Partial: provider-backed owned-background variations wired to the shared image engine; full product/marketing variation planning remains incomplete.",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -690,7 +866,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-variation-lab.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "adaptation",
@@ -720,12 +904,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-adaptation.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "campaign-manager",
       "intendedProductionRoute": "/create/ad/projects/:projectId",
-      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "status": "Source-connected to existing project controller; source integration; local M2B frontend gate enabled, end-to-end and visual acceptance pending",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -750,7 +942,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-campaign-manager.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "motion-studio",
@@ -780,7 +980,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-motion-studio.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "not-integrated",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "delivery",
@@ -810,7 +1018,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-delivery.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "not-integrated",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "dna-quality",
@@ -840,12 +1056,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-dna-quality.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "not-integrated",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "preflight",
       "intendedProductionRoute": "/create/ad/projects/:projectId?view=preflight",
-      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "status": "Source-connected to existing project controller; source integration; local M2B frontend gate enabled, end-to-end and visual acceptance pending",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -870,7 +1094,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-preflight.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "brand-info",
@@ -900,7 +1132,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-info.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "brand-category",
@@ -930,7 +1170,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-category.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "brand-goals",
@@ -960,7 +1208,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-goals.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "brand-assets",
@@ -990,12 +1246,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-assets.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "brand-analysis",
       "intendedProductionRoute": "/brands/:brandId/guided?step=identity",
-      "status": "Gated screen shell only; real AI analysis remains unimplemented",
+      "status": "Partial: text-only Gemini/Vertex quoted analysis, review and explicit application implemented/tested; backend gate off; image/website analysis incomplete.",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -1020,7 +1284,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-analysis.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "brand-guidelines",
@@ -1050,7 +1322,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-guidelines.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "brand-overview",
@@ -1080,12 +1360,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-overview.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "brand-templates",
       "intendedProductionRoute": "/brands/:brandId/templates",
-      "status": "Gated native library source integrated; schema/runtime/UX acceptance pending",
+      "status": "Partial: native deterministic lifecycle implemented; approved local table present; HTTP gate off and visual/runtime acceptance pending.",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -1110,12 +1398,20 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-templates.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "brand-template-detail",
       "intendedProductionRoute": "/brands/:brandId/templates/:templateId",
-      "status": "Gated native recipe lifecycle source integrated; runtime/UX acceptance pending",
+      "status": "Partial: native lifecycle/customization/reuse implemented; provider-generated template art and runtime UI acceptance pending.",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -1140,7 +1436,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-template-detail.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "partial",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "category-studio",
@@ -1170,7 +1474,15 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-category-studio.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "not-integrated",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     },
     {
       "screen": "brand-manager",
@@ -1200,7 +1512,18 @@
           "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-manager.png",
           "captured": true
         }
-      ]
+      ],
+      "implementationState": "not-integrated",
+      "acceptance": {
+        "runtime": false,
+        "browser": false,
+        "visual": false,
+        "owner": false
+      },
+      "productionComplete": false
     }
-  ]
+  ],
+  "updated": "2026-10-28",
+  "productionAcceptance": false,
+  "currentPriority": "Provider-backed ad creation; combined UAT after runtime and paid-budget approval. Navigation alone never completes a screen."
 }

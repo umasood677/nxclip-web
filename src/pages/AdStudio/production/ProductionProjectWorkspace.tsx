@@ -1,3 +1,4 @@
+import { ProductionImageGeneration } from "./ProductionImageGeneration";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { ArrowLeft, FolderOpen, Sparkles, ArrowRight } from "lucide-react";
@@ -750,6 +751,24 @@ export default function ProductionProjectWorkspace({
                   Export
                 </button>
                 <button
+                  className="xp-primary"
+                  disabled={!creative}
+                  onClick={() =>
+                    creative && go("visual-lab", { creativeId: creative.id })
+                  }
+                >
+                  Create or refine AI background
+                </button>
+                <button
+                  className="xp-secondary"
+                  disabled={!creative}
+                  onClick={() =>
+                    creative && go("variation-lab", { creativeId: creative.id })
+                  }
+                >
+                  Explore AI visual variations
+                </button>
+                <button
                   className="xp-secondary"
                   disabled={!creative}
                   onClick={() =>
@@ -777,7 +796,7 @@ export default function ProductionProjectWorkspace({
             </section>
           </div>
         )}
-        {["formats", "adaptation", "variations", "variation-lab"].includes(
+        {["formats", "adaptation", "variations"].includes(
           screen,
         ) &&
           (creative ? (
@@ -797,6 +816,23 @@ export default function ProductionProjectWorkspace({
               }}
               onOpen={(id) => {
                 if (c.confirmLeave()) c.navigate(creativeEditorPath(id));
+              }}
+            />
+          ) : (
+            savedPreview
+          ))}
+        {["visual-lab", "variation-lab"].includes(screen) &&
+          (creative ? (
+            <ProductionImageGeneration
+              key={creative.id + screen}
+              source={creative}
+              assetUrls={c.assetUrls}
+              initialOperation={
+                screen === "variation-lab" ? "variation" : "generate"
+              }
+              onSaved={async (saved) => {
+                await c.load();
+                go("preview", { creativeId: saved.id });
               }}
             />
           ) : (
@@ -911,6 +947,7 @@ export default function ProductionProjectWorkspace({
           "adaptation",
           "variations",
           "variation-lab",
+          "visual-lab",
           "director",
           "progress",
         ].includes(screen) && (
