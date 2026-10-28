@@ -1,3 +1,4 @@
+import { validPreflightCost } from "../../../lib/aiExecutionPreflight";
 import type { AdConcept } from "../types";
 export type ConceptQuote = {
   schemaVersion: "1.0";
@@ -8,10 +9,10 @@ export type ConceptQuote = {
   modelId: string;
   conceptCount: number;
   maxOutputTokens: number;
-  estimatedCostUsd: number;
+  estimatedCostUsd: number | null;
   pricingVersion: string;
   inputScope: "saved-campaign-text-only";
-  costBasis: "configured-estimate";
+  costBasis: "configured-estimate" | "usage-only";
 };
 export type QuotedConceptResult = {
   concepts: AdConcept[];
@@ -29,22 +30,16 @@ export function realConceptsEnabled(
 }
 export function validateConceptQuote(
   quote: ConceptQuote,
-  budget: number,
+  budget?: number,
 ): ConceptQuote {
   if (
     quote.schemaVersion !== "1.0" ||
     quote.inputScope !== "saved-campaign-text-only" ||
-    quote.costBasis !== "configured-estimate" ||
+    !validPreflightCost(quote, budget) ||
     !["gemini", "vertex"].includes(quote.provider) ||
     !quote.modelId ||
     !quote.catalogId ||
     !quote.pricingVersion ||
-    !Number.isFinite(budget) ||
-    budget <= 0 ||
-    budget > 1 ||
-    !Number.isFinite(quote.estimatedCostUsd) ||
-    quote.estimatedCostUsd < 0 ||
-    quote.estimatedCostUsd > budget ||
     !Number.isInteger(quote.conceptCount) ||
     quote.conceptCount < 3 ||
     quote.conceptCount > 5 ||

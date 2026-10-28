@@ -1,5 +1,7 @@
 # Provider-backed Ad Studio image slice — 2026-10-28
 
+Current beta policy: see [Google credit preservation](GOOGLE-CREDIT-PRESERVATION.md). Commercial quotations are no longer a beta prerequisite. The details below describe the preceding source increment.
+
 Status: implemented and focused-tested in source; NOT runtime-activated or production-accepted. Continues the combined M2B initiative. Owner UAT is deferred until real AI creation is available. No paid generation, migrations, flag changes, uploads or service restarts were performed for this increment.
 
 ## Implemented

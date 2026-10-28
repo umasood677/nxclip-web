@@ -1,3 +1,4 @@
+import { validPreflightCost } from "../../../lib/aiExecutionPreflight";
 import type { WorkspaceCreative } from "../lib/projectWorkspace";
 export type AdImageOperation = "generate" | "variation" | "refine";
 export type ImageQuote = {
@@ -7,18 +8,20 @@ export type ImageQuote = {
   catalogId: string;
   provider: "gemini" | "vertex";
   modelId: string;
-  estimatedCostUsd: number;
+  estimatedCostUsd: number | null;
   pricingVersion: string;
   imageCount: 1;
   inputScope: "editable-ad-background";
   referenceCount: number;
-  costBasis: "configured-estimate";
+  productLayerCount?: number;
+  sourceTreatment?: "original-photo-layer" | "background-only";
+  costBasis: "configured-estimate" | "usage-only";
 };
 export type ImageInput = {
   expectedVersion: number;
   operation: AdImageOperation;
   instruction: string;
-  maxEstimatedCostUsd: number;
+  maxEstimatedCostUsd?: number;
 };
 export const realImagesEnabled = (
   env: Record<string, unknown> | undefined = import.meta.env,
@@ -30,22 +33,16 @@ export function hasGeneratedBackground(creative: WorkspaceCreative) {
     ) ?? false
   );
 }
-export function validateImageQuote(q: ImageQuote, budget: number) {
+export function validateImageQuote(q: ImageQuote, budget?: number) {
   if (
     q.schemaVersion !== "1.0" ||
     q.inputScope !== "editable-ad-background" ||
-    q.costBasis !== "configured-estimate" ||
+    !validPreflightCost(q, budget) ||
     q.imageCount !== 1 ||
     !["gemini", "vertex"].includes(q.provider) ||
     !q.modelId ||
     !q.catalogId ||
     !q.pricingVersion ||
-    !Number.isFinite(q.estimatedCostUsd) ||
-    q.estimatedCostUsd < 0 ||
-    q.estimatedCostUsd > budget ||
-    !Number.isFinite(budget) ||
-    budget <= 0 ||
-    budget > 1 ||
     !/^[a-f0-9]{64}$/.test(q.sourceHash) ||
     !/^[a-f0-9]{64}$/.test(q.quoteHash)
   )

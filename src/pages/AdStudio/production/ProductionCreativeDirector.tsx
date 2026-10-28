@@ -22,8 +22,7 @@ export function ProductionCreativeDirector({
 }) {
   const enabled = realConceptsEnabled(),
     key = "nxclip:concept-request:" + project.id;
-  const [budget, setBudget] = useState("0.10"),
-    [quote, setQuote] = useState<ConceptQuote | null>(null),
+  const [quote, setQuote] = useState<ConceptQuote | null>(null),
     [consent, setConsent] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -48,19 +47,14 @@ export function ProductionCreativeDirector({
     setQuote(null);
     setConsent(false);
   }, [project.updatedAt, dirty]);
-  const validBudget =
-    Number.isFinite(Number(budget)) &&
-    Number(budget) > 0 &&
-    Number(budget) <= 1;
   const estimate = async () => {
-    if (!enabled || dirty || busy || requestId || !validBudget) return;
+    if (!enabled || dirty || busy || requestId) return;
     const token = ++generation.current;
     setBusy(true);
     setError("");
     try {
       const next = validateConceptQuote(
-        await quotedConceptApi.quote(project.id, Number(budget)),
-        Number(budget),
+        await quotedConceptApi.quote(project.id),
       );
       if (token === generation.current) {
         setQuote(next);
@@ -88,10 +82,8 @@ export function ProductionCreativeDirector({
     try {
       const next = requireAiConceptResult(
         await quotedConceptApi.execute(project.id, {
-          maxEstimatedCostUsd: Number(budget),
           requestId: id,
-          approvedQuoteHash: validateConceptQuote(quote, Number(budget))
-            .quoteHash,
+          approvedQuoteHash: validateConceptQuote(quote).quoteHash,
           allowPaidProvider: true,
         }),
       );
@@ -148,7 +140,7 @@ export function ProductionCreativeDirector({
     setResult(null);
     setNewRequestAcknowledged(false);
     setMessage(
-      "A new request requires a new quote and explicit provider consent.",
+      "A new request requires a fresh source/model preflight and explicit UAT consent.",
     );
   };
   return (
@@ -190,7 +182,7 @@ export function ProductionCreativeDirector({
         </p>
       </section>
       <section className="xp-panel">
-        <h2>Review the cost before you create.</h2>
+        <h2>Review the execution before you create.</h2>
         {!enabled && (
           <p className="xp-notice">
             Real concept execution is disabled. Existing heuristic generation
@@ -200,38 +192,19 @@ export function ProductionCreativeDirector({
         )}
         {dirty && (
           <p className="xp-notice">
-            Save the Working Brief before requesting a quote.
+            Save the Working Brief before preparing execution.
           </p>
         )}
-        <label className="xp-field">
-          Maximum configured estimate (USD)
-          <input
-            type="number"
-            min="0.000001"
-            max="1"
-            step="0.01"
-            value={budget}
-            disabled={busy || Boolean(requestId)}
-            onChange={(e) => {
-              setBudget(e.target.value);
-              setQuote(null);
-              setConsent(false);
-            }}
-          />
-        </label>
         <p>
-          Configured pricing estimate, not a guaranteed provider invoice ceiling
-          or a wallet reservation. Only saved campaign text is sent; this action
-          does not generate or edit product photographs.
+          No commercial quote is required for beta. Only saved campaign text is
+          sent; this action does not generate or edit product photographs.
         </p>
         <button
           className="xp-secondary"
-          disabled={
-            !enabled || dirty || busy || Boolean(requestId) || !validBudget
-          }
+          disabled={!enabled || dirty || busy || Boolean(requestId)}
           onClick={() => void estimate()}
         >
-          Get non-billable quote
+          Check source and model
         </button>
         {quote && (
           <>
@@ -240,8 +213,6 @@ export function ProductionCreativeDirector({
               <dd>
                 {quote.provider} / {quote.modelId}
               </dd>
-              <dt>Estimated cost</dt>
-              <dd>${quote.estimatedCostUsd.toFixed(4)}</dd>
               <dt>Output</dt>
               <dd>{quote.conceptCount} strategies / copy concepts</dd>
             </dl>
@@ -252,8 +223,8 @@ export function ProductionCreativeDirector({
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
               />
-              I authorize this quoted provider call using the saved campaign
-              text.
+              I authorize one owner-UAT provider request using the saved
+              campaign text.
             </label>
             <button
               className="xp-primary"

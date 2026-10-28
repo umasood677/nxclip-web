@@ -2,6 +2,9 @@
 
 ## Current continuation
 
+Latest credit-preserving beta changes and remaining work: [Google credit preservation](GOOGLE-CREDIT-PRESERVATION.md). No paid development generation or live Veo testing; pricing is optional for beta.
+
+
 The owner has resumed the combined production initiative and deferred UI-only UAT. See [AI image workflow slice](AI-IMAGE-WORKFLOW-SLICE.md) for the next verified source increment and current gates. The preservation/runtime details below are historical checkpoint evidence; local frontend M2B/guided-brand presentation flags were subsequently owner-approved and enabled. Paid generation and the new image gates remain off.
 
 ## Resume here

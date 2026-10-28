@@ -613,7 +613,7 @@
     {
       "screen": "director",
       "intendedProductionRoute": "/create/ad/projects/:projectId?view=director",
-      "status": "Partial: quoted Gemini/Vertex concept execution and retained status implemented and mocked-tested; campaign review/improvement is incomplete; real concepts remain gated.",
+      "status": "Partial source: existing Gemini/Vertex concept execution supports beta UAT without price metadata; campaign-level review/improvement/comparison remains incomplete.",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -727,7 +727,7 @@
     {
       "screen": "visual-lab",
       "intendedProductionRoute": "/create/ad/projects/:projectId?view=visuals",
-      "status": "Partial: provider-backed background generation and natural-language refinement wired to child creative persistence; gates off; no live paid or visual acceptance.",
+      "status": "Partial source: owned original-photo hash/geometry binding, protected product/logo/copy zones and shared provider background execution; beta uses source/model preflight without mandatory pricing. No live generation or visual acceptance.",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -1259,7 +1259,7 @@
     {
       "screen": "brand-analysis",
       "intendedProductionRoute": "/brands/:brandId/guided?step=identity",
-      "status": "Partial: text-only Gemini/Vertex quoted analysis, review and explicit application implemented/tested; backend gate off; image/website analysis incomplete.",
+      "status": "Partial source: text-only analysis supports beta source/model preflight and owner review without pricing prerequisite; no live provider or image/website acceptance.",
       "checklist": {
         "layout": false,
         "controls": false,
@@ -1525,5 +1525,13 @@
   ],
   "updated": "2026-10-28",
   "productionAcceptance": false,
-  "currentPriority": "Provider-backed ad creation; combined UAT after runtime and paid-budget approval. Navigation alone never completes a screen."
+  "currentPriority": "Provider-backed ad creation; combined UAT after runtime and paid-budget approval. Navigation alone never completes a screen.",
+  "developmentPolicy": {
+    "liveDevelopmentGeneration": false,
+    "liveVeoTesting": false,
+    "commercialQuoteRequiredForBeta": false,
+    "verification": "mocked providers, synthetic assets, contract tests and non-billable checks",
+    "essentialSmokeApproval": "owner approval, maximum one image request",
+    "fullProviderEvaluation": "owner UAT"
+  }
 }

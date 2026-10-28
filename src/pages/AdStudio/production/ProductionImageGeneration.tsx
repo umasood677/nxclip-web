@@ -29,7 +29,6 @@ export function ProductionImageGeneration({
       canEdit ? initialOperation : "generate",
     ),
     [instruction, setInstruction] = useState(""),
-    [budget, setBudget] = useState("0.10"),
     [quote, setQuote] = useState<ImageQuote | null>(null),
     [consent, setConsent] = useState(false),
     [busy, setBusy] = useState(false),
@@ -59,31 +58,24 @@ export function ProductionImageGeneration({
     operation,
     instruction,
     expectedVersion: source.currentVersion ?? 1,
-    maxEstimatedCostUsd: Number(budget),
   };
-  const valid =
-    instruction.trim().length > 0 &&
-    instruction.length <= 4000 &&
-    Number.isFinite(Number(budget)) &&
-    Number(budget) > 0 &&
-    Number(budget) <= 1;
+  const valid = instruction.trim().length > 0 && instruction.length <= 4000;
   const estimate = async () => {
     if (!enabled || !valid || busy || requestId) return;
     const n = ++epoch.current;
     setBusy(true);
     setError("");
     try {
-      const q = validateImageQuote(
-        await adImageApi.quote(source.id, input),
-        Number(budget),
-      );
+      const q = validateImageQuote(await adImageApi.quote(source.id, input));
       if (n === epoch.current) {
         setQuote(q);
         setConsent(false);
       }
     } catch (e) {
       if (n === epoch.current)
-        setError(e instanceof Error ? e.message : "Image quote unavailable");
+        setError(
+          e instanceof Error ? e.message : "Execution preflight unavailable",
+        );
     } finally {
       if (n === epoch.current) setBusy(false);
     }
@@ -105,8 +97,7 @@ export function ProductionImageGeneration({
         await adImageApi.execute(source.id, {
           ...input,
           requestId: id,
-          approvedQuoteHash: validateImageQuote(quote, Number(budget))
-            .quoteHash,
+          approvedQuoteHash: validateImageQuote(quote).quoteHash,
           allowPaidProvider: true,
         }),
         source,
@@ -206,8 +197,8 @@ export function ProductionImageGeneration({
         {!enabled && (
           <p className="xp-notice">
             Real image execution awaits approved runtime/provider configuration
-            and a specific owner testing budget. No provider call is available
-            in this environment yet.
+            and a owner UAT approval. No provider call is available in this
+            environment yet.
           </p>
         )}
         <label className="xp-field">
@@ -248,27 +239,12 @@ export function ProductionImageGeneration({
             placeholder="Describe the scene and the changes you want. Text and logos remain editable layers."
           />
         </label>
-        <label className="xp-field">
-          Maximum configured estimate (USD)
-          <input
-            type="number"
-            min="0.000001"
-            max="1"
-            step="0.01"
-            value={budget}
-            disabled={busy || !!requestId}
-            onChange={(e) => {
-              setBudget(e.target.value);
-              change();
-            }}
-          />
-        </label>
         <button
           className="xp-secondary"
           disabled={!enabled || busy || !!requestId || !valid}
           onClick={() => void estimate()}
         >
-          Review non-billable image quote
+          Check source and model
         </button>
         {quote && (
           <>
@@ -277,8 +253,6 @@ export function ProductionImageGeneration({
               <dd>
                 {quote.provider} / {quote.modelId}
               </dd>
-              <dt>Configured estimate</dt>
-              <dd>${quote.estimatedCostUsd.toFixed(4)} for one image</dd>
               <dt>Scope</dt>
               <dd>
                 AI background plate; {quote.referenceCount} owned background
@@ -286,9 +260,14 @@ export function ProductionImageGeneration({
               </dd>
             </dl>
             <p>
-              Estimate only, not a guaranteed invoice ceiling. No extra caption
-              call or hidden model fallback. Image quality and scene integration
-              require human review.
+              Beta UAT uses your Google credits. No extra caption call,
+              automatic retry or hidden model fallback. Image quality and scene
+              integration require human review.
+            </p>
+            <p className="xp-notice">
+              {(quote.productLayerCount ?? 0) > 0
+                ? `${quote.productLayerCount} original product-photo layer(s) are protected. Their original surroundings remain; no accepted isolation is claimed.`
+                : "No product photograph is bound in this saved creative. This request creates a background only. Bind the original photograph in the existing Canvas for a product advertisement."}
             </p>
             <label className="xp-check">
               <input
@@ -297,8 +276,8 @@ export function ProductionImageGeneration({
                 disabled={busy || !!requestId}
                 onChange={(e) => setConsent(e.target.checked)}
               />
-              I approve this quoted provider call and its selected background
-              references.
+              I approve one owner-UAT provider request and its selected
+              background references.
             </label>
             <button
               className="xp-primary"

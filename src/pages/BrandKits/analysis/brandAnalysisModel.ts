@@ -1,3 +1,4 @@
+import { validPreflightCost } from "../../../lib/aiExecutionPreflight";
 import type { GuidedBrandDraft } from "../guided/guidedBrandModel";
 export interface BrandAnalysisQuote {
   schemaVersion: "1.0";
@@ -7,10 +8,10 @@ export interface BrandAnalysisQuote {
   catalogId: string;
   provider: "gemini" | "vertex";
   modelId: string;
-  estimatedCostUsd: number;
+  estimatedCostUsd: number | null;
   pricingVersion: string;
   maxOutputTokens: number;
-  costBasis: "configured-estimate";
+  costBasis: "configured-estimate" | "usage-only";
   inputScope: "saved-brand-text-only";
 }
 export interface BrandAnalysisProposal {
@@ -40,8 +41,8 @@ export interface BrandAnalysisResult {
   usage: {
     inputTokens: number;
     outputTokens: number;
-    estimatedCostUsd: number;
-    costBasis: "configured-estimate";
+    estimatedCostUsd: number | null;
+    costBasis: "configured-estimate" | "usage-only";
   };
   approvalState: "requires-owner-review";
 }
@@ -114,7 +115,7 @@ export function applyBrandAnalysisProposal(
 export function requireExecutableAnalysisQuote(
   input: unknown,
   sourceVersion: number,
-  budget: number,
+  budget?: number,
 ): BrandAnalysisQuote {
   if (!input || typeof input !== "object" || Array.isArray(input))
     throw new Error("Invalid analysis estimate.");
@@ -127,10 +128,7 @@ export function requireExecutableAnalysisQuote(
     !q.modelId.trim() ||
     !/^([a-f0-9]{64})$/.test(q.quoteHash) ||
     !/^([a-f0-9]{64})$/.test(q.sourceHash) ||
-    !Number.isFinite(q.estimatedCostUsd) ||
-    q.estimatedCostUsd < 0 ||
-    q.estimatedCostUsd > budget ||
-    q.costBasis !== "configured-estimate" ||
+    !validPreflightCost(q, budget) ||
     q.inputScope !== "saved-brand-text-only" ||
     !Number.isInteger(q.maxOutputTokens) ||
     q.maxOutputTokens < 1 ||

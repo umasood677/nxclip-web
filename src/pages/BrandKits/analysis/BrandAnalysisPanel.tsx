@@ -21,8 +21,7 @@ type Props = {
 };
 export function BrandAnalysisPanel({ kit, disabled, onApply }: Props) {
   const enabled = isBrandAnalysisEnabled();
-  const [budget, setBudget] = useState("0.05"),
-    [quote, setQuote] = useState<BrandAnalysisQuote | null>(null),
+  const [quote, setQuote] = useState<BrandAnalysisQuote | null>(null),
     [result, setResult] = useState<BrandAnalysisResult | null>(null);
   const [approved, setApproved] = useState(false),
     [busy, setBusy] = useState(false),
@@ -50,12 +49,8 @@ export function BrandAnalysisPanel({ kit, disabled, onApply }: Props) {
     },
     [],
   );
-  const validBudget =
-    Number.isFinite(Number(budget)) &&
-    Number(budget) > 0 &&
-    Number(budget) <= 1;
   const getQuote = async () => {
-    if (!kit || disabled || !validBudget) return;
+    if (!kit || disabled) return;
     const current = scope.current,
       token = ++sequence.current;
     setBusy(true);
@@ -65,15 +60,9 @@ export function BrandAnalysisPanel({ kit, disabled, onApply }: Props) {
     setSelection([]);
     setMessage("");
     try {
-      const next = await brandAnalysisApi.quote(
-        kit.id,
-        kit.version,
-        Number(budget),
-      );
+      const next = await brandAnalysisApi.quote(kit.id, kit.version);
       if (current !== scope.current || token !== sequence.current) return;
-      setQuote(
-        requireExecutableAnalysisQuote(next, kit.version, Number(budget)),
-      );
+      setQuote(requireExecutableAnalysisQuote(next, kit.version));
       setRequestId(crypto.randomUUID());
     } catch {
       if (current === scope.current && token === sequence.current)
@@ -108,7 +97,6 @@ export function BrandAnalysisPanel({ kit, disabled, onApply }: Props) {
     try {
       const next = await brandAnalysisApi.execute(kit.id, {
         expectedBrandVersion: kit.version,
-        maxEstimatedCostUsd: Number(budget),
         requestId,
         approvedQuoteHash: quote.quoteHash,
         allowPaidProvider: true,
@@ -168,35 +156,13 @@ export function BrandAnalysisPanel({ kit, disabled, onApply }: Props) {
       </p>
       {!kit || disabled ? (
         <p className="xp-notice">
-          Save the current Brand Kit draft before requesting an estimate or
-          applying suggestions.
+          Save the current Brand Kit draft before preparing analysis or applying
+          suggestions.
         </p>
       ) : null}
       <fieldset className="bp-fieldset" disabled={busy || disabled || !kit}>
-        <label className="xp-field">
-          Maximum configured cost estimate (USD)
-          <input
-            type="number"
-            min="0.000001"
-            max="1"
-            step="0.001"
-            value={budget}
-            onChange={(e) => {
-              setBudget(e.target.value);
-              setQuote(null);
-              setApproved(false);
-              setResult(null);
-              setRequestId("");
-              sequence.current++;
-            }}
-          />
-        </label>
-        <button
-          className="xp-secondary"
-          disabled={!validBudget}
-          onClick={() => void getQuote()}
-        >
-          Review estimate / start a new request
+        <button className="xp-secondary" onClick={() => void getQuote()}>
+          Check saved source / prepare UAT request
         </button>
         {quote && (
           <div className="xp-notice">
@@ -204,10 +170,8 @@ export function BrandAnalysisPanel({ kit, disabled, onApply }: Props) {
               {quote.provider} / {quote.modelId}
             </strong>
             <p>
-              Configured estimate: ${quote.estimatedCostUsd.toFixed(6)} ·
-              pricing {quote.pricingVersion} · output capped at{" "}
-              {quote.maxOutputTokens} tokens. This is an estimate, not a prepaid
-              balance or guaranteed provider invoice ceiling.
+              Beta UAT uses your Google credits. Output is bounded to{" "}
+              {quote.maxOutputTokens} tokens. No automatic retry is performed.
             </p>
             <label className="xp-check">
               <input
@@ -216,8 +180,7 @@ export function BrandAnalysisPanel({ kit, disabled, onApply }: Props) {
                 onChange={(e) => setApproved(e.target.checked)}
               />
               I authorize sending this saved brand text to {quote.provider} for
-              this analysis, using the displayed model and configured estimate
-              within ${Number(budget).toFixed(3)}.
+              one owner-UAT analysis request using the displayed model.
             </label>
             <button
               className="xp-primary"
