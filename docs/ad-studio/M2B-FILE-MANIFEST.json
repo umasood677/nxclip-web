@@ -1,0 +1,198 @@
+{
+  "scope": "M2A-preserving M2B prototype; existing production dirty files excluded",
+  "frontendRoot": "D:/NxClip-Web-W8-Integration/",
+  "backendFilesChanged": [],
+  "productionFilesChangedByM2B": [],
+  "files": [
+    {
+      "path": "src/pages/AdStudio/uxPreview/AdStudioUXPreview.tsx",
+      "sha256": "482233755a3dd84e2775edc9a4127863f710c6863f107ee143e0f6e445b988ed",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "src/pages/AdStudio/uxPreview/AdvancedCanvasPrototype.tsx",
+      "sha256": "7bbafa29217894a1bca1d4a4bfc5141be1f3580ae46d6a65b302977db97055fa",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "src/pages/AdStudio/uxPreview/brandPrototypeModel.ts",
+      "sha256": "f91e31d236cc30135a496053b77eba8d8ca1ba98f64ea21c2c69b4b3ffca8b11",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "src/pages/AdStudio/uxPreview/BrandPrototypeScreens.tsx",
+      "sha256": "3bbbd2ae708d1e7879538d0052f9db7a9f5347ef89d1fe455ddeaadec85a1247",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "src/pages/AdStudio/uxPreview/m2b.spec.ts",
+      "sha256": "a85809afd9ed9b2c68b9ef5db78d2826e688b8fd262b223908d854d69c96f437",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "src/pages/AdStudio/uxPreview/model.spec.ts",
+      "sha256": "62d877e345ee09cc89854d6f739754c896aae8b08cee815b9b74f2ec1de03fd0",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "src/pages/AdStudio/uxPreview/model.ts",
+      "sha256": "0bc2a815f5b3e37db02d96b648e0000c8215babc5fbb68591ccb9aea53314859",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "src/pages/AdStudio/uxPreview/MotionPrototype.tsx",
+      "sha256": "c3990dc2919ffb2914b4a5d395ceea4820f10871461ce37b24f0f20fae841d74",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "src/pages/AdStudio/uxPreview/preview.css",
+      "sha256": "162e253e4713d74bb656643dcd367894016d2b2f56c097e4645dfaeef39d262a",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "src/pages/AdStudio/uxPreview/roadmap.css",
+      "sha256": "a708b8510944e7cee4313a003ab7df106f10087fc25d760689a69aa22ea5679b",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "src/pages/AdStudio/uxPreview/roadmapModel.ts",
+      "sha256": "419e828b578d3c4b12135e0ae4e7ae471d83a80f812a877a9c60558095c93a68",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "src/pages/AdStudio/uxPreview/RoadmapScreens.tsx",
+      "sha256": "ecbd3463fc1db0e26914bbf30ff0a8a0695108fb8b33335a3b333e3c9c1cc3ca",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "src/pages/AdStudio/uxPreview/taxonomy.snapshot.json",
+      "sha256": "76575245c0d3d6b30687f0065f67d58d9e4f1ab226fdbe14a7dfe02ab87a81d4",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/ASSET-MANIFEST.json",
+      "sha256": "b9f4a9e10b6daa4fca0e3609be1db12dd8da7cc661596924415b4f8e366fc32b",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/cinematic-background.svg",
+      "sha256": "4500e11cbf5754e501d9488b8e220cfa918347876c42b5d98127fc1ac25cbead",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/cinematic.svg",
+      "sha256": "bcce4a7c77a02f1cc664cbe8354245473d485357f79767baa4eb5a20496e66d1",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/collection-background.svg",
+      "sha256": "cb9cf2234be8221cbab5f9e7e08eaa56a8ec80c34e2293e841e4ef5aeb460253",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/collection.svg",
+      "sha256": "8da2cc0808649cffd568dc470fcbbbb1325a52602289ab7b159ee9742b41fc29",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/editorial-background.svg",
+      "sha256": "63273bf562a585cc722eec47c4e599bb3de62450fbe33e82b143eefa88149cab",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/editorial.svg",
+      "sha256": "242e481c20809f8fe001d200f9341ae32a03ca5f1cbc1e71a213e79e2a2bcd6a",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/industry-corporate-foreground.svg",
+      "sha256": "237c8609195510563a7058a166cb8b74cdee11f66ec0a07aff55640b02687efb",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/industry-corporate.svg",
+      "sha256": "00edad8ce05c4ed1412c737ec055a2698fc06c1a571943aa9505686626a322ea",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/industry-fashion-foreground.svg",
+      "sha256": "86533707b29c92eb781434b01c66b350b24a2046d1b1eeaa098d33bf8a1c51d7",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/industry-fashion.svg",
+      "sha256": "5c7b9896ef6a0f22a3c1201dca727d046ad11d0a07bd47f3f209b8827d796153",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/industry-gaming-foreground.svg",
+      "sha256": "bcdcb2f5e385654d2f20db04a57b4e6e813d91aed7cc4a9339eb3277873bd6af",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/industry-gaming.svg",
+      "sha256": "a1c7b51323a11837c3badc2c6c4dccff861c8634b10ffe71da8310aa1f63b41f",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/industry-generic-foreground.svg",
+      "sha256": "6d915337e410bf6b3a115adf9666a616835bdf92e93a27aa4242a9139906c028",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/industry-generic.svg",
+      "sha256": "6f672666c17d9b8f6062ee49be9d6455db9c85907d99701a5ee1e82f40655da7",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/industry-travel-foreground.svg",
+      "sha256": "8767a2812b6cc4eb2e50d29a19891be1e069c44ef9692a374a987b9373fd6338",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/industry-travel.svg",
+      "sha256": "86b06270675fbd54119a3949bfa795f0d2cb3919a027231e43accecc3e13db0f",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/product-isolated.svg",
+      "sha256": "72398a73848b6ad5944be9a4ab19b0fc7d05d9a753e869fc7565d003c82260a4",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/PROVENANCE.md",
+      "sha256": "54e343cdbf976ccb212bdc780b2ca197253d58d23f836faf3545860ebcc24d4d",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/spotlight-background.svg",
+      "sha256": "3f767a4856d32f3bd973f25885a86885ba3f7e78358b2076a82cc8233513ef60",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "public/ad-studio/ux-preview/spotlight.svg",
+      "sha256": "77bd0bbb8a93ee80dd45aa6856adc04ed1f6f305be014f4ab88ca3301858a916",
+      "scope": "Isolated frontend prototype"
+    },
+    {
+      "path": "docs/ad-studio/M2B-CONSOLIDATED-PLAN.md",
+      "scope": "Consolidated plan/coverage/delivery evidence"
+    },
+    {
+      "path": "docs/ad-studio/M2B-ROADMAP-INVENTORY.json",
+      "scope": "Consolidated plan/coverage/delivery evidence"
+    },
+    {
+      "path": "docs/ad-studio/AD-STUDIO-COMPLETE-UX-COVERAGE.md",
+      "scope": "Consolidated plan/coverage/delivery evidence"
+    },
+    {
+      "path": "docs/ad-studio/M2B-INTERACTIVE-EXPERIENCE.md",
+      "scope": "Consolidated plan/coverage/delivery evidence"
+    },
+    {
+      "path": "docs/ad-studio/M2B-INTERACTION-COVERAGE.md",
+      "scope": "Consolidated plan/coverage/delivery evidence"
+    }
+  ]
+}

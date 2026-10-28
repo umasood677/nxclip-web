@@ -1,0 +1,1911 @@
+{
+  "date": "2026-10-28",
+  "purpose": "Owner-authorized recoverable checkpoints; not production acceptance",
+  "repositories": [
+    {
+      "root": "D:/NxClip-W8-Integration",
+      "branch": "codex/w8-feature-completeness-rc1",
+      "origin": "git@github.com:umasood677/nxclip.git",
+      "originalHead": "db102a7eb577212ecd40cc311c059dba48bc6d2c",
+      "codeCheckpoint": "1b26c2113332f217ad000252c12573b352d6f9c8",
+      "commits": [
+        {
+          "group": "01-preserved-integration-dependencies",
+          "sha": "fd508699a6895e7298d47490893ee207254cf681",
+          "subject": "chore(checkpoint): preserve existing W8 and P0.2 integration dependencies",
+          "files": [
+            "apps/ai-service/Dockerfile",
+            "apps/ai-service/Dockerfile.dev",
+            "apps/ai-service/src/sound-design/application/sound-design.service.ts",
+            "apps/ai-service/src/sound-design/application/voice-synthesis.service.ts",
+            "apps/api-gateway/src/proxy/route-registry.spec.ts",
+            "apps/api-gateway/src/proxy/route-registry.ts",
+            "apps/content-service/src/content/api/storage.controller.ts",
+            "apps/content-service/src/content/application/sound-design.service.ts",
+            "apps/content-service/src/infrastructure/internal-clients/internal-clients-registration.module.ts",
+            "apps/content-service/src/infrastructure/storage/gcs-object-storage.service.spec.ts",
+            "apps/content-service/src/infrastructure/storage/gcs-object-storage.service.ts",
+            "apps/content-service/src/main.ts",
+            "apps/content-service/src/product-isolation/application/isolation-pipeline.ts",
+            "apps/content-service/src/product-isolation/application/segmentation-provider.ts",
+            "apps/content-service/src/product-isolation/application/trusted-isolation-source.ts",
+            "libs/contracts/src/lib/audio-edl.builder.spec.ts",
+            "libs/contracts/src/lib/audio-edl.builder.ts",
+            "libs/contracts/src/lib/creative-readiness.ts",
+            "libs/contracts/src/lib/sound-design.ts",
+            "apps/ai-service/src/sound-design/application/decoded-audio-duration.ts",
+            "apps/content-service/src/content/api/storage.controller.auth.spec.ts",
+            "apps/content-service/src/content/application/sound-design.p02.spec.ts",
+            "libs/contracts/src/lib/commentary-scheduler.ts"
+          ]
+        },
+        {
+          "group": "02-brand-foundation",
+          "sha": "573543edf24658ceaed1c031ead147f9bb15cb20",
+          "subject": "feat(brands): checkpoint guided identity permissions and templates",
+          "files": [
+            "apps/content-service/src/brand/api/brand.controller.ts",
+            "apps/content-service/src/brand/application/brand.service.spec.ts",
+            "apps/content-service/src/brand/application/brand.service.ts",
+            "apps/content-service/src/brand/domain/brand-voice.spec.ts",
+            "apps/content-service/src/brand/domain/brand-voice.ts",
+            "apps/content-service/src/brand/dto/brand.dto.spec.ts",
+            "apps/content-service/src/brand/dto/brand.dto.ts",
+            "apps/content-service/src/brand/repositories/brand.repository.ts",
+            "apps/content-service/src/ad-studio/api/brand-template.controller.spec.ts",
+            "apps/content-service/src/ad-studio/api/brand-template.controller.ts",
+            "apps/content-service/src/ad-studio/application/brand-template-lifecycle.spec.ts",
+            "apps/content-service/src/ad-studio/application/brand-template-lifecycle.ts",
+            "apps/content-service/src/ad-studio/application/brand-template.service.spec.ts",
+            "apps/content-service/src/ad-studio/application/brand-template.service.ts",
+            "apps/content-service/src/ad-studio/repositories/brand-template.repository.spec.ts",
+            "apps/content-service/src/ad-studio/repositories/brand-template.repository.ts",
+            "apps/content-service/src/brand/domain/brand-character-policy.spec.ts",
+            "apps/content-service/src/brand/domain/brand-character-policy.ts",
+            "apps/content-service/src/brand/repositories/brand-guided.repository.spec.ts"
+          ]
+        },
+        {
+          "group": "03-guarded-ai-contracts",
+          "sha": "87b4e4fa17f7b0886e6847c0a554e6f97331c470",
+          "subject": "feat(ai): checkpoint gated analysis and quoted concept execution",
+          "files": [
+            "apps/ai-service/src/ad-studio/ad-studio.module.ts",
+            "apps/ai-service/src/ad-studio/api/internal-ad-studio.controller.ts",
+            "apps/ai-service/src/ad-studio/application/ad-creative-director.prompts.spec.ts",
+            "apps/ai-service/src/ad-studio/application/ad-creative-director.prompts.ts",
+            "apps/ai-service/src/ad-studio/application/ad-creative-director.service.spec.ts",
+            "apps/ai-service/src/ad-studio/application/ad-creative-director.service.ts",
+            "apps/ai-service/src/jobs/application/job-tracking.service.spec.ts",
+            "apps/ai-service/src/jobs/application/job-tracking.service.ts",
+            "apps/ai-service/src/jobs/domain/job-type.enum.ts",
+            "apps/ai-service/src/jobs/repositories/ai-job.repository.ts",
+            "apps/ai-service/src/model-registry/model-catalog.spec.ts",
+            "apps/ai-service/src/model-registry/model-catalog.ts",
+            "apps/ai-service/src/providers/gemini/gemini-api.client.spec.ts",
+            "apps/ai-service/src/providers/gemini/gemini-api.client.ts",
+            "apps/ai-service/src/providers/vertex/vertex-api.client.spec.ts",
+            "apps/ai-service/src/providers/vertex/vertex-api.client.ts",
+            "libs/contracts/src/index.ts",
+            "libs/contracts/src/lib/ad-studio.ts",
+            "libs/contracts/src/lib/internal/index.ts",
+            "libs/internal-clients/src/lib/ai.client.ts",
+            "libs/internal-clients/src/lib/config.helpers.ts",
+            "libs/internal-clients/src/lib/internal-clients.config.ts",
+            "libs/internal-clients/src/lib/internal-clients.provider.ts",
+            "apps/ai-service/src/ad-studio/application/ad-creative-director.quoted.spec.ts",
+            "apps/ai-service/src/ad-studio/application/brand-analysis.service.spec.ts",
+            "apps/ai-service/src/ad-studio/application/brand-analysis.service.ts",
+            "apps/ai-service/src/ad-studio/application/quoted-json-provider.ts",
+            "libs/contracts/src/lib/ad-concept-execution.ts",
+            "libs/contracts/src/lib/brand-analysis.ts",
+            "libs/internal-clients/src/lib/ai.client.concepts-routing.spec.ts"
+          ]
+        },
+        {
+          "group": "04-production-api",
+          "sha": "4b1d5d3fbafeac3b0915239abd66ee4c19df7003",
+          "subject": "feat(ad-studio): checkpoint owned project and concept APIs",
+          "files": [
+            "apps/content-service/src/ad-studio/ad-studio.module.ts",
+            "apps/content-service/src/ad-studio/api/ad-studio.controller.ts",
+            "apps/content-service/src/ad-studio/application/ad-studio.service.spec.ts",
+            "apps/content-service/src/ad-studio/application/ad-studio.service.ts",
+            "apps/content-service/src/ad-studio/application/animated-ad-export.service.ts",
+            "apps/content-service/src/ad-studio/application/intelligent-ad-studio.ts",
+            "apps/content-service/src/ad-studio/application/local-product-hero-composition.spec.ts",
+            "apps/content-service/src/ad-studio/application/local-product-hero-composition.ts",
+            "apps/content-service/src/ad-studio/application/template-binding.service.ts",
+            "apps/content-service/src/ad-studio/application/w86-synthetic-composition.ts",
+            "apps/content-service/src/ad-studio/application/w87-synthetic-editor-session.ts",
+            "apps/content-service/src/ad-studio/domain/ad-brief.ts",
+            "apps/content-service/src/ad-studio/domain/ad-scene-graph.ts",
+            "apps/content-service/src/ad-studio/dto/ad-studio.dto.ts",
+            "apps/content-service/src/ad-studio/repositories/ad-studio.repository.ts",
+            "apps/content-service/src/ad-studio/api/brand-analysis.controller.ts",
+            "apps/content-service/src/ad-studio/application/owned-brand-analysis.service.spec.ts",
+            "apps/content-service/src/ad-studio/application/owned-brand-analysis.service.ts",
+            "apps/content-service/src/ad-studio/application/quoted-ad-concepts.spec.ts",
+            "apps/content-service/src/ad-studio/dto/quoted-concepts.dto.ts"
+          ]
+        },
+        {
+          "group": "05-local-launcher-safety",
+          "sha": "1b26c2113332f217ad000252c12573b352d6f9c8",
+          "subject": "fix(dev): checkpoint guarded launcher and startup safety",
+          "files": [
+            "apps/ai-service/src/config/configuration.ts",
+            "apps/ai-service/src/image-generation/image-generation.module.ts",
+            "apps/ai-service/src/infrastructure/database/database-init.service.ts",
+            "apps/ai-service/src/infrastructure/database/database.module.ts",
+            "apps/ai-service/src/infrastructure/queue/queue.module.ts",
+            "apps/ai-service/src/infrastructure/queue/redis-connection.ts",
+            "apps/ai-service/src/moderation/moderation.module.ts",
+            "apps/ai-service/src/onboarding/onboarding.module.ts",
+            "apps/ai-service/src/transcription/transcription.module.ts",
+            "apps/content-service/src/config/configuration.ts",
+            "apps/content-service/src/content/application/meme-week-plan-poller.service.ts",
+            "apps/content-service/src/infrastructure/database/database-init.service.ts",
+            "apps/content-service/src/infrastructure/database/database.module.ts",
+            "apps/ai-service/src/config/startup-controls.spec.ts",
+            "apps/ai-service/src/config/startup-controls.ts",
+            "apps/content-service/src/config/startup-controls.spec.ts",
+            "apps/content-service/src/config/startup-controls.ts",
+            "tools/ad-studio-local.cjs",
+            "tools/ad-studio-local.ps1",
+            "tools/ad-studio-local.spec.cjs",
+            "tools/compare-ad-studio-process-metadata.ps1",
+            "tools/diagnose-ad-studio-process.ps1"
+          ]
+        }
+      ],
+      "excluded": [
+        {
+          "status": "??",
+          "path": "exit",
+          "reason": "backup/unknown artifact/private or generated configuration; retained locally"
+        },
+        {
+          "status": "??",
+          "path": "libs/contracts/src/lib/audio-edl.builder.ts.bak",
+          "reason": "backup/unknown artifact/private or generated configuration; retained locally"
+        },
+        {
+          "status": "??",
+          "path": "libs/contracts/src/lib/commentary-scheduler.ts.bak",
+          "reason": "backup/unknown artifact/private or generated configuration; retained locally"
+        }
+      ],
+      "classification": {
+        "01-preserved-integration-dependencies": [
+          {
+            "path": "apps/ai-service/Dockerfile",
+            "origin": "new file, see group",
+            "sha256": "c798b63fabc790bb95282da68d6f9f3ff563a3318e2ac8c555e35362a0ab300c"
+          },
+          {
+            "path": "apps/ai-service/Dockerfile.dev",
+            "origin": "new file, see group",
+            "sha256": "69ea78c1728f653ce584b290984c26f1803f72ddc0a0896e43f02aca6f6cb629"
+          },
+          {
+            "path": "apps/ai-service/src/sound-design/application/sound-design.service.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "9b49f060a28de3fd3a3ea131a6d1b7ebfac17017ff8466d57fd57f3f8b419be5"
+          },
+          {
+            "path": "apps/ai-service/src/sound-design/application/voice-synthesis.service.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "d83f5b290a3e842701d243d064d72c06e7ede5a0d7742360ebfb0db0a431cb31"
+          },
+          {
+            "path": "apps/api-gateway/src/proxy/route-registry.spec.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "358f43622cfa03001a0c4a9ce7595ce1dd3430408067cd869ea231fc39a5a06a"
+          },
+          {
+            "path": "apps/api-gateway/src/proxy/route-registry.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "73aee777d880eaec2af196420d7a72e3233a4446af419668e6e5540739238e12"
+          },
+          {
+            "path": "apps/content-service/src/content/api/storage.controller.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "f0f47c9416cdfb54b86fba31a0a7031832c07dba3b0fa6a99f7427be47d60aaa"
+          },
+          {
+            "path": "apps/content-service/src/content/application/sound-design.service.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "9b129a840079971053ec11fa392b42fa491a0bc1a2862b6a71d9dd8685b85a83"
+          },
+          {
+            "path": "apps/content-service/src/infrastructure/internal-clients/internal-clients-registration.module.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "b983472a0eaa719d823999e843a44a3dd60b7dd5517c742a241ffe5d7b2344a3"
+          },
+          {
+            "path": "apps/content-service/src/infrastructure/storage/gcs-object-storage.service.spec.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "53662dd3fde0a2081b348e6afdcd16ad856648d34225728bfc30cd62a16a21d5"
+          },
+          {
+            "path": "apps/content-service/src/infrastructure/storage/gcs-object-storage.service.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "10c899780dae7144bf365944142f8e469d690a56b5f6b6d4f3a88e8ace3441b6"
+          },
+          {
+            "path": "apps/content-service/src/main.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "98b949b106ed139b676e6af8c2aef736311b020fb05ddecc6ea56ddad37712b8"
+          },
+          {
+            "path": "apps/content-service/src/product-isolation/application/isolation-pipeline.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "d1ed35ee51fc49bce547f0d40de1d5bd0134a159f14f8d1ee87215dd89dedf80"
+          },
+          {
+            "path": "apps/content-service/src/product-isolation/application/segmentation-provider.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "6e9969c75096db3c2e060a62fbafb123e1cb58130e4319832a7e62f20f74dcd4"
+          },
+          {
+            "path": "apps/content-service/src/product-isolation/application/trusted-isolation-source.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "5e29fad60577e4eba00d39d1ee884ea7e0f06e61b340d12cbcc55b942d3f2908"
+          },
+          {
+            "path": "libs/contracts/src/lib/audio-edl.builder.spec.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "88c50dea207f0cfe356b650948f039b894cb928b634f37c604128cbf66eadc95"
+          },
+          {
+            "path": "libs/contracts/src/lib/audio-edl.builder.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "bb59548b18babac8e0a72fc142197477160125b0ac579441fb11816e99a599e7"
+          },
+          {
+            "path": "libs/contracts/src/lib/creative-readiness.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "048ef2ea3615657230f879cc23c13b2b29cf9b8a0826aa08d8d46fa541b65bde"
+          },
+          {
+            "path": "libs/contracts/src/lib/sound-design.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "18a2a835900e1e6fdf300e5cf7b53667cb3b16ab349aff6934298649069f97bd"
+          },
+          {
+            "path": "apps/ai-service/src/sound-design/application/decoded-audio-duration.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "a7cdaa32ff68dced3116b4078156af0de2ff10a4e66bc745d12a911597f3e808"
+          },
+          {
+            "path": "apps/content-service/src/content/api/storage.controller.auth.spec.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "6e1e2753c6d2d6000c27509f822def0c365ab44c4e5d2315f80a2cf05281ae38"
+          },
+          {
+            "path": "apps/content-service/src/content/application/sound-design.p02.spec.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "933bb5d8d222bee53619929126e6b0c728613c989faba0bbb2696a9fca4d96dc"
+          },
+          {
+            "path": "libs/contracts/src/lib/commentary-scheduler.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "6205ae02203cc4d1e4bc06410f9c5633df29296fcaf99c57ee256649ed2a860a"
+          }
+        ],
+        "03-guarded-ai-contracts": [
+          {
+            "path": "apps/ai-service/src/ad-studio/ad-studio.module.ts",
+            "origin": "new file, see group",
+            "sha256": "2e1b0a137f24a333be71bf93cec4ea385ca6489d7ee506b4e4110eb894005133"
+          },
+          {
+            "path": "apps/ai-service/src/ad-studio/api/internal-ad-studio.controller.ts",
+            "origin": "new file, see group",
+            "sha256": "1d1837b9f78aee210002ce0ce6fdfe38767bd78c45f1df005447183065eccc06"
+          },
+          {
+            "path": "apps/ai-service/src/ad-studio/application/ad-creative-director.prompts.spec.ts",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "d316fe84fd57d1e53367c1e61e2fe97c269f90527e8b2730e1ab9a71bfa09126"
+          },
+          {
+            "path": "apps/ai-service/src/ad-studio/application/ad-creative-director.prompts.ts",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "48e59a74b40afa55a45ce57747f764539d2ad6df6f73ebf5fb29ab774578378d"
+          },
+          {
+            "path": "apps/ai-service/src/ad-studio/application/ad-creative-director.service.spec.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "562aae01f8b5394247257cebebd899251078020d41050ab44e2f8909217421b2"
+          },
+          {
+            "path": "apps/ai-service/src/ad-studio/application/ad-creative-director.service.ts",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "0c10bc643bee064c836e821bb68ff51ff9320e8c9498149642d8d8c13ef6dc44"
+          },
+          {
+            "path": "apps/ai-service/src/jobs/application/job-tracking.service.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "7a23f0627e62f38a9a23018cb646a35cf58e1663065f294f27fb13edde6668a9"
+          },
+          {
+            "path": "apps/ai-service/src/jobs/application/job-tracking.service.ts",
+            "origin": "new file, see group",
+            "sha256": "d8345b7f601e8044ad481c4fc6a2a94a20c4c68c8c26426f7086ad544df67d2b"
+          },
+          {
+            "path": "apps/ai-service/src/jobs/domain/job-type.enum.ts",
+            "origin": "new file, see group",
+            "sha256": "036502e9e958395ce91a890d93dc6fa180747c546f6c2c4837174c340e7ed521"
+          },
+          {
+            "path": "apps/ai-service/src/jobs/repositories/ai-job.repository.ts",
+            "origin": "new file, see group",
+            "sha256": "e8c03cf620f8ab3c388d50900063af4939e9ca2bc0e09da1506e40d5f5980447"
+          },
+          {
+            "path": "apps/ai-service/src/model-registry/model-catalog.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "fe3f422d94afb2e6c835c00e46c0ba273fd0bba96ab36e534db9a3471b58f70e"
+          },
+          {
+            "path": "apps/ai-service/src/model-registry/model-catalog.ts",
+            "origin": "new file, see group",
+            "sha256": "f92a7c623bd5dface7d155678260c59bd6e2537af23cc81d17c1a85f4c9ee6e2"
+          },
+          {
+            "path": "apps/ai-service/src/providers/gemini/gemini-api.client.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "54c1cdc5e68c7c077311db2bccc07064bb24aec771ba229aba48d82be5175ebb"
+          },
+          {
+            "path": "apps/ai-service/src/providers/gemini/gemini-api.client.ts",
+            "origin": "new file, see group",
+            "sha256": "03fb65949b9be566155bfa57e6a21634aeb18178b6a3768f7c1d9779da01948b"
+          },
+          {
+            "path": "apps/ai-service/src/providers/vertex/vertex-api.client.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "e9e68f44b4ff0acf85b3cdebf328ada00b8f56430edc7d64181ce8329e03a682"
+          },
+          {
+            "path": "apps/ai-service/src/providers/vertex/vertex-api.client.ts",
+            "origin": "new file, see group",
+            "sha256": "64beb063c0867f954d1396b56e442bcc4dee5b7743c2bc04ff141bfe542817cb"
+          },
+          {
+            "path": "libs/contracts/src/index.ts",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "14e46ba8d066c79a0a759f8a35673764ee55ae76bdcbbdb46e8581b3d054757c"
+          },
+          {
+            "path": "libs/contracts/src/lib/ad-studio.ts",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "060eb5952a09d75ccb805e97f9a546e4438c7fbabfd29bfe3baa5af0db735bf6"
+          },
+          {
+            "path": "libs/contracts/src/lib/internal/index.ts",
+            "origin": "new file, see group",
+            "sha256": "2aee557c61398fb0e83f7344846efae850e9e94d999d12de277329aea0faed57"
+          },
+          {
+            "path": "libs/internal-clients/src/lib/ai.client.ts",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "4ad8647c4589c9295830b839b3e6dece6e9ce0ee390551efd2040c4a2c8cbf97"
+          },
+          {
+            "path": "libs/internal-clients/src/lib/config.helpers.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "7a3b7ae19545802274c7bfc2ffb7cd98df1da9ee72ecd5c3a92feb13084e8266"
+          },
+          {
+            "path": "libs/internal-clients/src/lib/internal-clients.config.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "26d80e288a949faa64d802f3d4e5c54a28b6175f84aa3138f4d9a36f3e87495d"
+          },
+          {
+            "path": "libs/internal-clients/src/lib/internal-clients.provider.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "dc72a01dfe023b5656da0213aa567268bbd1cb6ca9e7ecccbf76438db51d9654"
+          },
+          {
+            "path": "apps/ai-service/src/ad-studio/application/ad-creative-director.quoted.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "296d46be374b910551bfe146625debd4e5022c6820c68489575eea071bda5d6d"
+          },
+          {
+            "path": "apps/ai-service/src/ad-studio/application/brand-analysis.service.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "5c4c16d18b8a2efdfd9c0bbf1743f90e9e3bd856238b715ae6a58bb7dc7a039d"
+          },
+          {
+            "path": "apps/ai-service/src/ad-studio/application/brand-analysis.service.ts",
+            "origin": "new file, see group",
+            "sha256": "5e117eb4b84492a34017021abb9f484bd93bf6052bd95a8b38eac6493e34efab"
+          },
+          {
+            "path": "apps/ai-service/src/ad-studio/application/quoted-json-provider.ts",
+            "origin": "new file, see group",
+            "sha256": "1bd8f29abd6694d5a9e6a283db1ac9ec882be0f9a9cd24e365363bdd13b98c20"
+          },
+          {
+            "path": "libs/contracts/src/lib/ad-concept-execution.ts",
+            "origin": "new file, see group",
+            "sha256": "40697b0bae924c9a99ed6d3de9b2b79da885f237b9698a212f62692b41fbeacf"
+          },
+          {
+            "path": "libs/contracts/src/lib/brand-analysis.ts",
+            "origin": "new file, see group",
+            "sha256": "3e1418732a8767e3e76d1dc41fa335c891a7fb345945e76ac4123dc02cee6430"
+          },
+          {
+            "path": "libs/internal-clients/src/lib/ai.client.concepts-routing.spec.ts",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "45fba7839150d8571d1ddcf9282593ad2af0b0987e31e0faef89dce1dc1b03ab"
+          }
+        ],
+        "05-local-launcher-safety": [
+          {
+            "path": "apps/ai-service/src/config/configuration.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "82f77e5c78370ca43a0a1036e914954f4c9fc07a45cb06bb67c479bf201ff59b"
+          },
+          {
+            "path": "apps/ai-service/src/image-generation/image-generation.module.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "180e415a2ace4ff5b4e0727a28d0d2c1df1599d5730b803205ecb75e3fe9398b"
+          },
+          {
+            "path": "apps/ai-service/src/infrastructure/database/database-init.service.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "13a86abaa64cd07e38cb479424522ba79c57b761a77c9c3684244bbbe9c0396a"
+          },
+          {
+            "path": "apps/ai-service/src/infrastructure/database/database.module.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "a11405421d6d0dad06ebd1d6335d010e0a957be9ad27566b55035c808fb44620"
+          },
+          {
+            "path": "apps/ai-service/src/infrastructure/queue/queue.module.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "20497c9e3de42c7ab5ddc402a807fb71d9338214f0be9fb50737d0c3b64f07c6"
+          },
+          {
+            "path": "apps/ai-service/src/infrastructure/queue/redis-connection.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "b4d1c32d80c00c4670d658fcead29a40ff7b7be80db898df2cccbc91133e3d38"
+          },
+          {
+            "path": "apps/ai-service/src/moderation/moderation.module.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "84f47b33bae98a44953a500ee72b1df16b5e4f6a8e47e3a025c06c639c1c0eee"
+          },
+          {
+            "path": "apps/ai-service/src/onboarding/onboarding.module.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "71d6c52f8fef8a102d9546debff6034e326a89b59ef82cd7802b892569e76f56"
+          },
+          {
+            "path": "apps/ai-service/src/transcription/transcription.module.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "61b00bff668edca1ac530dd5b8e154c41c2f0a3cb4ac0c6208f408ab0451d064"
+          },
+          {
+            "path": "apps/content-service/src/config/configuration.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "285916ec4634eccc3ae4a5e7ec0b97005fd0913c0bed1742f746013ac39ecd16"
+          },
+          {
+            "path": "apps/content-service/src/content/application/meme-week-plan-poller.service.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "ba1fc317b09ea9f5de7db7acdd72795bde42352ea0d2e4d38b53cd70de53c029"
+          },
+          {
+            "path": "apps/content-service/src/infrastructure/database/database-init.service.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "70330bacc450956d410f4b0b6908644c22061d4881f02bc581729d6926ef8837"
+          },
+          {
+            "path": "apps/content-service/src/infrastructure/database/database.module.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "ef601839aa03f5ba0533c2367ad160f8f148c8b189ccf65f487160782eda6a16"
+          },
+          {
+            "path": "apps/ai-service/src/config/startup-controls.spec.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "832ff7ef5c479ae0af6ef94ed085f26b64958049b2d6a50b69da6df66b8c597a"
+          },
+          {
+            "path": "apps/ai-service/src/config/startup-controls.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "7e34043aee3bbdbaf9e5167e410b7e753db05ebda9a891a5b4aa10e31c9b9579"
+          },
+          {
+            "path": "apps/content-service/src/config/startup-controls.spec.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "8448334f7ffb3384f8229cbc22d07f2caf669210929f362f0d617acefe07006e"
+          },
+          {
+            "path": "apps/content-service/src/config/startup-controls.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "e7fd199eb78f95b5f839a2ccc9563c89da04bfd4c6221272568dc0757880ec3a"
+          },
+          {
+            "path": "tools/ad-studio-local.cjs",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "eabc850bd27d623a61d0f37adbcda6ac7b2b224c1fd79df3629a4fe085828195"
+          },
+          {
+            "path": "tools/ad-studio-local.ps1",
+            "origin": "new file, see group",
+            "sha256": "f77dfbc7d7562d03d66f3254e53187b60fe92eb23f1f7a1f4a467a0eae23b626"
+          },
+          {
+            "path": "tools/ad-studio-local.spec.cjs",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "a0c6e889f293587d054b5e23ddcd83437f2a1e1ce26289ef32f14fdb897280a8"
+          },
+          {
+            "path": "tools/compare-ad-studio-process-metadata.ps1",
+            "origin": "new file, see group",
+            "sha256": "646600e6d57764f617ffd6d212eae9e8261f44aae52960b53c746916b0dd007e"
+          },
+          {
+            "path": "tools/diagnose-ad-studio-process.ps1",
+            "origin": "new file, see group",
+            "sha256": "5f714b364bdf333e75fad31750db9b80248366db102f50a56b998a4bb2a9c1c8"
+          }
+        ],
+        "04-production-api": [
+          {
+            "path": "apps/content-service/src/ad-studio/ad-studio.module.ts",
+            "origin": "new file, see group",
+            "sha256": "5e50f57080de44262c1325eaad25fbf5911f05f3556ebd6bb5a59346a16a15e0"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/api/ad-studio.controller.ts",
+            "origin": "new file, see group",
+            "sha256": "066ec6373c467451bcacc663ac0cc47a2f926de92bdc2c7f3995e1497d9cbcd2"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/application/ad-studio.service.spec.ts",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "f3ecf372c0b0717c7116938c75f6713d5944836f0280418526f270d747fa693f"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/application/ad-studio.service.ts",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "0e6c75a098bf0b2ad6d5c34595c82036528054714d2f5016bfe941844e7bf30d"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/application/animated-ad-export.service.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "395d14e65770867e7f8158f20a04100a5ff0bb43d84e9b8bb5f018b9cbe0555a"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/application/intelligent-ad-studio.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "c261f72b2b67d3c0e30df9bf933a8c5c992b351c9fdb61daf10eb2ae3417dfb9"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/application/local-product-hero-composition.spec.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "9f4e1a417f932b7d236f9bce2bd0ff0e576eded055c35ae82c64f871096a450a"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/application/local-product-hero-composition.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "a7f89f2c9e9ae27d57a1b82d71b43b2172575ba4494248f5fa6ae5dd74a9b6a5"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/application/template-binding.service.ts",
+            "origin": "new file, see group",
+            "sha256": "f079ee36096e3dd30c3f7e3075a802ed2242c2aea32b8453268ee85d53295b6f"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/application/w86-synthetic-composition.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "a79b5f3d3d20010048aec09a68b3e6c7504ab76bb3f741bd2c96e97fd555b8a1"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/application/w87-synthetic-editor-session.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "06298d83d8279821db0b4911c8c6949be405db54869b01f7caad5b87cc9bf9c7"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/domain/ad-brief.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "aadf6ae63293d275b721b31a327c342106b23dc5d198b80348621829fb010254"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/domain/ad-scene-graph.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "019fe301e85cab811e341dfec0051f18a4074b8066b0d5febf1a2277dce73916"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/dto/ad-studio.dto.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "eee97c2d6ce0e5a20ff7e24ff66257fd26d4a6e37da446ae66faabfc48a3fa72"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/repositories/ad-studio.repository.ts",
+            "origin": "new file, see group",
+            "sha256": "19fa5027eda76377637fcced2380ed9aef2f84644e0b7747a6aa756f51ba5a25"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/api/brand-analysis.controller.ts",
+            "origin": "new file, see group",
+            "sha256": "2d831a1b3fc766486385c75d3468502e3d94e4f9a92db898d5a3f5448c06aa6d"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/application/owned-brand-analysis.service.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "23ef9abfcb6e28d53bd015ac33ad798e120df2feb4915b32f2aaab70f5e056ce"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/application/owned-brand-analysis.service.ts",
+            "origin": "new file, see group",
+            "sha256": "fcc12715232c642385c36be478b03d74aa7719c2e6c67739132cb19f55c51b91"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/application/quoted-ad-concepts.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "ba6f55cf9f71c4df2b8ecc049eb483d04df04543c8395d355459f0d1c39c22be"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/dto/quoted-concepts.dto.ts",
+            "origin": "new file, see group",
+            "sha256": "5ed28c4790630cda5606783ea08ed59a74fe1b8956c85fbe6fe835d33caed352"
+          }
+        ],
+        "02-brand-foundation": [
+          {
+            "path": "apps/content-service/src/brand/api/brand.controller.ts",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "669a80ee7bbe37a157ac3ed895254364f3089949a89aa08bb94bba09ebad9ddc"
+          },
+          {
+            "path": "apps/content-service/src/brand/application/brand.service.spec.ts",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "ad032179bc258523442229bc48efc9ad37118cfcd2255cbbcc7fbb1f697b1ee1"
+          },
+          {
+            "path": "apps/content-service/src/brand/application/brand.service.ts",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "3f0dae0dcb5ff5b3c5c8b86238bf9d9e167e04db2246471a745101cf10b317cf"
+          },
+          {
+            "path": "apps/content-service/src/brand/domain/brand-voice.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "b2aa71b81d09ed0deeb64b0bcb50b68d761e85bbc59b7ffa1c1fab52d6d19a7f"
+          },
+          {
+            "path": "apps/content-service/src/brand/domain/brand-voice.ts",
+            "origin": "new file, see group",
+            "sha256": "61480524c95870821ec788992dad46923fecb91bbb416524857550f976329f87"
+          },
+          {
+            "path": "apps/content-service/src/brand/dto/brand.dto.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "5053612522a3a366c1d0c59cab8f2d30e93d9305ca673658749e3bba0d6dcc10"
+          },
+          {
+            "path": "apps/content-service/src/brand/dto/brand.dto.ts",
+            "origin": "new file, see group",
+            "sha256": "b40d8e880056a16ca6bbb272a7dc3944c413c98c61b6fcfe0b30865b62c1566f"
+          },
+          {
+            "path": "apps/content-service/src/brand/repositories/brand.repository.ts",
+            "origin": "new file, see group",
+            "sha256": "a094e03f433ed35b9a093cae387f106826baaf5cf4d1b2143112f2f58b703a9f"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/api/brand-template.controller.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "d0ccfd40d045de9a9187526794236f1fe7be27c172574f5babe383a33eb24902"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/api/brand-template.controller.ts",
+            "origin": "new file, see group",
+            "sha256": "294300bca72a2541fa2b5447f1cdb25d8cf29f46e9763ac0469d478327210c14"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/application/brand-template-lifecycle.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "a1ce9808afdcfd1e1f68f08dd0640bb29097da31c391657d9b6ef7f1232c79b3"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/application/brand-template-lifecycle.ts",
+            "origin": "new file, see group",
+            "sha256": "e445267c51dfa3fc08fa4354a0dd5abd7b9e2818c8a1562037082f4459c6fff4"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/application/brand-template.service.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "57e62ec95f8fcae89f451513da21ecc6def69b3911c6daeb77456dc0e2363794"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/application/brand-template.service.ts",
+            "origin": "new file, see group",
+            "sha256": "5bc4f0c7816a759d531408198e03af9ef30b74f58d93726387093cb6a2cb691c"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/repositories/brand-template.repository.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "6bc756bfc8483f5c0d76cfcabd6869340fd17c3a1ad83cc308fdfa4999e4700f"
+          },
+          {
+            "path": "apps/content-service/src/ad-studio/repositories/brand-template.repository.ts",
+            "origin": "new file, see group",
+            "sha256": "64fdb9d5c72123b9bdf9963876ed8c9a7ec41d8cf1614dd8412c6431bb89c072"
+          },
+          {
+            "path": "apps/content-service/src/brand/domain/brand-character-policy.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "a232718f46501af2df9f2d7e8bf8cf75efe42499ce5b71d3ff5fbfee63f2ddd2"
+          },
+          {
+            "path": "apps/content-service/src/brand/domain/brand-character-policy.ts",
+            "origin": "new file, see group",
+            "sha256": "de4ce9324e6454617b1bd2b957c00d92059a8f4a9637a1830a3196198d3a3618"
+          },
+          {
+            "path": "apps/content-service/src/brand/repositories/brand-guided.repository.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "987ab15a9e997d099ad1b19d9956871c09f30cfa46beffed418d398cba548ccc"
+          }
+        ],
+        "06-documentation": [
+          {
+            "path": "docs/ad-studio/production/AI-PROVIDER-CAPABILITY-MATRIX.md",
+            "origin": "new file, see group",
+            "sha256": "ad0cf14f4014d6b2a8fb4a76790c3489c5c6bda5df1579c66f85dc22855ff940"
+          },
+          {
+            "path": "docs/ad-studio/production/BRAND-ANALYSIS-IMPLEMENTATION.md",
+            "origin": "new file, see group",
+            "sha256": "26a75b246dc72a31a3be4f1725a8a327bc07a0c4afc4f738a24ee566031e5130"
+          },
+          {
+            "path": "docs/ad-studio/production/BRAND-KIT-INTEGRATION.md",
+            "origin": "new file, see group",
+            "sha256": "f7bf71007c795135086b7c2fe817ca6fb400631acd03dc4e9175c56f29c0f6b3"
+          },
+          {
+            "path": "docs/ad-studio/production/CREATIVE-DIRECTOR-CONCEPT-EXECUTION.md",
+            "origin": "new file, see group",
+            "sha256": "e6eb6fa16fa6b0b19247194076c4f88d07d739405fffc5f142b2a30b99a49a0f"
+          },
+          {
+            "path": "docs/ad-studio/production/REMAINING-GAPS-AND-ACCEPTANCE.md",
+            "origin": "new file, see group",
+            "sha256": "171e7c621b4a96d895b3dddc611f8a8702302e3fbccb75feb1dc238f4888b3a1"
+          },
+          {
+            "path": "docs/ad-studio/production/RUNTIME-POST-RESTART-VERIFICATION.md",
+            "origin": "new file, see group",
+            "sha256": "8038e773b215683757bff6d4b0f2e1e4c00fa414b56e1e7bc823e800fa714164"
+          },
+          {
+            "path": "docs/ad-studio/production/RUNTIME-SCHEMA-REVIEW.md",
+            "origin": "new file, see group",
+            "sha256": "a892e53c0207a0d42747029383142157dc960b082eac5c3ff942f881d9c721a2"
+          },
+          {
+            "path": "docs/ad-studio/production/SCHEMA-APPLICATION-REPORT.md",
+            "origin": "new file, see group",
+            "sha256": "1ad7555d7b5cfb6b1ee4f5f0cea51216552f4869696205adeb6b4496a15b68d5"
+          },
+          {
+            "path": "docs/ad-studio/production/TEMPLATE-GENERATION-IMPLEMENTATION.md",
+            "origin": "new file, see group",
+            "sha256": "570b17e34e9e98ea9c4ee13a64894dde12431780c044a2fd5651e081bd741efd"
+          },
+          {
+            "path": "docs/ad-studio/production/VERIFICATION-EVIDENCE.md",
+            "origin": "new file, see group",
+            "sha256": "6c679fcda10a5f84757be7f1785ee9e7317294a25b7ab996b4dcf086828d7257"
+          },
+          {
+            "path": "docs/ad-studio/production/schema/brand-templates-review.sql",
+            "origin": "new file, see group",
+            "sha256": "571a8c0823fbd6e4ac7c95670555544a1f42c177839aca45d3a8aed3825186cf"
+          },
+          {
+            "path": "docs/local-development/AD-STUDIO-LOCAL.md",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "9e597506acd28965e9d0de893432473ab9edd552cc2feb4ade2c8830a73e21af"
+          },
+          {
+            "path": "docs/local-development/LAUNCHER-IDENTITY-CORRECTION.md",
+            "origin": "new file, see group",
+            "sha256": "5e709d18d086e6ba08906ae2a4d90f443094112284a89b51b1497dd1d7f5e071"
+          },
+          {
+            "path": "docs/local-development/M1-P0-ACTIVATION-STATUS.md",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "08d06d67e983f881bc398527681a7cdf38b2c94dd6dbc5199514616bd748066d"
+          },
+          {
+            "path": "docs/sound-design-p02/P02-W8-INTEGRATION-READINESS.md",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "89abc8f915811b9c22ab36f6765cae5b363a37f9fb30589b218ea1968ebe9c62"
+          }
+        ]
+      }
+    },
+    {
+      "root": "D:/NxClip-Web-W8-Integration",
+      "branch": "codex/w8-feature-completeness-rc1",
+      "origin": "git@github.com:umasood677/nxclip-web.git",
+      "originalHead": "448f3700893cc2ca959ba0ed8dad3f6966c20bee",
+      "codeCheckpoint": "86bee0b4c8655bc83535792d83e46fa60f8f2a59",
+      "commits": [
+        {
+          "group": "01-preserved-approved-ux-and-integration",
+          "sha": "d713a9c03f53006fd658cffdb05e72b935eff886",
+          "subject": "chore(ad-studio): preserve approved M2B and integration baseline",
+          "files": [
+            "public/ad-studio/sample-assets/w0a-lifestyle.jpg",
+            "public/ad-studio/sample-assets/w0a-minimal.jpg",
+            "public/ad-studio/sample-assets/w0a-model-editorial.jpg",
+            "public/ad-studio/sample-assets/w0a-multi-shade.jpg",
+            "public/ad-studio/sample-assets/w0a-product-hero.jpg",
+            "public/ad-studio/sample-assets/w0a-product-launch.jpg",
+            "public/ad-studio/sample-assets/w0a-promo.jpg",
+            "public/ad-studio/sample-assets/w0a-seasonal.jpg",
+            "public/ad-studio/sample-assets/w0a-social-story.jpg",
+            "public/ad-studio/sample-assets/w0a-texture-showcase.jpg",
+            "server.ts",
+            "src/App.tsx",
+            "src/components/layouts/DashboardLayout.tsx",
+            "src/lib/authenticatedMediaUrl.ts",
+            "src/lib/clipTypography/T3-editor-integration.spec.tsx",
+            "src/pages/AdStudio/AdStudio.tsx",
+            "src/pages/AdStudio/AdStudioEditor.tsx",
+            "src/pages/AdStudio/canvas/brandAssetUrls.spec.ts",
+            "src/pages/AdStudio/canvas/brandAssetUrls.ts",
+            "src/pages/AdStudio/components/AdCanvas.tsx",
+            "src/pages/AdStudio/components/AdStudioHome.tsx",
+            "src/pages/AdStudio/components/BrandPanel.tsx",
+            "src/pages/AdStudio/components/ConceptGallery.tsx",
+            "src/pages/AdStudio/components/GuidedBriefComposer.tsx",
+            "src/pages/AdStudio/components/LayerList.tsx",
+            "src/pages/AdStudio/components/ProjectDetailsDrawer.tsx",
+            "src/pages/AdStudio/components/SceneThumb.tsx",
+            "src/pages/AdStudio/components/TemplateGallery.tsx",
+            "src/pages/AdStudio/intelligent/IntelligentAdStudioPanel.spec.tsx",
+            "src/pages/AdStudio/intelligent/IntelligentAdStudioPanel.tsx",
+            "src/pages/AdStudio/lib/adStudioLabels.ts",
+            "src/pages/AdStudio/lib/exampleCreatives.ts",
+            "src/pages/ClipEditor/ClipEditor.tsx",
+            "src/pages/ClipEditor/SoundDesignPanel.tsx",
+            "public/ad-studio/ux-preview/ASSET-MANIFEST.json",
+            "public/ad-studio/ux-preview/PROVENANCE.md",
+            "public/ad-studio/ux-preview/cinematic-background.svg",
+            "public/ad-studio/ux-preview/cinematic.svg",
+            "public/ad-studio/ux-preview/collection-background.svg",
+            "public/ad-studio/ux-preview/collection.svg",
+            "public/ad-studio/ux-preview/editorial-background.svg",
+            "public/ad-studio/ux-preview/editorial.svg",
+            "public/ad-studio/ux-preview/industry-corporate-foreground.svg",
+            "public/ad-studio/ux-preview/industry-corporate.svg",
+            "public/ad-studio/ux-preview/industry-fashion-foreground.svg",
+            "public/ad-studio/ux-preview/industry-fashion.svg",
+            "public/ad-studio/ux-preview/industry-gaming-foreground.svg",
+            "public/ad-studio/ux-preview/industry-gaming.svg",
+            "public/ad-studio/ux-preview/industry-generic-foreground.svg",
+            "public/ad-studio/ux-preview/industry-generic.svg",
+            "public/ad-studio/ux-preview/industry-travel-foreground.svg",
+            "public/ad-studio/ux-preview/industry-travel.svg",
+            "public/ad-studio/ux-preview/product-isolated.svg",
+            "public/ad-studio/ux-preview/spotlight-background.svg",
+            "public/ad-studio/ux-preview/spotlight.svg",
+            "src/lib/clipCaptionFonts.regression.spec.ts",
+            "src/pages/AdStudio/canvas/useAuthenticatedBrandAssetUrls.ts",
+            "src/pages/AdStudio/components/AdStudioLoader.tsx",
+            "src/pages/AdStudio/components/AdStudioTopNav.tsx",
+            "src/pages/AdStudio/components/AdStudioTypographyPanel.tsx",
+            "src/pages/AdStudio/components/BrandHomePreview.tsx",
+            "src/pages/AdStudio/components/BrandKitHeaderControl.tsx",
+            "src/pages/AdStudio/components/CollapsiblePanel.tsx",
+            "src/pages/AdStudio/intelligent/IntelligentAdStudioHost.tsx",
+            "src/pages/AdStudio/intelligent/buildIntelligentCreativeContext.spec.ts",
+            "src/pages/AdStudio/intelligent/buildIntelligentCreativeContext.ts",
+            "src/pages/AdStudio/lib/brandHomeCatalog.ts",
+            "src/pages/AdStudio/lib/intelligentAdStudioFlag.ts",
+            "src/pages/AdStudio/styles/ad-studio-w0a.css",
+            "src/pages/AdStudio/styles/project-workspace.css",
+            "src/pages/AdStudio/uxPreview/AdStudioUXPreview.tsx",
+            "src/pages/AdStudio/uxPreview/AdvancedCanvasPrototype.tsx",
+            "src/pages/AdStudio/uxPreview/BrandPrototypeScreens.tsx",
+            "src/pages/AdStudio/uxPreview/MotionPrototype.tsx",
+            "src/pages/AdStudio/uxPreview/RoadmapScreens.tsx",
+            "src/pages/AdStudio/uxPreview/brandPrototypeModel.ts",
+            "src/pages/AdStudio/uxPreview/m2b.spec.ts",
+            "src/pages/AdStudio/uxPreview/model.spec.ts",
+            "src/pages/AdStudio/uxPreview/model.ts",
+            "src/pages/AdStudio/uxPreview/preview.css",
+            "src/pages/AdStudio/uxPreview/roadmap.css",
+            "src/pages/AdStudio/uxPreview/roadmapModel.ts",
+            "src/pages/AdStudio/uxPreview/taxonomy.snapshot.json",
+            "src/pages/ClipEditor/lib/voiceOverlayTiming.spec.ts",
+            "src/pages/ClipEditor/lib/voiceOverlayTiming.ts",
+            "src/pages/ImageStudio/components/EditPanel.typography.spec.ts"
+          ]
+        },
+        {
+          "group": "02-m2b-production-workspace",
+          "sha": "bdf597d904eb9dfbe420a52942b9b0838f1f4e28",
+          "subject": "feat(ad-studio): checkpoint gated project workspace integration",
+          "files": [
+            "src/pages/AdStudio/AdProjectWorkspace.tsx",
+            "src/pages/AdStudio/components/CreateAdProjectDialog.tsx",
+            "src/pages/AdStudio/components/ProjectCreativeGallery.spec.tsx",
+            "src/pages/AdStudio/components/ProjectCreativeGallery.tsx",
+            "src/pages/AdStudio/components/WorkingBriefPanel.spec.tsx",
+            "src/pages/AdStudio/components/WorkingBriefPanel.tsx",
+            "src/pages/AdStudio/lib/projectWorkspace.spec.ts",
+            "src/pages/AdStudio/lib/projectWorkspace.ts",
+            "src/pages/AdStudio/production/ProductionProjectWorkspace.tsx",
+            "src/pages/AdStudio/production/experienceRoutes.spec.ts",
+            "src/pages/AdStudio/production/experienceRoutes.ts",
+            "src/pages/AdStudio/production/useAdProjectWorkspace.ts"
+          ]
+        },
+        {
+          "group": "03-placements-and-variations",
+          "sha": "4520f1407a5fe879fe52c5e09d0dbc127a5c3c05",
+          "subject": "feat(ad-studio): connect reviewed placements and native variations",
+          "files": [
+            "src/pages/AdStudio/production/ProductionCreativeExtensions.tsx",
+            "src/pages/AdStudio/production/placementReview.spec.ts",
+            "src/pages/AdStudio/production/placementReview.ts"
+          ]
+        },
+        {
+          "group": "04-brand-and-director",
+          "sha": "86bee0b4c8655bc83535792d83e46fa60f8f2a59",
+          "subject": "feat(brands): checkpoint identity and guarded Director presentation",
+          "files": [
+            "src/pages/BrandKits/BrandKitDashboard.tsx",
+            "src/pages/BrandKits/BrandKitEditor.tsx",
+            "src/pages/BrandKits/lib/brandKitExport.ts",
+            "src/pages/BrandKits/lib/brandKitImportMap.ts",
+            "src/pages/BrandKits/lib/brandKitPortable.ts",
+            "src/pages/BrandKits/lib/brandKitTypes.ts",
+            "src/pages/BrandKits/lib/duplicateBrandKit.ts",
+            "src/services/apiClient.ts",
+            "src/pages/AdStudio/production/ProductionCreativeDirector.tsx",
+            "src/pages/AdStudio/production/conceptExecutionModel.spec.ts",
+            "src/pages/AdStudio/production/conceptExecutionModel.ts",
+            "src/pages/BrandKits/analysis/BrandAnalysisPanel.tsx",
+            "src/pages/BrandKits/analysis/brandAnalysisModel.spec.ts",
+            "src/pages/BrandKits/analysis/brandAnalysisModel.ts",
+            "src/pages/BrandKits/guided/BrandCharactersSection.tsx",
+            "src/pages/BrandKits/guided/GuidedBrandKit.tsx",
+            "src/pages/BrandKits/guided/brandCharacterModel.spec.ts",
+            "src/pages/BrandKits/guided/brandCharacterModel.ts",
+            "src/pages/BrandKits/guided/brandStudioPortable.spec.ts",
+            "src/pages/BrandKits/guided/brandStudioPortable.ts",
+            "src/pages/BrandKits/guided/guidedBrand.css",
+            "src/pages/BrandKits/guided/guidedBrandModel.spec.ts",
+            "src/pages/BrandKits/guided/guidedBrandModel.ts",
+            "src/pages/BrandKits/guided/taxonomy.snapshot.json",
+            "src/pages/BrandKits/templates/BrandTemplateLibrary.tsx",
+            "src/pages/BrandKits/templates/brandTemplateModel.spec.ts",
+            "src/pages/BrandKits/templates/brandTemplateModel.ts"
+          ]
+        }
+      ],
+      "excluded": [
+        {
+          "status": "??",
+          "path": "src/pages/AdStudio/canvas/useAuthenticatedBrandAssetUrls.ts.bak",
+          "reason": "backup/unknown artifact/private or generated configuration; retained locally"
+        }
+      ],
+      "classification": {
+        "01-preserved-approved-ux-and-integration": [
+          {
+            "path": "public/ad-studio/sample-assets/w0a-lifestyle.jpg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "c75b724a5b4b544532c20619cba759ff76a56ea2abbd175584f27ff9c08ceb13"
+          },
+          {
+            "path": "public/ad-studio/sample-assets/w0a-minimal.jpg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "cb76c144ce74d31fbe654c8c5cbe67ef1e307334cd93f138ac5b4f32012a8d35"
+          },
+          {
+            "path": "public/ad-studio/sample-assets/w0a-model-editorial.jpg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "38ebb6c013d46f3b21f5a0332570b4f268b817ccf510204d89d60ed027948175"
+          },
+          {
+            "path": "public/ad-studio/sample-assets/w0a-multi-shade.jpg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "06dfa01b78f5dc19c2af43aa9157ec61b62bad10f12a211200d7afbc78a458c5"
+          },
+          {
+            "path": "public/ad-studio/sample-assets/w0a-product-hero.jpg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "14d12cf8e1b29563da5eabe16481c2d460f0dd442b9d9b562955bf72bbf48dd1"
+          },
+          {
+            "path": "public/ad-studio/sample-assets/w0a-product-launch.jpg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "590d29e88109837907b22e9c710907a58cc173b676752eff3d6f3055fb7ad334"
+          },
+          {
+            "path": "public/ad-studio/sample-assets/w0a-promo.jpg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "2bd18a567141bc51d52d8a28a8365fee11294edda75d5acc0315ab46372ab110"
+          },
+          {
+            "path": "public/ad-studio/sample-assets/w0a-seasonal.jpg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "bc5ebca23949859bed53fc593836906eeeffb0df2d14684b04a36ff707049241"
+          },
+          {
+            "path": "public/ad-studio/sample-assets/w0a-social-story.jpg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "186a7f1fcb69a77e443b2c81111a69876fad01e8c01a5851d1df19188ac039e8"
+          },
+          {
+            "path": "public/ad-studio/sample-assets/w0a-texture-showcase.jpg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "46f7d4c1cee4b3efda39fb6217be29366f05c40ecd443c31df28001bb38ced69"
+          },
+          {
+            "path": "server.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "32755872ed9ba37d9f0a33a0c932346b855ffbb1b709e122a69862fe31946828"
+          },
+          {
+            "path": "src/App.tsx",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "3a531bc6111afa518a4be6df23bf0c23b6024444a1388b1b4e9c06b057785002"
+          },
+          {
+            "path": "src/components/layouts/DashboardLayout.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "785d68c9e342d492bfa1fadd96e8020bebe567645ddf4051d2102693ac2f5711"
+          },
+          {
+            "path": "src/lib/authenticatedMediaUrl.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "a0f6f7cdc6d10a1ccb7fb983b8546d6fb8d7d4b4aca25604f34b9938a18b28e2"
+          },
+          {
+            "path": "src/lib/clipTypography/T3-editor-integration.spec.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "d9d10d9e66c53f75b1c7d4f644da189f710706ea6562d980194a88ac1303aa8c"
+          },
+          {
+            "path": "src/pages/AdStudio/AdStudio.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "f51ddb727380574cfd01ff40d893711bb770923ff76bf74bb7f9c44ac5d761d8"
+          },
+          {
+            "path": "src/pages/AdStudio/AdStudioEditor.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "aa79d941c5973a5a72524741b4e7eac37236621bfde1181460404f87d88d6944"
+          },
+          {
+            "path": "src/pages/AdStudio/canvas/brandAssetUrls.spec.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "b6ce83df9d34d3c20b9279046196eeedb79a742cab6f382ec37d1c6d55907ed0"
+          },
+          {
+            "path": "src/pages/AdStudio/canvas/brandAssetUrls.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "b8b4169a7177c5bae5638f3cc7fb8d5a572fd36ddb22937c5d96f48404d56859"
+          },
+          {
+            "path": "src/pages/AdStudio/components/AdCanvas.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "3b4927a7f9cca0cc342117c9da8a49d89fd9d23fc8db3dce5bf9d62d783437c3"
+          },
+          {
+            "path": "src/pages/AdStudio/components/AdStudioHome.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "64323d455009af3694377665d293058c00efb82ee2f8a9e0254ec0fbc60c2018"
+          },
+          {
+            "path": "src/pages/AdStudio/components/BrandPanel.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "4b27f640edf54d2660179323e03346e9117d0a03edc54a743819d0c4214528e6"
+          },
+          {
+            "path": "src/pages/AdStudio/components/ConceptGallery.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "31ee1f31cc4d5cb57883cc9fe92bb19435ce8dafb66cdd5329f7a64416c6d0b0"
+          },
+          {
+            "path": "src/pages/AdStudio/components/GuidedBriefComposer.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "e1d8a802e3679a62d13ac410907654c4e67409eb0e424b767acbd27e1182bb65"
+          },
+          {
+            "path": "src/pages/AdStudio/components/LayerList.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "e4dbd3551e81887f0c8de762eaf5036d61ea34cf2256aab927d80738bee40967"
+          },
+          {
+            "path": "src/pages/AdStudio/components/ProjectDetailsDrawer.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "5a272f0d72e9451c230c4d0417e465c44e1c3e33a5150996cae526d65a4bc8a8"
+          },
+          {
+            "path": "src/pages/AdStudio/components/SceneThumb.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "6dc0e17dd7652d85128b76904b35b8094b738171eb10ab1f476addbd4a2ccdfc"
+          },
+          {
+            "path": "src/pages/AdStudio/components/TemplateGallery.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "d4905a705f572abaf2a8842a6773f88cb6aaf3d66af8abe34757e6ff62a979af"
+          },
+          {
+            "path": "src/pages/AdStudio/intelligent/IntelligentAdStudioPanel.spec.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "8fcbf7ef7758bc979c56bb0b1e4c1aadce0196be244e42fb8ceb390de79539b1"
+          },
+          {
+            "path": "src/pages/AdStudio/intelligent/IntelligentAdStudioPanel.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "af46f75c015d361ea9a1fa45b1641541fc110d7d0aad83ec69262250413c18b5"
+          },
+          {
+            "path": "src/pages/AdStudio/lib/adStudioLabels.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "fbb0b43eed54cf268a822fef5af645780f2d9ab1e8cc4f22e1715c9bc1247a9b"
+          },
+          {
+            "path": "src/pages/AdStudio/lib/exampleCreatives.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "834eb312e7f25cd3da591a874457b42f39ed4923a5a6908a403a1b53e22ef5da"
+          },
+          {
+            "path": "src/pages/ClipEditor/ClipEditor.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "063b26c6d456127cc32023cb92455a77e005d8f0d8262d5c113ca53605128b5e"
+          },
+          {
+            "path": "src/pages/ClipEditor/SoundDesignPanel.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "62433861dc02efe7cb3268bfc666e780b22252960c716d3e5651e0ecb82b2421"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/ASSET-MANIFEST.json",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "b9f4a9e10b6daa4fca0e3609be1db12dd8da7cc661596924415b4f8e366fc32b"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/PROVENANCE.md",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "54e343cdbf976ccb212bdc780b2ca197253d58d23f836faf3545860ebcc24d4d"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/cinematic-background.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "4500e11cbf5754e501d9488b8e220cfa918347876c42b5d98127fc1ac25cbead"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/cinematic.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "bcce4a7c77a02f1cc664cbe8354245473d485357f79767baa4eb5a20496e66d1"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/collection-background.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "cb9cf2234be8221cbab5f9e7e08eaa56a8ec80c34e2293e841e4ef5aeb460253"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/collection.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "8da2cc0808649cffd568dc470fcbbbb1325a52602289ab7b159ee9742b41fc29"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/editorial-background.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "63273bf562a585cc722eec47c4e599bb3de62450fbe33e82b143eefa88149cab"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/editorial.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "242e481c20809f8fe001d200f9341ae32a03ca5f1cbc1e71a213e79e2a2bcd6a"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/industry-corporate-foreground.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "237c8609195510563a7058a166cb8b74cdee11f66ec0a07aff55640b02687efb"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/industry-corporate.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "00edad8ce05c4ed1412c737ec055a2698fc06c1a571943aa9505686626a322ea"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/industry-fashion-foreground.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "86533707b29c92eb781434b01c66b350b24a2046d1b1eeaa098d33bf8a1c51d7"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/industry-fashion.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "5c7b9896ef6a0f22a3c1201dca727d046ad11d0a07bd47f3f209b8827d796153"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/industry-gaming-foreground.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "bcdcb2f5e385654d2f20db04a57b4e6e813d91aed7cc4a9339eb3277873bd6af"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/industry-gaming.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "a1c7b51323a11837c3badc2c6c4dccff861c8634b10ffe71da8310aa1f63b41f"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/industry-generic-foreground.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "6d915337e410bf6b3a115adf9666a616835bdf92e93a27aa4242a9139906c028"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/industry-generic.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "6f672666c17d9b8f6062ee49be9d6455db9c85907d99701a5ee1e82f40655da7"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/industry-travel-foreground.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "8767a2812b6cc4eb2e50d29a19891be1e069c44ef9692a374a987b9373fd6338"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/industry-travel.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "86b06270675fbd54119a3949bfa795f0d2cb3919a027231e43accecc3e13db0f"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/product-isolated.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "72398a73848b6ad5944be9a4ab19b0fc7d05d9a753e869fc7565d003c82260a4"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/spotlight-background.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "3f767a4856d32f3bd973f25885a86885ba3f7e78358b2076a82cc8233513ef60"
+          },
+          {
+            "path": "public/ad-studio/ux-preview/spotlight.svg",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "77bd0bbb8a93ee80dd45aa6856adc04ed1f6f305be014f4ab88ca3301858a916"
+          },
+          {
+            "path": "src/lib/clipCaptionFonts.regression.spec.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "50b652ad41c768b00726b619d999bc9a02388670b659ab102f740d4c030f716b"
+          },
+          {
+            "path": "src/pages/AdStudio/canvas/useAuthenticatedBrandAssetUrls.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "e8221262a7e653fc8ed2e565af588d46e31699cfba9e441a3ac6b8ee9046315f"
+          },
+          {
+            "path": "src/pages/AdStudio/components/AdStudioLoader.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "21b06f509306f58cc248c5f22db6e697641da0fbf4d4ca3636bf46eb586d5877"
+          },
+          {
+            "path": "src/pages/AdStudio/components/AdStudioTopNav.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "87507b8978582a7d919977250361f27069bf125db7604ce0abc31925d7d93391"
+          },
+          {
+            "path": "src/pages/AdStudio/components/AdStudioTypographyPanel.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "a4f0db06c384e5f75dedf2086dd9eaefea501466f5e134f2ecbf4e5a83ee7498"
+          },
+          {
+            "path": "src/pages/AdStudio/components/BrandHomePreview.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "7e5b4d0cf70a54cd58109c01f724971f83b239f338f2c76656d5c87ae968ebb0"
+          },
+          {
+            "path": "src/pages/AdStudio/components/BrandKitHeaderControl.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "d2bfe05a2f617ebc88e9d1530e475c55ee26d3bcf47f914345cff99755c05e44"
+          },
+          {
+            "path": "src/pages/AdStudio/components/CollapsiblePanel.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "aeb1c8844a389b6a9b0f214b3aa2e53c388078662d84687b628736a37543e971"
+          },
+          {
+            "path": "src/pages/AdStudio/intelligent/IntelligentAdStudioHost.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "17daef6c6e6678f227e687b0531023e0538f6fcab8861d28e4b5b61b559907c6"
+          },
+          {
+            "path": "src/pages/AdStudio/intelligent/buildIntelligentCreativeContext.spec.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "78babf7a3e04a33195227c5a1ab5d40091ba4ef793eca461bf31c51870e94fc4"
+          },
+          {
+            "path": "src/pages/AdStudio/intelligent/buildIntelligentCreativeContext.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "9d5851faed74083cb5ed98e92b8a6162087212f3cec06edd5fe410f94616278b"
+          },
+          {
+            "path": "src/pages/AdStudio/lib/brandHomeCatalog.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "f07839802a01681854f3c1e4ac6c293a9e33ec13329711f1ab8eb82d79f70377"
+          },
+          {
+            "path": "src/pages/AdStudio/lib/intelligentAdStudioFlag.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "f920a8e4f95cfd9f4009750df2076a19f4c950ffc76efd37d78d345f2cb2adad"
+          },
+          {
+            "path": "src/pages/AdStudio/styles/ad-studio-w0a.css",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "d7949d0e8b41d4f0d8bec6f0d041c3c77b1e36d9900e454509130956c98f592f"
+          },
+          {
+            "path": "src/pages/AdStudio/styles/project-workspace.css",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "7535546fd4f1febd07753f3d529b6ace668f40334010589be358f4ca11d25851"
+          },
+          {
+            "path": "src/pages/AdStudio/uxPreview/AdStudioUXPreview.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "482233755a3dd84e2775edc9a4127863f710c6863f107ee143e0f6e445b988ed"
+          },
+          {
+            "path": "src/pages/AdStudio/uxPreview/AdvancedCanvasPrototype.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "7bbafa29217894a1bca1d4a4bfc5141be1f3580ae46d6a65b302977db97055fa"
+          },
+          {
+            "path": "src/pages/AdStudio/uxPreview/BrandPrototypeScreens.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "3bbbd2ae708d1e7879538d0052f9db7a9f5347ef89d1fe455ddeaadec85a1247"
+          },
+          {
+            "path": "src/pages/AdStudio/uxPreview/MotionPrototype.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "c3990dc2919ffb2914b4a5d395ceea4820f10871461ce37b24f0f20fae841d74"
+          },
+          {
+            "path": "src/pages/AdStudio/uxPreview/RoadmapScreens.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "ecbd3463fc1db0e26914bbf30ff0a8a0695108fb8b33335a3b333e3c9c1cc3ca"
+          },
+          {
+            "path": "src/pages/AdStudio/uxPreview/brandPrototypeModel.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "f91e31d236cc30135a496053b77eba8d8ca1ba98f64ea21c2c69b4b3ffca8b11"
+          },
+          {
+            "path": "src/pages/AdStudio/uxPreview/m2b.spec.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "a85809afd9ed9b2c68b9ef5db78d2826e688b8fd262b223908d854d69c96f437"
+          },
+          {
+            "path": "src/pages/AdStudio/uxPreview/model.spec.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "62d877e345ee09cc89854d6f739754c896aae8b08cee815b9b74f2ec1de03fd0"
+          },
+          {
+            "path": "src/pages/AdStudio/uxPreview/model.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "0bc2a815f5b3e37db02d96b648e0000c8215babc5fbb68591ccb9aea53314859"
+          },
+          {
+            "path": "src/pages/AdStudio/uxPreview/preview.css",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "162e253e4713d74bb656643dcd367894016d2b2f56c097e4645dfaeef39d262a"
+          },
+          {
+            "path": "src/pages/AdStudio/uxPreview/roadmap.css",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "a708b8510944e7cee4313a003ab7df106f10087fc25d760689a69aa22ea5679b"
+          },
+          {
+            "path": "src/pages/AdStudio/uxPreview/roadmapModel.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "419e828b578d3c4b12135e0ae4e7ae471d83a80f812a877a9c60558095c93a68"
+          },
+          {
+            "path": "src/pages/AdStudio/uxPreview/taxonomy.snapshot.json",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "76575245c0d3d6b30687f0065f67d58d9e4f1ab226fdbe14a7dfe02ab87a81d4"
+          },
+          {
+            "path": "src/pages/ClipEditor/lib/voiceOverlayTiming.spec.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "a2bb298231cba75fe65b056da639469a3f36d27df332b50f1396f45681d200ca"
+          },
+          {
+            "path": "src/pages/ClipEditor/lib/voiceOverlayTiming.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "40ac318fc46bf31603a95c04a00a2cf7f2db82341a0478ad1a7d80239ac1e30a"
+          },
+          {
+            "path": "src/pages/ImageStudio/components/EditPanel.typography.spec.ts",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "eebf8e78fb86b0b19145dd5c7c36a516e719971599fc1a42cc5af2ca51e80549"
+          }
+        ],
+        "04-brand-and-director": [
+          {
+            "path": "src/pages/BrandKits/BrandKitDashboard.tsx",
+            "origin": "new file, see group",
+            "sha256": "a3da1c68e58f9b381cb1839f08d965d27fe0dddda499f082669d0a47f3f1314f"
+          },
+          {
+            "path": "src/pages/BrandKits/BrandKitEditor.tsx",
+            "origin": "new file, see group",
+            "sha256": "af041541fdad0868d342276904d07da76c4445ba81bae79762ea7045515ea437"
+          },
+          {
+            "path": "src/pages/BrandKits/lib/brandKitExport.ts",
+            "origin": "new file, see group",
+            "sha256": "40ecc67d0c09f430ff21783490d06d2c45d1325273e93d8ba5eb0500403753b4"
+          },
+          {
+            "path": "src/pages/BrandKits/lib/brandKitImportMap.ts",
+            "origin": "new file, see group",
+            "sha256": "d98a89383d8048ada7977be0d33040da3655fe203961daee373f800336cd0f1a"
+          },
+          {
+            "path": "src/pages/BrandKits/lib/brandKitPortable.ts",
+            "origin": "new file, see group",
+            "sha256": "d5bc367f6a98a519a7c01ebb7689235b784710b35efa049c61acaa385054cb10"
+          },
+          {
+            "path": "src/pages/BrandKits/lib/brandKitTypes.ts",
+            "origin": "new file, see group",
+            "sha256": "5af982c22a6dd3308916c2eeb14eee80a05a80521e114cdec5c7d08d624db7c4"
+          },
+          {
+            "path": "src/pages/BrandKits/lib/duplicateBrandKit.ts",
+            "origin": "new file, see group",
+            "sha256": "c7c03f2f26e80d8b411426cbad779fcc2a03c63915bd25e7739c16a3e71f7839"
+          },
+          {
+            "path": "src/services/apiClient.ts",
+            "origin": "new file, see group",
+            "sha256": "06abaec62728880451ffb71288d7981c4feab879cecd465395832d3ce846636d"
+          },
+          {
+            "path": "src/pages/AdStudio/production/ProductionCreativeDirector.tsx",
+            "origin": "new file, see group",
+            "sha256": "5cba5b20727cb457d1aebe341492f169a17247f7c6481d3a823e4f488d7e1a61"
+          },
+          {
+            "path": "src/pages/AdStudio/production/conceptExecutionModel.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "dcb6a8f202d5abab546bee6dbd4452cafd08bb10a070e8fbd26ae3f747b28da1"
+          },
+          {
+            "path": "src/pages/AdStudio/production/conceptExecutionModel.ts",
+            "origin": "new file, see group",
+            "sha256": "54ca73f8b4545ab2c551d4af056dc8cf9962f74ae35d9eae5b8fbb2c139ef25e"
+          },
+          {
+            "path": "src/pages/BrandKits/analysis/BrandAnalysisPanel.tsx",
+            "origin": "new file, see group",
+            "sha256": "cb71692023aaa258045a33d3503910f42da77ef8144c481a18206c1cb1b167a6"
+          },
+          {
+            "path": "src/pages/BrandKits/analysis/brandAnalysisModel.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "b01ae4dcc1abe6e343f2c9ee6e0b22e19ea4a8e05f10b3a35c411bf7aef3ad54"
+          },
+          {
+            "path": "src/pages/BrandKits/analysis/brandAnalysisModel.ts",
+            "origin": "new file, see group",
+            "sha256": "0b98ab4f68d04883fb2cebd6f662a033afdcdf8e83f1b5641f655063fe118bcd"
+          },
+          {
+            "path": "src/pages/BrandKits/guided/BrandCharactersSection.tsx",
+            "origin": "new file, see group",
+            "sha256": "33a87d49962d9ebedc54198ad1e89e108f2de11b876eef043d163f888f298f8e"
+          },
+          {
+            "path": "src/pages/BrandKits/guided/GuidedBrandKit.tsx",
+            "origin": "new file, see group",
+            "sha256": "b5019bf839fb40685bee708ecd30a61d7406bd51a5b309cebfd4cbc6a731b447"
+          },
+          {
+            "path": "src/pages/BrandKits/guided/brandCharacterModel.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "2afb276a46225d401bdf9b3d2482a7d4cd92fd1ea207668e182c7f9261f7c574"
+          },
+          {
+            "path": "src/pages/BrandKits/guided/brandCharacterModel.ts",
+            "origin": "new file, see group",
+            "sha256": "f848b36be3a9ba8e75d10cea38c24144132214e412a70200d0d82f443d32baf1"
+          },
+          {
+            "path": "src/pages/BrandKits/guided/brandStudioPortable.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "8a1563eb1db711da06cb46a505e2d4908d899882099fa4fa76ed14f8f0f787ac"
+          },
+          {
+            "path": "src/pages/BrandKits/guided/brandStudioPortable.ts",
+            "origin": "new file, see group",
+            "sha256": "dfee5d6c7eb7670721a5baab413021b7ab25091fe10556eeabc624e0227e7eb3"
+          },
+          {
+            "path": "src/pages/BrandKits/guided/guidedBrand.css",
+            "origin": "new file, see group",
+            "sha256": "cc308648929a6a9b3461180f722d09129913a1ca6190434dc4348a4c6597b37a"
+          },
+          {
+            "path": "src/pages/BrandKits/guided/guidedBrandModel.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "87ced7b31274528d4484198dbaf5fb3a3cacc65badae04124d82d407c74f2b06"
+          },
+          {
+            "path": "src/pages/BrandKits/guided/guidedBrandModel.ts",
+            "origin": "new file, see group",
+            "sha256": "5130f778461ac819203e766c6212cbf9064b19a1d03b2e5d32bdd7090a4ffc7e"
+          },
+          {
+            "path": "src/pages/BrandKits/guided/taxonomy.snapshot.json",
+            "origin": "new file, see group",
+            "sha256": "76575245c0d3d6b30687f0065f67d58d9e4f1ab226fdbe14a7dfe02ab87a81d4"
+          },
+          {
+            "path": "src/pages/BrandKits/templates/BrandTemplateLibrary.tsx",
+            "origin": "new file, see group",
+            "sha256": "652523ba7789a2e53675cf71b5af7b4da13935e30e89f4d1f10447e283eaf391"
+          },
+          {
+            "path": "src/pages/BrandKits/templates/brandTemplateModel.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "be5cced8421e0d21c4ae7d406ff0b8dfce2c447c4b3011f3d82d563313c75cad"
+          },
+          {
+            "path": "src/pages/BrandKits/templates/brandTemplateModel.ts",
+            "origin": "new file, see group",
+            "sha256": "7b43f519c3db9480b1ed78a9f1eb7260f6b87b7c0bec9b7ceb6da380cc63c387"
+          }
+        ],
+        "05-documentation": [
+          {
+            "path": "docs/ad-studio/AD-STUDIO-COMPLETE-UX-COVERAGE.md",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "b90e2fef15687d2ba0e338b8834b232c48963d20463077f22804c371b8abdfbc"
+          },
+          {
+            "path": "docs/ad-studio/INTERACTION-COVERAGE.md",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "5b8454be7ca8693cef4eec4d7e5e79c0305ece50be717babe5965777a7836525"
+          },
+          {
+            "path": "docs/ad-studio/INTERACTIVE-PRODUCT-BLUEPRINT.md",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "63e779e8dc38c392d4a41fa9692438867075395a6330b4480093e43c31ab68c1"
+          },
+          {
+            "path": "docs/ad-studio/M2B-CONSOLIDATED-PLAN.md",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "373adc00af7feb580ecca25c9b3cea39a0320c66945b87800e3ac97ddc5e9da6"
+          },
+          {
+            "path": "docs/ad-studio/M2B-FILE-MANIFEST.json",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "e6972ceb97081a9fe1b7f847a451fd465d01da5a346166d026e423f2d2f1e7cd"
+          },
+          {
+            "path": "docs/ad-studio/M2B-INTERACTION-COVERAGE.md",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "dc0e0a620adee7c58617f4056748638fac14120f6f52a7055cca78562d709da1"
+          },
+          {
+            "path": "docs/ad-studio/M2B-INTERACTIVE-EXPERIENCE.md",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "7a65a37d75339eb8d891c3cf548ac3cfbaf25b0fe5eaf237bda06aa8ba05e1d5"
+          },
+          {
+            "path": "docs/ad-studio/M2B-ROADMAP-INVENTORY.json",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "e059bc40f02f7d73150b44def81ac0eaf539a7cb7647fe889bd2c7f525c79fd4"
+          },
+          {
+            "path": "docs/ad-studio/production/M2B-PROJECT-INTEGRATION.md",
+            "origin": "new file, see group",
+            "sha256": "07e89f41ada362cc16c2d617d18eed24d56ab09959ca05f2555a87790bbf83ad"
+          },
+          {
+            "path": "docs/ad-studio/production/PRODUCTION-ARCHITECTURE.md",
+            "origin": "new file, see group",
+            "sha256": "217b66bfb6295d14b81a16b9423b1429b934e6c1f30fa5b302cc84e0e1097d81"
+          },
+          {
+            "path": "docs/ad-studio/production/UX-PARITY-MATRIX.json",
+            "origin": "new file, see group",
+            "sha256": "f458ba3e7050f98a95e1fe77a0193f7b805913b5a4bd1f5cf4dcf997972fea89"
+          }
+        ],
+        "02-m2b-production-workspace": [
+          {
+            "path": "src/pages/AdStudio/AdProjectWorkspace.tsx",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "03b36e518143d759b1b6aa7d314efd95f1476e997875aab2397cadb728001790"
+          },
+          {
+            "path": "src/pages/AdStudio/components/CreateAdProjectDialog.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "62e2b8fb8d98cb110d94b57e0e18ebe88845e7d841c78bc4c5a54cddbf26e97e"
+          },
+          {
+            "path": "src/pages/AdStudio/components/ProjectCreativeGallery.spec.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "58383ac8d9f9f00c74fa75b5e487627c5947b74b49098ccef491dc32784cfee7"
+          },
+          {
+            "path": "src/pages/AdStudio/components/ProjectCreativeGallery.tsx",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "646f66587b768b4a5162d67c2aa9faefbdc3626b25ff12e0c4df86bc99ffd4da"
+          },
+          {
+            "path": "src/pages/AdStudio/components/WorkingBriefPanel.spec.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "87b5ed6d41fa32850b549b222a18b65de66a83606776871d24a941c4193ddecb"
+          },
+          {
+            "path": "src/pages/AdStudio/components/WorkingBriefPanel.tsx",
+            "origin": "pre-existing preserved work, unchanged",
+            "sha256": "26fcc476156e09b634b5561a0d494ba7b235f430bb733294ea3d8511317a6637"
+          },
+          {
+            "path": "src/pages/AdStudio/lib/projectWorkspace.spec.ts",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "6715a7a58062cdc59ff6b3bc6322245d00cc0adcecc1ba8ac65167e89a85e948"
+          },
+          {
+            "path": "src/pages/AdStudio/lib/projectWorkspace.ts",
+            "origin": "mixed existing file updated by production integration",
+            "sha256": "5a6757255634a2e0742649d03e53f684493f498a722cfd99429b32231407025b"
+          },
+          {
+            "path": "src/pages/AdStudio/production/ProductionProjectWorkspace.tsx",
+            "origin": "new file, see group",
+            "sha256": "15b6ad390389322fd8e56e6c9df1d958c42b8370cf226dfda11dfe2dcbdc40b6"
+          },
+          {
+            "path": "src/pages/AdStudio/production/experienceRoutes.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "e776bc01eabecc7e386cb4a306d22270f1ce073d0f063d6fadcd21534eea741d"
+          },
+          {
+            "path": "src/pages/AdStudio/production/experienceRoutes.ts",
+            "origin": "new file, see group",
+            "sha256": "88219a209f7a5b4651c395469b67024c99f565a44cce396044eddbe7604451dc"
+          },
+          {
+            "path": "src/pages/AdStudio/production/useAdProjectWorkspace.ts",
+            "origin": "new file, see group",
+            "sha256": "319d01815f47f2066d6cbe63acda9c0e25a90a420d9538dd51069099c2941b9b"
+          }
+        ],
+        "03-placements-and-variations": [
+          {
+            "path": "src/pages/AdStudio/production/ProductionCreativeExtensions.tsx",
+            "origin": "new file, see group",
+            "sha256": "3389d89a0fe7c1f4d8a5596c48f07231a14f12f3ca70c1f0702a2a8c0ade7a4a"
+          },
+          {
+            "path": "src/pages/AdStudio/production/placementReview.spec.ts",
+            "origin": "new file, see group",
+            "sha256": "934dc3026350bb53b95a7b9b29ec40a7d6c9940774e9fabe5a1a8eb63c8bd240"
+          },
+          {
+            "path": "src/pages/AdStudio/production/placementReview.ts",
+            "origin": "new file, see group",
+            "sha256": "480e1c801314715c5297098fbb3f01669dfc9cfa310a8446c637c446a39e5cc4"
+          }
+        ]
+      }
+    }
+  ],
+  "prototype": {
+    "checked": 34,
+    "changed": 0,
+    "files": [
+      {
+        "path": "src/pages/AdStudio/uxPreview/AdStudioUXPreview.tsx",
+        "unchanged": true,
+        "gitBlob": "ddd52655177bde8e658bf2ffbc74a4e36e1b863a"
+      },
+      {
+        "path": "src/pages/AdStudio/uxPreview/AdvancedCanvasPrototype.tsx",
+        "unchanged": true,
+        "gitBlob": "7ca1e2f2ec6512d4506db9932dab4859a998d4a3"
+      },
+      {
+        "path": "src/pages/AdStudio/uxPreview/brandPrototypeModel.ts",
+        "unchanged": true,
+        "gitBlob": "c4704234c93f89ed7dd61e7be6e61c9935684a0d"
+      },
+      {
+        "path": "src/pages/AdStudio/uxPreview/BrandPrototypeScreens.tsx",
+        "unchanged": true,
+        "gitBlob": "1bafcc07214e70722cc59027c74ba4b9583148bb"
+      },
+      {
+        "path": "src/pages/AdStudio/uxPreview/m2b.spec.ts",
+        "unchanged": true,
+        "gitBlob": "2f15712b23a62017effc6ffbecff8fdb5058ae2c"
+      },
+      {
+        "path": "src/pages/AdStudio/uxPreview/model.spec.ts",
+        "unchanged": true,
+        "gitBlob": "6f8576739e8fcd9808f59265e149bdf9f4b7adcb"
+      },
+      {
+        "path": "src/pages/AdStudio/uxPreview/model.ts",
+        "unchanged": true,
+        "gitBlob": "975a7b587bd42b267c5bbb61bccb5f32bb1a0570"
+      },
+      {
+        "path": "src/pages/AdStudio/uxPreview/MotionPrototype.tsx",
+        "unchanged": true,
+        "gitBlob": "df7f9318b25a0c7ef32da4977b28744b41470d7c"
+      },
+      {
+        "path": "src/pages/AdStudio/uxPreview/preview.css",
+        "unchanged": true,
+        "gitBlob": "ebc2b4334f71cd7596f0b82441cd45b100c6a420"
+      },
+      {
+        "path": "src/pages/AdStudio/uxPreview/roadmap.css",
+        "unchanged": true,
+        "gitBlob": "b4f07562ec0dbeb866e1e19bb7840f78a76ac035"
+      },
+      {
+        "path": "src/pages/AdStudio/uxPreview/roadmapModel.ts",
+        "unchanged": true,
+        "gitBlob": "4c7c1f3e4bc6b84aecc56979c22f9d3151f9b050"
+      },
+      {
+        "path": "src/pages/AdStudio/uxPreview/RoadmapScreens.tsx",
+        "unchanged": true,
+        "gitBlob": "71c634c6f38fcdb86de1c3847eed80a4f183ba9b"
+      },
+      {
+        "path": "src/pages/AdStudio/uxPreview/taxonomy.snapshot.json",
+        "unchanged": true,
+        "gitBlob": "96e586612a44a34763a06d4f13d0715ae32a53b9"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/ASSET-MANIFEST.json",
+        "unchanged": true,
+        "gitBlob": "6b5ceb9bf2ddac4a4fcff569f28194acd58415d0"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/cinematic-background.svg",
+        "unchanged": true,
+        "gitBlob": "bad7be5c335b44f3a2abebce4484404733d91425"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/cinematic.svg",
+        "unchanged": true,
+        "gitBlob": "26a5b5b81bc0ce6876080ec385c51d9671d04572"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/collection-background.svg",
+        "unchanged": true,
+        "gitBlob": "f8a8b84b9665f9505c2ff6e3aa01a03f906520a4"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/collection.svg",
+        "unchanged": true,
+        "gitBlob": "97bb82fefec24b3210e56b62a89ec8966303e9b2"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/editorial-background.svg",
+        "unchanged": true,
+        "gitBlob": "3fbfa0f63b36259bc35f83b1b98459ff66cfd16c"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/editorial.svg",
+        "unchanged": true,
+        "gitBlob": "a6567cc854868260d67219d1476ec51a1a45f456"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/industry-corporate-foreground.svg",
+        "unchanged": true,
+        "gitBlob": "069987941601ada0674ba85dab4c7064062b6517"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/industry-corporate.svg",
+        "unchanged": true,
+        "gitBlob": "65fb7234c4d40dca4ddc6da91a8d5b9bbb68c399"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/industry-fashion-foreground.svg",
+        "unchanged": true,
+        "gitBlob": "66b0885533fcf1c7d2d120b3465772aba632f2af"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/industry-fashion.svg",
+        "unchanged": true,
+        "gitBlob": "7bb80da7a2ae4385c7dca6b9a2891849198ff9c2"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/industry-gaming-foreground.svg",
+        "unchanged": true,
+        "gitBlob": "2378d727574721680023f206ddffda7749ed322f"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/industry-gaming.svg",
+        "unchanged": true,
+        "gitBlob": "2b41bfec0b30e26adb9f5e8c1876e8801b29deb9"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/industry-generic-foreground.svg",
+        "unchanged": true,
+        "gitBlob": "b2342d4d588eee0303022e66f581435cfa0a6007"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/industry-generic.svg",
+        "unchanged": true,
+        "gitBlob": "251f66bc0b804499fbc216e0bfc69d06768c6030"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/industry-travel-foreground.svg",
+        "unchanged": true,
+        "gitBlob": "af9e8b84a09b02b1a28cd4ede4e1556afe68b5b6"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/industry-travel.svg",
+        "unchanged": true,
+        "gitBlob": "4d204d4d73382a96acee84a311bbe2cdd7c34954"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/product-isolated.svg",
+        "unchanged": true,
+        "gitBlob": "f2a845eca336942a2c24571e1e1e20a31aea5cff"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/PROVENANCE.md",
+        "unchanged": true,
+        "gitBlob": "e970f247dfa9ea441213b2f6417808661e352368"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/spotlight-background.svg",
+        "unchanged": true,
+        "gitBlob": "e7fc2ed4a868b30586dc3ec8ec8be8e269c51bcc"
+      },
+      {
+        "path": "public/ad-studio/ux-preview/spotlight.svg",
+        "unchanged": true,
+        "gitBlob": "65bf060e0053b7f3da7eb8ef0303246e0f8db1bb"
+      }
+    ]
+  },
+  "verification": {
+    "aiTests": 37,
+    "contentRegressionTests": 45,
+    "finalQuotedContentRerun": 9,
+    "internalClientRoutingTests": 4,
+    "frontendFocusedTests": 42,
+    "priorFrontendRegressionTests": 99,
+    "launcherTests": 14,
+    "backendStrictTypeScript": "PASS",
+    "frontendBaselineDiagnostics": 42,
+    "frontendCurrentDiagnostics": 42,
+    "frontendExactMatches": 41,
+    "frontendManuallyVerifiedBaselineDiagnostic": "ClipEditor.tsx:3796:17 TS2322 categoryLabel unsupported; unchanged source SHA256; truncated font union display differs",
+    "prototypeUnchanged": true
+  },
+  "secretsReview": "No unresolved high-confidence credential pattern findings. One explicit fixture:fixture@example.com negative test reviewed. No env/private keys/tokens/runtime releases/stored sessions/dumps staged."
+}

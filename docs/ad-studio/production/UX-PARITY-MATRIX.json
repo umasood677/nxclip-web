@@ -1,0 +1,1206 @@
+{
+  "baseline": "/create/ad/ux-preview",
+  "rule": "No layout redesign; preserve approved prototype; routes are intended mappings, not claims of active implementations",
+  "screens": [
+    {
+      "screen": "home",
+      "intendedProductionRoute": "/create/ad",
+      "status": "Not yet production-integrated",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-home.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-home.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-home.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "brief",
+      "intendedProductionRoute": "/create/ad/projects/:projectId?view=brief",
+      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-brief.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-brief.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brief.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "templates",
+      "intendedProductionRoute": "/create/ad?view=templates",
+      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-templates.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-templates.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-templates.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "template",
+      "intendedProductionRoute": "/create/ad?templateId=:templateId",
+      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-template.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-template.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-template.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "assets",
+      "intendedProductionRoute": "/create/ad/projects/:projectId?view=assets",
+      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-assets.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-assets.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-assets.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "progress",
+      "intendedProductionRoute": "/create/ad/projects/:projectId?view=jobs",
+      "status": "Not yet production-integrated",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-progress.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-progress.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-progress.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "concepts",
+      "intendedProductionRoute": "/create/ad/projects/:projectId?view=concepts",
+      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-concepts.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-concepts.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-concepts.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "detail",
+      "intendedProductionRoute": "/create/ad/projects/:projectId?conceptId=:conceptId",
+      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-detail.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-detail.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-detail.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "compare",
+      "intendedProductionRoute": "/create/ad/projects/:projectId?view=compare",
+      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-compare.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-compare.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-compare.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "preview",
+      "intendedProductionRoute": "/create/ad/:creativeId?view=preview",
+      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-preview.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-preview.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-preview.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "edit",
+      "intendedProductionRoute": "/create/ad/:creativeId",
+      "status": "Not yet production-integrated",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-edit.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-edit.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-edit.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "variations",
+      "intendedProductionRoute": "/create/ad/:creativeId?view=variations",
+      "status": "Partial source integration: existing deterministic workflow connected; AI and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-variations.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-variations.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-variations.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "workspace",
+      "intendedProductionRoute": "/create/ad/projects/:projectId",
+      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-workspace.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-workspace.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-workspace.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "formats",
+      "intendedProductionRoute": "/create/ad/:creativeId?view=formats",
+      "status": "Partial source integration: existing deterministic workflow connected; AI and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-formats.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-formats.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-formats.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "export",
+      "intendedProductionRoute": "/create/ad/:creativeId?view=export",
+      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-export.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-export.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-export.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "performance",
+      "intendedProductionRoute": "/create/ad/projects/:projectId?view=intelligence",
+      "status": "Not yet production-integrated",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-performance.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-performance.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-performance.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "director",
+      "intendedProductionRoute": "/create/ad/projects/:projectId?view=director",
+      "status": "Not yet production-integrated",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-director.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-director.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-director.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "brand-intelligence",
+      "intendedProductionRoute": "/brands/:brandId/guided?step=identity",
+      "status": "Not yet production-integrated",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-brand-intelligence.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-brand-intelligence.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-intelligence.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "product-lab",
+      "intendedProductionRoute": "/create/ad/projects/:projectId?view=products",
+      "status": "Not yet production-integrated",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-product-lab.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-product-lab.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-product-lab.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "visual-lab",
+      "intendedProductionRoute": "/create/ad/projects/:projectId?view=visuals",
+      "status": "Not yet production-integrated",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-visual-lab.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-visual-lab.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-visual-lab.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "composition",
+      "intendedProductionRoute": "/create/ad/:creativeId?view=composition",
+      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-composition.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-composition.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-composition.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "advanced-canvas",
+      "intendedProductionRoute": "/create/ad/:creativeId",
+      "status": "Not yet production-integrated",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-advanced-canvas.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-advanced-canvas.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-advanced-canvas.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "variation-lab",
+      "intendedProductionRoute": "/create/ad/:creativeId?view=variations",
+      "status": "Partial source integration: existing deterministic workflow connected; AI and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-variation-lab.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-variation-lab.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-variation-lab.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "adaptation",
+      "intendedProductionRoute": "/create/ad/:creativeId?view=formats",
+      "status": "Partial source integration: existing deterministic workflow connected; AI and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-adaptation.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-adaptation.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-adaptation.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "campaign-manager",
+      "intendedProductionRoute": "/create/ad/projects/:projectId",
+      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-campaign-manager.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-campaign-manager.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-campaign-manager.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "motion-studio",
+      "intendedProductionRoute": "/create/ad/animated/:animatedId",
+      "status": "Not yet production-integrated",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-motion-studio.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-motion-studio.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-motion-studio.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "delivery",
+      "intendedProductionRoute": "/create/ad/:creativeId?view=delivery",
+      "status": "Not yet production-integrated",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-delivery.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-delivery.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-delivery.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "dna-quality",
+      "intendedProductionRoute": "/create/ad/:creativeId?view=quality",
+      "status": "Not yet production-integrated",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-dna-quality.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-dna-quality.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-dna-quality.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "preflight",
+      "intendedProductionRoute": "/create/ad/projects/:projectId?view=preflight",
+      "status": "Source-connected to existing project controller; feature-disabled; runtime and visual acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-preflight.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-preflight.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-preflight.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "brand-info",
+      "intendedProductionRoute": "/brands/new/guided?step=brand",
+      "status": "Gated source integration; runtime persistence and responsive UX acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-brand-info.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-brand-info.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-info.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "brand-category",
+      "intendedProductionRoute": "/brands/new/guided?step=category",
+      "status": "Gated source integration; runtime persistence and responsive UX acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-brand-category.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-brand-category.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-category.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "brand-goals",
+      "intendedProductionRoute": "/brands/new/guided?step=goals",
+      "status": "Gated source integration; runtime persistence and responsive UX acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-brand-goals.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-brand-goals.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-goals.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "brand-assets",
+      "intendedProductionRoute": "/brands/:brandId/guided?step=assets",
+      "status": "Gated source integration; runtime persistence and responsive UX acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-brand-assets.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-brand-assets.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-assets.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "brand-analysis",
+      "intendedProductionRoute": "/brands/:brandId/guided?step=identity",
+      "status": "Gated screen shell only; real AI analysis remains unimplemented",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-brand-analysis.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-brand-analysis.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-analysis.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "brand-guidelines",
+      "intendedProductionRoute": "/brands/:brandId/guided?step=guidelines",
+      "status": "Gated source integration; runtime persistence and responsive UX acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-brand-guidelines.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-brand-guidelines.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-guidelines.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "brand-overview",
+      "intendedProductionRoute": "/brands/:brandId/guided?step=ready",
+      "status": "Gated source integration; runtime persistence and responsive UX acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-brand-overview.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-brand-overview.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-overview.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "brand-templates",
+      "intendedProductionRoute": "/brands/:brandId/templates",
+      "status": "Gated native library source integrated; schema/runtime/UX acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-brand-templates.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-brand-templates.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-templates.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "brand-template-detail",
+      "intendedProductionRoute": "/brands/:brandId/templates/:templateId",
+      "status": "Gated native recipe lifecycle source integrated; runtime/UX acceptance pending",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-brand-template-detail.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-brand-template-detail.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-template-detail.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "category-studio",
+      "intendedProductionRoute": "/create/ad?view=categories",
+      "status": "Not yet production-integrated",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-category-studio.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-category-studio.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-category-studio.png",
+          "captured": true
+        }
+      ]
+    },
+    {
+      "screen": "brand-manager",
+      "intendedProductionRoute": "/brands",
+      "status": "Not yet production-integrated",
+      "checklist": {
+        "layout": false,
+        "controls": false,
+        "stateTransitions": false,
+        "authorization": false,
+        "persistence": false,
+        "responsive": false
+      },
+      "references": [
+        {
+          "size": "desktop",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/desktop-brand-manager.png",
+          "captured": true
+        },
+        {
+          "size": "tablet",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/tablet-brand-manager.png",
+          "captured": true
+        },
+        {
+          "size": "mobile",
+          "file": "D:/NxClip-Web-W8-Integration/.tmp/production-integration-20261026/approved-m2b/screenshots/mobile-brand-manager.png",
+          "captured": true
+        }
+      ]
+    }
+  ]
+}
