@@ -1,0 +1,242 @@
+{
+  "home": [
+    "Ad Studio home & navigation",
+    "Campaign & concepts",
+    "Open Ad Studio. Check project, template, Example Brief and library navigation.",
+    "The real home loads, navigation is clear and Create actions show +."
+  ],
+  "brief": [
+    "Campaign Idea & Working Brief",
+    "Campaign & concepts",
+    "Create a test project or open an owned project. Edit objective, audience, message, direction and CTA; save and reopen.",
+    "Saved fields remain consistent with Project Details; failed saves do not start generation."
+  ],
+  "templates": [
+    "Visual Template Gallery",
+    "Creative & Canvas",
+    "Browse templates, change aspect ratio and open a template.",
+    "Thumbnails, selected format and template identity stay consistent."
+  ],
+  "template": [
+    "Apply a selected template",
+    "Creative & Canvas",
+    "Select an owned Brand Kit and authorized assets, then create an editable creative.",
+    "The selected layout and bindings are preserved; no product variants are invented."
+  ],
+  "assets": [
+    "Campaign source assets",
+    "Campaign & concepts",
+    "Review the selected kit and product assets in the project.",
+    "Only authorized assets are offered; original photographs and logo roles are identifiable."
+  ],
+  "progress": [
+    "Generation progress & errors",
+    "Campaign & concepts",
+    "During an owner-authorized request, inspect pending, completion and failure states.",
+    "Status represents the actual request; no simulated completion or automatic paid retry."
+  ],
+  "concepts": [
+    "Generate campaign concepts",
+    "Campaign & concepts",
+    "Save a distinctive brief and request concepts. Inspect provider labeling; change direction and compare.",
+    "Copy and art direction reflect the saved brief; heuristic output is never labeled live AI."
+  ],
+  "detail": [
+    "Concept detail",
+    "Campaign & concepts",
+    "Open a concept and inspect headline, rationale, CTA, asset plan and format.",
+    "The full selected concept is shown and can continue into creative creation."
+  ],
+  "compare": [
+    "Compare concepts",
+    "Campaign & concepts",
+    "Select two concepts and compare message, audience and visual direction.",
+    "Different concepts remain identifiable; selection is retained after returning."
+  ],
+  "preview": [
+    "Finished creative preview",
+    "Creative & Canvas",
+    "Open a saved creative and compare its text, product image and logo with the editor.",
+    "Preview shows the selected saved creative without broken media or invented branding."
+  ],
+  "edit": [
+    "Production Canvas editing",
+    "Creative & Canvas",
+    "Edit headline, CTA, product placement and logo. Exercise undo/redo, save and reopen.",
+    "Layers remain editable and saved changes survive reopening in the existing Canvas."
+  ],
+  "variations": [
+    "Native creative variations",
+    "Creative & Canvas",
+    "Create a native variation, change its text or layout and reopen both versions.",
+    "The original is preserved; deterministic variations are labeled honestly."
+  ],
+  "workspace": [
+    "Project gallery & persistence",
+    "Campaign & concepts",
+    "Create multiple static creatives from different templates in one test project; reopen it.",
+    "Every creative appears in the same project; names, bindings and versions persist."
+  ],
+  "formats": [
+    "Format selection",
+    "Creative & Canvas",
+    "Choose square, portrait, story and landscape formats for a saved creative.",
+    "Dimensions match the chosen format and required source layers remain present."
+  ],
+  "export": [
+    "PNG/JPEG export",
+    "Campaign delivery",
+    "Export a saved creative in each offered image format. Open downloaded files.",
+    "Files decode, have expected dimensions, and match preview text, image and placement."
+  ],
+  "performance": [
+    "Campaign performance",
+    "Roadmap & review",
+    "Inspect availability of connected campaign metrics. Do not treat demonstration metrics as real.",
+    "Real data has provenance; unavailable integrations are explicitly identified."
+  ],
+  "director": [
+    "AI Creative Director",
+    "Campaign & concepts",
+    "Review campaign context, request a plan and compare recommendations with your brief.",
+    "Planning, review and comparison capabilities are clear; incomplete orchestration is disclosed."
+  ],
+  "brand-intelligence": [
+    "Brand intelligence recommendations",
+    "Roadmap & review",
+    "Inspect recommendations, rationale, review and approval controls where available.",
+    "No brand or creative is silently changed; missing campaign intelligence stays identified."
+  ],
+  "product-lab": [
+    "Product identity & isolation",
+    "Roadmap & review",
+    "Inspect original product binding, mask readiness and review gates.",
+    "A rejected mask stays rejected; geometry checks do not imply creative-quality approval."
+  ],
+  "visual-lab": [
+    "Product-aware AI image creation",
+    "Creative & Canvas",
+    "With the owner-approved runtime ready, generate one ad background using an approved original product.",
+    "The request reaches the configured Google provider; source product, printed branding and editable text remain protected."
+  ],
+  "composition": [
+    "Editable scene structure",
+    "Creative & Canvas",
+    "Inspect product, background, logo and text layers; move each independently.",
+    "The result uses the existing AdSceneGraph/Canvas and keeps deterministic brand layers separate."
+  ],
+  "advanced-canvas": [
+    "Advanced Canvas tools",
+    "Creative & Canvas",
+    "Exercise available alignment, layering and inspector controls. Record missing prototype tools.",
+    "Existing tools work without a second editor; advanced parity gaps are explicit."
+  ],
+  "variation-lab": [
+    "AI variations & refinement",
+    "Creative & Canvas",
+    "After owner authorization, request a meaningfully different background and a natural-language refinement.",
+    "Provider-backed results retain source bindings and versions; requests do not retry automatically."
+  ],
+  "adaptation": [
+    "Campaign format adaptation",
+    "Creative & Canvas",
+    "Adapt a saved creative to a second placement; inspect crop, text wrapping and safe areas.",
+    "The source is retained and the new format remains editable; clipping is reported."
+  ],
+  "campaign-manager": [
+    "Campaign organization",
+    "Campaign delivery",
+    "Inspect project creatives, names, selected concept and saved campaign context.",
+    "Owned project records remain linked; organization actions do not silently duplicate assets."
+  ],
+  "motion-studio": [
+    "Multi-scene ad animation",
+    "Roadmap & review",
+    "Inspect storyboard, image sequence, Veo and Sound Design availability without starting video generation.",
+    "Implemented controls and missing orchestration are distinguished; no video runs automatically."
+  ],
+  "delivery": [
+    "Publishing & delivery",
+    "Roadmap & review",
+    "Inspect actual publishing destinations, permissions and confirmation flow.",
+    "Unsupported channels are labeled; no campaign is published by opening this screen."
+  ],
+  "dna-quality": [
+    "Creative DNA & quality review",
+    "Roadmap & review",
+    "Inspect brand consistency, evidence and human approval requirements.",
+    "Numerical scores do not replace visual review or automatically approve assets."
+  ],
+  "preflight": [
+    "Non-billable readiness",
+    "Campaign & concepts",
+    "Run the available preflight with required assets present and missing.",
+    "Ownership, source, capability and approval blockers are explicit; no generation or credit transaction occurs."
+  ],
+  "brand-info": [
+    "Brand identity editing",
+    "Setup & brands",
+    "Open the existing ZOE kit in the new layout. Review name, description, industry, website and signature product.",
+    "The same Brand Kit ID is used; saved optional fields and asset associations are preserved."
+  ],
+  "brand-category": [
+    "Category & niche",
+    "Setup & brands",
+    "Review category/niche, change only in a disposable kit and inspect dependent approvals.",
+    "Canonical categories work and a change requires re-review instead of silently approving identity."
+  ],
+  "brand-goals": [
+    "Brand goals & voice",
+    "Setup & brands",
+    "Review goals, personality, tone, audience and detailed copy fields.",
+    "Existing values remain editable and persist through the same Brand Kit."
+  ],
+  "brand-assets": [
+    "Uploads & Content Library",
+    "Setup & brands",
+    "Check existing logos/product images, candidate selection and library search. Attach an authorized test image if desired.",
+    "Existing assets are visible; explicit attachment preserves original content and does not grant generation approval."
+  ],
+  "brand-analysis": [
+    "AI-assisted brand analysis",
+    "Setup & brands",
+    "Inspect the analysis gate. Only after owner approval, review a provider proposal before applying.",
+    "No automatic paid call; proposal changes and approval requirements are understandable."
+  ],
+  "brand-guidelines": [
+    "Creative guidelines",
+    "Setup & brands",
+    "Review photography, lighting, composition, prohibited claims and freeform guidance.",
+    "Structured and freeform guidance survive save/reopen; approval is explicit."
+  ],
+  "brand-overview": [
+    "Brand overview & versions",
+    "Setup & brands",
+    "Review palette, typography, uploaded assets, approvals and saved versions.",
+    "Preview uses the real kit and labels sample layouts; identity approval is not inferred from uploads."
+  ],
+  "brand-templates": [
+    "Native Brand Templates",
+    "Setup & brands",
+    "Inspect availability, prepare native recipes when enabled and review a template.",
+    "Native templates use owned kit data; preparation is distinguished from live AI image generation."
+  ],
+  "brand-template-detail": [
+    "Brand Template detail",
+    "Setup & brands",
+    "Open a native template, review format and required product/logo bindings, then use it in a project.",
+    "Unsupported capabilities and missing assets block execution rather than fabricate replacements."
+  ],
+  "category-studio": [
+    "Multi-category advertising",
+    "Roadmap & review",
+    "Inspect category/niche-specific templates and guidance across available categories.",
+    "Production availability is distinguished from the five-category prototype."
+  ],
+  "brand-manager": [
+    "Brand library appearance",
+    "Setup & brands",
+    "Open Brand Kits. Inspect palette/product covers, search, export, new-kit entry and existing-kit links.",
+    "Real records look like distinct brands; the new editor is the single editing experience."
+  ]
+}

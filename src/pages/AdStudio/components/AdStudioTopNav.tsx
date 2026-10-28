@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { cn } from "../../../lib/utils";
 
@@ -96,6 +96,7 @@ export function AdStudioTopNav({
             </button>
           ))}
         </nav>
+        {import.meta.env.DEV && <Link to="/create/ad/uat" className="w0a-link" style={{fontSize:11,whiteSpace:"nowrap"}}>UAT checklist</Link>}
         {(trailing || onCreateProject) ? (
           <div className="w0a-topnav__actions">
             {trailing}

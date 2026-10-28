@@ -30,6 +30,7 @@ import { ProductionCreativeDirector } from "./ProductionCreativeDirector";
 import { ProductionCreativeExtensions } from "./ProductionCreativeExtensions";
 import "../uxPreview/preview.css";
 import "../uxPreview/roadmap.css";
+import "../styles/production-theme.css";
 import "../../BrandKits/guided/guidedBrand.css";
 
 /** Approved presentation over the existing project controller; no second editor or persistence engine. */
@@ -113,7 +114,7 @@ export default function ProductionProjectWorkspace({
   }, [template, bindingBrand, c.form]);
   if (c.loading)
     return (
-      <main className="xp-root bp-guided-root" aria-busy="true">
+      <main className="xp-root nxclip-production bp-guided-root" aria-busy="true">
         <div className="xp-main">
           <Skeleton className="h-16 w-2/3" />
           <div className="grid gap-6 md:grid-cols-2">
@@ -268,7 +269,7 @@ export default function ProductionProjectWorkspace({
     </>
   );
   return (
-    <div className="xp-root bp-guided-root">
+    <div className="xp-root nxclip-production bp-guided-root">
       <main className="xp-main">
         <div className="xp-page-heading">
           <div>
@@ -292,7 +293,7 @@ export default function ProductionProjectWorkspace({
             <FolderOpen size={15} /> Workspace
           </button>
         </div>
-        <div className="xp-actions">
+        <div className="xp-actions">{import.meta.env.DEV && <Link className="xp-secondary" to="/create/ad/uat">UAT checklist</Link>}
           <button className="xp-secondary" onClick={editBrief}>
             Working Brief
           </button>

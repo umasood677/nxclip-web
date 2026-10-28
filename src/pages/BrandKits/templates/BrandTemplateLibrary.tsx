@@ -45,6 +45,7 @@ import {
 } from "./brandTemplateModel";
 import "../../AdStudio/uxPreview/preview.css";
 import "../../AdStudio/uxPreview/roadmap.css";
+import "../../AdStudio/styles/production-theme.css";
 import "../guided/guidedBrand.css";
 
 type Draft = {
@@ -380,7 +381,7 @@ export default function BrandTemplateLibrary() {
     </section>
   );
   return (
-    <div className="xp-root bp-guided-root">
+    <div className="xp-root nxclip-production bp-guided-root">
       <main className="xp-main">
         <nav className="xp-breadcrumb" aria-label="Breadcrumb">
           <Link

@@ -1,0 +1,61 @@
+.nxclip-production.xp-root {
+  --xp-bg: #0c0d10;
+  --xp-panel: #14161c;
+  --xp-line: rgba(255, 255, 255, 0.1);
+  --xp-muted: rgba(244, 241, 234, 0.64);
+  --xp-accent: #c4a574;
+  font-family:
+    var(--font-sans), "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  color: #f4f1ea;
+  background: radial-gradient(
+    1000px 500px at 10% -10%,
+    #1a1520 0%,
+    #0c0d10 65%
+  );
+  letter-spacing: var(--tracking-body-semibold, -0.01em);
+}
+.nxclip-production :is(h1, h2, h3, .xp-hero h2, .xp-page-heading h1) {
+  font-family:
+    var(--font-display), "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: var(--tracking-display, -0.04em);
+}
+.nxclip-production :is(button, input, select, textarea, label) {
+  font-family:
+    var(--font-sans), "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+}
+.nxclip-production :is(.xp-panel, .xp-panel-dark) {
+  background-color: var(--xp-panel);
+  border-color: var(--xp-line);
+}
+.nxclip-production .xp-primary {
+  background: linear-gradient(135deg, #dfc390, #b99764);
+  color: #171411;
+  border-color: #d5b681;
+}
+.nxclip-production .xp-primary:hover {
+  background: linear-gradient(135deg, #ebd4ac, #c9aa79);
+}
+.nxclip-production .xp-secondary {
+  background: #1a1d26;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #eeeae3;
+}
+.nxclip-production .xp-secondary:hover {
+  background: #242733;
+}
+.nxclip-production :is(a, button, input, textarea, select):focus-visible {
+  outline: 2px solid #c4a574;
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nxclip-production * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
+
+.nxclip-production .xp-metrics h2 {
+  font-family:
+    var(--font-sans), "Geist Variable", ui-sans-serif, system-ui, sans-serif !important;
+}

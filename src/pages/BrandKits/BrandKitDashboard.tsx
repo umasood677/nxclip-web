@@ -18,6 +18,7 @@ import { BrandKitCard } from "./components/BrandKitCard";
 import { BrandKitImportDialog } from "./components/BrandKitImportDialog";
 import { Skeleton } from "../../components/ui/skeleton";
 import "../AdStudio/uxPreview/preview.css";
+import "../AdStudio/styles/production-theme.css";
 import "./guided/brandKitLibrary.css";
 import {
   downloadJson,
@@ -213,7 +214,7 @@ export default function BrandKitDashboard() {
   };
 
   return (
-    <div className="xp-root bk-library space-y-6">
+    <div className="xp-root nxclip-production bk-library space-y-6">
       <SEO title="Brand Kit Studio | NxClip" />
 
       <section className="bk-library-hero">
@@ -226,7 +227,7 @@ export default function BrandKitDashboard() {
               </span>
             </div>
             <h1 className="text-3xl md:text-4xl font-display font-semibold tracking-tight text-foreground leading-[1.1]">
-              Every brand has a signature. Make yours unmistakable.
+              A home for every brand you build.
             </h1>
             <p className="text-sm md:text-base text-muted-foreground">
               Your identity, products and creative direction — together in one
@@ -254,6 +255,7 @@ export default function BrandKitDashboard() {
         </div>
       </section>
 
+      {!loading && !error && kits.length>0 && <div className="bk-library-summary" aria-label="Brand library overview"><div><strong>{kits.length}</strong><span>Brand identities</span></div><div><strong>{kits.reduce((total,kit)=>total+(kit.assets?.filter(asset=>asset.status==="ready").length||0),0)}</strong><span>Uploaded assets</span></div><div><strong>{kits.filter(kit=>kit.typography?.length).length}</strong><span>With typography</span></div>{import.meta.env.DEV && <Link to="/create/ad/uat">Open UAT checklist →</Link>}</div>}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative max-w-md flex-1">
           <Search

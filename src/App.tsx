@@ -78,6 +78,7 @@ const PageLoader = () => {
 const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
 const ImageStudio = lazy(() => import("./pages/ImageStudio/ImageStudio"));
 const AdStudioUXPreview = lazy(() => import("./pages/AdStudio/uxPreview/AdStudioUXPreview"));
+const AdStudioUat = lazy(() => import("./pages/AdStudio/uat/AdStudioUat"));
 const AdStudio = lazy(() => import("./pages/AdStudio/AdStudio"));
 const AdProjectWorkspace = lazy(() => import("./pages/AdStudio/AdProjectWorkspace"));
 const AdStudioEditor = lazy(() => import("./pages/AdStudio/AdStudioEditor"));
@@ -437,6 +438,7 @@ export default function App() {
                         </AdStudioRouteFallback>
                       }
                     />
+                    {import.meta.env.DEV && <Route path="/create/ad/uat" element={<AdStudioRouteFallback><AdStudioUat /></AdStudioRouteFallback>} />}
                     <Route
                       path="/create/ad/projects/:projectId"
                       element={<AdStudioRouteFallback><AdProjectWorkspace /></AdStudioRouteFallback>}

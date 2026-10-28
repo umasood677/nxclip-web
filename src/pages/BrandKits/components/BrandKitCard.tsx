@@ -58,6 +58,12 @@ export function BrandKitCard({
   const logo = kit.assets?.find(
     (a) => a.role === "logo_primary" && a.status === "ready" && a.readUrl,
   );
+  const product = kit.assets?.find(
+    (asset) => asset.role === "product_image" && asset.status === "ready",
+  );
+  const brandAccent = /^#[0-9a-f]{6}$/i.test(primary || "")
+    ? primary
+    : "#c4a574";
   const archived = kit.status === "archived";
 
   return (
@@ -68,14 +74,48 @@ export function BrandKitCard({
         selected && "ring-2 ring-primary/40",
       )}
     >
-      <div
-        className="h-1.5 w-full"
-        style={{
-          background: palette.length
-            ? `linear-gradient(90deg, ${palette.join(", ")})`
-            : "var(--muted)",
-        }}
-      />
+      <Link
+        to={`/brands/${kit.id}`}
+        className="bk-brand-cover"
+        aria-label={`Open ${kit.name} brand identity`}
+        style={{ "--bk-brand-accent": brandAccent } as React.CSSProperties}
+      >
+        <div className="bk-brand-cover__halo" aria-hidden="true" />
+        <div className="bk-brand-cover__identity">
+          <span className="bk-brand-eyebrow">BRAND IDENTITY</span>
+          <strong>{kit.name}</strong>
+          <p>{tagline || industry || "Your creative signature"}</p>
+          <span className="bk-brand-cover__palette" aria-label="Brand palette">
+            {palette.map((hex, i) => (
+              <i key={`${hex}-${i}`} style={{ backgroundColor: hex }} />
+            ))}
+          </span>
+        </div>
+        {product && assetUrls[product.id] ? (
+          <img
+            className="bk-brand-cover__product"
+            src={assetUrls[product.id]}
+            alt={`${kit.name} original product photograph`}
+          />
+        ) : logo && assetUrls[logo.id] ? (
+          <img
+            className="bk-brand-cover__logo"
+            src={assetUrls[logo.id]}
+            alt={`${kit.name} uploaded logo`}
+          />
+        ) : (
+          <span className="bk-brand-cover__monogram" aria-hidden="true">
+            {initials(kit.name)}
+          </span>
+        )}
+        <span className="bk-brand-cover__caption">
+          {product && assetUrls[product.id]
+            ? "Original product asset"
+            : logo && assetUrls[logo.id]
+              ? "Uploaded brand identity"
+              : "Palette study · no uploaded image"}
+        </span>
+      </Link>
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start gap-3">
           <div

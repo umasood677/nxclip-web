@@ -48,6 +48,7 @@ import {
 } from "./guidedBrandModel";
 import "../../AdStudio/uxPreview/preview.css";
 import "../../AdStudio/uxPreview/roadmap.css";
+import "../../AdStudio/styles/production-theme.css";
 import "./guidedBrand.css";
 const LABELS = [
   "Brand",
@@ -294,7 +295,7 @@ export function GuidedBrandKitWorkspace({
       />
     );
   return (
-    <div className="xp-root bp-guided-root">
+    <div className="xp-root nxclip-production bp-guided-root">
       <main className="xp-main">
         <header className="xp-page-heading">
           <div>
