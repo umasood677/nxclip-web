@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { cn } from "../../../lib/utils";
 import type { NormalizedBrandContext } from "../../BrandKits/lib/brandContext";
 
@@ -33,15 +33,20 @@ export function BrandHomePreview({
   className,
   assetMode = "inset",
 }: Props) {
+  const [failed, setFailed] = useState(false);
   const primary = brand?.colors.primary || "#2a2f3a";
-  const secondary = brand?.colors.secondary || brand?.colors.background || "#0c0d10";
+  const secondary =
+    brand?.colors.secondary || brand?.colors.background || "#0c0d10";
   const accent = brand?.colors.accent || "#c4a574";
   const text = brand?.colors.text || "#f4f1ea";
   const logo = brand?.assets.logoUrl;
   const productOrModel =
     brand?.assets.productUrl || brand?.assets.modelUrl || null;
   const palette =
-    brand?.colors.all.map((c) => c.hex).filter(Boolean).slice(0, 4) ?? [];
+    brand?.colors.all
+      .map((c) => c.hex)
+      .filter(Boolean)
+      .slice(0, 4) ?? [];
 
   return (
     <div
@@ -62,12 +67,19 @@ export function BrandHomePreview({
       }
     >
       {/* Layout / composition sample — never swapped for product-only */}
-      <img
-        className="w0a-brand-preview__layout"
-        src={fallbackSrc}
-        alt={alt}
-        loading="lazy"
-      />
+      {failed ? (
+        <div className="w0a-brand-preview__layout flex items-center justify-center text-xs text-muted-foreground">
+          Illustrative preview unavailable
+        </div>
+      ) : (
+        <img
+          onError={() => setFailed(true)}
+          className="w0a-brand-preview__layout"
+          src={fallbackSrc}
+          alt={alt}
+          loading="lazy"
+        />
+      )}
 
       {brand ? (
         <div
@@ -81,6 +93,7 @@ export function BrandHomePreview({
 
       {logo ? (
         <img
+          key={logo}
           className="w0a-brand-preview__logo"
           src={logo}
           alt=""
@@ -91,14 +104,22 @@ export function BrandHomePreview({
       ) : brand ? (
         <span
           className="w0a-brand-preview__mark"
-          style={{ color: text, borderColor: accent, background: `${secondary}cc` }}
+          style={{
+            color: text,
+            borderColor: accent,
+            background: `${secondary}cc`,
+          }}
         >
           {(brand.name || "B").slice(0, 1).toUpperCase()}
         </span>
       ) : null}
 
       {brand && assetMode === "inset" && productOrModel ? (
-        <div className="w0a-brand-preview__inset" aria-hidden>
+        <div
+          key={productOrModel}
+          className="w0a-brand-preview__inset"
+          aria-hidden
+        >
           <img
             src={productOrModel}
             alt=""

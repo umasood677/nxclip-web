@@ -24,6 +24,7 @@ const LINKS: { id: AdStudioNavId; label: string }[] = [
 
 type Props = {
   brand?: string;
+  catalogLabel?: string;
   /** Hide the NxClip · Ad Studio brand label (Editor Canvas). */
   hideBrand?: boolean;
   active: AdStudioNavId;
@@ -39,6 +40,7 @@ type Props = {
 
 export function AdStudioTopNav({
   brand = "NxClip · Ad Studio",
+  catalogLabel,
   hideBrand = false,
   active,
   onSectionNav,
@@ -92,11 +94,11 @@ export function AdStudioTopNav({
               className={cn(active === link.id && "active")}
               onClick={() => go(link.id)}
             >
-              {link.label}
+              {link.id === "catalog" && catalogLabel ? catalogLabel : link.label}
             </button>
           ))}
         </nav>
-        {import.meta.env.DEV && <Link to="/create/ad/uat" className="w0a-link" style={{fontSize:11,whiteSpace:"nowrap"}}>UAT checklist</Link>}
+        {import.meta.env?.DEV && <Link to="/create/ad/uat" className="w0a-link" style={{fontSize:11,whiteSpace:"nowrap"}}>UAT checklist</Link>}
         {(trailing || onCreateProject) ? (
           <div className="w0a-topnav__actions">
             {trailing}

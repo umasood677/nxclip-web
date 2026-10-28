@@ -2,8 +2,8 @@
   "home": [
     "Ad Studio home & navigation",
     "Campaign & concepts",
-    "Open Ad Studio. Check project, template, Example Brief and library navigation.",
-    "The real home loads, navigation is clear and Create actions show +."
+    "Open Ad Studio. Switch Default Brand and an owned Brand Kit; inspect recent projects and the template/brief actions.",
+    "Recent projects follow the selected brand. Creatives are inside their own project. Starting-point clicks only open setup; no project is silently saved."
   ],
   "brief": [
     "Campaign Idea & Working Brief",
@@ -20,8 +20,8 @@
   "template": [
     "Apply a selected template",
     "Creative & Canvas",
-    "Select an owned Brand Kit and authorized assets, then create an editable creative.",
-    "The selected layout and bindings are preserved; no product variants are invented."
+    "Choose a standard layout in Default Brand, review project setup and save explicitly. For a Brand Kit, inspect approved saved Brand Templates and reuse one in a compatible owned project.",
+    "No project is created by clicking Home Use template. Missing model/source permissions or unavailable template services are explicit; no orphan project is created by a failed creative request."
   ],
   "assets": [
     "Campaign source assets",
@@ -218,8 +218,8 @@
   "brand-templates": [
     "Native Brand Templates",
     "Setup & brands",
-    "Inspect availability, prepare native recipes when enabled and review a template.",
-    "Native templates use owned kit data; preparation is distinguished from live AI image generation."
+    "Select a Brand Kit on Home and in a project; inspect its actual saved-template library, then review/approve/save a recipe when the runtime is enabled.",
+    "Only this kit’s saved approved recipes are offered for reuse. Generic catalog overlays and illustrative Example Brief references are labeled separately. Record HTTP 503 as blocked until local activation is approved."
   ],
   "brand-template-detail": [
     "Brand Template detail",

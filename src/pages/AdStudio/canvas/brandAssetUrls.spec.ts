@@ -105,3 +105,9 @@ describe("brandAssetUrls", () => {
     );
   });
 });
+
+// Legacy layers resolve through hydrated owner URLs, never by treating a private key as a URL.
+
+import {test as legacyTest} from "node:test";
+import {buildBrandAssetUrlMapByStorageKey as legacyMap,resolveLayerAssetUrl as legacyResolve} from "./brandAssetUrls";
+legacyTest("legacy project layer keys resolve to authenticated object URLs",()=>{const kit={id:"kit",name:"Kit",assets:[{id:"source",status:"ready",readUrl:"blob:authorized-source",storageKey:"brands/owner/kit/source.png"}]};const mapped=legacyMap(kit);if(legacyResolve({},mapped,{storageKey:"brands/owner/kit/source.png"})!=="blob:authorized-source")throw Error("Legacy source was not hydrated");});

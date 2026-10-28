@@ -13,6 +13,7 @@ import type { WorkspaceCreative } from "../lib/projectWorkspace";
 export function ProjectCreativeGallery({
   creatives,
   assetUrls,
+  storageKeyUrls,
   onOpen,
   onExport,
   onCreate,
@@ -21,6 +22,7 @@ export function ProjectCreativeGallery({
 }: {
   creatives: WorkspaceCreative[];
   assetUrls: Record<string, string>;
+  storageKeyUrls?: Readonly<Record<string,string>>;
   onOpen: (id: string) => void;
   onExport: (creative: WorkspaceCreative) => void;
   onCreate: () => void;
@@ -74,6 +76,7 @@ export function ProjectCreativeGallery({
                   maxWidth={260}
                   maxHeight={230}
                   assetUrls={assetUrls}
+                  storageKeyUrls={storageKeyUrls}
                   label={creative.name}
                 />
               </button>

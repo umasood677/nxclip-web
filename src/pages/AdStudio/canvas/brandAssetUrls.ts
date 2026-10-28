@@ -76,7 +76,7 @@ export function buildBrandAssetUrlMapByStorageKey(
   for (const asset of brand?.assets ?? []) {
     if (!asset?.id || !isReady(asset)) continue;
     const url = typeof asset.readUrl === "string" ? asset.readUrl.trim() : "";
-    if (!url || !/^https?:\/\//i.test(url) || url.startsWith("brands/"))
+    if (!url || !isBrowserAssetUrl(url) || url.startsWith("brands/"))
       continue;
     const key = (asset as { storageKey?: string }).storageKey?.trim();
     if (key && !/^https?:\/\//i.test(key)) {

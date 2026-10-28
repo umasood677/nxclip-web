@@ -55,6 +55,8 @@ export default function DashboardLayout() {
       setTitle(t("user.profile", { defaultValue: "Creator profile" }));
     } else if (path.startsWith("/create/image") || path === "/image-studio") {
       setTitle(t("nav.image_studio"));
+    } else if (path === "/create/ad/new") {
+      setTitle(t("nav.ad_studio_new_project", {defaultValue: "Ad Studio · New project"}));
     } else if (path === "/create/ad/uat") {
       setTitle(t("nav.ad_studio_uat", {defaultValue: "Ad Studio · UAT checklist"}));
     } else if (path === "/brands" || path.startsWith("/brands/")) {

@@ -1,3 +1,5 @@
+import {buildBrandAssetUrlMapByStorageKey} from "../canvas/brandAssetUrls";
+import { SavedBrandTemplates, useSavedBrandTemplates } from "../components/SavedBrandTemplates";
 import { Plus as CreatePlus } from "lucide-react";
 import { ProductionImageGeneration } from "./ProductionImageGeneration";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -39,9 +41,11 @@ export default function ProductionProjectWorkspace({
 }: {
   controller: AdProjectWorkspaceController;
 }) {
+  const storageKeyUrls = useMemo(()=>buildBrandAssetUrlMapByStorageKey(c.brand?{...c.brand,assets:c.brand.assets?.map(asset=>({...asset,readUrl:c.assetUrls[asset.id]||null}))}:null),[c.brand,c.assetUrls]);
   const [query] = useSearchParams(),
     screen = parseExperienceScreen(query.get("view")),
     title = useRef<HTMLHeadingElement>(null);
+  const savedBrandTemplates = useSavedBrandTemplates(screen === "templates" ? c.project?.brandKitId || "" : "");
   const [comparison, setComparison] = useState<string[]>([]);
   const concept =
     c.concepts.find((item) => item.conceptId === query.get("concept")) ||
@@ -384,6 +388,7 @@ export default function ProductionProjectWorkspace({
               presentation="m2b"
               creatives={c.creatives}
               assetUrls={c.assetUrls}
+              storageKeyUrls={storageKeyUrls}
               onOpen={(id) => {
                 if (c.confirmLeave()) c.navigate(creativeEditorPath(id));
               }}
@@ -489,7 +494,7 @@ export default function ProductionProjectWorkspace({
               reviewed brand assets. Catalog reference previews are not
               generated advertisements.
             </p>
-            <TemplateGallery
+            {project.brandKitId ? <SavedBrandTemplates brandId={project.brandKitId} data={savedBrandTemplates} assetUrls={c.assetUrls} project={project}/> : <TemplateGallery
               selectedFormat={c.form.outputFormat}
               busy={c.busy}
               hideHeader
@@ -497,7 +502,7 @@ export default function ProductionProjectWorkspace({
                 c.setForm((old) => ({ ...old, outputFormat: format }));
                 go("template", { templateId: id });
               }}
-            />
+            />}
             {project.brandKitId && (
               <Link
                 className="xp-secondary"
