@@ -195,5 +195,7 @@ test("Default Brand offers six brief cards with independently labelled aspect co
   assert.equal((html.match(/Use as starting brief/g) || []).length, 6);
   assert.equal((html.match(/aria-label="Aspect ratio for /g) || []).length, 6);
   assert.equal((html.match(/aria-pressed="true"/g) || []).length, 6);
+  assert.equal((html.match(/aria-pressed="true">4:5<\/button>/g) || []).length, 6);
+  assert.doesNotMatch(html, /w0a-brand-preview--story|w0a-brand-preview--landscape|w0a-brand-preview--square/);
   assert.doesNotMatch(html, /ZoeArtisan Lipstick/);
 });

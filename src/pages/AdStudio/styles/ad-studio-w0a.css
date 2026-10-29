@@ -1546,9 +1546,9 @@
 .ad-studio-w0a .w0a-hero-actions button:focus-visible{outline:2px solid var(--w0a-accent);outline-offset:4px}
 @media(max-width:420px){.ad-studio-w0a .w0a-hero-actions{gap:18px}}
 
-/* Example brief cards share one media height and aligned actions across formats. */
-.ad-studio-w0a .w0a-brief-card { display:flex; flex-direction:column; }
-.ad-studio-w0a .w0a-brief-card .w0a-brand-preview { height:260px; aspect-ratio:auto; flex:none; }
+/* Brief previews follow the selected output ratio; cards do not stretch into empty space. */
+.ad-studio-w0a .w0a-brief-card { display:flex; flex-direction:column; align-self:start; }
+.ad-studio-w0a .w0a-brief-card .w0a-brand-preview { height:auto; flex:none; }
 .ad-studio-w0a .w0a-brief-card .w0a-card-body { display:flex; flex-direction:column; flex:1; gap:6px; }
 .ad-studio-w0a .w0a-brief-card h3 { line-height:1.4; min-height:2.8em; margin:0; }
 .ad-studio-w0a .w0a-brief-card .w0a-card-body > p { min-height:2.8em; margin:0; }

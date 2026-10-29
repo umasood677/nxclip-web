@@ -481,9 +481,7 @@ export function AdStudioHome({
                   .map((ex) => {
                     const formatKey = `${selectedBrandId || "default"}/${ex.id}`;
                     const format =
-                      briefFormats[formatKey] ||
-                      ex.briefDefaults.outputFormat ||
-                      "portrait_1080x1350";
+                      briefFormats[formatKey] || "portrait_1080x1350";
                     const preview =
                       ex.previewImage ||
                       "/ad-studio/sample-assets/w0a-product-hero.jpg";
