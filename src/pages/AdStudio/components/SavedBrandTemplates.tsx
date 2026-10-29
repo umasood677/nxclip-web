@@ -1,3 +1,4 @@
+import { useCreativeAssetUrls } from "../canvas/useCreativeAssetUrls";
 import { EmptyState } from "../../../components/common/EmptyState";
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -82,6 +83,8 @@ export function SavedBrandTemplates({
     [error, setError] = useState("");
   const items = reusableHomeTemplates(data.items, brandId),
     reviewPath = `/brands/${encodeURIComponent(brandId)}/templates`;
+  const generatedUrls=useCreativeAssetUrls(items.slice(0,limit).flatMap(t=>t.provenance.sourceCreativeId?[t.provenance.sourceCreativeId]:[]));
+  const previewUrls={...assetUrls,...generatedUrls};
   async function useInProject(template: BrandTemplate) {
     if (!project || !data.enabled || pending.current) return;
     pending.current = true;
@@ -191,14 +194,14 @@ export function SavedBrandTemplates({
                   graph={template.sceneGraph}
                   maxWidth={250}
                   maxHeight={280}
-                  assetUrls={assetUrls}
+                  assetUrls={previewUrls}
                   label={`${template.name} saved template`}
                 />
               </div>
               <div className="w0a-card-body">
                 <h3>{template.name}</h3>
                 <p className="w0a-meta">
-                  Saved Brand Template · {template.format} · native layout
+                  Saved Brand Template · {template.format} · {template.provenance.method === "provider-ai-creative" ? "AI artwork" : "Editable layout"}
                 </p>
                 {data.enabled ? (
                   <Link

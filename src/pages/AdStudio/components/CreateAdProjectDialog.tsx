@@ -23,6 +23,7 @@ import {
 } from "../lib/projectWorkspace";
 import { saveEntryProject } from "../lib/homeEntryFlow";
 type FormProps = {
+  brandLocked?: boolean;
   brands: BrandKitSummary[];
   brandsLoading?: boolean;
   brandsError?: string | null;
@@ -36,6 +37,7 @@ type FormProps = {
   blockers?: string[];
 };
 export function AdProjectCreateForm({
+  brandLocked = false,
   brands,
   brandsLoading = false,
   brandsError,
@@ -123,7 +125,7 @@ export function AdProjectCreateForm({
         </p>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="project-brand">Brand Kit (optional)</Label>
+        <Label htmlFor="project-brand">{brandLocked ? "Brand Kit" : "Brand Kit (optional)"}</Label>
         <select
           id="project-brand"
           value={brandId}
@@ -131,7 +133,7 @@ export function AdProjectCreateForm({
             setBrandId(e.target.value);
             onBrandChange?.(e.target.value);
           }}
-          disabled={busy || brandsLoading}
+          disabled={busy || brandsLoading || brandLocked}
           className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
         >
           <option value="">Default Brand — no Brand Kit</option>

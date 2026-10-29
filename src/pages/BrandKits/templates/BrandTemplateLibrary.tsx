@@ -1,4 +1,10 @@
-import { composeTemplatePreview } from "../../AdStudio/canvas/composeTemplateScene";
+import { useCreativeAssetUrls } from "../../AdStudio/canvas/useCreativeAssetUrls";
+import { BrandTemplateScenePreview } from "./BrandTemplateScenePreview";
+import { toast } from "sonner";
+import { BrandTemplateAiWorkspace } from "./BrandTemplateAiWorkspace";
+import "../../AdStudio/styles/ad-studio-w0a.css";
+import "./brandTemplates.css";
+import { useBrandTemplateDraftPreview } from "./useBrandTemplateDraftPreview";
 import React, {
   useCallback,
   useEffect,
@@ -12,7 +18,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { ArrowLeft, Check, Copy, Archive, Palette, X } from "lucide-react";
+import { ArrowLeft, Check, Copy, Archive, Palette, X, Plus } from "lucide-react";
 import {
   brandApi,
   brandTemplateApi,
@@ -20,7 +26,6 @@ import {
 } from "../../../services/apiClient";
 import { EmptyState } from "../../../components/common/EmptyState";
 import { Skeleton } from "../../../components/ui/skeleton";
-import { SceneStage } from "../../AdStudio/canvas/SceneStage";
 import { TemplateGallery } from "../../AdStudio/components/TemplateGallery";
 import {
   TEMPLATE_CATALOG_V1,
@@ -36,7 +41,6 @@ import {
 import type { BrandKitSummary } from "../lib/brandKitTypes";
 import {
   canReuseTemplate,
-  applyBrandTemplateCopy,
   compatibleTemplateProjects,
   isBrandTemplatesEnabled,
   templateHeadline,
@@ -83,11 +87,11 @@ export default function BrandTemplateLibrary() {
     [projects, setProjects] = useState<WorkspaceProject[]>([]);
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [message, setMessage] = useState("");
+    [error, setError] = useState("");
+  const setMessage = (message: string) => { if (message) toast.success(message); };
   const [search, setSearch] = useState(""),
     [archived, setArchived] = useState(false),
-    [format, setFormat] = useState("square_1080"),
+    [format, setFormat] = useState("portrait_1080x1350"),
     [projectId, setProjectId] = useState("");
   const [draft, setDraft] = useState<Draft | null>(null),
     [selectedDefault, setSelectedDefault] = useState<{
@@ -104,32 +108,12 @@ export default function BrandTemplateLibrary() {
       JSON.stringify(draft) !== JSON.stringify(draftFor(selected));
   const assetKit = useMemo(() => {
     if (!kit || kit.id !== brandId) return null;
-    const ids = new Set(items.flatMap((t) => t.sourceAssetIds));
-    return { ...kit, assets: (kit.assets || []).filter((a) => ids.has(a.id)) };
-  }, [kit, items, brandId]);
-  const urls = useAuthenticatedBrandAssetUrls(assetKit);
-  const draftPreview = useMemo(() => {
-    if (!selected || !draft || !dirty) return selected?.sceneGraph;
-    const preview = composeTemplatePreview({
-      brand: assetKit,
-      outputFormat: draft.format,
-      concept: {
-        conceptId: selected.id,
-        title: draft.name,
-        creativeDirection: "Native editable template customization",
-        primaryHeadline: draft.primaryHeadline,
-        supportingCopy: draft.supportingCopy,
-        cta: draft.cta,
-        visualPrompt: "",
-        composition: "",
-        templateId: draft.templateId,
-        colorRecommendations: [],
-        typographyRecommendations: [],
-        platformSuitability: [],
-      },
-    }).sceneGraph;
-    return preview ? applyBrandTemplateCopy(preview, draft) : null;
-  }, [selected, draft, dirty, assetKit]);
+    return kit;
+  }, [kit, brandId]);
+  const brandUrls = useAuthenticatedBrandAssetUrls(assetKit);
+  const generatedUrls = useCreativeAssetUrls(items.flatMap(t=>t.provenance.sourceCreativeId?[t.provenance.sourceCreativeId]:[]));
+  const urls = {...brandUrls,...generatedUrls};
+  const {graph:draftPreview,loading:previewLoading,error:previewError,retry:retryPreview}=useBrandTemplateDraftPreview(brandId,selected,draft);
   const load = useCallback(async () => {
     if (!enabled) {
       setLoading(false);
@@ -226,7 +210,7 @@ export default function BrandTemplateLibrary() {
         ...previous.filter((t) => !result.items.some((n) => n.id === t.id)),
       ]);
       setMessage(
-        "Four native editable recipes prepared. This is deterministic composition, not AI image generation. Review each candidate separately.",
+        "Editable layouts prepared.",
       );
     });
   const action = (value: BrandTemplateAction) =>
@@ -293,7 +277,7 @@ export default function BrandTemplateLibrary() {
     });
   if (!enabled)
     return (
-      <main className="xp-root nxclip-production bp-guided-root">
+      <main className="xp-root nxclip-production bp-guided-root bt-root ad-studio-w0a">
         <div className="xp-main">
           <Link className="xp-breadcrumb" to="/create/ad">
             Ad Studio
@@ -347,8 +331,8 @@ export default function BrandTemplateLibrary() {
         .includes(search.toLowerCase()),
   );
   const reviewProject = (
-    <section className="xp-panel">
-      <h3>Use in an existing Brand Project</h3>
+    <section className="xp-panel" id="template-project-selection">
+      <h3>Choose a campaign</h3>
       <p>
         The Brand Kit and output format must match. Your existing project and
         Canvas remain authoritative.
@@ -422,19 +406,16 @@ export default function BrandTemplateLibrary() {
         <header className="xp-page-head">
           <div>
             <span className="xp-kicker">
-              BRAND INTELLIGENCE / EDITABLE RECIPES
+              BRAND TEMPLATE STUDIO
             </span>
-            <h1>
+            <h1><Palette size={26} aria-hidden="true" />
               {selected
-                ? "Review your Brand Template"
-                : "A template system that knows your brand."}
+                ? "Customize your template"
+                : "Your brand. Every composition."}
             </h1>
-            <p>
-              Native editable composition · Account-owned assets · Explicit
-              review
-            </p>
+            <p>Design a collection. Make it unmistakably yours.</p>
           </div>
-          <span className="xp-status">Implemented · gated / native engine</span>
+          <button className="xp-primary" onClick={() => go(base + "?tab=brand&mode=ai")}><Plus size={16} /> Create with AI</button>
         </header>
         {error && (
           <div className="xp-notice" role="alert">
@@ -448,12 +429,9 @@ export default function BrandTemplateLibrary() {
             </button>
           </div>
         )}
-        {message && (
-          <div className="xp-notice" role="status">
-            {message}
-          </div>
-        )}
-        {templateId && !selected ? (
+        {params.get("mode") === "ai" && !templateId ? (
+          <BrandTemplateAiWorkspace key={brandId} kit={kit} projects={projects} initialFormat={format} onBack={() => setParams({tab:"brand"})} />
+        ) : templateId && !selected ? (
           <EmptyState
             title="Template not found"
             description="This template is unavailable in the selected Brand Kit."
@@ -464,40 +442,33 @@ export default function BrandTemplateLibrary() {
           <>
             <div className="xp-split">
               <section className="xp-panel">
-                <SceneStage
+                {previewLoading ? <Skeleton className="h-96 w-full"/> : <BrandTemplateScenePreview
+                  maxHeight={560}
                   graph={draftPreview}
                   assetUrls={urls}
                   size="hero"
                   showSafeArea
-                />
+                />}
+                {previewError&&<p role="alert" className="bt-blocker">{previewError} <button className="xp-text-button" onClick={retryPreview}>Retry preview</button></p>}
                 <span className="xp-status">
-                  {selected.state} ·{" "}
-                  {selected.saved ? "Saved recipe" : "Unsaved recipe"} ·
-                  revision {selected.revision}
+                  {selected.saved ? "Saved" : selected.state === "approved" ? "Ready to save" : "Review needed"}
                 </span>
-                <p>
-                  Source identity version {selected.sourceBrandVersion}.
-                  Original assets are referenced by ID; no regenerated packaging
-                  is implied.
-                </p>
+
                 {[
                   ...new Set([
                     ...selected.blockers,
                     ...(selected.reuseIssues || []),
-                    ...selected.warnings,
+
                   ]),
                 ].map((text) => (
-                  <p className="xp-notice" key={text}>
+                  <p className="bt-blocker" key={text}>
                     {text}
                   </p>
                 ))}
               </section>
               <section className="xp-panel">
                 <h2>{selected.name}</h2>
-                <p>
-                  Text, product, logo and geometry remain independent editable
-                  scene layers.
-                </p>
+
                 <fieldset
                   disabled={busy || selected.state === "archived"}
                   className="bp-fieldset"
@@ -555,6 +526,7 @@ export default function BrandTemplateLibrary() {
                             : definition?.formats[0] || draft.format,
                         });
                       }}
+                      disabled={selected.provenance.method === "provider-ai-creative"}
                     >
                       {TEMPLATE_CATALOG_V1.map((t) => (
                         <option key={t.templateId} value={t.templateId}>
@@ -567,6 +539,7 @@ export default function BrandTemplateLibrary() {
                     Format
                     <select
                       value={draft.format}
+                      disabled={selected.provenance.method === "provider-ai-creative"}
                       onChange={(e) => patch({ format: e.target.value })}
                     >
                       {AD_FORMATS.filter((f) =>
@@ -580,14 +553,10 @@ export default function BrandTemplateLibrary() {
                       ))}
                     </select>
                   </label>
-                  <p className="xp-notice">
-                    Saving customization rebuilds this native recipe through the
-                    existing template engine and clears its approval. The
-                    preview shows the saved revision.
-                  </p>
+                  <small>Changes require a new approval before reuse.</small>
                   <button
                     className="xp-secondary"
-                    disabled={!dirty || !draft.name.trim()}
+                    disabled={!dirty || !draft.name.trim() || previewLoading || !!previewError}
                     onClick={saveCustomization}
                   >
                     Save customization
@@ -675,7 +644,7 @@ export default function BrandTemplateLibrary() {
                 My Brand Templates ({items.length})
               </button>
             </div>
-            <div className="xp-panel">
+            <div className="xp-panel bt-toolbar">
               <div className="xp-actions">
                 <label className="xp-field">
                   Output format
@@ -700,7 +669,7 @@ export default function BrandTemplateLibrary() {
                       <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search your recipes"
+                        placeholder="Search templates"
                       />
                     </label>
                     <label className="xp-check">
@@ -720,16 +689,12 @@ export default function BrandTemplateLibrary() {
                       }
                       onClick={prepare}
                     >
-                      {busy ? "Preparing…" : "Generate Brand Templates"}
+                      <Plus size={16} /> {busy ? "Preparing…" : "Prepare editable layouts"}
                     </button>
                   </>
                 )}
               </div>
-              <p>
-                Brand template generation prepares deterministic editable
-                recipes from explicitly approved assets. Gemini image generation
-                is a separate budgeted action.
-              </p>
+
             </div>
             {tab === "default" ? (
               <>
@@ -737,13 +702,13 @@ export default function BrandTemplateLibrary() {
                   selectedFormat={format}
                   busy={busy}
                   hideHeader
-                  catalogLabel="Existing default template catalog"
+                  hideNote
+                  catalogLabel="Default Templates"
                   onUseTemplate={(id, chosen) => {
                     setSelectedDefault({ id, format: chosen });
                     setProjectId("");
-                    setMessage(
-                      "Choose a matching owned Brand Project below to create an editable creative.",
-                    );
+                    toast.info("Choose a campaign below to use this template.");
+                    setTimeout(() => document.getElementById("template-project-selection")?.scrollIntoView({behavior:"smooth",block:"center"}),0);
                   }}
                 />
                 {selectedDefault && reviewProject}
@@ -764,14 +729,17 @@ export default function BrandTemplateLibrary() {
                 onAction={() => go("/brands/" + brandId + "/guided?step=ready")}
               />
             ) : (
-              <div className="xp-gallery">
+              <div className="bt-gallery">
                 {visible.map((t) => (
-                  <article className="xp-creative" key={t.id}>
-                    <SceneStage
+                  <article className="bt-card" key={t.id}>
+                    <div className="bt-card-art">
+                    <BrandTemplateScenePreview
                       graph={t.sceneGraph}
                       assetUrls={urls}
                       size="card"
+                      maxHeight={360}
                     />
+                    </div>
                     <div className="xp-card-copy">
                       <span className="xp-status">
                         {t.state} · {t.saved ? "Saved" : "Review required"}
@@ -780,12 +748,12 @@ export default function BrandTemplateLibrary() {
                       <p>
                         {AD_FORMATS.find((f) => f.id === t.format)?.label ||
                           t.format}{" "}
-                        · editable native recipe
+                        · {t.provenance.method === "provider-ai-creative" ? "AI artwork" : "Editable layout"}
                       </p>
                       <p>
                         {t.blockers.length
                           ? `${t.blockers.length} unresolved source requirements`
-                          : "Independent scene layers"}
+                          : "Editable text, product & logo"}
                       </p>
                       <button
                         className="xp-primary"
