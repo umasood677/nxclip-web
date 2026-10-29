@@ -37,6 +37,12 @@ export function characterReviewIssues(
   now = new Date(),
 ): string[] {
   const issues: string[] = [];
+  if (
+    character.referenceAssetIds.length > 8 ||
+    new Set(character.referenceAssetIds).size !==
+      character.referenceAssetIds.length
+  )
+    issues.push("Choose at most eight distinct reference images.");
   if (!character.name.trim()) issues.push("Enter a character name.");
   const owned = new Set(
     assets
@@ -87,4 +93,43 @@ export function characterProfilesForDuplicate(
       evidence: "",
     },
   }));
+}
+
+/** Bind only a ready image already returned for this account-owned Brand Kit. */
+export function attachCharacterReference(
+  profile: BrandCharacterProfile,
+  kit: { assets?: BrandAssetEntry[] },
+  assetId: string,
+): BrandCharacterProfile {
+  const asset = kit.assets?.find(
+    (a) =>
+      a.id === assetId &&
+      a.status === "ready" &&
+      a.mimeType?.startsWith("image/"),
+  );
+  if (!asset) throw Error("Choose a ready image in this Brand Kit.");
+  if (profile.referenceAssetIds.includes(assetId)) return profile;
+  if (profile.referenceAssetIds.length >= 8)
+    throw Error("A profile can contain at most eight reference images.");
+  return {
+    ...profile,
+    status: "draft",
+    referenceAssetIds: [...profile.referenceAssetIds, assetId],
+  };
+}
+/** Upload is a separate asset write; rebase its version only if the saved target profile did not change. */
+export function characterUnchangedAfterAssetUpdate(
+  before: {
+    voice?: { studio?: { characters?: BrandCharacterProfile[] } } | null;
+  },
+  after: {
+    voice?: { studio?: { characters?: BrandCharacterProfile[] } } | null;
+  },
+  profileId: string,
+) {
+  const prior = before.voice?.studio?.characters?.find(
+      (p) => p.id === profileId,
+    ),
+    current = after.voice?.studio?.characters?.find((p) => p.id === profileId);
+  return JSON.stringify(prior) === JSON.stringify(current);
 }

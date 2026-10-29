@@ -145,7 +145,7 @@ export function BrandContentLibraryPicker({
         if (!open && !busy) onClose();
       }}
     >
-      <DialogContent className="max-w-3xl max-h-[90dvh] overflow-y-auto">
+      <DialogContent className="sm:max-w-4xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Select from your Content Library</DialogTitle>
           <DialogDescription>

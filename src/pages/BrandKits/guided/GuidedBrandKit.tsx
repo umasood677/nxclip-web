@@ -1,3 +1,4 @@
+import "../components/brandCharacters.css";
 import { brandFontKey, useBrandFontPreviews } from "../lib/brandFontPreview";
 import "../components/brandVoice.css";
 import { useAuthenticatedBrandAssetUrls } from "../../AdStudio/canvas/useAuthenticatedBrandAssetUrls";
@@ -110,9 +111,25 @@ export function GuidedBrandKitWorkspace({
     [versionsLoading, setVersionsLoading] = useState(false),
     [versionsError, setVersionsError] = useState("");
   const [analysisOpen, setAnalysisOpen] = useState(false);
+  const characterEditor = useRef({ dirty: false, busy: false });
   const title = useRef<HTMLHeadingElement>(null),
     saved = useRef("");
   const go = (next: GuidedStep) => {
+    if (step === "assets" && next !== "assets") {
+      if (characterEditor.current.busy) {
+        setError(
+          "Wait for the model or mascot operation to finish before leaving Assets.",
+        );
+        return;
+      }
+      if (
+        characterEditor.current.dirty &&
+        !window.confirm(
+          "Leave without saving the model or mascot profile? Uploaded images remain in Brand Kit Assets.",
+        )
+      )
+        return;
+    }
     setMessage("");
     if (embedded) setEmbeddedStep(next);
     else setParams({ step: next });
@@ -642,6 +659,11 @@ export function GuidedBrandKitWorkspace({
                 <BrandAssetsSection
                   brandId={kit.id}
                   assets={kit.assets || []}
+                  onManageCharacters={() =>
+                    document
+                      .getElementById(`brand-${kit.id}-characters`)
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                  }
                   onKitUpdated={(updated) => {
                     setKit(updated);
                     setMessage("Asset changes saved to this Brand Kit.");
@@ -693,19 +715,18 @@ export function GuidedBrandKitWorkspace({
                     ))}
                 </div>
               )}
-              <div className="xp-actions">
-                <button className="xp-primary" onClick={() => go("identity")}>
-                  Review identity →
-                </button>
-              </div>
-              {kit?.voice?.studio && (
-                <details className="mt-6">
-                  <summary className="cursor-pointer text-sm">
-                    Models & Mascots
-                  </summary>
-                  <div className="mt-5">
+
+              {kit && (
+                <section
+                  className="bp-character-section"
+                  id={`brand-${kit.id}-characters`}
+                >
+                  <div>
                     <BrandCharactersSection
                       kit={kit}
+                      onDraftStateChange={(dirty, busy) => {
+                        characterEditor.current = { dirty, busy };
+                      }}
                       disabled={JSON.stringify(draft) !== saved.current}
                       onKitUpdated={(updated) => {
                         setKit(updated);
@@ -714,8 +735,13 @@ export function GuidedBrandKitWorkspace({
                       }}
                     />
                   </div>
-                </details>
+                </section>
               )}
+              <div className="xp-actions">
+                <button className="xp-primary" onClick={() => go("identity")}>
+                  Review identity →
+                </button>
+              </div>
             </section>
           )}
           {step === "identity" && (

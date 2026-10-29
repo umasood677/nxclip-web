@@ -1,3 +1,4 @@
+import { uploadBrandImage } from "../lib/uploadBrandImage";
 import { BrandContentLibraryPicker } from "./BrandContentLibraryPicker";
 import { useAuthenticatedBrandAssetUrls } from "../../AdStudio/canvas/useAuthenticatedBrandAssetUrls";
 import React, { useMemo, useRef, useState } from "react";
@@ -15,13 +16,19 @@ type Props = {
   brandId: string;
   assets: BrandAssetEntry[];
   onKitUpdated: (kit: BrandKitSummary) => void;
+  onManageCharacters?: () => void;
 };
 
 function slotAsset(assets: BrandAssetEntry[], role: string) {
   return assets.find((a) => a.role === role && a.status === "ready") ?? null;
 }
 
-export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
+export function BrandAssetsSection({
+  brandId,
+  assets,
+  onKitUpdated,
+  onManageCharacters,
+}: Props) {
   const kit = useMemo(
     () => ({ id: brandId, name: "", assets }),
     [brandId, assets],
@@ -77,27 +84,21 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
     const draft = draftFor(role, chosen(role));
     setBusyRole(role);
     try {
-      const uploadMeta = await brandApi.requestAssetUploadUrl(brandId, {
-        role,
-        fileName: file.name,
-        mimeType: file.type || "image/png",
-        fileSize: file.size,
-        label: draft.label.trim() || undefined,
-        description: draft.description.trim() || undefined,
-        usageGuidance: draft.usageGuidance.trim() || undefined,
-      });
-      await putToUploadUrl(
-        uploadMeta.uploadUrl,
-        file,
-        file.type || "image/png",
-      );
-      const kit = (await brandApi.confirmAsset(
+      const { kit, assetId } = await uploadBrandImage(
+        brandApi,
+        putToUploadUrl,
         brandId,
-        uploadMeta.assetId,
-      )) as BrandKitSummary;
+        role,
+        file,
+        {
+          label: draft.label.trim() || undefined,
+          description: draft.description.trim() || undefined,
+          usageGuidance: draft.usageGuidance.trim() || undefined,
+        },
+      );
       onKitUpdated(kit);
       toast.success("Asset uploaded");
-      setSelectedByRole((prev) => ({ ...prev, [role]: uploadMeta.assetId }));
+      setSelectedByRole((prev) => ({ ...prev, [role]: assetId }));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
       throw e;
@@ -156,7 +157,7 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" id={`brand-${brandId}-assets`}>
       <div>
         <h2 className="font-display text-lg font-semibold">Logos & Assets</h2>
         <p className="text-sm text-muted-foreground">
@@ -199,6 +200,26 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
                 </span>
               </div>
 
+              {slot.role === "brand_model" && (
+                <div className="bp-character-link-note">
+                  <p>
+                    This file is shared with Models & Mascots. Link it to a
+                    profile there to define appearance, consistency and
+                    authorized uses. You do not need to upload the same image
+                    again.
+                  </p>
+                  {onManageCharacters && (
+                    <button
+                      type="button"
+                      className="xp-secondary"
+                      disabled={busy}
+                      onClick={onManageCharacters}
+                    >
+                      Set up model / mascot profile
+                    </button>
+                  )}
+                </div>
+              )}
               {assets.filter(
                 (a) => a.role === slot.role && a.status === "ready",
               ).length > 1 && (
@@ -258,7 +279,10 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
 
                 <div className="space-y-2 min-w-0">
                   <div>
-                    <Label htmlFor={`${brandId}-${slot.role}-label`}> Display name</Label>
+                    <Label htmlFor={`${brandId}-${slot.role}-label`}>
+                      {" "}
+                      Display name
+                    </Label>
                     <Input
                       id={`${brandId}-${slot.role}-label`}
                       value={draft.label}
@@ -270,7 +294,10 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
                     />
                   </div>
                   <div>
-                    <Label htmlFor={`${brandId}-${slot.role}-description`}> Description</Label>
+                    <Label htmlFor={`${brandId}-${slot.role}-description`}>
+                      {" "}
+                      Description
+                    </Label>
                     <Input
                       id={`${brandId}-${slot.role}-description`}
                       value={draft.description}
@@ -282,7 +309,10 @@ export function BrandAssetsSection({ brandId, assets, onKitUpdated }: Props) {
                     />
                   </div>
                   <div>
-                    <Label htmlFor={`${brandId}-${slot.role}-usageGuidance`}> Usage guidance</Label>
+                    <Label htmlFor={`${brandId}-${slot.role}-usageGuidance`}>
+                      {" "}
+                      Usage guidance
+                    </Label>
                     <Textarea
                       id={`${brandId}-${slot.role}-usageGuidance`}
                       value={draft.usageGuidance}
