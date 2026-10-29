@@ -1,3 +1,8 @@
+import {
+  brandDraftFieldKey,
+  brochurePreviewRows,
+  type BrandDraftFocus,
+} from "./brandDraftFocus";
 import { brandBrochureTheme } from "./brandBrochureTheme";
 import { brandFontKey, useBrandFontPreviews } from "../lib/brandFontPreview";
 import React, { useState } from "react";
@@ -16,11 +21,13 @@ export function BrandKitBrochure({
   dirty,
   summary = false,
   focusGuidelines = false,
+  activeField,
 }: {
   kit: BrandKitSummary;
   dirty: boolean;
   summary?: boolean;
   focusGuidelines?: boolean;
+  activeField?: BrandDraftFocus | null;
 }) {
   const urls = useAuthenticatedBrandAssetUrls(kit);
   const [busy, setBusy] = useState(false),
@@ -145,14 +152,22 @@ export function BrandKitBrochure({
       {focusGuidelines && campaignGuidelines && (
         <section className="bp-brochure-section bp-brochure-section--guidelines">
           <h3>Creative guidelines for advertisements</h3>
-          <p className="bp-brochure-draft-caption">
-            Your campaign instructions from the left editor, reflected in this
-            draft.
-          </p>
-          {campaignGuidelines.rows.length ? (
+          {brochurePreviewRows(
+            "Creative guidelines",
+            campaignGuidelines.rows,
+            activeField,
+          ).length ? (
             <dl>
-              {campaignGuidelines.rows.map(([label, value]) => (
-                <div key={label}>
+              {brochurePreviewRows(
+                "Creative guidelines",
+                campaignGuidelines.rows,
+                activeField,
+              ).map(({ key, label, value }) => (
+                <div
+                  key={key}
+                  data-brand-preview={key}
+                  data-active={activeField?.key === key || undefined}
+                >
                   <dt>{label}</dt>
                   <dd>{value}</dd>
                 </div>
@@ -170,7 +185,18 @@ export function BrandKitBrochure({
         <h3>Brand palette</h3>
         <div className="bp-brochure-palette">
           {(kit.colors || []).map((c, i) => (
-            <div key={i}>
+            <div
+              key={i}
+              data-brand-preview={brandDraftFieldKey(
+                "palette",
+                c.role || String(i),
+              )}
+              data-active={
+                activeField?.key ===
+                  brandDraftFieldKey("palette", c.role || String(i)) ||
+                undefined
+              }
+            >
               <span style={{ background: c.hex }} />
               <strong>{c.name || c.role || "Brand color"}</strong>
               <code>{c.hex}</code>
@@ -193,7 +219,19 @@ export function BrandKitBrochure({
           {(kit.typography || []).map((t, i) => {
             const font = fonts[brandFontKey(t)];
             return (
-              <div className="bp-type-specimen" key={i}>
+              <div
+                className="bp-type-specimen"
+                key={i}
+                data-brand-preview={brandDraftFieldKey(
+                  "typography",
+                  t.role || String(i),
+                )}
+                data-active={
+                  activeField?.key ===
+                    brandDraftFieldKey("typography", t.role || String(i)) ||
+                  undefined
+                }
+              >
                 <small>
                   {t.role} / {t.family} / {t.weight || "400"}
                 </small>
@@ -241,8 +279,16 @@ export function BrandKitBrochure({
           >
             <h3>{section.title}</h3>
             <dl>
-              {section.rows.map(([label, value]) => (
-                <div key={label}>
+              {brochurePreviewRows(
+                section.title,
+                section.rows,
+                activeField,
+              ).map(({ key, label, value }) => (
+                <div
+                  key={key}
+                  data-brand-preview={key}
+                  data-active={activeField?.key === key || undefined}
+                >
                   <dt>{label}</dt>
                   <dd>{value}</dd>
                 </div>
@@ -252,10 +298,7 @@ export function BrandKitBrochure({
         ))}
       <section className="bp-brochure-section">
         <h3>Brand assets ({kit.assets?.length || 0})</h3>
-        <p>
-          Uploaded assets and approved creative sources are different. Human
-          likeness requires separate approved model permissions.
-        </p>
+        <p>Review source permissions before use.</p>
         <div className="bp-brochure-assets">
           {(kit.assets || []).map((a) => (
             <article key={a.id}>
@@ -267,12 +310,8 @@ export function BrandKitBrochure({
               ) : (
                 <div className="bp-asset-pending">Preview unavailable</div>
               )}
-              <strong>
-                {a.label || a.fileName || "Brand asset"}
-              </strong>
-              <small>
-                {a.status || "Processing"}
-              </small>
+              <strong>{a.label || a.fileName || "Brand asset"}</strong>
+              <small>{a.status || "Processing"}</small>
               <small>
                 {approved.has(a.id)
                   ? a.role === "brand_model"

@@ -250,7 +250,7 @@ export default function ProductionProjectWorkspace({
   ) : (
     <EmptyState
       title="Choose a saved creative"
-      description="Your project gallery contains the actual persisted advertisements. No demonstration creative is substituted."
+      description="Your saved advertisements appear here."
       actionLabel="Open workspace"
       onAction={() => go("workspace")}
     />
@@ -260,7 +260,7 @@ export default function ProductionProjectWorkspace({
       {!c.concepts.length ? (
         <EmptyState
           title="Your creative direction starts with a brief"
-          description="Save your Working Brief and generate campaign directions. Concepts are planning proposals; image generation is a separate step. Provider provenance is shown on each result."
+          description="Save your brief, then generate campaign concepts. Images are created separately."
           actionLabel={
             c.busy ? "Generating directions..." : "Generate from Working Brief"
           }
@@ -712,12 +712,12 @@ export default function ProductionProjectWorkspace({
               {!c.brand ? (
                 <EmptyState
                   title="Default Brand project"
-                  description="No previous Brand Kit is inherited. Use the existing project configuration or create a new Brand Project to bind a kit."
+                  description="Default Brand project. Create a Brand Project to use a Brand Kit."
                 />
               ) : !c.brand.assets?.length ? (
                 <EmptyState
                   title="No uploaded brand assets"
-                  description="Use the existing Brand Kit asset manager to upload and review sources."
+                  description="Upload and review assets in Brand Kit."
                 />
               ) : (
                 c.brand.assets.map((asset) => (
@@ -828,7 +828,7 @@ export default function ProductionProjectWorkspace({
                 ) : (
                   <EmptyState
                     title="Visual not generated"
-                    description="This saved concept is a creative plan. Create an editable native creative or use a separately approved image-generation path."
+                    description="Review this concept, then create an editable ad."
                   />
                 )}
               </section>
@@ -892,8 +892,7 @@ export default function ProductionProjectWorkspace({
               </span>
               <h2>{creative?.name || "Select a creative"}</h2>
               <p>
-                Product, text, logo and background remain separate saved scene
-                layers when present in the actual graph.
+                Review the ad, edit its layers or export.
               </p>
               <div className="xp-actions">
                 <button
@@ -1037,8 +1036,7 @@ export default function ProductionProjectWorkspace({
             <section className="xp-panel">
               <h2>Your campaign readiness</h2>
               <p>
-                Review what is saved and what still needs your decision before
-                creating an advertisement.
+                Review campaign details before creating an ad.
               </p>
               <div className="bp-readiness-grid">
                 <article>
@@ -1145,7 +1143,7 @@ export default function ProductionProjectWorkspace({
         ].includes(screen) && (
           <EmptyState
             title="This production workflow is not activated yet"
-            description="The approved screen remains in the UX baseline. Its real orchestration and verification gates are still being integrated; no simulated output or invented performance data is displayed."
+            description="This feature is not available yet. No generated output or performance data is connected."
             actionLabel="Back to project"
             onAction={() => go("workspace")}
           />

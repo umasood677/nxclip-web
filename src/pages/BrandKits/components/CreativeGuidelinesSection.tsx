@@ -1,3 +1,4 @@
+import { brandDraftFieldKey } from "../guided/brandDraftFocus";
 import React, { useId } from "react";
 import type { BrandCreativeGuidelines } from "../lib/brandKitTypes";
 
@@ -228,18 +229,12 @@ export function CreativeGuidelinesSection({
         <h2 id={`${prefix}-title`}>
           Creative guidelines for your advertisements
         </h2>
-        <p>
-          Turn your brand identity into clear direction for campaign concepts,
-          editable templates and product-aware imagery.
-        </p>
+        <p>Guide campaign imagery, layout and product accuracy.</p>
       </header>
       <div className="bp-guideline-starter">
         <div>
           <strong>{categoryLabel || "Your category"} starter guidance</strong>
-          <p>
-            Optional written suggestions, not AI analysis. Only empty fields are
-            filled; your existing instructions stay intact.
-          </p>
+          <p>Written suggestions for empty fields only.</p>
         </div>
         <button
           type="button"
@@ -256,12 +251,14 @@ export function CreativeGuidelinesSection({
               <span aria-hidden>{String(index + 1).padStart(2, "0")}</span>
               {group.title}
             </legend>
-            <p className="bp-voice-group-description">{group.description}</p>
+
             <div className="bp-voice-fields">
               {group.fields.map((field) => (
                 <div
                   className={`bp-voice-field${field.wide ? " bp-voice-field--wide" : ""}`}
                   key={field.key}
+                  data-brand-field={brandDraftFieldKey("creative", field.key)}
+                  data-brand-label={field.label}
                 >
                   <label htmlFor={`${prefix}-${field.key}`}>
                     {field.label}
@@ -285,8 +282,7 @@ export function CreativeGuidelinesSection({
         ))}
       </div>
       <p className="bp-voice-save-note">
-        Save Brand Kit to persist changes. Guidelines approval remains a
-        separate decision after reviewing the identity summary below.
+        Save changes, then review guidelines for approval.
       </p>
     </section>
   );

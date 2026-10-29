@@ -95,3 +95,12 @@ test("campaign draft prioritizes live creative guidelines before palette and kee
   assert.equal((html.match(/Preserve packaging/g) || []).length, 1);
   assert.doesNotMatch(html, /Export PDF|Export image/);
 });
+
+
+test("draft renders focused empty guidelines without changing saved kit data",()=>{
+ const before=JSON.stringify(kit);
+ const html=renderToStaticMarkup(<BrandKitBrochure kit={kit} dirty={false} summary focusGuidelines activeField={{key:"creative:composition",label:"Composition & focal point"}} />);
+ assert.match(html,/data-brand-preview="creative:composition" data-active="true"/);
+ assert.match(html,/Not set yet/);
+ assert.equal(JSON.stringify(kit),before);
+});

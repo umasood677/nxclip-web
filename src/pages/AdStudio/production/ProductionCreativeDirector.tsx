@@ -167,10 +167,7 @@ export function ProductionCreativeDirector({
           <dd>{project.brief?.coreMessage || "Not supplied"}</dd>
         </dl>
         <p>
-          Plan distinct concepts from the saved campaign and server-authorized
-          Brand Kit. Review and compare the strategy, then use the existing
-          Create Editable Creative and Canvas workflow. Product claims and
-          inventory remain subject to verification.
+          Develop and compare campaign concepts from your brief and Brand Kit. Verify product claims before use.
         </p>
         <button className="xp-secondary" onClick={onReview}>
           Review saved concepts →
@@ -196,8 +193,7 @@ export function ProductionCreativeDirector({
           </p>
         )}
         <p>
-          No commercial quote is required for beta. Only saved campaign text is
-          sent; this action does not generate or edit product photographs.
+          Analyzes saved campaign text; does not generate images.
         </p>
         <button
           className="xp-secondary"

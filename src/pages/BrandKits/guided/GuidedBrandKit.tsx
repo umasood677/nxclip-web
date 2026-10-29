@@ -1,4 +1,5 @@
 import "../components/brandCharacters.css";
+import { brandDraftFieldKey, focusedBrandDraftValue, type BrandDraftFocus } from "./brandDraftFocus";
 import { brandFontKey, useBrandFontPreviews } from "../lib/brandFontPreview";
 import "../components/brandVoice.css";
 import { useAuthenticatedBrandAssetUrls } from "../../AdStudio/canvas/useAuthenticatedBrandAssetUrls";
@@ -111,6 +112,20 @@ export function GuidedBrandKitWorkspace({
     [versionsLoading, setVersionsLoading] = useState(false),
     [versionsError, setVersionsError] = useState("");
   const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [activeField, setActiveField] = useState<BrandDraftFocus | null>(null);
+  const focusDraft = (event: React.FocusEvent<HTMLElement>) => {
+    const field = (event.target as HTMLElement).closest<HTMLElement>(
+      "[data-brand-field]",
+    );
+    setActiveField(
+      field?.dataset.brandField
+        ? {
+            key: field.dataset.brandField,
+            label: field.dataset.brandLabel || "Brand detail",
+          }
+        : null,
+    );
+  };
   const characterEditor = useRef({ dirty: false, busy: false });
   const title = useRef<HTMLHeadingElement>(null),
     saved = useRef("");
@@ -130,6 +145,7 @@ export function GuidedBrandKitWorkspace({
       )
         return;
     }
+    setActiveField(null);
     setMessage("");
     if (embedded) setEmbeddedStep(next);
     else setParams({ step: next });
@@ -271,7 +287,14 @@ export function GuidedBrandKitWorkspace({
     key: "name" | "description" | "website" | "audience",
     max: number,
   ) => (
-    <label className="xp-field">
+    <label
+      className="xp-field"
+      data-brand-field={brandDraftFieldKey(
+        key === "audience" || key === "website" ? "voice" : "brand",
+        key === "audience" ? "targetAudience" : key,
+      )}
+      data-brand-label={label}
+    >
       {label}
       <input
         value={draft[key]}
@@ -287,14 +310,25 @@ export function GuidedBrandKitWorkspace({
     </label>
   );
   const preview = (
-    <aside className="bp-draft-preview" aria-label="Brand Kit draft preview">
+    <aside
+      className="bp-draft-preview"
+      aria-label="Brand Kit draft preview"
+      data-editing={!!activeField || undefined}
+    >
       <header>
         <span className="xp-kicker">LIVE IDENTITY</span>
         <h2>Brand Kit draft</h2>
-        <p>
-          Your complete identity, using the current palette, type and messaging.
-          Changes remain a draft until saved.
-        </p>
+        {activeField && (
+          <div className="bp-draft-focus-card">
+            <p className="bp-draft-focus-status" role="status">
+              Editing: {activeField.label}
+            </p>
+            <p className="bp-draft-focus-value">
+              {focusedBrandDraftValue(current, activeField)}
+            </p>
+          </div>
+        )}
+        <p>Live preview. Save to keep changes.</p>
       </header>
       <div
         className="bp-draft-preview-scroll"
@@ -304,6 +338,7 @@ export function GuidedBrandKitWorkspace({
         <BrandKitBrochure
           kit={current}
           dirty={JSON.stringify(draft) !== saved.current}
+          activeField={activeField}
           summary
         />
       </div>
@@ -468,12 +503,11 @@ export function GuidedBrandKitWorkspace({
                 {field("Business description — optional", "description", 2000)}
                 <button
                   className="xp-secondary"
-                  disabled={!isBrandAnalysisEnabled()}
                   onClick={() => {
                     setAnalysisOpen(true);
                     go("identity");
                   }}
-                  title="Review saved text, provider and estimated cost before analysis."
+                  title="Review AI suggestions"
                 >
                   Suggest description
                 </button>
@@ -749,21 +783,24 @@ export function GuidedBrandKitWorkspace({
           {step === "identity" && (
             <>
               <div className="bp-identity-layout">
-                <section className="xp-panel bp-identity-visual">
+                <section
+                  className="xp-panel bp-identity-visual"
+                  onFocusCapture={focusDraft}
+                >
                   <header className="bp-identity-section-heading">
                     <span className="xp-kicker">VISUAL IDENTITY</span>
                     <h2>Make every detail yours.</h2>
-                    <p>
-                      Set your palette and typography, then define how your
-                      brand speaks below.
-                    </p>
+                    <p>Define colors, fonts and brand voice.</p>
                   </header>
                   <button
                     className="xp-secondary"
-                    disabled={!isBrandAnalysisEnabled()}
                     onClick={() => setAnalysisOpen((value) => !value)}
                     aria-expanded={analysisOpen}
-                    title="Requires a saved draft, an available provider and explicit cost approval."
+                    title={
+                      isBrandAnalysisEnabled()
+                        ? "Review AI analysis"
+                        : "Open analysis setup"
+                    }
                   >
                     Analyze brand identity
                   </button>
@@ -781,25 +818,22 @@ export function GuidedBrandKitWorkspace({
                       }}
                     />
                   )}
-                  <p>
-                    Review your identity before approving it. AI suggestions
-                    remain unverified and require explicit review; no simulated
-                    analysis is substituted.
-                  </p>
                   <section
                     className="bp-identity-control-section"
                     aria-label="Brand color palette"
                   >
                     <h3>Color palette</h3>
-                    <p>
-                      Choose a color for each brand role. Your saved colors
-                      remain the starting point.
-                    </p>
+                    <p>Choose colors for each brand role.</p>
                     <div className="bp-identity-color-grid">
                       {draft.colors.map((color, i) => (
                         <label
                           className="xp-field bp-identity-color"
                           key={color.role || i}
+                          data-brand-field={brandDraftFieldKey(
+                            "palette",
+                            color.role || String(i),
+                          )}
+                          data-brand-label={`${color.role} color`}
                         >
                           {color.role} color
                           <input
@@ -838,15 +872,17 @@ export function GuidedBrandKitWorkspace({
                         Reload local font previews
                       </button>
                     )}
-                    <p>
-                      Give headlines, body copy and calls to action a consistent
-                      hierarchy.
-                    </p>
+                    <p>Set headline, body and CTA fonts.</p>
                     <div className="bp-identity-type-grid">
                       {draft.typography.map((entry, i) => (
                         <label
                           className="xp-field bp-identity-type"
                           key={entry.role || i}
+                          data-brand-field={brandDraftFieldKey(
+                            "typography",
+                            entry.role || String(i),
+                          )}
+                          data-brand-label={`${entry.role} typography`}
                         >
                           {entry.role} typography
                           <select
@@ -927,11 +963,7 @@ export function GuidedBrandKitWorkspace({
                 <div>
                   <span className="xp-kicker">YOUR REVIEW</span>
                   <h2>Approve the complete identity.</h2>
-                  <p>
-                    Check your palette, typography and brand voice. Editing
-                    these details clears the related review approvals; saving
-                    never approves them automatically.
-                  </p>
+                  <p>Review colors, fonts and voice before approval.</p>
                 </div>
                 <div className="bp-identity-review-actions">
                   <label className="xp-check">
@@ -957,7 +989,10 @@ export function GuidedBrandKitWorkspace({
           {step === "guidelines" && (
             <>
               <div className="bp-guidelines-layout">
-                <section className="xp-panel bp-guidelines-editor">
+                <section
+                  className="xp-panel bp-guidelines-editor"
+                  onFocusCapture={focusDraft}
+                >
                   <CreativeGuidelinesSection
                     categoryLabel={[
                       BRAND_TAXONOMY.find((c) => c.id === draft.categoryId)
@@ -987,15 +1022,22 @@ export function GuidedBrandKitWorkspace({
                 <aside
                   className="bp-draft-preview"
                   aria-label="Live Brand Kit draft"
+                  data-editing={!!activeField || undefined}
                 >
                   <header>
                     <span className="xp-kicker">LIVE CAMPAIGN IDENTITY</span>
                     <h2>Brand Kit draft</h2>
-                    <p>
-                      Your creative guidelines appear first, followed by the
-                      complete brand identity. Edits on the left update this
-                      preview without saving or generating an advertisement.
-                    </p>
+                    {activeField && (
+                      <div className="bp-draft-focus-card">
+                        <p className="bp-draft-focus-status" role="status">
+                          Editing: {activeField.label}
+                        </p>
+                        <p className="bp-draft-focus-value">
+                          {focusedBrandDraftValue(current, activeField)}
+                        </p>
+                      </div>
+                    )}
+                    <p>Live preview. Save to keep changes.</p>
                   </header>
                   <div
                     className="bp-draft-preview-scroll"
@@ -1006,6 +1048,7 @@ export function GuidedBrandKitWorkspace({
                       kit={current}
                       dirty={JSON.stringify(draft) !== saved.current}
                       summary
+                      activeField={activeField}
                       focusGuidelines
                     />
                   </div>

@@ -67,7 +67,7 @@ export function BrandAnalysisPanel({ kit, disabled, onApply }: Props) {
     } catch {
       if (current === scope.current && token === sequence.current)
         setError(
-          "No executable estimate is available. Check configured model availability, known pricing and feature readiness. No analysis was authorized.",
+          "Analysis unavailable. Check provider setup before continuing.",
         );
     } finally {
       if (current === scope.current && token === sequence.current)
@@ -85,7 +85,7 @@ export function BrandAnalysisPanel({ kit, disabled, onApply }: Props) {
     setResult(next);
     setSelection([]);
     setMessage(
-      "Analysis returned. Review suggestions and choose which fields to apply as an unsaved draft.",
+      "Review suggestions, then apply selected fields.",
     );
   };
   const execute = async () => {
@@ -106,7 +106,7 @@ export function BrandAnalysisPanel({ kit, disabled, onApply }: Props) {
     } catch {
       if (current === scope.current && token === sequence.current)
         setError(
-          "Analysis did not complete in this view. Check the same request status before authorizing anything new. A failed or timed-out provider request may still have incurred usage.",
+          "Analysis incomplete. Check request status before retrying; credits may have been used.",
         );
     } finally {
       if (current === scope.current && token === sequence.current)
@@ -125,12 +125,12 @@ export function BrandAnalysisPanel({ kit, disabled, onApply }: Props) {
       if (status.result) acceptResult(status.result);
       else
         setMessage(
-          `Analysis request is ${status.status}. Status checks never invoke a provider. No automatic retry is performed.`,
+          `Request status: ${status.status}. No new AI call.`,
         );
     } catch {
       if (current === scope.current && token === sequence.current)
         setError(
-          "Request status is unavailable. No provider call or automatic retry was made by this status check.",
+          "Status unavailable. No new AI request was made.",
         );
     } finally {
       if (current === scope.current && token === sequence.current)
@@ -139,55 +139,43 @@ export function BrandAnalysisPanel({ kit, disabled, onApply }: Props) {
   };
   if (!enabled)
     return (
-      <div className="xp-notice">
-        Real AI brand analysis is not enabled in this environment. Your current
-        identity, assets and manual editing remain available. No simulated
-        analysis is substituted.
+      <div className="xp-notice" role="status">
+        AI analysis requires local activation.
       </div>
     );
   return (
     <section className="xp-panel" aria-label="AI-assisted saved brand analysis">
       <span className="xp-kicker">AI-ASSISTED BRAND INTELLIGENCE</span>
       <h3>Understand your brand before creating.</h3>
-      <p>
-        Analyze the saved brand brief through the existing Gemini/Vertex model
-        router. This text-only analysis does not inspect private images, fetch
-        your website, verify product inventory or approve rights.
-      </p>
+      <p>Analyze saved brand text. Review suggestions before applying.</p>
       {!kit || disabled ? (
-        <p className="xp-notice">
-          Save the current Brand Kit draft before preparing analysis or applying
-          suggestions.
-        </p>
+        <p className="xp-notice">Save your Brand Kit before analysis.</p>
       ) : null}
       <fieldset className="bp-fieldset" disabled={busy || disabled || !kit}>
         <button className="xp-secondary" onClick={() => void getQuote()}>
-          Check saved source / prepare UAT request
+          Check analysis availability
         </button>
         {quote && (
           <div className="xp-notice">
             <strong>
               {quote.provider} / {quote.modelId}
             </strong>
-            <p>
-              Beta UAT uses your Google credits. Output is bounded to{" "}
-              {quote.maxOutputTokens} tokens. No automatic retry is performed.
-            </p>
+            <p>Uses Google credits. No automatic retries.</p>
             <label className="xp-check">
               <input
                 type="checkbox"
                 checked={approved}
                 onChange={(e) => setApproved(e.target.checked)}
               />
-              I authorize sending this saved brand text to {quote.provider} for
-              one owner-UAT analysis request using the displayed model.
+              Allow one {quote.provider} analysis of this saved brand text using
+              the displayed model.
             </label>
             <button
               className="xp-primary"
               disabled={!approved || !!result}
               onClick={() => void execute()}
             >
-              Authorize and analyze saved brief
+              Analyze saved brand
             </button>
           </div>
         )}
@@ -198,7 +186,7 @@ export function BrandAnalysisPanel({ kit, disabled, onApply }: Props) {
           disabled={busy}
           onClick={() => void checkStatus()}
         >
-          Check this request status — no provider call
+          Check request status
         </button>
       )}
       {busy && (

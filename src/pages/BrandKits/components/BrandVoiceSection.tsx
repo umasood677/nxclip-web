@@ -1,3 +1,4 @@
+import { brandDraftFieldKey } from "../guided/brandDraftFocus";
 import React, { useId } from "react";
 import type { BrandVoiceFields } from "../lib/brandKitTypes";
 
@@ -112,14 +113,14 @@ const VOICE_GROUPS: {
         key: "doSay",
         label: "Preferred vocabulary",
         placeholder: "Add an approved word or phrase on each line",
-        hint: "One phrase per line. Use language that is true to your brand.",
+        hint: "One phrase per line.",
         rows: 4,
       },
       {
         key: "dontSay",
         label: "Words & phrases to avoid",
         placeholder: "Add a word, phrase or unsupported claim on each line",
-        hint: "One phrase per line. Include language your brand should never use.",
+        hint: "One phrase per line.",
         rows: 4,
       },
     ],
@@ -145,7 +146,7 @@ const VOICE_GROUPS: {
         key: "exampleHeadlines",
         label: "Approved headline examples",
         placeholder: "Add one headline per line",
-        hint: "Examples guide the writing style; they do not verify product claims or inventory.",
+        hint: "Style examples, not verified product claims.",
         rows: 3,
         wide: true,
       },
@@ -169,13 +170,9 @@ export function BrandVoiceSection({ value, onChange }: Props) {
       <header className="bp-voice-heading">
         <span className="bp-voice-eyebrow">VERBAL IDENTITY</span>
         <h2 id={`${prefix}-title`}>Voice, messaging & copy details</h2>
-        <p>
-          Keep every campaign recognizably yours. These preferences guide your
-          briefs and advertisement copy.
-        </p>
+        <p>Set your campaign voice and copy preferences.</p>
         <p className="bp-voice-save-note">
-          Changes are saved with <strong>Save Brand Kit</strong>. Review the
-          complete identity before approving it.
+          Use <strong>Save Brand Kit</strong> to keep changes.
         </p>
       </header>
       <div className="bp-voice-groups">
@@ -187,7 +184,7 @@ export function BrandVoiceSection({ value, onChange }: Props) {
               </span>
               {group.title}
             </legend>
-            <p className="bp-voice-group-description">{group.description}</p>
+
             <div className="bp-voice-fields">
               {group.fields.map((field) => {
                 const id = `${prefix}-${field.key}`,
@@ -196,6 +193,8 @@ export function BrandVoiceSection({ value, onChange }: Props) {
                   <div
                     className={`bp-voice-field${field.wide ? " bp-voice-field--wide" : ""}`}
                     key={field.key}
+                    data-brand-field={brandDraftFieldKey("voice", field.key)}
+                    data-brand-label={field.label}
                   >
                     <label htmlFor={id}>{field.label}</label>
                     {field.rows ? (

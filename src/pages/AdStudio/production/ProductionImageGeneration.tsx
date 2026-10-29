@@ -214,10 +214,7 @@ export function ProductionImageGeneration({
         />
         <span className="xp-status">Saved source / {source.name}</span>
         <p>
-          Generate a real AI scene behind the editable source layers. Original
-          product photographs, printed packaging, text and logo layers remain
-          unchanged. This does not perform product segmentation or certify
-          reference fidelity.
+          Generate a background behind your editable product, logo and text layers. Source photos retain their original backgrounds.
         </p>
       </section>
       <section className="xp-panel">
@@ -230,9 +227,7 @@ export function ProductionImageGeneration({
         </h2>
         {!enabled && (
           <p className="xp-notice">
-            Real image execution awaits approved runtime/provider configuration
-            and a owner UAT approval. No provider call is available in this
-            environment yet.
+            AI generation needs local activation.
           </p>
         )}
         <label className="xp-field">
@@ -256,8 +251,7 @@ export function ProductionImageGeneration({
         </label>
         {!canEdit && (
           <p>
-            Generate the first AI background before requesting a provider-backed
-            variation or refinement.
+            Generate a background before creating AI variations or refinements.
           </p>
         )}
         <fieldset className="xp-panel space-y-3" disabled={busy || !!requestId}>
@@ -265,8 +259,7 @@ export function ProductionImageGeneration({
             Models & Mascots for this ad
           </legend>
           <p className="text-xs text-muted-foreground">
-            Choose specific profiles. Only their original reference photos will
-            be added as editable layers; this does not recreate faces or poses.
+            Selected photos become editable layers. Faces and poses are not regenerated.
           </p>
           <button
             type="button"
@@ -379,14 +372,12 @@ export function ProductionImageGeneration({
               </dd>
             </dl>
             <p>
-              Beta UAT uses your Google credits. No extra caption call,
-              automatic retry or hidden model fallback. Image quality and scene
-              integration require human review.
+              Uses Google credits. No automatic retries or model fallback. Review results before use.
             </p>
             <p className="xp-notice">
               {(quote.productLayerCount ?? 0) > 0
-                ? `${quote.productLayerCount} original product-photo layer(s) are protected. Their original surroundings remain; no accepted isolation is claimed.`
-                : "No product photograph is bound in this saved creative. This request creates a background only. Bind the original photograph in the existing Canvas for a product advertisement."}
+                ? `${quote.productLayerCount} original product photo(s) protected; backgrounds retained.`
+                : "Background only. Add a product photo in Canvas for a product advertisement."}
             </p>
             <label className="xp-check">
               <input
