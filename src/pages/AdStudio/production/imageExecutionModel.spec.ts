@@ -1,6 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  assertCharacterQuote,
+  savedCharacterSelection,
+  toggleAdCharacter,
   realImagesEnabled,
   validateImageQuote,
   hasGeneratedBackground,
@@ -86,4 +89,21 @@ test("requires owned project child persistence and a generated layer", () => {
     creative("child"),
   ])
     assert.throws(() => verifyGeneratedCreative(invalid, source));
+});
+
+
+test("ad profile choice is explicit and never inferred from a Brand Kit",()=>{
+  assert.deepEqual(savedCharacterSelection(creative("new")),[]);
+  const source={...creative("saved"),selectedCharacterIds:["first"]};
+  assert.deepEqual(savedCharacterSelection(source),["first"]);
+  assert.deepEqual(toggleAdCharacter(["first"],"second"),["first","second"]);
+  assert.deepEqual(toggleAdCharacter(["first","second"],"first"),["second"]);
+  assert.throws(()=>toggleAdCharacter(["a","b","c","d"],"e"),/four/);
+  assert.deepEqual(source.selectedCharacterIds,["first"]);
+});
+
+test("older runtimes cannot silently ignore an explicit profile choice",()=>{
+ assert.throws(()=>assertCharacterQuote(quote(),[]),/runtime/);
+ assert.throws(()=>assertCharacterQuote({...quote(),characterSelectionSupported:true,selectedCharacterIds:["other"]},["chosen"]),/runtime/);
+ assert.doesNotThrow(()=>assertCharacterQuote({...quote(),characterSelectionSupported:true,selectedCharacterIds:["chosen"]},["chosen"]));
 });

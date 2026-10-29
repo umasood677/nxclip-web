@@ -994,6 +994,7 @@ export default function ProductionProjectWorkspace({
             <ProductionImageGeneration
               key={creative.id + screen}
               source={creative}
+              brand={c.brand}
               assetUrls={c.assetUrls}
               initialOperation={
                 screen === "variation-lab" ? "variation" : "generate"

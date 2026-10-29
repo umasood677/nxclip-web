@@ -1,9 +1,14 @@
+import { characterReviewIssues } from "../../BrandKits/guided/brandCharacterModel";
+import type { BrandKitSummary } from "../../BrandKits/lib/brandKitTypes";
 import React, { useEffect, useRef, useState } from "react";
 import { adImageApi } from "../../../services/apiClient";
 import { SceneStage } from "../canvas/SceneStage";
 import { Skeleton } from "../../../components/ui/skeleton";
 import type { WorkspaceCreative } from "../lib/projectWorkspace";
 import {
+  assertCharacterQuote,
+  savedCharacterSelection,
+  toggleAdCharacter,
   hasGeneratedBackground,
   realImagesEnabled,
   validateImageQuote,
@@ -13,11 +18,13 @@ import {
 } from "./imageExecutionModel";
 export function ProductionImageGeneration({
   source,
+  brand,
   assetUrls,
   initialOperation = "generate",
   onSaved,
 }: {
   source: WorkspaceCreative;
+  brand?: BrandKitSummary | null;
   assetUrls: Readonly<Record<string, string>>;
   initialOperation?: AdImageOperation;
   onSaved: (saved: WorkspaceCreative) => Promise<void>;
@@ -43,6 +50,28 @@ export function ProductionImageGeneration({
         return "";
       }
     });
+  const [selectedCharacterIds, setSelectedCharacterIds] = useState(() =>
+    savedCharacterSelection(source),
+  );
+  const profiles = brand?.voice?.studio?.characters ?? [];
+  const eligible = profiles.filter(
+    (p) =>
+      p.status === "approved" &&
+      p.permissions.scopes.includes("ad-studio") &&
+      !characterReviewIssues(p, brand?.assets ?? []).length &&
+      p.referenceAssetIds.length &&
+      brand?.voice?.studio?.approvedAssetIds?.includes(
+        p.referenceAssetIds[0],
+      ) &&
+      brand?.assets?.some(
+        (a) =>
+          a.id === p.referenceAssetIds[0] &&
+          ["brand_model", "other"].includes(a.role),
+      ),
+  );
+  const selectionReady = selectedCharacterIds.every((id) =>
+    eligible.some((p) => p.id === id),
+  );
   const epoch = useRef(0);
   useEffect(
     () => () => {
@@ -58,8 +87,12 @@ export function ProductionImageGeneration({
     operation,
     instruction,
     expectedVersion: source.currentVersion ?? 1,
+    selectedCharacterIds,
   };
-  const valid = instruction.trim().length > 0 && instruction.length <= 4000;
+  const valid =
+    instruction.trim().length > 0 &&
+    instruction.length <= 4000 &&
+    selectionReady;
   const estimate = async () => {
     if (!enabled || !valid || busy || requestId) return;
     const n = ++epoch.current;
@@ -67,6 +100,7 @@ export function ProductionImageGeneration({
     setError("");
     try {
       const q = validateImageQuote(await adImageApi.quote(source.id, input));
+      assertCharacterQuote(q, selectedCharacterIds);
       if (n === epoch.current) {
         setQuote(q);
         setConsent(false);
@@ -226,6 +260,91 @@ export function ProductionImageGeneration({
             variation or refinement.
           </p>
         )}
+        <fieldset className="xp-panel space-y-3" disabled={busy || !!requestId}>
+          <legend className="text-sm font-semibold">
+            Models & Mascots for this ad
+          </legend>
+          <p className="text-xs text-muted-foreground">
+            Choose specific profiles. Only their original reference photos will
+            be added as editable layers; this does not recreate faces or poses.
+          </p>
+          <button
+            type="button"
+            className="xp-secondary"
+            aria-pressed={!selectedCharacterIds.length}
+            onClick={() => {
+              setSelectedCharacterIds([]);
+              change();
+            }}
+          >
+            No model / mascot
+          </button>
+          {profiles.map((profile) => {
+            const allowed = eligible.some((p) => p.id === profile.id),
+              selected = selectedCharacterIds.includes(profile.id);
+            return (
+              <label
+                key={profile.id}
+                className="flex items-start gap-3 rounded-lg border border-white/10 p-3 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  checked={selected}
+                  disabled={
+                    (!allowed && !selected) ||
+                    (!selected && selectedCharacterIds.length >= 4)
+                  }
+                  onChange={() => {
+                    setSelectedCharacterIds((ids) =>
+                      toggleAdCharacter(ids, profile.id),
+                    );
+                    change();
+                  }}
+                />
+                {assetUrls[profile.referenceAssetIds[0]] && (
+                  <img
+                    src={assetUrls[profile.referenceAssetIds[0]]}
+                    alt=""
+                    className="h-14 w-12 rounded object-contain"
+                  />
+                )}
+                <span>
+                  <strong>{profile.name}</strong>
+                  <span className="block text-xs text-muted-foreground">
+                    {allowed
+                      ? profile.kind === "human-model"
+                        ? "Authorized model"
+                        : "Approved mascot / character"
+                      : "Unavailable — review approval, reference and Ad Studio usage permissions in Brand Kit."}
+                  </span>
+                  {profile.appearance && (
+                    <span className="block text-xs mt-1">
+                      {profile.appearance}
+                    </span>
+                  )}
+                </span>
+              </label>
+            );
+          })}
+          {!profiles.length && (
+            <p className="text-xs text-muted-foreground">
+              {brand
+                ? "Add and approve a reference-backed profile in Brand Kit to use a model or mascot."
+                : "This project has no Brand Kit profiles."}
+            </p>
+          )}
+          {!selectionReady && (
+            <p role="alert" className="xp-notice">
+              A retained profile is no longer available. Deselect it or review
+              its Brand Kit authorization before preflight.
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            {selectedCharacterIds.length} / 4 selected. Your source creative
+            remains unchanged; check placement and image backgrounds in the new
+            creative before export.
+          </p>
+        </fieldset>
         <label className="xp-field">
           Lighting, environment and creative direction
           <textarea

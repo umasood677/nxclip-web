@@ -2,6 +2,8 @@ import { validPreflightCost } from "../../../lib/aiExecutionPreflight";
 import type { WorkspaceCreative } from "../lib/projectWorkspace";
 export type AdImageOperation = "generate" | "variation" | "refine";
 export type ImageQuote = {
+  characterSelectionSupported?: true;
+  selectedCharacterIds?: string[];
   schemaVersion: "1.0";
   sourceHash: string;
   quoteHash: string;
@@ -22,6 +24,7 @@ export type ImageInput = {
   operation: AdImageOperation;
   instruction: string;
   maxEstimatedCostUsd?: number;
+  selectedCharacterIds?: string[];
 };
 export const realImagesEnabled = (
   env: Record<string, unknown> | undefined = import.meta.env,
@@ -63,4 +66,40 @@ export function verifyGeneratedCreative(
       "Generated creative persistence could not be verified. Check the retained request before retrying.",
     );
   return saved;
+}
+
+/** Explicit selection only; legacy brand context never silently selects a profile. */
+export function savedCharacterSelection(source: WorkspaceCreative): string[] {
+  return [
+    ...new Set(
+      source.selectedCharacterIds ??
+        source.sceneGraph?.layers
+          .filter(
+            (l) => l.type === "image" && l.id.startsWith("brand-character-"),
+          )
+          .map((l) => l.id.slice("brand-character-".length)) ??
+        [],
+    ),
+  ];
+}
+export function toggleAdCharacter(
+  ids: readonly string[],
+  id: string,
+): string[] {
+  if (ids.includes(id)) return ids.filter((value) => value !== id);
+  if (ids.length >= 4) throw Error("Select up to four profiles for this ad.");
+  return [...ids, id];
+}
+
+export function assertCharacterQuote(
+  quote: ImageQuote,
+  selected: readonly string[],
+) {
+  if (
+    quote.characterSelectionSupported !== true ||
+    JSON.stringify(quote.selectedCharacterIds) !== JSON.stringify(selected)
+  )
+    throw Error(
+      "The Content/AI runtime has not verified this model selection. Activate the updated services before generation.",
+    );
 }
