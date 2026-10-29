@@ -3,7 +3,7 @@ import { BrandTemplateScenePreview } from "./BrandTemplateScenePreview";
 import { toast } from "sonner";
 import { BrandTemplateAiWorkspace } from "./BrandTemplateAiWorkspace";
 import "../../AdStudio/styles/ad-studio-w0a.css";
-import "./brandTemplates.css";
+
 import { useBrandTemplateDraftPreview } from "./useBrandTemplateDraftPreview";
 import React, {
   useCallback,
@@ -51,6 +51,7 @@ import "../../AdStudio/uxPreview/preview.css";
 import "../../AdStudio/uxPreview/roadmap.css";
 import "../../AdStudio/styles/production-theme.css";
 import "../guided/guidedBrand.css";
+import "./brandTemplates.css";
 
 type Draft = {
   name: string;
@@ -386,7 +387,7 @@ export default function BrandTemplateLibrary() {
     </section>
   );
   return (
-    <div className="xp-root nxclip-production bp-guided-root">
+    <div className="xp-root nxclip-production bp-guided-root bt-root ad-studio-w0a">
       <main className="xp-main">
         <nav className="xp-breadcrumb" aria-label="Breadcrumb">
           <Link

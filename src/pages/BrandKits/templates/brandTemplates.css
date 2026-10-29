@@ -31,3 +31,31 @@
 @media(max-width:700px){.bt-root .xp-main{padding:20px 14px}.bt-root .xp-page-head{align-items:flex-start;flex-direction:column}.bt-root .bt-gallery,.bt-root .xp-split,.bt-root .bt-setup-fields{grid-template-columns:minmax(0,1fr)}.bt-root .bt-card-art{height:390px}.bt-root .bt-card-art [data-scene-stage]{max-width:100%}}
 
 .bt-root .bt-scene-preview{width:100%;display:flex;justify-content:center;min-width:0}
+
+/* Scope gallery and control geometry to Template Studio, never the prototype. */
+.bt-root .xp-main{min-width:0;padding:28px;}
+.bt-root .xp-page-head>div{min-width:0;}
+.bt-root .xp-page-head>.xp-primary{flex:none;}
+.bt-root .xp-panel{min-width:0;}
+.bt-root .bt-toolbar .xp-actions{gap:16px;}
+.bt-root .bt-toolbar .xp-field{flex:1 1 180px;max-width:320px;}
+.bt-root .bt-toolbar .xp-primary{height:44px;min-height:44px;flex:0 1 auto;margin:0;}
+.bt-root .bt-toolbar .xp-check input{width:16px;height:16px;flex:none;}
+.bt-root .bt-card{display:flex;flex-direction:column;}
+.bt-root .bt-card .xp-card-copy{flex:1;}
+.bt-root .bt-card .xp-card-copy>.xp-primary{margin-top:auto;}
+.bt-root .bt-card .xp-status{align-self:flex-start;}
+.bt-root #ad-studio-catalog{min-width:0;}
+.bt-root #ad-studio-catalog .w0a-card{min-width:0;display:flex;flex-direction:column;}
+.bt-root #ad-studio-catalog .w0a-card-body{display:flex;flex-direction:column;gap:12px;flex:1;}
+.bt-root #ad-studio-catalog .w0a-card-body h3{margin:0;}
+.bt-root #ad-studio-catalog .w0a-formats{display:flex;flex-wrap:wrap;gap:6px;margin:0;}
+.bt-root #ad-studio-catalog .w0a-card-body>.w0a-btn{margin-top:auto;min-height:42px;width:100%;}
+@media(max-width:700px){
+  .bt-root .xp-main{padding:20px 14px;gap:20px;}
+  .bt-root .bt-toolbar .xp-actions{align-items:stretch;flex-direction:column;}
+  .bt-root .bt-toolbar .xp-field{flex:auto;max-width:none;width:100%;min-width:0;}
+  .bt-root .bt-toolbar .xp-check{align-self:flex-start;}
+  .bt-root .bt-toolbar .xp-primary{align-self:stretch;flex:auto;}
+  .bt-root .xp-page-head>.xp-primary{align-self:flex-start;}
+}
