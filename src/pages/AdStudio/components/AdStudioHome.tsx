@@ -423,11 +423,6 @@ export function AdStudioHome({
                 </Link>
               )}
             </header>
-            <div className="w0a-note">
-              {isNeutral
-                ? "Standard layouts for a Default Brand project. Choosing a layout opens project setup; it does not create a project or creative automatically."
-                : `${homeCatalog.label}: saved Brand Templates are listed below. Catalog samples are not generated brand templates.`}
-            </div>
             {selectedBrandId ? (
               <SavedBrandTemplates
                 limit={templatesOnly ? undefined : 6}
@@ -482,27 +477,6 @@ export function AdStudioHome({
                 </Link>
               )}
             </header>
-            <div className="w0a-note">
-              {isNeutral
-                ? "Review a starting brief, explicitly create a project, then continue in its Working Brief and Concept Gallery."
-                : `${homeCatalog.label} strategy examples open project setup with this Brand Kit. Reference pictures are illustrative; choose a saved Brand Template explicitly in the project.`}
-            </div>
-            {selectedBrandId && (
-              <details className="w0a-note">
-                <summary>
-                  Choose a saved Brand Template for this campaign
-                </summary>
-                <p>
-                  These are actual saved layouts. An Example Brief supplies
-                  strategy; select its layout explicitly in your project.
-                </p>
-                <SavedBrandTemplates
-                  brandId={selectedBrandId}
-                  data={nativeTemplates}
-                  assetUrls={assetUrls}
-                />
-              </details>
-            )}
             {homeCatalog.examples.length ? (
               <div className="w0a-grid w0a-grid-3">
                 {homeCatalog.examples
@@ -527,8 +501,7 @@ export function AdStudioHome({
                         <div className="w0a-card-body">
                           <h3>{ex.title}</h3>
                           <div className="w0a-meta">
-                            {ex.category} · illustrative brief reference, not a
-                            saved template
+                            {ex.category} · Illustrative reference
                           </div>
                           <p className="text-[11px] text-[var(--w0a-muted)] mt-1 line-clamp-2">
                             {ex.headline}

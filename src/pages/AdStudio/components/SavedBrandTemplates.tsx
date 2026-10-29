@@ -160,10 +160,6 @@ export function SavedBrandTemplates({
           require local activation.
         </p>
       )}
-      <p className="w0a-note">
-        Saved native layouts from this Brand Kit. Only approved, saved recipes
-        without reported blockers are offered for reuse.
-      </p>
       {error && <p role="alert">{error}</p>}
       {!items.length ? (
         <EmptyState
