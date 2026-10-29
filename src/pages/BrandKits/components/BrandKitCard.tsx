@@ -205,16 +205,11 @@ export function BrandKitCard({
                   Archived
                 </Badge>
               ) : null}
-              {logo ? (
-                <Badge variant="outline" className="text-[10px]">
-                  Logo
-                </Badge>
-              ) : null}
             </div>
           </div>
         </div>
 
-        <p className="line-clamp-2 text-xs text-muted-foreground min-h-[2.5rem]">
+        <p className="bk-brand-description text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
           {kit.description?.trim() ||
             tagline ||
             kit.guidelines?.trim() ||
@@ -244,9 +239,8 @@ export function BrandKitCard({
         </div>
 
         <p className="text-xs text-muted-foreground">
-          {kit.assets?.filter((a) => !a.status || a.status === "ready")
-            .length || 0}{" "}
-          uploaded assets · {kit.typography?.length || 0} typography roles
+          Assets ({kit.assets?.filter((a) => !a.status || a.status === "ready")
+            .length || 0}) · Typography ({kit.typography?.length || 0})
         </p>
         <div className="mt-auto flex gap-2 pt-1">
           <Button

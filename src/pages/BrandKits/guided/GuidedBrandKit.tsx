@@ -298,9 +298,8 @@ export function GuidedBrandKitWorkspace({
       </header>
       <div
         className="bp-draft-preview-scroll"
-        tabIndex={0}
         role="region"
-        aria-label="Scrollable Brand Kit identity brochure"
+        aria-label="Complete Brand Kit identity brochure"
       >
         <BrandKitBrochure
           kit={current}
@@ -640,7 +639,6 @@ export function GuidedBrandKitWorkspace({
           )}
           {step === "assets" && (
             <section className="xp-panel">
-              <h2>Build a library with a point of view.</h2>
               {!kit ? (
                 <>
                   <p>
@@ -672,7 +670,14 @@ export function GuidedBrandKitWorkspace({
               )}
               {kit && (
                 <div className="mt-6">
-                  <h3>Approve source assets</h3>
+                  <h3>
+                    Approve source assets (
+                    {
+                      (kit?.assets || []).filter((a) => a.status === "ready")
+                        .length
+                    }
+                    )
+                  </h3>
                   <p>
                     Ready means uploaded. Select only sources you authorize for
                     brand creative and templates.
@@ -706,9 +711,7 @@ export function GuidedBrandKitWorkspace({
                           )}
                         <span>
                           {asset.label || asset.fileName || "Brand asset"}
-                          <small className="block">
-                            Uploaded and ready
-                          </small>
+                          <small className="block">Uploaded and ready</small>
                         </span>
                       </label>
                     ))}
@@ -899,27 +902,27 @@ export function GuidedBrandKitWorkspace({
                       ))}
                     </div>
                   </section>
+                  <section className="bp-identity-voice">
+                    <BrandVoiceSection
+                      value={voiceDraftFromKit(guidedPayload(draft, kit).voice)}
+                      onChange={(next) =>
+                        edit({
+                          voiceExtras: {
+                            ...draft.voiceExtras,
+                            ...voicePatchFromDraft(next),
+                          },
+                          personality: next.personality,
+                          tone: next.tone,
+                          audience: next.targetAudience,
+                          identityApproved: false,
+                          guidelinesApproved: false,
+                        })
+                      }
+                    />
+                  </section>
                 </section>
                 <div className="bp-identity-preview">{preview}</div>
               </div>
-              <section className="xp-panel bp-identity-voice">
-                <BrandVoiceSection
-                  value={voiceDraftFromKit(guidedPayload(draft, kit).voice)}
-                  onChange={(next) =>
-                    edit({
-                      voiceExtras: {
-                        ...draft.voiceExtras,
-                        ...voicePatchFromDraft(next),
-                      },
-                      personality: next.personality,
-                      tone: next.tone,
-                      audience: next.targetAudience,
-                      identityApproved: false,
-                      guidelinesApproved: false,
-                    })
-                  }
-                />
-              </section>
               <section className="xp-panel bp-identity-review">
                 <div>
                   <span className="xp-kicker">YOUR REVIEW</span>
@@ -996,9 +999,8 @@ export function GuidedBrandKitWorkspace({
                   </header>
                   <div
                     className="bp-draft-preview-scroll"
-                    tabIndex={0}
                     role="region"
-                    aria-label="Scrollable campaign Brand Kit brochure"
+                    aria-label="Complete campaign Brand Kit brochure"
                   >
                     <BrandKitBrochure
                       kit={current}

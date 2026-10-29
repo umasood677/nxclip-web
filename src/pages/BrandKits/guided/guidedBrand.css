@@ -276,7 +276,7 @@
 /* Identity uses the same guided workspace panels and Geist form hierarchy. */
 .bp-identity-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 24px;
   align-items: start;
 }
@@ -636,3 +636,17 @@
     scroll-behavior: auto;
   }
 }
+
+/* Full draft beside its editor: equal columns, no nested scrolling or clipped sections. */
+.bp-identity-layout, .bp-guidelines-layout { align-items:stretch; }
+.bp-identity-preview, .bp-draft-preview { min-width:0; height:100%; }
+.bp-draft-preview { position:static; display:flex; flex-direction:column; }
+.bp-draft-preview-scroll { max-height:none; min-height:0; overflow:visible; flex:1; overscroll-behavior:auto; }
+.bp-draft-preview .bp-brochure-cover { padding:20px; }
+.bp-draft-preview .bp-brochure-cover h2 { font-size:28px; }
+.bp-draft-preview .bp-brochure-section { padding:18px 20px; }
+.bp-draft-preview .bp-brochure-section h3 { font-size:18px; }
+.bp-draft-preview .bp-brochure-section dl, .bp-draft-preview .bp-brochure-type-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 16px; }
+.bp-draft-preview .bp-brochure-assets { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.bp-draft-preview .bp-brochure-assets img { height:76px; }
+@media(max-width:600px) { .bp-draft-preview .bp-brochure-section dl, .bp-draft-preview .bp-brochure-type-grid { grid-template-columns:1fr; } .bp-draft-preview .bp-brochure-assets { grid-template-columns:repeat(2,minmax(0,1fr)); } }

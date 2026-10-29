@@ -159,7 +159,9 @@ export function BrandAssetsSection({
   return (
     <div className="space-y-5" id={`brand-${brandId}-assets`}>
       <div>
-        <h2 className="font-display text-lg font-semibold">Logos & Assets</h2>
+        <h2 className="font-display text-lg font-semibold">
+          Logos & Assets ({assets.length})
+        </h2>
         <p className="text-sm text-muted-foreground">
           Upload logos, product photos, and brand-model imagery. Usage guidance
           is editorial instruction — not an AI identity guarantee. Files stay in
@@ -167,10 +169,6 @@ export function BrandAssetsSection({
         </p>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        {assets.length} attached assets. Selecting a candidate changes only this
-        preview, not its role or approval.
-      </p>
       <div className="space-y-4">
         {ASSET_SLOTS.map((slot) => {
           const asset = chosen(slot.role);
@@ -192,7 +190,10 @@ export function BrandAssetsSection({
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h3 className="text-sm font-semibold">{slot.label}</h3>
+                  <h3 className="text-sm font-semibold">
+                    {slot.label} (
+                    {assets.filter((a) => a.role === slot.role).length})
+                  </h3>
                   <p className="text-xs text-muted-foreground">{slot.hint}</p>
                 </div>
               </div>
@@ -384,7 +385,14 @@ export function BrandAssetsSection({
       </div>
       {assets.some((a) => !ASSET_SLOTS.some((s) => s.role === a.role)) && (
         <section className="rounded-xl border p-4">
-          <h3 className="font-medium mb-3">Other attached assets</h3>
+          <h3 className="font-medium mb-3">
+            Other attached assets (
+            {
+              assets.filter((a) => !ASSET_SLOTS.some((s) => s.role === a.role))
+                .length
+            }
+            )
+          </h3>
           {assets
             .filter((a) => !ASSET_SLOTS.some((s) => s.role === a.role))
             .map((a) => (

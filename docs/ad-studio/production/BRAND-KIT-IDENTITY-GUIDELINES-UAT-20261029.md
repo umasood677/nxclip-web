@@ -27,9 +27,20 @@ Only VITE_AD_STUDIO_BRAND_TEMPLATES_ENABLED=true was added to the existing ignor
 ## Owner retest
 
 1. Open the existing Brand Kit's Identity tab. Confirm the legacy Identity/Type/Palette/IG tabs are gone. Review palette/type and the grouped voice editor.
-2. Open Guidelines on a desktop-width window. Review the left campaign playbook and right full draft. Inspect the first campaign-guidelines section and scroll the draft independently. On mobile, the sections stack.
+2. Open Guidelines on a desktop-width window. Review the left campaign playbook and right full draft. Inspect the first campaign-guidelines section. The complete draft expands with the page, without an inner scrollbar. On mobile, the sections stack.
 3. If editing, save only intended changes through Save Brand Kit. Related approvals reset on edits and are never automatically granted. Review and explicitly approve the identity/guidelines before completion.
 4. Open Ready. Check the branded cover, alternating saved-color sections, real font specimens, full identity/asset review and explicit exports. Downloaded PDF/PNG visual review remains owner UAT.
 5. Click + Create Brand Templates, select a format, then intentionally click Generate Brand Templates. Review candidate blockers, customize, approve and save only acceptable recipes. Check Home/Template Studio listing and reuse in a disposable campaign.
 
 No additional PowerShell service restart is required for these frontend changes or the approved native-template activation. Real Google generation, creative-quality validation and Golden Ad acceptance remain separate, unexecuted gates.
+
+
+## Listing, profile and brochure polish follow-up
+- Removed redundant Logo availability badge and description truncation from Brand Kit cards. Full descriptions wrap normally; underlying assets are retained.
+- Asset/profile collection counts now appear beside headings in parentheses, including Logos & Assets, individual asset slots, source approvals, Models & Mascots and brochure assets. Removed the candidate-count explanation and duplicate Assets slogan.
+- Removed How profiles work from Assets. Enlarged profile imagery, names and visible characteristics into readable profile cards. Creation actions sit above the profiles; usage scopes use checkboxes; save/cancel share one footer below the editor columns.
+- Identity editor now includes its voice fields in the left column, beside the complete brochure. Identity and Guidelines use equal-width stretched columns, compact readable brochure sections and no nested scroll area. Full content remains available through normal page scrolling, rather than shrinking all text into one screen.
+- Brand Kit routes now have a Palette title icon in the shared application header. Existing mapped studio icons remain; otherwise-unmapped page headings use the existing LayoutGrid icon.
+- Verification: 17 focused Brand Kit tests and scoped ESLint passed. Exact TypeScript comparison: baseline 42, current 38, added 0. All 34 approved prototype files unchanged.
+- Browser: listing description client/scroll heights match with no line clamp and no Logo badge; profile help/redundant text absent, saved detail text 14px; permissions remain unchanged when opening/closing the editor. At 1440px Identity columns both 606px wide/3370px high; Guidelines both 606px wide/3431px high. Brochure client and scroll heights match with overflow visible. At 390px columns stack with no horizontal overflow. Temporary viewport override reset.
+- No API mutations, uploads, provider calls, backend changes/restarts, database operations or feature-flag changes. Earlier provider-backed per-ad model selection still requires its separately approved runtime activation.

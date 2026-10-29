@@ -2,7 +2,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import AppShell from "../AppShell";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BarChart3, Bell, Clapperboard, FileImage, Home, LayoutDashboard, LayoutGrid, Megaphone, Sparkles, User, Video } from "lucide-react";
+import { BarChart3, Bell, Clapperboard, FileImage, Home, LayoutDashboard, LayoutGrid, Megaphone, Palette, Sparkles, User, Video } from "lucide-react";
 
 /**
  * DashboardLayout wraps authenticated routes with the AppShell.
@@ -19,6 +19,7 @@ export default function DashboardLayout() {
   const isAnalytics = location.pathname === "/analytics";
   const isImageStudio =
     location.pathname.startsWith("/create/image") || location.pathname === "/image-studio";
+  const isBrandKit = location.pathname === "/brands" || location.pathname.startsWith("/brands/");
   const isAdStudio = location.pathname.startsWith("/create/ad");
   const isClipEditor = location.pathname.startsWith("/create/clip");
   const isCreateHub = location.pathname === "/create";
@@ -152,6 +153,8 @@ export default function DashboardLayout() {
     <BarChart3 className="h-4 w-4" />
   ) : isImageStudio ? (
     <Sparkles className="h-4 w-4" />
+  ) : isBrandKit ? (
+    <Palette className="h-4 w-4" />
   ) : isAdStudio ? (
     <Megaphone className="h-4 w-4" />
   ) : isClipEditor ? (
@@ -164,7 +167,9 @@ export default function DashboardLayout() {
     <User className="h-4 w-4" />
   ) : isNotifications ? (
     <Bell className="h-4 w-4" />
-  ) : undefined;
+  ) : (
+    <LayoutGrid className="h-4 w-4" />
+  );
 
   const dense =
     isLibrary ||

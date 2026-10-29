@@ -251,7 +251,7 @@ export function BrandKitBrochure({
           </section>
         ))}
       <section className="bp-brochure-section">
-        <h3>Brand assets</h3>
+        <h3>Brand assets ({kit.assets?.length || 0})</h3>
         <p>
           Uploaded assets and approved creative sources are different. Human
           likeness requires separate approved model permissions.
@@ -268,10 +268,10 @@ export function BrandKitBrochure({
                 <div className="bp-asset-pending">Preview unavailable</div>
               )}
               <strong>
-                {a.label || a.fileName || a.role || "Brand asset"}
+                {a.label || a.fileName || "Brand asset"}
               </strong>
               <small>
-                {a.role} / {a.status || "Processing"}
+                {a.status || "Processing"}
               </small>
               <small>
                 {approved.has(a.id)
