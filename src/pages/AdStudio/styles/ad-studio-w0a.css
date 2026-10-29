@@ -1545,3 +1545,12 @@
 .ad-studio-w0a .w0a-hero-actions .w0a-brand-chip__menu{left:0;right:auto;min-width:min(240px,calc(100vw - 64px));max-width:min(320px,calc(100vw - 64px));max-height:min(360px,45vh);z-index:80}
 .ad-studio-w0a .w0a-hero-actions button:focus-visible{outline:2px solid var(--w0a-accent);outline-offset:4px}
 @media(max-width:420px){.ad-studio-w0a .w0a-hero-actions{gap:18px}}
+
+/* Example brief cards share one media height and aligned actions across formats. */
+.ad-studio-w0a .w0a-brief-card { display:flex; flex-direction:column; }
+.ad-studio-w0a .w0a-brief-card .w0a-brand-preview { height:260px; aspect-ratio:auto; flex:none; }
+.ad-studio-w0a .w0a-brief-card .w0a-card-body { display:flex; flex-direction:column; flex:1; gap:6px; }
+.ad-studio-w0a .w0a-brief-card h3 { line-height:1.4; min-height:2.8em; margin:0; }
+.ad-studio-w0a .w0a-brief-card .w0a-card-body > p { min-height:2.8em; margin:0; }
+.ad-studio-w0a .w0a-brief-card .w0a-formats { margin:8px 0; }
+.ad-studio-w0a .w0a-brief-card .w0a-card-body > .w0a-btn { margin-top:auto; align-self:stretch; }

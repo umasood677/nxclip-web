@@ -21,7 +21,8 @@ import type { FeaturedExample } from "../lib/exampleCreatives";
 import { resolveBrandHomeCatalog } from "../lib/brandHomeCatalog";
 import { BrandKitHeaderControl } from "./BrandKitHeaderControl";
 import { BrandHomePreview, aspectForFormat } from "./BrandHomePreview";
-import { TemplateGallery } from "./TemplateGallery";
+import { TemplateGallery, formatChip } from "./TemplateGallery";
+import { AD_FORMATS } from "../types";
 
 import type {
   AdSceneOutputFormatId,
@@ -58,7 +59,7 @@ type Props = {
   onSelectBrand: (id: string) => void;
   onSelectFormat: (formatId: string) => void;
   onStartIdea: () => void;
-  onUseExample: (example: FeaturedExample) => void;
+  onUseExample: (example: FeaturedExample, format?: string) => void;
   onContinueProject: (projectId: string) => void;
   onDeleteProject: (project: { id: string; name: string }) => void;
   onCreateBrand: () => void;
@@ -133,11 +134,6 @@ function resolveHeroFrames(
   return srcs.slice(0, 4).map((src, i) => ({ src, cls: HERO_FRAME_CLS[i] }));
 }
 
-function briefAspect(ex: FeaturedExample) {
-  const fmt = ex.briefDefaults.outputFormat || "portrait_1080x1350";
-  return aspectForFormat(fmt);
-}
-
 export function AdStudioHome({
   projects,
   brands,
@@ -154,6 +150,7 @@ export function AdStudioHome({
   templateBusy = false,
   onUseTemplate,
 }: Props) {
+  const [briefFormats, setBriefFormats] = useState<Record<string, string>>({});
   const [catalogQuery] = useSearchParams();
   const fullCatalog = catalogQuery.get("catalog");
   const templatesOnly = fullCatalog === "templates",
@@ -482,6 +479,11 @@ export function AdStudioHome({
                 {homeCatalog.examples
                   .slice(0, briefsOnly ? undefined : 6)
                   .map((ex) => {
+                    const formatKey = `${selectedBrandId || "default"}/${ex.id}`;
+                    const format =
+                      briefFormats[formatKey] ||
+                      ex.briefDefaults.outputFormat ||
+                      "portrait_1080x1350";
                     const preview =
                       ex.previewImage ||
                       "/ad-studio/sample-assets/w0a-product-hero.jpg";
@@ -495,7 +497,7 @@ export function AdStudioHome({
                           fallbackSrc={preview}
                           alt=""
                           brand={brandContext}
-                          aspect={briefAspect(ex)}
+                          aspect={aspectForFormat(format)}
                           headline={ex.headline}
                         />
                         <div className="w0a-card-body">
@@ -506,10 +508,32 @@ export function AdStudioHome({
                           <p className="text-[11px] text-[var(--w0a-muted)] mt-1 line-clamp-2">
                             {ex.headline}
                           </p>
+                          <div
+                            className="w0a-formats"
+                            role="group"
+                            aria-label={`Aspect ratio for ${ex.title}`}
+                          >
+                            {AD_FORMATS.map((option) => (
+                              <button
+                                key={option.id}
+                                type="button"
+                                className={`w0a-chip${format === option.id ? " on" : ""}`}
+                                aria-pressed={format === option.id}
+                                onClick={() =>
+                                  setBriefFormats((current) => ({
+                                    ...current,
+                                    [formatKey]: option.id,
+                                  }))
+                                }
+                              >
+                                {formatChip(option.id)}
+                              </button>
+                            ))}
+                          </div>
                           <button
                             type="button"
                             className="w0a-btn ghost"
-                            onClick={() => onUseExample(ex)}
+                            onClick={() => onUseExample(ex, format)}
                           >
                             Use as starting brief →
                           </button>

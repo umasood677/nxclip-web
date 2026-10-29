@@ -364,7 +364,7 @@ export default function AdStudio() {
     setCreateBrandOpen(true);
   };
 
-  const useExample = (example: FeaturedExample) => navigate(homeEntryPath({brandId:form.brandKitId,exampleId:example.id}));
+  const useExample = (example: FeaturedExample, format?: string) => navigate(homeEntryPath({brandId:form.brandKitId,exampleId:example.id,format}));
 
   if (loading) {
     return <AdStudioLoader label="Composing your studio…" />;

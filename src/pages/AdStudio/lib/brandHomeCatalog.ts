@@ -34,7 +34,26 @@ export const NEUTRAL_HOME_CATALOG: BrandHomeCatalog = {
   catalogKey: "neutral",
   label: "Neutral",
   source: "neutral",
-  examples: FEATURED_EXAMPLES.filter((e) => NEUTRAL_EXAMPLE_IDS.has(e.id)),
+  examples: [...FEATURED_EXAMPLES.filter((e) => NEUTRAL_EXAMPLE_IDS.has(e.id)),
+    {
+      id: "ex-dining", title: "A Table Worth Gathering Around", category: "Dining",
+      headline: "Make an evening of it", supporting: "A seasonal dining campaign focused on atmosphere, presentation and reservations.", cta: "Reserve a table",
+      theme: {bgFrom:"#1C1917",bgTo:"#44352B",accent:"#D2B48C",text:"#FAF7F2"},
+      previewImage: "/ad-studio/sample-assets/w0a-lifestyle.jpg",
+      exampleObjective: "Introduce a seasonal menu and encourage reservations",
+      creativeDirection: "Warm editorial dining, thoughtful table details and restrained typography. Use only the restaurant's supplied food photography and supported claims.",
+      briefDefaults: {name:"Seasonal dining",productOrService:"Restaurant seasonal menu",coreMessage:"Make an evening of it",advertisingObjective:"product_promotion",targetAudience:"Local diners planning an evening out",desiredTone:"warm, inviting, refined",platform:"instagram_feed",outputFormat:"portrait_1080x1350",cta:"Reserve a table"},
+    },
+    {
+      id: "ex-design-service", title: "Spaces With Personality", category: "Services",
+      headline: "Make room for your ideas", supporting: "An interior-design consultation campaign built around authentic portfolio work.", cta: "Book a consultation",
+      theme:{bgFrom:"#E7E5E4",bgTo:"#A8A29E",accent:"#78716C",text:"#1C1917"},
+      previewImage:"/ad-studio/sample-assets/w0a-minimal.jpg",
+      exampleObjective:"Introduce a design studio and invite consultation enquiries",
+      creativeDirection:"Architectural spacing, considered material details and a clear invitation to discuss a project. Use authorized portfolio images without inventing completed projects.",
+      briefDefaults:{name:"Design consultation",productOrService:"Interior design consultation",coreMessage:"Make room for your ideas",advertisingObjective:"lead_generation",targetAudience:"Homeowners planning a considered redesign",desiredTone:"considered, welcoming, contemporary",platform:"instagram_feed",outputFormat:"square_1080",cta:"Book a consultation"},
+    },
+  ],
   templates: [],
 };
 

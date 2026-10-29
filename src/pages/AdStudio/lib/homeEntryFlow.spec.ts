@@ -238,3 +238,14 @@ test("ready uploads require explicit source approval before template project cre
     [],
   );
 });
+
+
+test("an explicitly selected Example Brief ratio overrides its recommendation without changing the source brief", () => {
+  const before = JSON.stringify(example);
+  const path = homeEntryPath({exampleId:example.id,format:"square_1080"});
+  assert.equal(new URL(path,"http://localhost").searchParams.get("format"),"square_1080");
+  const body = entryProjectBody({name:"Format check",idea:"Campaign",brandId:"",example,format:"square_1080"});
+  assert.equal(body.brief.outputFormat,"square_1080");
+  assert.equal(body.brief.exampleBriefId,example.id);
+  assert.equal(JSON.stringify(example),before);
+});

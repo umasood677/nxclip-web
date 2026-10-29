@@ -188,3 +188,12 @@ test("Brand Kit menu avoids the mobile bottom navigation and clamps horizontal p
   );
   assert.ok(Number(long.maxHeight) <= 360);
 });
+
+
+test("Default Brand offers six brief cards with independently labelled aspect controls", () => {
+  const html = renderToStaticMarkup(<MemoryRouter><AdStudioHome {...actions} projects={[]} brands={[]} brandsLoading={false} selectedBrandId="" selectedFormat="square_1080" /></MemoryRouter>);
+  assert.equal((html.match(/Use as starting brief/g) || []).length, 6);
+  assert.equal((html.match(/aria-label="Aspect ratio for /g) || []).length, 6);
+  assert.equal((html.match(/aria-pressed="true"/g) || []).length, 6);
+  assert.doesNotMatch(html, /ZoeArtisan Lipstick/);
+});
