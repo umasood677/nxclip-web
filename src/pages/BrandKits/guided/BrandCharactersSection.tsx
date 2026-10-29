@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { uploadBrandImage } from "../lib/uploadBrandImage";
 import { BrandContentLibraryPicker } from "../components/BrandContentLibraryPicker";
 import { useAuthenticatedBrandAssetUrls } from "../../AdStudio/canvas/useAuthenticatedBrandAssetUrls";
@@ -33,8 +34,8 @@ export function BrandCharactersSection({
 }: Props) {
   const [draft, setDraft] = useState<BrandCharacterProfile | null>(null),
     [saving, setSaving] = useState(false),
-    [error, setError] = useState(""),
-    [message, setMessage] = useState("");
+    [error, setError] = useState("");
+  const setMessage = (message: string) => { if (message) toast.success(message); };
   const [discardRequested, setDiscardRequested] = useState(false);
   const [uploading, setUploading] = useState(false),
     [libraryOpen, setLibraryOpen] = useState(false);
@@ -84,6 +85,7 @@ export function BrandCharactersSection({
     draft && edit({ permissions: { ...draft.permissions, ...patch } });
   const save = async () => {
     if (!draft || !kit.voice?.studio || disabled || operation.current) return;
+    if (!dirty) { toast.info("No changes to save."); return; }
     const issues = characterReviewIssues(draft, kit.assets || []);
     if (issues.length) {
       setError(issues.join(" "));
@@ -108,7 +110,7 @@ export function BrandCharactersSection({
       draftVersion.current = updated.version;
       setDraft(null);
       setMessage(
-        "Character profile saved with the Brand Kit version. No image generation occurred.",
+        "Character profile saved.",
       );
     } catch (e) {
       setError(
@@ -214,11 +216,6 @@ export function BrandCharactersSection({
       {error && (
         <p role="alert" className="text-sm text-red-300">
           {error}
-        </p>
-      )}
-      {message && (
-        <p role="status" className="text-sm text-emerald-200">
-          {message}
         </p>
       )}
       <fieldset

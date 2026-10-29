@@ -71,6 +71,7 @@ export type BrandAssetEntry = {
 
 /** Shared kit shape used by Brand Kit Studio and Ad Studio picker. */
 export type BrandKitSummary = {
+  updatedAt?: string;
   id: string;
   name: string;
   description?: string | null;

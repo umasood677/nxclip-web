@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { saveGuidedBrand } from "./saveGuidedBrand";
 import "../components/brandCharacters.css";
 import { brandDraftFieldKey, focusedBrandDraftValue, type BrandDraftFocus } from "./brandDraftFocus";
 import { brandFontKey, useBrandFontPreviews } from "../lib/brandFontPreview";
@@ -30,7 +32,6 @@ import {
 } from "react-router-dom";
 import { ArrowLeft, Check, Save, Plus } from "lucide-react";
 import { isBrandTemplatesEnabled } from "../templates/brandTemplateModel";
-import { brandTemplateApi } from "../../../services/apiClient";
 import { brandApi } from "../../../services/apiClient";
 import { Skeleton } from "../../../components/ui/skeleton";
 import { EmptyState } from "../../../components/common/EmptyState";
@@ -73,12 +74,6 @@ const TITLES = [
   "Make the signature unmistakable.",
   "Your brand. Ready to create.",
 ];
-type Version = {
-  id: string;
-  version: number;
-  changeSummary: string | null;
-  createdAt: string;
-};
 export default function GuidedBrandKit() {
   return <GuidedBrandKitWorkspace />;
 }
@@ -106,11 +101,8 @@ export function GuidedBrandKitWorkspace({
     [loading, setLoading] = useState(!!brandId),
     [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
-    [message, setMessage] = useState(""),
-    [search, setSearch] = useState(""),
-    [versions, setVersions] = useState<Version[]>([]),
-    [versionsLoading, setVersionsLoading] = useState(false),
-    [versionsError, setVersionsError] = useState("");
+    [search, setSearch] = useState("");
+  const setMessage = (message: string) => { if (message) toast.success(message); };
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [activeField, setActiveField] = useState<BrandDraftFocus | null>(null);
   const focusDraft = (event: React.FocusEvent<HTMLElement>) => {
@@ -152,19 +144,6 @@ export function GuidedBrandKitWorkspace({
   };
   const edit = (patch: Partial<GuidedBrandDraft>) =>
     setDraft((prev) => ({ ...prev, ...patch }));
-  const loadVersions = async (id: string) => {
-    setVersionsLoading(true);
-    setVersionsError("");
-    try {
-      setVersions((await brandApi.listVersions(id)).items);
-    } catch (e) {
-      setVersionsError(
-        e instanceof Error ? e.message : "Could not load versions.",
-      );
-    } finally {
-      setVersionsLoading(false);
-    }
-  };
   const sourceUrls = useAuthenticatedBrandAssetUrls(kit);
   const [fontAttempt, setFontAttempt] = useState(0);
   const previewFonts = useBrandFontPreviews(
@@ -206,9 +185,6 @@ export function GuidedBrandKitWorkspace({
     title.current?.focus();
   }, [step]);
   useEffect(() => {
-    if (step === "ready" && kit?.id) void loadVersions(kit.id);
-  }, [step, kit?.id, kit?.version]);
-  useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
       if (saved.current && JSON.stringify(draft) !== saved.current) {
         event.preventDefault();
@@ -218,55 +194,32 @@ export function GuidedBrandKitWorkspace({
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [draft]);
+  const savePending = useRef(false);
   const persist = async (complete: boolean, target: GuidedStep) => {
+    if (savePending.current) return;
     const problems = guidedErrors(draft, complete);
     if (problems.length) {
       setError(problems.join(" "));
       return;
     }
+    savePending.current = true;
     setSaving(true);
     setError("");
     setMessage("");
     try {
-      const payload = guidedPayload(draft, kit);
-      const result: BrandKitSummary = kit
-        ? await brandApi.updateKit(kit.id, {
-            ...payload,
-            expectedVersion: kit.version,
-          })
-        : await brandApi.createKit(payload);
+      const { kit: result, changed } = await saveGuidedBrand(draft, kit, saved.current, brandApi);
       setKit(result);
       const next = draftFromKit(result);
       setDraft(next);
       saved.current = JSON.stringify(next);
-      let templatesPrepared = false;
-      if (complete && isBrandTemplatesEnabled()) {
-        try {
-          await brandTemplateApi.generate(
-            result.id,
-            result.version,
-            "square_1080",
-          );
-          templatesPrepared = true;
-        } catch {
-          setError(
-            "Brand Kit saved successfully. Automatic template preparation failed; open Brand Templates to retry without creating another Brand Kit.",
-          );
-        }
-      }
       if (embedded) onSaved?.(result);
       else if (!brandId)
         navigate("/brands/" + result.id + "/guided?step=" + target, {
           replace: true,
         });
       else go(target);
-      setMessage(
-        complete
-          ? templatesPrepared
-            ? "Reviewed identity saved and native template suggestions prepared. Each recipe requires separate approval."
-            : "Reviewed identity saved. Template preparation is gated; no AI generation has run."
-          : "Brand Kit draft saved.",
-      );
+      if (changed) toast.success("Brand Kit saved.");
+      else toast.info("No changes to save.");
     } catch (e) {
       setError(
         (e instanceof Error ? e.message : "Save failed.") +
@@ -275,6 +228,7 @@ export function GuidedBrandKitWorkspace({
             : " Your draft is retained; reload if the version changed."),
       );
     } finally {
+      savePending.current = false;
       setSaving(false);
     }
   };
@@ -422,11 +376,6 @@ export function GuidedBrandKitWorkspace({
         {error && (
           <div role="alert" className="xp-message bp-error">
             {error}
-          </div>
-        )}
-        {message && (
-          <div role="status" className="xp-message">
-            {message}
           </div>
         )}
         <fieldset disabled={saving} className="bp-fieldset">
@@ -1105,8 +1054,7 @@ export function GuidedBrandKitWorkspace({
                   </p>
                 ) : (
                   <p className="xp-notice">
-                    Reviewed identity saved in your existing Brand Kit. No AI
-                    generation has run.
+                    Identity and guidelines reviewed.
                   </p>
                 )}
                 <div className="xp-actions">
@@ -1119,9 +1067,9 @@ export function GuidedBrandKitWorkspace({
                   {kit && (
                     <Link
                       className="xp-primary"
-                      to={"/brands/" + kit.id + "/templates"}
+                      to={"/brands/" + kit.id + "/templates?tab=brand"}
                     >
-                      Review / prepare Brand Templates →
+                      Open Brand Templates →
                     </Link>
                   )}
 
@@ -1129,37 +1077,9 @@ export function GuidedBrandKitWorkspace({
                     Open Ad Studio →
                   </Link>
                 </div>
-                <details className="bp-version-history">
-                  <summary>Version history ({versions.length})</summary>
-                  {versionsLoading ? (
-                    <Skeleton className="h-32 w-full" />
-                  ) : versionsError ? (
-                    <div role="alert">
-                      <p>{versionsError}</p>
-                      <button
-                        className="xp-secondary"
-                        onClick={() => kit && void loadVersions(kit.id)}
-                      >
-                        Retry history
-                      </button>
-                    </div>
-                  ) : !versions.length ? (
-                    <EmptyState
-                      title="No version history available"
-                      description="Save the Brand Kit to create a version snapshot."
-                    />
-                  ) : (
-                    <ol className="bp-versions">
-                      {versions.map((v) => (
-                        <li key={v.id}>
-                          <strong>Version {v.version}</strong>
-                          <span>{v.changeSummary || "Brand Kit update"}</span>
-                          <time>{new Date(v.createdAt).toLocaleString()}</time>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </details>
+                {kit?.updatedAt && (
+                  <p className="bp-last-updated">Last Updated: <time dateTime={kit.updatedAt}>{new Date(kit.updatedAt).toLocaleString()}</time></p>
+                )}
               </section>
               {kit && (
                 <section className="xp-panel bp-template-launch">
@@ -1168,16 +1088,7 @@ export function GuidedBrandKitWorkspace({
                       NEXT / BRAND TEMPLATE STUDIO
                     </span>
                     <h2>A template collection made from your identity.</h2>
-                    <p>
-                      Choose a format and prepare editable layouts using this
-                      Brand Kit's reviewed colors, typography and permitted
-                      assets. Review and save candidates before using them in
-                      campaigns.
-                    </p>
-                    <small>
-                      Native layouts preserve your source assets. This action
-                      does not start paid AI image generation.
-                    </small>
+                    <p>Design with AI, then review and save your collection.</p>
                     {!isBrandTemplatesEnabled() && (
                       <p role="status" className="xp-notice">
                         Template generation controls are disabled in this local
@@ -1188,7 +1099,7 @@ export function GuidedBrandKitWorkspace({
                   </div>
                   <Link
                     className="xp-primary"
-                    to={`/brands/${encodeURIComponent(kit.id)}/templates`}
+                    to={`/brands/${encodeURIComponent(kit.id)}/templates?tab=brand&mode=ai`}
                     onClick={(e) => {
                       if (JSON.stringify(draft) !== saved.current) {
                         e.preventDefault();
@@ -1199,7 +1110,7 @@ export function GuidedBrandKitWorkspace({
                     }}
                   >
                     <Plus size={16} aria-hidden />
-                    Create Brand Templates
+                    Create with AI
                   </Link>
                 </section>
               )}
