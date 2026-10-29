@@ -1,8 +1,4 @@
-import React from "react";
-import { Button } from "../../../components/ui/button";
-import { Input } from "../../../components/ui/input";
-import { Label } from "../../../components/ui/label";
-import { Textarea } from "../../../components/ui/textarea";
+import React, { useId } from "react";
 import type { BrandCreativeGuidelines } from "../lib/brandKitTypes";
 
 export type GuidelinesDraft = {
@@ -90,95 +86,208 @@ export function creativeFromDraft(
   };
 }
 
+export function fillMissingGuidelines(
+  value: GuidelinesDraft,
+  categoryLabel?: string,
+): GuidelinesDraft {
+  const next = { ...value };
+  for (const [key, text] of Object.entries(
+    categoryGuidelineStarter(categoryLabel),
+  ))
+    if (!next[key as keyof GuidelinesDraft].trim())
+      next[key as keyof GuidelinesDraft] = text || "";
+  return next;
+}
+
+const CAMPAIGN_GUIDELINE_GROUPS: {
+  title: string;
+  description: string;
+  fields: {
+    key: keyof GuidelinesDraft;
+    label: string;
+    placeholder: string;
+    wide?: boolean;
+  }[];
+}[] = [
+  {
+    title: "Art direction & campaign world",
+    description:
+      "Describe the visual language that should carry through your advertisements.",
+    fields: [
+      {
+        key: "visualStyle",
+        label: "Campaign visual style",
+        placeholder: "The visual character, mood and level of polish",
+      },
+      {
+        key: "photographyDirection",
+        label: "Photography & source direction",
+        placeholder: "How approved product photographs should be framed",
+      },
+      {
+        key: "lighting",
+        label: "Lighting",
+        placeholder: "Key light, atmosphere, reflections and shadows",
+      },
+      {
+        key: "backgroundPreferences",
+        label: "Background & setting",
+        placeholder: "Preferred environments, materials and exclusions",
+      },
+    ],
+  },
+  {
+    title: "Layout & brand application",
+    description:
+      "Guide composition across formats while keeping the advertisement easy to read.",
+    fields: [
+      {
+        key: "composition",
+        label: "Composition & focal point",
+        placeholder:
+          "Product placement, visual hierarchy and safe space for copy",
+      },
+      {
+        key: "colorUsage",
+        label: "Brand color usage",
+        placeholder: "Primary and supporting colors, contrast and combinations",
+      },
+      {
+        key: "typographyUsage",
+        label: "Typography hierarchy",
+        placeholder: "Headline, supporting copy and CTA treatment",
+      },
+      {
+        key: "logoPlacement",
+        label: "Logo placement & clear space",
+        placeholder: "Position, size, safe margins and background restrictions",
+      },
+    ],
+  },
+  {
+    title: "Product truth & campaign safeguards",
+    description:
+      "Protect the actual product and make the boundaries of acceptable campaign claims clear.",
+    fields: [
+      {
+        key: "productRepresentation",
+        label: "Product identity requirements",
+        placeholder:
+          "Packaging, proportions, shade, printed labels and details to preserve",
+        wide: true,
+      },
+      {
+        key: "restrictedTreatments",
+        label: "Visual treatments to avoid",
+        placeholder:
+          "Retouching, recoloring or transformations that would misrepresent the product",
+      },
+      {
+        key: "prohibitedClaims",
+        label: "Claims & endorsements to avoid",
+        placeholder:
+          "Unsupported results, certifications, testimonials or performance claims",
+      },
+    ],
+  },
+  {
+    title: "Delivery notes",
+    description:
+      "Record reusable campaign instructions; individual campaign briefs can add their own objective and placement.",
+    fields: [
+      {
+        key: "notes",
+        label: "Campaign production notes",
+        placeholder:
+          "Required copy, intended placements, format considerations and review requirements",
+        wide: true,
+      },
+      {
+        key: "freeformGuidelines",
+        label: "Additional brand usage rules",
+        placeholder:
+          "Any other restrictions or approval instructions for campaign creators",
+        wide: true,
+      },
+    ],
+  },
+];
 export function CreativeGuidelinesSection({
   value,
   onChange,
   categoryLabel,
 }: Props) {
-  const set = (patch: Partial<GuidelinesDraft>) =>
-    onChange({ ...value, ...patch });
-
-  const fields: Array<{
-    key: keyof GuidelinesDraft;
-    label: string;
-    rows?: number;
-  }> = [
-    { key: "visualStyle", label: "Visual style" },
-    { key: "photographyDirection", label: "Photography direction" },
-    { key: "lighting", label: "Lighting" },
-    { key: "composition", label: "Composition" },
-    { key: "backgroundPreferences", label: "Background preferences" },
-    { key: "colorUsage", label: "Color usage" },
-    { key: "typographyUsage", label: "Typography usage" },
-    { key: "logoPlacement", label: "Logo placement" },
-    { key: "productRepresentation", label: "Product representation" },
-    { key: "restrictedTreatments", label: "Restricted visual treatments" },
-    { key: "prohibitedClaims", label: "Prohibited claims", rows: 2 },
-    { key: "notes", label: "Additional notes", rows: 3 },
-  ];
-
+  const prefix = useId();
   return (
-    <div className="space-y-5 bp-detail-form">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <section
+      className="bp-voice bp-campaign-guidelines"
+      aria-labelledby={`${prefix}-title`}
+    >
+      <header className="bp-voice-heading">
+        <span className="bp-voice-eyebrow">CAMPAIGN PLAYBOOK</span>
+        <h2 id={`${prefix}-title`}>
+          Creative guidelines for your advertisements
+        </h2>
+        <p>
+          Turn your brand identity into clear direction for campaign concepts,
+          editable templates and product-aware imagery.
+        </p>
+      </header>
+      <div className="bp-guideline-starter">
         <div>
-          <h2 className="font-display text-lg font-semibold">
-            Creative Guidelines
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Category-aware starter guidance is deterministic, not AI analysis.
-            Review and edit every suggestion before saving.
+          <strong>{categoryLabel || "Your category"} starter guidance</strong>
+          <p>
+            Optional written suggestions, not AI analysis. Only empty fields are
+            filled; your existing instructions stay intact.
           </p>
         </div>
-        <Button
+        <button
           type="button"
-          size="sm"
-          variant="outline"
-          onClick={() =>
-            onChange({ ...value, ...categoryGuidelineStarter(categoryLabel) })
-          }
+          className="xp-secondary"
+          onClick={() => onChange(fillMissingGuidelines(value, categoryLabel))}
         >
-          Insert {categoryLabel || "category"} starter guidance
-        </Button>
+          Fill empty guidance fields
+        </button>
       </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        {fields.map((f) => (
-          <div
-            key={f.key}
-            className={f.rows && f.rows > 1 ? "sm:col-span-2" : undefined}
-          >
-            <Label htmlFor={`cg-${f.key}`}>{f.label}</Label>
-            {f.rows && f.rows > 1 ? (
-              <Textarea
-                id={`cg-${f.key}`}
-                value={String(value[f.key] ?? "")}
-                onChange={(e) =>
-                  set({ [f.key]: e.target.value } as Partial<GuidelinesDraft>)
-                }
-                rows={f.rows}
-              />
-            ) : (
-              <Input
-                id={`cg-${f.key}`}
-                value={String(value[f.key] ?? "")}
-                onChange={(e) =>
-                  set({ [f.key]: e.target.value } as Partial<GuidelinesDraft>)
-                }
-              />
-            )}
-          </div>
+      <div className="bp-voice-groups">
+        {CAMPAIGN_GUIDELINE_GROUPS.map((group, index) => (
+          <fieldset className="bp-voice-group" key={group.title}>
+            <legend>
+              <span aria-hidden>{String(index + 1).padStart(2, "0")}</span>
+              {group.title}
+            </legend>
+            <p className="bp-voice-group-description">{group.description}</p>
+            <div className="bp-voice-fields">
+              {group.fields.map((field) => (
+                <div
+                  className={`bp-voice-field${field.wide ? " bp-voice-field--wide" : ""}`}
+                  key={field.key}
+                >
+                  <label htmlFor={`${prefix}-${field.key}`}>
+                    {field.label}
+                  </label>
+                  <textarea
+                    id={`${prefix}-${field.key}`}
+                    rows={3}
+                    maxLength={
+                      field.key === "freeformGuidelines" ? 20000 : 4000
+                    }
+                    placeholder={field.placeholder}
+                    value={value[field.key]}
+                    onChange={(e) =>
+                      onChange({ ...value, [field.key]: e.target.value })
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          </fieldset>
         ))}
-        <div className="sm:col-span-2">
-          <Label htmlFor="cg-freeform">Freeform guidelines</Label>
-          <Textarea
-            id="cg-freeform"
-            value={value.freeformGuidelines}
-            onChange={(e) => set({ freeformGuidelines: e.target.value })}
-            rows={4}
-            placeholder="Anything else creatives should know…"
-          />
-        </div>
       </div>
-    </div>
+      <p className="bp-voice-save-note">
+        Save Brand Kit to persist changes. Guidelines approval remains a
+        separate decision after reviewing the identity summary below.
+      </p>
+    </section>
   );
 }

@@ -1,3 +1,4 @@
+import "./components/brandVoice.css";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";

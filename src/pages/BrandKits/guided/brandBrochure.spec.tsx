@@ -71,3 +71,27 @@ test("category starter reflects selected niche without importing a lipstick bran
   assert.doesNotMatch(JSON.stringify(starter), /ZOE|burgundy|lipstick/i);
   assert.match(starter.productRepresentation!, /actual packaging/);
 });
+
+test("guidelines identity summary includes the full draft without offering exports of unsaved data", () => {
+  const html = renderToStaticMarkup(
+    <BrandKitBrochure kit={kit} dirty summary />,
+  );
+  assert.match(html, /COMPLETE IDENTITY \/ CURRENT DRAFT/);
+  assert.match(html, /Brand profile|Brand voice|Creative guidelines/);
+  assert.match(html, /Synthetic product/);
+  assert.doesNotMatch(html, /Export PDF|Export image|Export JSON/);
+  assert.match(html, /--brochure-primary:#123456/);
+});
+
+test("campaign draft prioritizes live creative guidelines before palette and keeps them single-sourced", () => {
+  const html = renderToStaticMarkup(
+    <BrandKitBrochure kit={kit} dirty summary focusGuidelines />,
+  );
+  assert.ok(
+    html.indexOf("Creative guidelines for advertisements") <
+      html.indexOf("Brand palette"),
+  );
+  assert.match(html, /Preserve packaging/);
+  assert.equal((html.match(/Preserve packaging/g) || []).length, 1);
+  assert.doesNotMatch(html, /Export PDF|Export image/);
+});

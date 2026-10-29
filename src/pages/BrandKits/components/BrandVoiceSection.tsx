@@ -1,7 +1,4 @@
-import React from "react";
-import { Input } from "../../../components/ui/input";
-import { Label } from "../../../components/ui/label";
-import { Textarea } from "../../../components/ui/textarea";
+import React, { useId } from "react";
 import type { BrandVoiceFields } from "../lib/brandKitTypes";
 
 export type VoiceDraft = {
@@ -60,124 +57,179 @@ export function voicePatchFromDraft(draft: VoiceDraft): BrandVoiceFields {
   };
 }
 
+type VoiceField = {
+  key: keyof VoiceDraft;
+  label: string;
+  placeholder: string;
+  hint?: string;
+  rows?: number;
+  limit?: number;
+  wide?: boolean;
+};
+const VOICE_GROUPS: {
+  title: string;
+  description: string;
+  fields: VoiceField[];
+}[] = [
+  {
+    title: "Voice & audience",
+    description: "Define who you speak to and how your brand should sound.",
+    fields: [
+      {
+        key: "personality",
+        label: "Brand personality",
+        placeholder: "e.g. confident, thoughtful, approachable",
+        limit: 280,
+      },
+      {
+        key: "tone",
+        label: "Communication tone",
+        placeholder: "e.g. warm, precise, quietly expressive",
+        limit: 280,
+      },
+      {
+        key: "targetAudience",
+        label: "Target audience",
+        placeholder: "Who are you speaking to, and what matters to them?",
+        limit: 500,
+        wide: true,
+      },
+      {
+        key: "writingStyle",
+        label: "Writing style",
+        placeholder:
+          "Describe sentence length, vocabulary and level of formality",
+        limit: 500,
+        wide: true,
+      },
+    ],
+  },
+  {
+    title: "Vocabulary & boundaries",
+    description: "Give your creative team clear language to use and avoid.",
+    fields: [
+      {
+        key: "doSay",
+        label: "Preferred vocabulary",
+        placeholder: "Add an approved word or phrase on each line",
+        hint: "One phrase per line. Use language that is true to your brand.",
+        rows: 4,
+      },
+      {
+        key: "dontSay",
+        label: "Words & phrases to avoid",
+        placeholder: "Add a word, phrase or unsupported claim on each line",
+        hint: "One phrase per line. Include language your brand should never use.",
+        rows: 4,
+      },
+    ],
+  },
+  {
+    title: "Messaging & calls to action",
+    description: "Set the recurring messages that guide campaign copy.",
+    fields: [
+      {
+        key: "tagline",
+        label: "Brand tagline",
+        placeholder: "Your approved brand signature",
+        limit: 160,
+      },
+      {
+        key: "preferredCta",
+        label: "Preferred call to action",
+        placeholder: "e.g. Discover the collection",
+        limit: 80,
+        hint: "Use an action that matches your customer journey.",
+      },
+      {
+        key: "exampleHeadlines",
+        label: "Approved headline examples",
+        placeholder: "Add one headline per line",
+        hint: "Examples guide the writing style; they do not verify product claims or inventory.",
+        rows: 3,
+        wide: true,
+      },
+      {
+        key: "copyGuidance",
+        label: "Copywriting guidance",
+        placeholder:
+          "Describe the approach, important product truths and claims to avoid",
+        limit: 4000,
+        rows: 4,
+        wide: true,
+      },
+    ],
+  },
+];
+
 export function BrandVoiceSection({ value, onChange }: Props) {
-  const set = (patch: Partial<VoiceDraft>) => onChange({ ...value, ...patch });
-
+  const prefix = useId();
   return (
-    <div className="space-y-5 bp-detail-form">
-      <div>
-        <h2 className="font-display text-lg font-semibold">Brand Voice</h2>
-        <p className="text-sm text-muted-foreground">
-          Tone, vocabulary, and copy patterns for Ad Studio briefs. Saves into
-          Brand Voice JSON — identity fields on other tabs are preserved.
+    <section className="bp-voice" aria-labelledby={`${prefix}-title`}>
+      <header className="bp-voice-heading">
+        <span className="bp-voice-eyebrow">VERBAL IDENTITY</span>
+        <h2 id={`${prefix}-title`}>Voice, messaging & copy details</h2>
+        <p>
+          Keep every campaign recognizably yours. These preferences guide your
+          briefs and advertisement copy.
         </p>
+        <p className="bp-voice-save-note">
+          Changes are saved with <strong>Save Brand Kit</strong>. Review the
+          complete identity before approving it.
+        </p>
+      </header>
+      <div className="bp-voice-groups">
+        {VOICE_GROUPS.map((group, index) => (
+          <fieldset className="bp-voice-group" key={group.title}>
+            <legend>
+              <span aria-hidden="true">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              {group.title}
+            </legend>
+            <p className="bp-voice-group-description">{group.description}</p>
+            <div className="bp-voice-fields">
+              {group.fields.map((field) => {
+                const id = `${prefix}-${field.key}`,
+                  hint = `${id}-hint`;
+                return (
+                  <div
+                    className={`bp-voice-field${field.wide ? " bp-voice-field--wide" : ""}`}
+                    key={field.key}
+                  >
+                    <label htmlFor={id}>{field.label}</label>
+                    {field.rows ? (
+                      <textarea
+                        id={id}
+                        aria-describedby={field.hint ? hint : undefined}
+                        value={value[field.key]}
+                        rows={field.rows}
+                        maxLength={field.limit}
+                        placeholder={field.placeholder}
+                        onChange={(e) =>
+                          onChange({ ...value, [field.key]: e.target.value })
+                        }
+                      />
+                    ) : (
+                      <input
+                        id={id}
+                        aria-describedby={field.hint ? hint : undefined}
+                        value={value[field.key]}
+                        maxLength={field.limit}
+                        placeholder={field.placeholder}
+                        onChange={(e) =>
+                          onChange({ ...value, [field.key]: e.target.value })
+                        }
+                      />
+                    )}
+                    {field.hint && <small id={hint}>{field.hint}</small>}
+                  </div>
+                );
+              })}
+            </div>
+          </fieldset>
+        ))}
       </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="bv-personality">Brand personality</Label>
-          <Input
-            id="bv-personality"
-            value={value.personality}
-            onChange={(e) => set({ personality: e.target.value })}
-            placeholder="Confident, couture, warm"
-            maxLength={280}
-          />
-        </div>
-        <div>
-          <Label htmlFor="bv-tone">Tone</Label>
-          <Input
-            id="bv-tone"
-            value={value.tone}
-            onChange={(e) => set({ tone: e.target.value })}
-            placeholder="Editorial, intimate, precise"
-            maxLength={280}
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <Label htmlFor="bv-audience">Target audience</Label>
-          <Input
-            id="bv-audience"
-            value={value.targetAudience}
-            onChange={(e) => set({ targetAudience: e.target.value })}
-            placeholder="Luxury beauty consumers 25–45"
-            maxLength={500}
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <Label htmlFor="bv-style">Writing style</Label>
-          <Input
-            id="bv-style"
-            value={value.writingStyle}
-            onChange={(e) => set({ writingStyle: e.target.value })}
-            placeholder="Short editorial sentences; sensory but precise"
-            maxLength={500}
-          />
-        </div>
-        <div>
-          <Label htmlFor="bv-dosay">Preferred vocabulary</Label>
-          <Textarea
-            id="bv-dosay"
-            value={value.doSay}
-            onChange={(e) => set({ doSay: e.target.value })}
-            rows={3}
-            placeholder={"One phrase per line\ncouture color\nsignature red"}
-          />
-        </div>
-        <div>
-          <Label htmlFor="bv-dont">Prohibited vocabulary</Label>
-          <Textarea
-            id="bv-dont"
-            value={value.dontSay}
-            onChange={(e) => set({ dontSay: e.target.value })}
-            rows={3}
-            placeholder={"One phrase per line\ncheap\nmiracle cure"}
-          />
-        </div>
-        <div>
-          <Label htmlFor="bv-cta">Preferred CTA</Label>
-          <Input
-            id="bv-cta"
-            value={value.preferredCta}
-            onChange={(e) => set({ preferredCta: e.target.value })}
-            placeholder="Shop the shade"
-            maxLength={80}
-          />
-        </div>
-        <div>
-          <Label htmlFor="bv-tagline">Tagline</Label>
-          <Input
-            id="bv-tagline"
-            value={value.tagline}
-            onChange={(e) => set({ tagline: e.target.value })}
-            placeholder="Artistry in every shade"
-            maxLength={160}
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <Label htmlFor="bv-headlines">Example headlines</Label>
-          <Textarea
-            id="bv-headlines"
-            value={value.exampleHeadlines}
-            onChange={(e) => set({ exampleHeadlines: e.target.value })}
-            rows={3}
-            placeholder={
-              "One headline per line\nSignature Red, Perfectly Matte"
-            }
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <Label htmlFor="bv-copy">Copywriting guidance</Label>
-          <Textarea
-            id="bv-copy"
-            value={value.copyGuidance}
-            onChange={(e) => set({ copyGuidance: e.target.value })}
-            rows={3}
-            placeholder="Lead with product truth. Avoid medical claims. Prefer sensory verbs."
-            maxLength={4000}
-          />
-        </div>
-      </div>
-    </div>
+    </section>
   );
 }

@@ -1,3 +1,5 @@
+import { brandFontKey, useBrandFontPreviews } from "../lib/brandFontPreview";
+import "../components/brandVoice.css";
 import { useAuthenticatedBrandAssetUrls } from "../../AdStudio/canvas/useAuthenticatedBrandAssetUrls";
 import { BrandKitBrochure } from "./BrandKitBrochure";
 import {
@@ -24,7 +26,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { ArrowLeft, Check, Save } from "lucide-react";
+import { ArrowLeft, Check, Save, Plus } from "lucide-react";
 import { isBrandTemplatesEnabled } from "../templates/brandTemplateModel";
 import { brandTemplateApi } from "../../../services/apiClient";
 import { brandApi } from "../../../services/apiClient";
@@ -32,9 +34,8 @@ import { Skeleton } from "../../../components/ui/skeleton";
 import { EmptyState } from "../../../components/common/EmptyState";
 import { BrandCharactersSection } from "./BrandCharactersSection";
 import { BrandAssetsSection } from "../components/BrandAssetsSection";
-import { BrandKitLivePreview } from "../components/BrandKitLivePreview";
 import { BRAND_FONT_CATALOG } from "../lib/brandFontCatalog";
-import type { BrandKitSummary, PreviewMode } from "../lib/brandKitTypes";
+import type { BrandKitSummary } from "../lib/brandKitTypes";
 import {
   BRAND_TAXONOMY,
   BRAND_GOALS,
@@ -105,7 +106,6 @@ export function GuidedBrandKitWorkspace({
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [search, setSearch] = useState(""),
-    [mode, setMode] = useState<PreviewMode>("identity"),
     [versions, setVersions] = useState<Version[]>([]),
     [versionsLoading, setVersionsLoading] = useState(false),
     [versionsError, setVersionsError] = useState("");
@@ -133,6 +133,12 @@ export function GuidedBrandKitWorkspace({
     }
   };
   const sourceUrls = useAuthenticatedBrandAssetUrls(kit);
+  const [fontAttempt, setFontAttempt] = useState(0);
+  const previewFonts = useBrandFontPreviews(
+    draft.typography,
+    `${draft.name} ${draft.voiceExtras?.tagline || ""} Aa Bb Cc 0123456789`,
+    fontAttempt,
+  );
   useEffect(() => {
     let active = true;
     if (!brandId) {
@@ -264,12 +270,27 @@ export function GuidedBrandKitWorkspace({
     </label>
   );
   const preview = (
-    <aside className="xp-panel">
-      <BrandKitLivePreview kit={current} mode={mode} onModeChange={setMode} />
-      <p className="xp-caption">
-        Identity layout preview, not an AI-generated advertisement. Only your
-        account's uploaded assets are used.
-      </p>
+    <aside className="bp-draft-preview" aria-label="Brand Kit draft preview">
+      <header>
+        <span className="xp-kicker">LIVE IDENTITY</span>
+        <h2>Brand Kit draft</h2>
+        <p>
+          Your complete identity, using the current palette, type and messaging.
+          Changes remain a draft until saved.
+        </p>
+      </header>
+      <div
+        className="bp-draft-preview-scroll"
+        tabIndex={0}
+        role="region"
+        aria-label="Scrollable Brand Kit identity brochure"
+      >
+        <BrandKitBrochure
+          kit={current}
+          dirty={JSON.stringify(draft) !== saved.current}
+          summary
+        />
+      </div>
     </aside>
   );
   if (loading)
@@ -698,255 +719,299 @@ export function GuidedBrandKitWorkspace({
             </section>
           )}
           {step === "identity" && (
-            <div className="xp-split">
-              <section className="xp-panel">
-                <h2>Make every detail yours.</h2>
-                <button
-                  className="xp-secondary"
-                  disabled={!isBrandAnalysisEnabled()}
-                  onClick={() => setAnalysisOpen((value) => !value)}
-                  aria-expanded={analysisOpen}
-                  title="Requires a saved draft, an available provider and explicit cost approval."
-                >
-                  Analyze brand identity
-                </button>
-                {analysisOpen && (
-                  <BrandAnalysisPanel
-                    kit={kit}
-                    disabled={JSON.stringify(draft) !== saved.current}
-                    onApply={(proposal, selected) => {
-                      const next = applyBrandAnalysisProposal(
-                        draft,
-                        proposal,
-                        selected,
-                      );
-                      setDraft(next);
-                    }}
-                  />
-                )}
-                <p>
-                  Review your identity before approving it. AI suggestions
-                  remain unverified and require explicit review; no simulated
-                  analysis is substituted.
-                </p>
-                <div className="xp-form-grid">
-                  {draft.colors.map((color, i) => (
-                    <label className="xp-field" key={color.role || i}>
-                      {color.role} color
-                      <input
-                        type="color"
-                        value={color.hex}
-                        onChange={(event) =>
-                          edit({
-                            colors: draft.colors.map((c, n) =>
-                              n === i ? { ...c, hex: event.target.value } : c,
-                            ),
-                            identityApproved: false,
-                            guidelinesApproved: false,
-                          })
-                        }
-                      />
-                    </label>
-                  ))}
-                </div>
-                {draft.typography.map((entry, i) => (
-                  <label className="xp-field" key={entry.role || i}>
-                    {entry.role} typography
-                    <select
-                      aria-label={entry.role + " typography"}
-                      value={entry.family}
-                      onChange={(e) =>
-                        edit({
-                          typography: draft.typography.map((t, n) =>
-                            n === i
-                              ? { ...t, family: e.target.value, assetId: null }
-                              : t,
-                          ),
-                          identityApproved: false,
-                          guidelinesApproved: false,
-                        })
-                      }
-                    >
-                      {!BRAND_FONT_CATALOG.some(
-                        (f) => f.family === entry.family,
-                      ) && <option>{entry.family}</option>}
-                      {BRAND_FONT_CATALOG.map((font) => (
-                        <option key={font.id} value={font.family}>
-                          {font.label}
-                        </option>
+            <>
+              <div className="bp-identity-layout">
+                <section className="xp-panel bp-identity-visual">
+                  <header className="bp-identity-section-heading">
+                    <span className="xp-kicker">VISUAL IDENTITY</span>
+                    <h2>Make every detail yours.</h2>
+                    <p>
+                      Set your palette and typography, then define how your
+                      brand speaks below.
+                    </p>
+                  </header>
+                  <button
+                    className="xp-secondary"
+                    disabled={!isBrandAnalysisEnabled()}
+                    onClick={() => setAnalysisOpen((value) => !value)}
+                    aria-expanded={analysisOpen}
+                    title="Requires a saved draft, an available provider and explicit cost approval."
+                  >
+                    Analyze brand identity
+                  </button>
+                  {analysisOpen && (
+                    <BrandAnalysisPanel
+                      kit={kit}
+                      disabled={JSON.stringify(draft) !== saved.current}
+                      onApply={(proposal, selected) => {
+                        const next = applyBrandAnalysisProposal(
+                          draft,
+                          proposal,
+                          selected,
+                        );
+                        setDraft(next);
+                      }}
+                    />
+                  )}
+                  <p>
+                    Review your identity before approving it. AI suggestions
+                    remain unverified and require explicit review; no simulated
+                    analysis is substituted.
+                  </p>
+                  <section
+                    className="bp-identity-control-section"
+                    aria-label="Brand color palette"
+                  >
+                    <h3>Color palette</h3>
+                    <p>
+                      Choose a color for each brand role. Your saved colors
+                      remain the starting point.
+                    </p>
+                    <div className="bp-identity-color-grid">
+                      {draft.colors.map((color, i) => (
+                        <label
+                          className="xp-field bp-identity-color"
+                          key={color.role || i}
+                        >
+                          {color.role} color
+                          <input
+                            type="color"
+                            value={color.hex}
+                            onChange={(event) =>
+                              edit({
+                                colors: draft.colors.map((c, n) =>
+                                  n === i
+                                    ? { ...c, hex: event.target.value }
+                                    : c,
+                                ),
+                                identityApproved: false,
+                                guidelinesApproved: false,
+                              })
+                            }
+                          />
+                          <code>{color.hex.toUpperCase()}</code>
+                        </label>
                       ))}
-                    </select>
+                    </div>
+                  </section>
+                  <section
+                    className="bp-identity-control-section"
+                    aria-label="Brand typography"
+                  >
+                    <h3>Typography</h3>
+                    {Object.values(previewFonts).some(
+                      (f) => f.status === "unavailable",
+                    ) && (
+                      <button
+                        type="button"
+                        className="xp-secondary"
+                        onClick={() => setFontAttempt((value) => value + 1)}
+                      >
+                        Reload local font previews
+                      </button>
+                    )}
+                    <p>
+                      Give headlines, body copy and calls to action a consistent
+                      hierarchy.
+                    </p>
+                    <div className="bp-identity-type-grid">
+                      {draft.typography.map((entry, i) => (
+                        <label
+                          className="xp-field bp-identity-type"
+                          key={entry.role || i}
+                        >
+                          {entry.role} typography
+                          <select
+                            aria-label={entry.role + " typography"}
+                            value={entry.family}
+                            onChange={(e) =>
+                              edit({
+                                typography: draft.typography.map((t, n) =>
+                                  n === i
+                                    ? {
+                                        ...t,
+                                        family: e.target.value,
+                                        assetId: null,
+                                      }
+                                    : t,
+                                ),
+                                identityApproved: false,
+                                guidelinesApproved: false,
+                              })
+                            }
+                          >
+                            {!BRAND_FONT_CATALOG.some(
+                              (f) => f.family === entry.family,
+                            ) && <option>{entry.family}</option>}
+                            {BRAND_FONT_CATALOG.map((font) => (
+                              <option key={font.id} value={font.family}>
+                                {font.label}
+                              </option>
+                            ))}
+                          </select>
+                          <span
+                            className="bp-identity-type-sample"
+                            style={{
+                              fontFamily:
+                                previewFonts[brandFontKey(entry)]?.status ===
+                                "loaded"
+                                  ? `"${previewFonts[brandFontKey(entry)].family}",sans-serif`
+                                  : "sans-serif",
+                              fontWeight:
+                                previewFonts[brandFontKey(entry)]?.weight,
+                              fontSynthesis: "none",
+                            }}
+                          >
+                            Aa{" "}
+                            <small>
+                              {entry.family}
+                              <br />
+                              {previewFonts[brandFontKey(entry)]?.note ||
+                                "Loading font..."}
+                            </small>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </section>
+                </section>
+                <div className="bp-identity-preview">{preview}</div>
+              </div>
+              <section className="xp-panel bp-identity-voice">
+                <BrandVoiceSection
+                  value={voiceDraftFromKit(guidedPayload(draft, kit).voice)}
+                  onChange={(next) =>
+                    edit({
+                      voiceExtras: {
+                        ...draft.voiceExtras,
+                        ...voicePatchFromDraft(next),
+                      },
+                      personality: next.personality,
+                      tone: next.tone,
+                      audience: next.targetAudience,
+                      identityApproved: false,
+                      guidelinesApproved: false,
+                    })
+                  }
+                />
+              </section>
+              <section className="xp-panel bp-identity-review">
+                <div>
+                  <span className="xp-kicker">YOUR REVIEW</span>
+                  <h2>Approve the complete identity.</h2>
+                  <p>
+                    Check your palette, typography and brand voice. Editing
+                    these details clears the related review approvals; saving
+                    never approves them automatically.
+                  </p>
+                </div>
+                <div className="bp-identity-review-actions">
+                  <label className="xp-check">
+                    <input
+                      type="checkbox"
+                      checked={draft.identityApproved}
+                      onChange={(e) =>
+                        edit({ identityApproved: e.target.checked })
+                      }
+                    />{" "}
+                    I approve these identity choices
                   </label>
-                ))}
-                <label className="xp-field">
-                  Communication tone
-                  <select
-                    aria-label="Communication tone"
-                    value={draft.tone}
-                    onChange={(e) =>
+                  <button
+                    className="xp-primary"
+                    onClick={() => go("guidelines")}
+                  >
+                    Review guidelines →
+                  </button>
+                </div>
+              </section>
+            </>
+          )}
+          {step === "guidelines" && (
+            <>
+              <div className="bp-guidelines-layout">
+                <section className="xp-panel bp-guidelines-editor">
+                  <CreativeGuidelinesSection
+                    categoryLabel={[
+                      BRAND_TAXONOMY.find((c) => c.id === draft.categoryId)
+                        ?.label,
+                      BRAND_TAXONOMY.find(
+                        (c) => c.id === draft.categoryId,
+                      )?.niches.find((n) => n.id === draft.nicheId)?.label,
+                    ]
+                      .filter(Boolean)
+                      .join(" / ")}
+                    value={guidelinesDraftFromKit(
+                      guidedPayload(draft, kit).voice.creative,
+                      draft.guidelines,
+                    )}
+                    onChange={(next) =>
                       edit({
-                        tone: e.target.value,
-                        identityApproved: false,
+                        voiceExtras: {
+                          ...draft.voiceExtras,
+                          creative: creativeFromDraft(next),
+                        },
+                        guidelines: next.freeformGuidelines,
                         guidelinesApproved: false,
                       })
                     }
+                  />
+                </section>
+                <aside
+                  className="bp-draft-preview"
+                  aria-label="Live Brand Kit draft"
+                >
+                  <header>
+                    <span className="xp-kicker">LIVE CAMPAIGN IDENTITY</span>
+                    <h2>Brand Kit draft</h2>
+                    <p>
+                      Your creative guidelines appear first, followed by the
+                      complete brand identity. Edits on the left update this
+                      preview without saving or generating an advertisement.
+                    </p>
+                  </header>
+                  <div
+                    className="bp-draft-preview-scroll"
+                    tabIndex={0}
+                    role="region"
+                    aria-label="Scrollable campaign Brand Kit brochure"
                   >
-                    <option value="">Choose tone</option>
-                    {draft.tone &&
-                      ![
-                        "Confident",
-                        "Warm",
-                        "Energetic",
-                        "Professional",
-                        "Quietly expressive",
-                      ].includes(draft.tone) && (
-                        <option value={draft.tone}>{draft.tone}</option>
-                      )}
-                    {[
-                      "Confident",
-                      "Warm",
-                      "Energetic",
-                      "Professional",
-                      "Quietly expressive",
-                    ].map((t) => (
-                      <option key={t}>{t}</option>
-                    ))}
-                  </select>
-                </label>
-                {field("Target audience", "audience", 500)}
+                    <BrandKitBrochure
+                      kit={current}
+                      dirty={JSON.stringify(draft) !== saved.current}
+                      summary
+                      focusGuidelines
+                    />
+                  </div>
+                </aside>
+              </div>
+              <section className="xp-panel bp-guidelines-review">
+                <h2>Review and save your campaign playbook.</h2>
                 <label className="xp-check">
                   <input
                     type="checkbox"
-                    checked={draft.identityApproved}
+                    checked={draft.guidelinesApproved}
                     onChange={(e) =>
-                      edit({ identityApproved: e.target.checked })
+                      edit({ guidelinesApproved: e.target.checked })
                     }
                   />{" "}
-                  I approve these identity choices
+                  I approve the identity summary and usage rules
                 </label>
-                <button className="xp-primary" onClick={() => go("guidelines")}>
-                  Review guidelines →
-                </button>
+                <div className="xp-actions">
+                  <button
+                    className="xp-secondary"
+                    onClick={() => go("identity")}
+                  >
+                    Edit identity
+                  </button>
+                  <button
+                    className="xp-primary"
+                    onClick={() => void persist(true, "ready")}
+                  >
+                    <Check size={15} /> Complete Brand Kit
+                  </button>
+                </div>
               </section>
-              {preview}
-            </div>
-          )}
-          {step === "identity" && (
-            <details className="xp-panel">
-              <summary className="cursor-pointer font-medium">
-                Voice, messaging & copy details
-              </summary>
-              <BrandVoiceSection
-                value={voiceDraftFromKit(guidedPayload(draft, kit).voice)}
-                onChange={(next) =>
-                  edit({
-                    voiceExtras: {
-                      ...draft.voiceExtras,
-                      ...voicePatchFromDraft(next),
-                    },
-                    personality: next.personality,
-                    tone: next.tone,
-                    audience: next.targetAudience,
-                    identityApproved: false,
-                  })
-                }
-              />
-            </details>
-          )}
-          {step === "guidelines" && (
-            <details className="xp-panel">
-              <summary className="cursor-pointer font-medium">
-                Detailed creative guidelines
-              </summary>
-              <CreativeGuidelinesSection
-                categoryLabel={[
-                  BRAND_TAXONOMY.find((c) => c.id === draft.categoryId)?.label,
-                  BRAND_TAXONOMY.find(
-                    (c) => c.id === draft.categoryId,
-                  )?.niches.find((n) => n.id === draft.nicheId)?.label,
-                ]
-                  .filter(Boolean)
-                  .join(" / ")}
-                value={guidelinesDraftFromKit(
-                  guidedPayload(draft, kit).voice.creative,
-                  draft.guidelines,
-                )}
-                onChange={(next) =>
-                  edit({
-                    voiceExtras: {
-                      ...draft.voiceExtras,
-                      creative: creativeFromDraft(next),
-                    },
-                    guidelines: next.freeformGuidelines,
-                    guidelinesApproved: false,
-                  })
-                }
-              />
-            </details>
-          )}
-          {step === "guidelines" && (
-            <section className="xp-panel">
-              <h2>{draft.name || "Your brand"} / Identity summary</h2>
-              <div className="xp-guideline-grid">
-                <div>
-                  <h3>Palette</h3>
-                  <div className="xp-inline">
-                    {draft.colors.map((c, i) => (
-                      <span
-                        className="xp-color-chip"
-                        key={i}
-                        style={{ background: c.hex }}
-                        title={c.role + " " + c.hex}
-                      />
-                    ))}
-                  </div>
-                  <p>
-                    {draft.colors.map((c) => c.role + ": " + c.hex).join(" · ")}
-                  </p>
-                  <h3>Fonts</h3>
-                  <p>
-                    {draft.typography
-                      .map((t) => t.role + ": " + t.family)
-                      .join(" / ")}
-                  </p>
-                </div>
-                <div>
-                  <h3>Voice / personality</h3>
-                  <p>
-                    {draft.tone} · {draft.personality}
-                  </p>
-                  <h3>Assets</h3>
-                  <p>
-                    {kit?.assets?.filter((a) => a.status === "ready").length ||
-                      0}{" "}
-                    ready assets. Asset presence does not establish commercial
-                    usage rights.
-                  </p>
-                </div>
-              </div>
-
-              <label className="xp-check">
-                <input
-                  type="checkbox"
-                  checked={draft.guidelinesApproved}
-                  onChange={(e) =>
-                    edit({ guidelinesApproved: e.target.checked })
-                  }
-                />{" "}
-                I approve the identity summary and usage rules
-              </label>
-              <div className="xp-actions">
-                <button className="xp-secondary" onClick={() => go("identity")}>
-                  Edit identity
-                </button>
-                <button
-                  className="xp-primary"
-                  onClick={() => void persist(true, "ready")}
-                >
-                  <Check size={15} /> Complete Brand Kit
-                </button>
-              </div>
-            </section>
+            </>
           )}
           {step === "ready" && (
             <div className="bp-ready-layout">
@@ -1026,6 +1091,48 @@ export function GuidedBrandKitWorkspace({
                   )}
                 </details>
               </section>
+              {kit && (
+                <section className="xp-panel bp-template-launch">
+                  <div>
+                    <span className="xp-kicker">
+                      NEXT / BRAND TEMPLATE STUDIO
+                    </span>
+                    <h2>A template collection made from your identity.</h2>
+                    <p>
+                      Choose a format and prepare editable layouts using this
+                      Brand Kit's reviewed colors, typography and permitted
+                      assets. Review and save candidates before using them in
+                      campaigns.
+                    </p>
+                    <small>
+                      Native layouts preserve your source assets. This action
+                      does not start paid AI image generation.
+                    </small>
+                    {!isBrandTemplatesEnabled() && (
+                      <p role="status" className="xp-notice">
+                        Template generation controls are disabled in this local
+                        frontend. The Template Studio will explain the
+                        activation requirement.
+                      </p>
+                    )}
+                  </div>
+                  <Link
+                    className="xp-primary"
+                    to={`/brands/${encodeURIComponent(kit.id)}/templates`}
+                    onClick={(e) => {
+                      if (JSON.stringify(draft) !== saved.current) {
+                        e.preventDefault();
+                        setError(
+                          "Save your Brand Kit changes before opening Template Studio.",
+                        );
+                      }
+                    }}
+                  >
+                    <Plus size={16} aria-hidden />
+                    Create Brand Templates
+                  </Link>
+                </section>
+              )}
               {kit && (
                 <BrandKitBrochure
                   kit={kit}
