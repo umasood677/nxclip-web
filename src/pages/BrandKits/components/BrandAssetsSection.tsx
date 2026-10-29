@@ -195,19 +195,11 @@ export function BrandAssetsSection({
                   <h3 className="text-sm font-semibold">{slot.label}</h3>
                   <p className="text-xs text-muted-foreground">{slot.hint}</p>
                 </div>
-                <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-mono">
-                  {slot.role}
-                </span>
               </div>
 
               {slot.role === "brand_model" && (
                 <div className="bp-character-link-note">
-                  <p>
-                    This file is shared with Models & Mascots. Link it to a
-                    profile there to define appearance, consistency and
-                    authorized uses. You do not need to upload the same image
-                    again.
-                  </p>
+                  <p>Use this image in a model profile below.</p>
                   {onManageCharacters && (
                     <button
                       type="button"
@@ -401,13 +393,12 @@ export function BrandAssetsSection({
                   <img
                     src={assetUrls[a.id]}
                     className="w-14 h-14 object-contain"
-                    alt={a.label || a.role || "Brand asset"}
+                    alt={a.label || "Brand asset"}
                   />
                 )}
                 <div>
                   <p>{a.label || a.fileName || "Attached asset"}</p>
                   <p className="text-xs text-muted-foreground">
-                    {a.role || "Unassigned role"} ·{" "}
                     {a.status || "Status unavailable"}
                   </p>
                 </div>

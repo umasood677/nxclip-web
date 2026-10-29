@@ -192,3 +192,116 @@
   line-height: 1.7;
   margin: 0 0 16px;
 }
+
+.bp-character-help {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--xp-muted, #a4a9b3);
+}
+.bp-character-help summary,
+.bp-character-reference-picker summary {
+  cursor: pointer;
+}
+.bp-character-help p {
+  max-width: 70ch;
+  margin-top: 8px;
+  line-height: 1.7;
+}
+.bp-character-profile-list {
+  display: grid;
+  gap: 10px;
+}
+.bp-character-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--xp-line, #ffffff20);
+  border-radius: 10px;
+  background: #ffffff03;
+}
+.bp-character-profile-card > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1;
+}
+.bp-character-profile-card strong {
+  font-size: 14px;
+}
+.bp-character-status {
+  font-size: 11px;
+  border-radius: 20px;
+  padding: 3px 9px;
+  background: #ffffff0a;
+  color: #a4a9b3;
+}
+.bp-character-status[data-status="approved"] {
+  background: #5ca88b18;
+  color: #a1d7be;
+}
+.bp-character-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.bp-character-existing {
+  padding: 12px 16px;
+}
+.bp-character-existing h3 {
+  font-size: 12px;
+  color: var(--xp-muted, #a4a9b3);
+}
+.bp-character-source-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+.bp-character-source-grid article {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 0;
+  border: 0;
+}
+.bp-character-reference-picker {
+  font-size: 12px;
+  border: 1px solid var(--xp-line, #ffffff20);
+  border-radius: 8px;
+  padding: 12px;
+}
+.bp-character-reference-picker .bp-character-reference {
+  padding: 8px 0;
+  border: 0;
+  background: none;
+}
+.bp-character-selected {
+  display: grid;
+  gap: 8px;
+}
+.bp-character-selected > div {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--xp-line, #ffffff20);
+  border-radius: 8px;
+}
+.bp-character-selected img {
+  width: 40px;
+  height: 48px;
+  object-fit: contain;
+}
+.bp-character-selected span {
+  font-size: 12px;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 500px) {
+  .bp-character-profile-card {
+    flex-wrap: wrap;
+  }
+}

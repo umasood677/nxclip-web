@@ -107,6 +107,7 @@ export function BrandCharactersSection({
       onKitUpdated(updated);
       baseline.current = JSON.stringify(draft);
       draftVersion.current = updated.version;
+      setDraft(null);
       setMessage(
         "Character profile saved with the Brand Kit version. No image generation occurred.",
       );
@@ -204,37 +205,16 @@ export function BrandCharactersSection({
       <header>
         <h2 className="text-xl font-semibold">Models & Mascots</h2>
         <p className="text-sm text-muted-foreground mt-2">
-          A reference image is the file; a model or mascot profile connects that
-          file to appearance, consistency and permitted uses. These profiles use
-          the same uploaded images as Brand Kit Assets, not a second asset
-          library.
+          Define reusable identities using your uploaded images.
         </p>
-        <div className="bp-character-flow">
-          <div>
-            <span>01</span>
-            <strong>Choose a reference</strong>
-            <p>
-              Reuse an existing upload, upload here, or select from your Content
-              Library.
-            </p>
-          </div>
-          <div>
-            <span>02</span>
-            <strong>Define the identity</strong>
-            <p>
-              Describe the model or mascot and how its appearance should remain
-              consistent.
-            </p>
-          </div>
-          <div>
-            <span>03</span>
-            <strong>Review permitted uses</strong>
-            <p>
-              Declare rights and usage scopes, then explicitly save and approve
-              the profile.
-            </p>
-          </div>
-        </div>
+        <details className="bp-character-help">
+          <summary>How profiles work</summary>
+          <p>
+            Link an existing image or upload a reference, describe its
+            characteristics, and review permitted uses before approval. Images
+            remain in Brand Kit Assets.
+          </p>
+        </details>
       </header>
       {disabled && (
         <p role="status" className="text-sm text-amber-200">
@@ -255,53 +235,67 @@ export function BrandCharactersSection({
         disabled={disabled || saving || uploading}
         className="min-w-0 space-y-5"
       >
-        <div className="flex flex-wrap gap-2">
-          {profiles.map((p) => (
-            <Button
-              key={p.id}
-              variant="outline"
-              aria-pressed={draft?.id === p.id}
-              onClick={() => choose(structuredClone(p))}
-            >
-              {assetUrls[p.referenceAssetIds[0]] && (
-                <img
-                  className="bp-character-avatar"
-                  src={assetUrls[p.referenceAssetIds[0]]}
-                  alt=""
-                />
-              )}
-              {p.name} / {p.status}
-            </Button>
-          ))}
-          <Button
+        {!!profiles.length && (
+          <div className="bp-character-profile-list">
+            {profiles.map((p) => (
+              <article key={p.id} className="bp-character-profile-card">
+                {assetUrls[p.referenceAssetIds[0]] && (
+                  <img
+                    className="bp-character-avatar"
+                    src={assetUrls[p.referenceAssetIds[0]]}
+                    alt=""
+                  />
+                )}
+                <div>
+                  <strong>{p.name}</strong>
+                  <span className="bp-character-status" data-status={p.status}>
+                    {
+                      {
+                        draft: "Draft",
+                        approved: "Approved",
+                        archived: "Archived",
+                      }[p.status]
+                    }
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="xp-secondary"
+                  onClick={() => choose(structuredClone(p))}
+                  aria-label={`Edit ${p.name}`}
+                >
+                  Edit profile
+                </button>
+              </article>
+            ))}
+          </div>
+        )}
+        <div className="flex flex-wrap gap-3 bp-character-actions">
+          <button
+            type="button"
+            className="xp-primary"
             onClick={() =>
               choose({ ...newBrandCharacter(), kind: "human-model" })
             }
           >
             <Plus size={15} />
             Add model profile
-          </Button>
-          <Button variant="outline" onClick={() => choose(newBrandCharacter())}>
+          </button>
+          <button
+            type="button"
+            className="xp-secondary"
+            onClick={() => choose(newBrandCharacter())}
+          >
             <Plus size={15} />
             Add mascot / character
-          </Button>
+          </button>
         </div>
         {!!unlinkedModels.length && (
           <section className="bp-character-existing">
             <h3>Your uploaded model references</h3>
-            <p>
-              These images already belong to this Brand Kit. Link one to a
-              profile without uploading it again.
-            </p>
             <div className="bp-character-source-grid">
               {unlinkedModels.map((asset) => (
                 <article key={asset.id}>
-                  {assetUrls[asset.id] && (
-                    <img
-                      src={assetUrls[asset.id]}
-                      alt={asset.label || "Uploaded model reference"}
-                    />
-                  )}
                   <strong>
                     {asset.label ||
                       asset.fileName ||
@@ -338,9 +332,7 @@ export function BrandCharactersSection({
         )}
         {draft && dirty && (
           <p className="bp-character-draft-status" role="status">
-            Unsaved profile changes. Reference selection and guidance become
-            reusable only after you save this profile. Approval and allowed
-            usage remain explicit.
+            Unsaved profile changes
           </p>
         )}
         {draft && (
@@ -453,59 +445,81 @@ export function BrandCharactersSection({
                 </button>
               </div>
               <p className="bp-character-explainer">
-                A new upload is saved once in this Brand Kit's shared Assets. It
-                is selected here in your draft; save the profile to retain the
-                link. Existing uploads can be selected below without copying
-                them.
+                References link to existing assets; they are not duplicate
+                uploads.
               </p>
               <p className="bp-character-selection-count">
                 {draft.referenceAssetIds.length} / 8 references selected
               </p>
+              <div className="bp-character-selected">
+                {assets
+                  .filter((a) => draft.referenceAssetIds.includes(a.id))
+                  .map((asset) => (
+                    <div key={asset.id}>
+                      {assetUrls[asset.id] && (
+                        <img src={assetUrls[asset.id]} alt="" />
+                      )}
+                      <span>
+                        {asset.label || asset.fileName || "Reference image"}
+                      </span>
+                      <button
+                        type="button"
+                        className="xp-secondary"
+                        aria-label={`Remove reference ${asset.label || asset.fileName || "image"}`}
+                        onClick={() =>
+                          edit({
+                            referenceAssetIds: draft.referenceAssetIds.filter(
+                              (id) => id !== asset.id,
+                            ),
+                          })
+                        }
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+              </div>
               {!assets.length ? (
                 <EmptyState
                   title="Add your first reference image"
                   description="Upload an image here or choose one from your authorized Content Library. Other accounts' private assets are never listed."
                 />
               ) : (
-                assets.map((asset) => (
-                  <label
-                    key={asset.id}
-                    className="flex gap-3 text-sm bp-character-reference"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={draft.referenceAssetIds.includes(asset.id)}
-                      disabled={
-                        !draft.referenceAssetIds.includes(asset.id) &&
-                        draft.referenceAssetIds.length >= 8
-                      }
-                      onChange={(e) =>
-                        e.target.checked
-                          ? setDraft(
-                              attachCharacterReference(draft, kit, asset.id),
-                            )
-                          : edit({
-                              referenceAssetIds: draft.referenceAssetIds.filter(
-                                (id) => id !== asset.id,
-                              ),
-                            })
-                      }
-                    />
-                    {assetUrls[asset.id] && (
-                      <img
-                        className="bp-character-reference-image"
-                        src={assetUrls[asset.id]}
-                        alt=""
+                <details className="bp-character-reference-picker">
+                  <summary>Choose from Brand Kit Assets</summary>
+                  {assets.map((asset) => (
+                    <label
+                      key={asset.id}
+                      className="flex gap-3 text-sm bp-character-reference"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={draft.referenceAssetIds.includes(asset.id)}
+                        disabled={
+                          !draft.referenceAssetIds.includes(asset.id) &&
+                          draft.referenceAssetIds.length >= 8
+                        }
+                        onChange={(e) =>
+                          e.target.checked
+                            ? setDraft(
+                                attachCharacterReference(draft, kit, asset.id),
+                              )
+                            : edit({
+                                referenceAssetIds:
+                                  draft.referenceAssetIds.filter(
+                                    (id) => id !== asset.id,
+                                  ),
+                              })
+                        }
                       />
-                    )}
-                    <span>
-                      {asset.label || asset.fileName || "Brand reference"}{" "}
-                      <small className="text-muted-foreground">
-                        {asset.role}
-                      </small>
-                    </span>
-                  </label>
-                ))
+                      <span>
+                        {asset.label ||
+                          asset.fileName ||
+                          "Brand reference"}{" "}
+                      </span>
+                    </label>
+                  ))}
+                </details>
               )}
               <Link
                 className="inline-flex text-sm underline underline-offset-4"
@@ -641,17 +655,26 @@ export function BrandCharactersSection({
                   </option>
                 </select>
               </label>
-              <Button onClick={() => void save()} disabled={saving}>
-                <Save size={15} />
-                {saving ? "Saving…" : "Save character profile"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDiscardRequested(true)}
-              >
-                Close profile editor
-              </Button>
+              <div className="flex flex-wrap gap-3 bp-character-actions">
+                <button
+                  type="button"
+                  className="xp-primary"
+                  onClick={() => void save()}
+                  disabled={saving}
+                >
+                  <Save size={15} />
+                  {saving ? "Saving…" : "Save character profile"}
+                </button>
+                <button
+                  type="button"
+                  className="xp-secondary"
+                  onClick={() =>
+                    dirty ? setDiscardRequested(true) : setDraft(null)
+                  }
+                >
+                  {dirty ? "Cancel changes" : "Done editing"}
+                </button>
+              </div>
               {discardRequested && (
                 <div className="bp-character-discard" role="alert">
                   <p>

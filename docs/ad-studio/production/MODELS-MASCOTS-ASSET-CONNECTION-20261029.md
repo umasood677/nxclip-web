@@ -26,3 +26,11 @@ Brand Kit Assets stores uploaded files. The shared Models & Mascots editor store
 Open the existing Brand Kit, Assets, Models & Mascots. Choose Use uploaded model for the existing Zoe model (no need to re-upload). Alternatively add a profile and upload/select a reference. Enter characteristics, save the draft, reopen it, and verify the same reference. Review authorization separately before explicit approval for intended scopes. Uploading an image does not prove likeness rights or guarantee identity preservation by providers.
 
 No backend rebuild, service restart, feature-flag change or PowerShell command is required. The current frontend serves the updated source. Preserve existing provider and consent gates.
+
+## Owner UX follow-up: compact profiles
+- Replaced the three large help panels with one line and collapsed How profiles work.
+- Saved profiles are cards with separate status badges and Edit profile actions. Creation and save controls use the existing Ad Studio button classes.
+- Successful save returns to the profile list. Done editing closes an unchanged editor; Cancel changes confirms discarding only the local draft.
+- Only selected references show compact thumbnails. Other existing assets appear in a collapsed checklist without another image gallery. Unlinked model suggestions use compact rows.
+- Internal role labels hidden across Assets and source approvals; underlying contracts unchanged.
+- Ten upload/profile regression tests and scoped lint passed. Browser verified profile card, selected reference, Done editing and Cancel/discard without saving. No horizontal overflow at 384px; no visible internal role identifiers. Actual save remains owner UAT. No records, approvals, assets or services changed.

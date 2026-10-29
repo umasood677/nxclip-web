@@ -707,8 +707,7 @@ export function GuidedBrandKitWorkspace({
                         <span>
                           {asset.label || asset.fileName || "Brand asset"}
                           <small className="block">
-                            {asset.role} / uploaded and ready; source permission
-                            is your explicit choice
+                            Uploaded and ready
                           </small>
                         </span>
                       </label>
