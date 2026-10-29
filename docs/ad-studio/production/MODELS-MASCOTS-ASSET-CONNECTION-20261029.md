@@ -34,3 +34,10 @@ No backend rebuild, service restart, feature-flag change or PowerShell command i
 - Only selected references show compact thumbnails. Other existing assets appear in a collapsed checklist without another image gallery. Unlinked model suggestions use compact rows.
 - Internal role labels hidden across Assets and source approvals; underlying contracts unchanged.
 - Ten upload/profile regression tests and scoped lint passed. Browser verified profile card, selected reference, Done editing and Cancel/discard without saving. No horizontal overflow at 384px; no visible internal role identifiers. Actual save remains owner UAT. No records, approvals, assets or services changed.
+
+## Saved characteristics and multiple profiles
+Saved profile cards now show all five characteristics, type, linked-reference count, review status and declared uses without entering edit mode. A definition-list layout uses two columns on larger screens and one on small screens; long text wraps without truncation. Edit profile changes the selected profile only; the existing save merges by ID and retains the other profiles.
+
+Current generation limitation: content-service toBrandContext and getCreativeContext filter eligible profiles by scope and permission/readiness rules, then supply their guidance/references as campaign context. ProductionProjectWorkspace also filters model assets using eligible profiles. No explicit per-ad single-profile selection control was found in this inspected path. Multiple approved profiles are available context, not a verified promise that the user can choose one specific model per advertisement. Such selection needs a separate implementation and end-to-end verification; this UI change does not add it or claim providers preserve identities.
+
+Verification: 10 existing profile/upload tests and scoped lint passed. Browser confirmed the saved Zoe model characteristics and declared uses are visible with the editor closed, with no horizontal overflow at 384px. No profile, permission or asset mutations; no provider calls or runtime changes.

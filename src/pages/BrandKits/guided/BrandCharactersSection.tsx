@@ -238,16 +238,35 @@ export function BrandCharactersSection({
         {!!profiles.length && (
           <div className="bp-character-profile-list">
             {profiles.map((p) => (
-              <article key={p.id} className="bp-character-profile-card">
-                {assetUrls[p.referenceAssetIds[0]] && (
-                  <img
-                    className="bp-character-avatar"
-                    src={assetUrls[p.referenceAssetIds[0]]}
-                    alt=""
-                  />
-                )}
-                <div>
-                  <strong>{p.name}</strong>
+              <article
+                key={p.id}
+                className="bp-character-profile-card"
+                aria-label={`${p.name} profile`}
+              >
+                <header className="bp-character-profile-heading">
+                  {assetUrls[p.referenceAssetIds[0]] && (
+                    <img
+                      className="bp-character-avatar"
+                      src={assetUrls[p.referenceAssetIds[0]]}
+                      alt=""
+                    />
+                  )}
+                  <div className="bp-character-profile-title">
+                    <strong>{p.name}</strong>
+                    <span>
+                      {
+                        {
+                          "human-model": "Human model",
+                          mascot: "Fictional mascot",
+                          "fictional-character": "Fictional character",
+                        }[p.kind]
+                      }{" "}
+                      · {p.referenceAssetIds.length} linked{" "}
+                      {p.referenceAssetIds.length === 1
+                        ? "reference"
+                        : "references"}
+                    </span>
+                  </div>
                   <span className="bp-character-status" data-status={p.status}>
                     {
                       {
@@ -257,15 +276,48 @@ export function BrandCharactersSection({
                       }[p.status]
                     }
                   </span>
-                </div>
-                <button
-                  type="button"
-                  className="xp-secondary"
-                  onClick={() => choose(structuredClone(p))}
-                  aria-label={`Edit ${p.name}`}
-                >
-                  Edit profile
-                </button>
+                  <button
+                    type="button"
+                    className="xp-secondary"
+                    onClick={() => choose(structuredClone(p))}
+                    aria-label={`Edit ${p.name}`}
+                  >
+                    Edit profile
+                  </button>
+                </header>
+                <dl className="bp-character-characteristics">
+                  {[
+                    ["Appearance", p.appearance],
+                    ["Visual style", p.style],
+                    ["Wardrobe", p.wardrobe],
+                    ["Expressions", p.expressions],
+                    ["Consistency rules", p.consistencyRules],
+                    [
+                      "Declared uses",
+                      p.permissions.scopes
+                        .map(
+                          (scope) =>
+                            ({
+                              "ad-studio": "Ad Studio",
+                              "image-studio": "Image Studio",
+                              "ad-animation": "Ad Animation",
+                            })[scope],
+                        )
+                        .join(" · "),
+                    ],
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <dt>{label}</dt>
+                      <dd
+                        className={
+                          value?.trim() ? undefined : "bp-character-unspecified"
+                        }
+                      >
+                        {value?.trim() || "Not specified"}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
               </article>
             ))}
           </div>
