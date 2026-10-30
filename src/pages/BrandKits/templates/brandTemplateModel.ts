@@ -26,7 +26,7 @@ export interface BrandTemplate {
   blockers: string[];
   warnings: string[];
   reuseIssues?: string[];
-  provenance: { method: "native-template-engine" | "provider-ai-creative"; catalogVersion: string; sourceCreativeId?:string; sourceProjectId?:string; generatedAssetId?:string; provider?:string; modelId?:string };
+  provenance: { method: "native-template-engine" | "provider-ai-creative"; catalogVersion: string; sourceCreativeId?:string; sourceProjectId?:string; generatedAssetId?:string; provider?:string; modelId?:string; renderMode?:"template-proposal"; productDepictionReviewed?:true };
 }
 export function isBrandTemplatesEnabled(
   env: Record<string, unknown> | undefined = import.meta.env,

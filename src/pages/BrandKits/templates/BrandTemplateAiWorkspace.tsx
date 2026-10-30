@@ -4,6 +4,7 @@ import { Sparkles, ArrowLeft, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { adStudioApi, brandTemplateApi } from "../../../services/apiClient";
 import { Skeleton } from "../../../components/ui/skeleton";
+import { BrandTemplateScenePreview } from "./BrandTemplateScenePreview";
 import { ProductionImageGeneration } from "../../AdStudio/production/ProductionImageGeneration";
 import { hasGeneratedBackground } from "../../AdStudio/production/imageExecutionModel";
 import { AdProjectCreateForm } from "../../AdStudio/components/CreateAdProjectDialog";
@@ -62,6 +63,8 @@ export function BrandTemplateAiWorkspace({
   const requestedCampaign = projects.find(p => p.id === params.get("campaign") && p.brandKitId === kit.id);
   const [format, setFormat] = useState(requestedCampaign?.outputFormat || initialFormat),
     [layout, setLayout] = useState("product-hero"),
+    [direction,setDirection]=useState(requestedCampaign?.brief?.creativeDirection || requestedCampaign?.brief?.campaignIdea || ""),
+    [proposalReviewed,setProposalReviewed]=useState(false),
     [projectId, setProjectId] = useState(requestedCampaign?.id || ""),
     [source, setSource] = useState<WorkspaceCreative | null>(null),
     [busy, setBusy] = useState(false),
@@ -81,6 +84,7 @@ export function BrandTemplateAiWorkspace({
     urls = { ...brandUrls, ...generatedUrls };
   const remember = (creative: WorkspaceCreative) => {
     setSource(creative);
+    setProposalReviewed(false);
     const next = new URLSearchParams(params);
     next.set("mode", "ai");
     next.set("source", creative.id);
@@ -122,7 +126,7 @@ export function BrandTemplateAiWorkspace({
   }, [sourceId, source?.id, kit.id, projects, createdProjects]);
   const matching = compatibleTemplateProjects(allProjects, kit.id, format),
     layouts = TEMPLATE_CATALOG_V1.filter((t) =>
-      t.formats.some((f) => f === format),
+      ["product-hero","minimal-editorial","product-launch","social-story"].includes(t.templateId) && t.formats.some((f) => f === format),
     );
   async function prepare() {
     if (pending.current) return;
@@ -138,6 +142,7 @@ export function BrandTemplateAiWorkspace({
             projectId: project.id,
             templateId: layout,
             expectedBrandVersion: kit.version,
+            creativeDirection: direction.trim(),
           }),
           allProjects,
           kit.id,
@@ -165,6 +170,7 @@ export function BrandTemplateAiWorkspace({
         expectedCreativeVersion: source.currentVersion!,
         expectedBrandVersion: kit.version,
         name,
+        ...(source.imageRenderMode === "template-proposal" && proposalReviewed ? {proposalReviewed:true as const} : {}),
       });
       toast.success("AI template ready for review.");
       navigate(
@@ -195,7 +201,7 @@ export function BrandTemplateAiWorkspace({
           <Sparkles size={22} /> {generated ? "Review your AI result" : "Create your AI template"}
         </h2>
         <p>
-          Original product and logo layers. AI-generated scenery. Editable copy.
+          Describe the design. Preview the complete look. Customize in Canvas.
         </p>
       </header>
       {error && (
@@ -207,18 +213,22 @@ export function BrandTemplateAiWorkspace({
         <section className="xp-panel" role="status" aria-live="polite"><h3>Opening your saved creative…</h3><Skeleton className="h-40 w-full" /></section>
       ) : source ? (
         <>
+          {generated && source.imageRenderMode !== "template-proposal" && <section className="xp-panel"><h3>This is an earlier background-only draft</h3><p>Your saved draft is unchanged. Start a finished-template proposal to use the new flow.</p><button className="xp-primary" onClick={()=>{const campaign=allProjects.find(p=>p.id===source.projectId);setFormat(campaign?.outputFormat || format);setProjectId(source.projectId);setLayout("product-hero");setSource(null);setGenerated(false);const next=new URLSearchParams(params);next.delete("source");next.set("campaign",source.projectId);setParams(next);}}>Start a template proposal</button></section>}
           <TemplateCampaignNavigation source={source} />
-          <ProductionImageGeneration
+          {generated && source.imageRenderMode !== "template-proposal" ? <section className="xp-panel ai-generation-preview"><BrandTemplateScenePreview graph={source.sceneGraph} assetUrls={urls} size="hero" maxHeight={560}/></section> : <ProductionImageGeneration
             key={source.id}
             source={source}
-            initialInstruction={allProjects.find(p => p.id === source.projectId)?.brief?.creativeDirection || allProjects.find(p => p.id === source.projectId)?.brief?.campaignIdea || ""}
+            initialInstruction={source.proposalDirection || direction || allProjects.find(p => p.id === source.projectId)?.brief?.creativeDirection || ""}
+            renderMode={source.imageRenderMode || (generated ? "background" : "template-proposal")}
+            autoPreflight={!generated}
+            onCustomize={()=>navigate(creativeEditorPath(source.id))}
             brand={kit}
             assetUrls={urls}
             onSaved={async (creative) => {
               remember(verifyTemplateSource(creative, allProjects, kit.id));
               setGenerated(true);
             }}
-          />
+          />}
           {generated && (
             <section className="xp-panel bt-ai-publish">
               <h3>Save to Brand Templates</h3>
@@ -230,9 +240,10 @@ export function BrandTemplateAiWorkspace({
                   onChange={(e) => setName(e.target.value)}
                 />
               </label>
+              {source.imageRenderMode === "template-proposal" && <label className="xp-check"><input type="checkbox" checked={proposalReviewed} onChange={e=>setProposalReviewed(e.target.checked)}/>I reviewed the product depiction, packaging and brand copy.</label>}
               <button
                 className="xp-primary"
-                disabled={busy || !name.trim()}
+                disabled={busy || !name.trim() || (source.imageRenderMode === "template-proposal" && !proposalReviewed)}
                 onClick={() => void publish()}
               >
                 <Plus size={16} />
@@ -267,6 +278,7 @@ export function BrandTemplateAiWorkspace({
             />
           ) : (
             <>
+              <label className="xp-field">Describe your template<textarea rows={4} value={direction} maxLength={4000} onChange={e=>setDirection(e.target.value)} placeholder="A cinematic luxury product campaign with warm directional lighting and refined typography."/></label>
               <fieldset disabled={busy} className="bp-fieldset bt-setup-fields">
                 <label className="xp-field">
                   Format
@@ -327,19 +339,17 @@ export function BrandTemplateAiWorkspace({
                   className="xp-primary"
                   disabled={
                     busy ||
-                    !projectId ||
+                    !projectId || !direction.trim() ||
                     !layouts.some((t) => t.templateId === layout)
                   }
                   onClick={() => void prepare()}
                 >
                   <Sparkles size={16} />
-                  {busy ? "Preparing…" : "Continue to AI generation"}
+                  {busy ? "Preparing…" : "Continue to preview generation"}
                 </button>
               </div>
               <small>
-                Creates a campaign draft. Generation starts only after your
-                separate provider authorization. Review completed artwork before
-                publishing.
+                First test: one approved product photograph. Review the Google request before generation.
               </small>
             </>
           )}

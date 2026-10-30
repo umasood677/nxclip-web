@@ -1003,6 +1003,7 @@ export default function ProductionProjectWorkspace({
               key={creative.id + screen}
               source={creative}
               initialInstruction={screen === "variation-lab" ? "" : c.form.creativeDirection || c.form.campaignIdea || ""}
+              onCustomize={()=>{if(c.confirmLeave())c.navigate(creativeEditorPath(creative.id));}}
               brand={c.brand}
               assetUrls={c.assetUrls}
               initialOperation={

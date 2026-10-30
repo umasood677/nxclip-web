@@ -11,6 +11,8 @@ export type WorkspaceCreative = {
   id: string; projectId: string; name: string; updatedAt?: string;
   currentVersion?: number; sceneGraph?: AdSceneGraph | null;
   selectedCharacterIds?: string[];
+  imageRenderMode?: 'background' | 'template-proposal';
+  proposalDirection?: string;
 };
 export const projectWorkspacePath = (id: string) => "/create/ad/projects/" + encodeURIComponent(id);
 export const creativeEditorPath = (id: string) => "/create/ad/" + encodeURIComponent(id);

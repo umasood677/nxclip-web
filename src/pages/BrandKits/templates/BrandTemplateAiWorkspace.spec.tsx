@@ -34,8 +34,8 @@ test("AI entry renders the existing campaign path without automatically generati
   );
   assert.match(html, /Owned campaign/);
   assert.doesNotMatch(html, /Other brand campaign/);
-  assert.match(html, /Continue to AI generation/);
-  assert.match(html, /separate provider authorization/);
+  assert.match(html, /Continue to preview generation/);
+  assert.match(html, /Review the Google request/);
   assert.match(html, /disabled=""/);
   assert.doesNotMatch(html, /AI-to-library publishing is not available/);
 });

@@ -115,3 +115,10 @@ test("incomplete native collection slots block image execution readiness", async
   assert.match(imageSourceIssue(draft) || "", /empty product slots/);
   assert.equal(imageSourceIssue(creative("complete")), null);
 });
+
+test("finished proposal scope cannot be accepted as the older background-only runtime",async()=>{
+ const {assertImageRenderMode}=await import('./imageExecutionModel');
+ const q=quote();assert.throws(()=>assertImageRenderMode(q,'template-proposal'),/runtime has not verified/);
+ const proposal={...q,inputScope:'editable-template-proposal' as const,sourceTreatment:'reference-guided-proposal' as const};
+ assert.equal(validateImageQuote(proposal,0.1),proposal);assert.doesNotThrow(()=>assertImageRenderMode(proposal,'template-proposal'));assert.throws(()=>assertImageRenderMode(proposal,'background'),/runtime has not verified/);
+});

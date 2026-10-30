@@ -12,3 +12,7 @@
 @media(max-width:900px){.nxclip-production .xp-split.ai-generation-workspace{grid-template-columns:minmax(0,1fr)}.nxclip-production .ai-generation-controls{grid-row:1}.nxclip-production .ai-generation-preview{grid-row:2}}
 
 .nxclip-production .ai-generation-preview .bt-scene-preview{width:100%;display:flex;justify-content:center;min-width:0}
+
+.nxclip-production .ai-proposal-result{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:24px;align-items:start}
+.nxclip-production .ai-proposal-pending{min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:12px;color:var(--xp-muted)}
+@media(max-width:900px){.nxclip-production .ai-proposal-result{grid-template-columns:minmax(0,1fr)}}

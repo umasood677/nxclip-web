@@ -13,15 +13,16 @@ export type ImageQuote = {
   estimatedCostUsd: number | null;
   pricingVersion: string;
   imageCount: 1;
-  inputScope: "editable-ad-background";
+  inputScope: "editable-ad-background" | "editable-template-proposal";
   referenceCount: number;
   productLayerCount?: number;
-  sourceTreatment?: "original-photo-layer" | "background-only";
+  sourceTreatment?: "original-photo-layer" | "background-only" | "reference-guided-proposal";
   costBasis: "configured-estimate" | "usage-only";
 };
 export type ImageInput = {
   expectedVersion: number;
   operation: AdImageOperation;
+  renderMode?: 'background' | 'template-proposal';
   instruction: string;
   maxEstimatedCostUsd?: number;
   selectedCharacterIds?: string[];
@@ -39,7 +40,7 @@ export function hasGeneratedBackground(creative: WorkspaceCreative) {
 export function validateImageQuote(q: ImageQuote, budget?: number) {
   if (
     q.schemaVersion !== "1.0" ||
-    q.inputScope !== "editable-ad-background" ||
+    !["editable-ad-background","editable-template-proposal"].includes(q.inputScope) ||
     !validPreflightCost(q, budget) ||
     q.imageCount !== 1 ||
     !["gemini", "vertex"].includes(q.provider) ||
@@ -106,4 +107,8 @@ export function assertCharacterQuote(
 
 export function imageSourceIssue(creative: WorkspaceCreative): string | null {
   return creative.sceneGraph?.layers.some(l=>l.id.includes(':slotHint:')) ? 'This layout has empty product slots. Complete them in Canvas or start with Product hero before generation.' : null;
+}
+
+export function assertImageRenderMode(quote: ImageQuote, mode: 'background' | 'template-proposal') {
+  if(quote.inputScope !== (mode === 'template-proposal' ? 'editable-template-proposal' : 'editable-ad-background') || (mode === 'template-proposal' && quote.sourceTreatment !== 'reference-guided-proposal'))throw Error('The active runtime has not verified finished-template proposal support. No generation was started.');
 }
