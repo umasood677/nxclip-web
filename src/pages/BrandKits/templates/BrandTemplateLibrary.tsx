@@ -1,6 +1,7 @@
 import { useCreativeAssetUrls } from "../../AdStudio/canvas/useCreativeAssetUrls";
 import { BrandTemplateScenePreview } from "./BrandTemplateScenePreview";
 import { toast } from "sonner";
+import { AdProjectCreateForm } from "../../AdStudio/components/CreateAdProjectDialog";
 import { BrandTemplateAiWorkspace } from "./BrandTemplateAiWorkspace";
 import "../../AdStudio/styles/ad-studio-w0a.css";
 
@@ -35,8 +36,8 @@ import { useAuthenticatedBrandAssetUrls } from "../../AdStudio/canvas/useAuthent
 import { AD_FORMATS } from "../../AdStudio/types";
 import {
   creativeEditorPath,
-  createProjectTemplate,
   type WorkspaceProject,
+  type WorkspaceCreative,
 } from "../../AdStudio/lib/projectWorkspace";
 import type { BrandKitSummary } from "../lib/brandKitTypes";
 import {
@@ -87,6 +88,8 @@ export default function BrandTemplateLibrary() {
   const [kit, setKit] = useState<BrandKitSummary | null>(null),
     [items, setItems] = useState<BrandTemplate[]>([]),
     [projects, setProjects] = useState<WorkspaceProject[]>([]);
+  const [templateDrafts,setTemplateDrafts]=useState<WorkspaceCreative[]>([]),[creatingCampaign,setCreatingCampaign]=useState(false);
+  const running=useRef(false);
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -95,11 +98,7 @@ export default function BrandTemplateLibrary() {
     [archived, setArchived] = useState(false),
     [format, setFormat] = useState("portrait_1080x1350"),
     [projectId, setProjectId] = useState("");
-  const [draft, setDraft] = useState<Draft | null>(null),
-    [selectedDefault, setSelectedDefault] = useState<{
-      id: AdStudioTemplateId;
-      format: string;
-    } | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
   const requestVersion = useRef(0),
     activeBrand = useRef(brandId);
   activeBrand.current = brandId;
@@ -129,10 +128,10 @@ export default function BrandTemplateLibrary() {
     setBusy(false);
     setError("");
     try {
-      const [brand, result, owned] = await Promise.all([
+      const [brand, result, drafts] = await Promise.all([
         brandApi.getKit(brandId),
         brandTemplateApi.list(brandId),
-        adStudioApi.listProjects(),
+        brandTemplateApi.listDrafts(brandId).catch(()=>({items:[]})),
       ]);
       if (request !== requestVersion.current) return;
       if (
@@ -142,7 +141,7 @@ export default function BrandTemplateLibrary() {
         throw new Error("Brand context changed.");
       setKit(brand);
       setItems(result.items);
-      setProjects(owned.items as WorkspaceProject[]);
+      setTemplateDrafts(drafts.items);
     } catch {
       setError(
         "The owned Brand Kit and template library could not be loaded. Check feature readiness and retry.",
@@ -154,6 +153,11 @@ export default function BrandTemplateLibrary() {
   useEffect(() => {
     void load();
   }, [load]);
+  useEffect(()=>{
+    if(!selected?.saved || !canReuseTemplate(selected))return;let active=true;
+    void adStudioApi.listProjects().then(result=>{if(active)setProjects(result.items as WorkspaceProject[]);}).catch(()=>{if(active)setError('Campaigns could not be loaded. Your saved template is unchanged.');});
+    return()=>{active=false;};
+  },[selected?.id,selected?.saved,selected?.revision]);
   useEffect(() => {
     setDraft(selected ? draftFor(selected) : null);
     setProjectId("");
@@ -185,6 +189,7 @@ export default function BrandTemplateLibrary() {
       ...previous.filter((t) => t.id !== record.id),
     ]);
   const run = async (work: () => Promise<void>) => {
+    if(running.current)return;running.current=true;
     setBusy(true);
     setError("");
     setMessage("");
@@ -195,9 +200,18 @@ export default function BrandTemplateLibrary() {
         "The request could not be completed. Reload to verify the saved state before retrying; review source permissions and blockers. Your current customization is retained.",
       );
     } finally {
-      setBusy(false);
+      setBusy(false);running.current=false;
     }
   };
+  const previewNative=(id:AdStudioTemplateId,chosen:string)=>void run(async()=>{
+    if(!kit?.version)throw Error('Brand Kit required');
+    const draft=await brandTemplateApi.createNativeSource(brandId,{templateId:id,format:chosen,expectedBrandVersion:kit.version});
+    navigate(base+'?tab=brand&mode=native&source='+encodeURIComponent(draft.id));
+  });
+  const editNativeInCanvas=()=>void run(async()=>{
+    if(!selected || dirty)throw Error('Save customization first');
+    const draft=await brandTemplateApi.editorDraft(brandId,selected.id);navigate(creativeEditorPath(draft.id));
+  });
   const prepare = () =>
     void run(async () => {
       if (!kit) throw new Error("Brand required");
@@ -250,7 +264,7 @@ export default function BrandTemplateLibrary() {
   const matching = compatibleTemplateProjects(
     projects,
     brandId,
-    selected?.format || selectedDefault?.format || format,
+    selected?.format || format,
   );
   const reuse = () =>
     void run(async () => {
@@ -263,15 +277,6 @@ export default function BrandTemplateLibrary() {
           brandId,
           selected.id,
           project.id,
-        );
-        if (activeBrand.current === brandId)
-          navigate(creativeEditorPath(creative.id));
-      } else if (selectedDefault) {
-        const creative = await createProjectTemplate(
-          adStudioApi,
-          project,
-          selectedDefault.id,
-          selectedDefault.format,
         );
         if (activeBrand.current === brandId)
           navigate(creativeEditorPath(creative.id));
@@ -336,9 +341,10 @@ export default function BrandTemplateLibrary() {
     <section className="xp-panel" id="template-project-selection">
       <h3>Choose a campaign</h3>
       <p>
-        The Brand Kit and output format must match. Your existing project and
-        Canvas remain authoritative.
+        Choose a campaign or create one to make an advertisement from this saved template.
       </p>
+      <button className="xp-secondary" onClick={()=>setCreatingCampaign(v=>!v)}><Plus size={14}/> Create campaign</button>
+      {creatingCampaign && <AdProjectCreateForm brands={[kit]} brandLocked initialBrandId={brandId} format={selected?.format || format} onCancel={()=>setCreatingCampaign(false)} onCreated={p=>{setProjects(old=>[p,...old.filter(x=>x.id!==p.id)]);setProjectId(p.id);setCreatingCampaign(false);}}/>}
       {matching.length ? (
         <label className="xp-field">
           Project
@@ -366,11 +372,11 @@ export default function BrandTemplateLibrary() {
           busy ||
           !projectId ||
           (!!selected && (!canReuseTemplate(selected) || dirty)) ||
-          (!selected && !selectedDefault)
+          !selected
         }
         onClick={reuse}
       >
-        Use template in Ad Studio →
+        Create ad from saved template →
       </button>
       <Link
         className="xp-text-button"
@@ -431,8 +437,8 @@ export default function BrandTemplateLibrary() {
             </button>
           </div>
         )}
-        {params.get("mode") === "ai" && !templateId ? (
-          <BrandTemplateAiWorkspace key={brandId} kit={kit} projects={projects} initialFormat={format} onBack={() => setParams({tab:"brand"})} />
+        {["ai","native"].includes(params.get("mode") || "") && !templateId ? (
+          <BrandTemplateAiWorkspace key={brandId+":"+params.get("mode")} kit={kit} entryKind={params.get("mode")==="native"?"native":"ai"} initialFormat={format} onBack={() => setParams({tab:"brand"})} />
         ) : templateId && !selected ? (
           <EmptyState
             title="Template not found"
@@ -609,12 +615,14 @@ export default function BrandTemplateLibrary() {
                       </button>
                     ))}
                 </div>
+                {selected.provenance.method==='native-template-engine' ? <button className="xp-secondary" disabled={busy || dirty} onClick={editNativeInCanvas}>Customize in Canvas →</button> : selected.provenance.sourceCreativeId && <button className="xp-secondary" onClick={()=>go(base+'?tab=brand&mode=ai&source='+encodeURIComponent(selected.provenance.sourceCreativeId!))}>Edit source proposal →</button>}
+                <button className="xp-primary" disabled={busy || dirty || !canReuseTemplate(selected)} onClick={()=>document.getElementById('template-project-selection')?.scrollIntoView({behavior:'smooth',block:'center'})}>Use Template in Ad Studio →</button>
                 <button className="xp-text-button" onClick={() => go(base)}>
                   Back to brand library →
                 </button>
               </section>
             </div>
-            {reviewProject}
+            {canReuseTemplate(selected) && reviewProject}
           </>
         ) : (
           <>
@@ -628,7 +636,7 @@ export default function BrandTemplateLibrary() {
                 role="tab"
                 aria-selected={tab === "default"}
                 onClick={() => {
-                  setSelectedDefault(null);
+
                   setParams({ tab: "default" });
                 }}
               >
@@ -639,13 +647,14 @@ export default function BrandTemplateLibrary() {
                 role="tab"
                 aria-selected={tab === "brand"}
                 onClick={() => {
-                  setSelectedDefault(null);
+
                   setParams({ tab: "brand" });
                 }}
               >
                 My Brand Templates ({items.length})
               </button>
             </div>
+            {templateDrafts.length>0 && <details className="xp-panel bt-template-drafts"><summary>Template drafts &amp; proposals ({templateDrafts.length})</summary><div className="bt-draft-list">{templateDrafts.map(d=><div key={d.id} className="xp-actions"><strong>{d.name}</strong><button className="xp-secondary" onClick={()=>go(base+'?tab=brand&mode='+(d.templateContext?.draftKind || 'ai')+'&source='+encodeURIComponent(d.id))}>Resume template</button></div>)}</div></details>}
             <div className="xp-panel bt-toolbar">
               <div className="xp-actions">
                 <label className="xp-field">
@@ -654,7 +663,7 @@ export default function BrandTemplateLibrary() {
                     value={format}
                     onChange={(e) => {
                       setFormat(e.target.value);
-                      setSelectedDefault(null);
+
                     }}
                   >
                     {AD_FORMATS.map((f) => (
@@ -706,14 +715,10 @@ export default function BrandTemplateLibrary() {
                   hideHeader
                   hideNote
                   catalogLabel="Default Templates"
-                  onUseTemplate={(id, chosen) => {
-                    setSelectedDefault({ id, format: chosen });
-                    setProjectId("");
-                    toast.info("Choose a campaign below to use this template.");
-                    setTimeout(() => document.getElementById("template-project-selection")?.scrollIntoView({behavior:"smooth",block:"center"}),0);
-                  }}
+                  useLabel="Preview template"
+                  onUseTemplate={previewNative}
                 />
-                {selectedDefault && reviewProject}
+
               </>
             ) : !visible.length ? (
               <EmptyState
@@ -763,7 +768,7 @@ export default function BrandTemplateLibrary() {
                           go(base + "/" + encodeURIComponent(t.id))
                         }
                       >
-                        Preview & customize →
+                        Preview template →
                       </button>
                     </div>
                   </article>

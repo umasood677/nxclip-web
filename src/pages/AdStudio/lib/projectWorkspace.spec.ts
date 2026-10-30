@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { newWorkspaceProject, projectBriefForm, workspaceBrief, loadWorkspace, createProjectTemplate, createProjectConcept, projectWorkspacePath, creativeEditorPath, type WorkspaceProject, type WorkspaceCreative } from "./projectWorkspace";
+import { editorReturnPath, isTemplateDraftCreative, newWorkspaceProject, projectBriefForm, workspaceBrief, loadWorkspace, createProjectTemplate, createProjectConcept, projectWorkspacePath, creativeEditorPath, type WorkspaceProject, type WorkspaceCreative } from "./projectWorkspace";
 const project: WorkspaceProject = { id: "project-a", name: "Collection", brandKitId: "kit-b", brief: { campaignIdea: "  My idea\nexactly.  ", coreMessage: "Copy" } };
 test("project creation preserves Campaign Idea wording and keeps Brand Kit optional", () => {
   const body = newWorkspaceProject(" New project ", "  My words.  ");
@@ -68,9 +68,9 @@ test("the actual editor Back to Project uses the persisted association and respe
   visit(tree);assert.ok(expression);
   const code=ts.transpileModule("const fn="+expression.getText(tree)+";fn;",{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
   const calls:string[]=[];
-  const back=vm.runInNewContext(code,{projectId:project.id,navigate:(path:string)=>calls.push(path),confirmLeave:()=>true}) as ()=>void;
+  const back=vm.runInNewContext(code,{templateDocument:null,projectId:project.id,navigate:(path:string)=>calls.push(path),confirmLeave:()=>true}) as ()=>void;
   back();assert.deepEqual(calls,[projectWorkspacePath(project.id)]);
-  const blocked=vm.runInNewContext(code,{projectId:project.id,navigate:(path:string)=>calls.push(path),confirmLeave:()=>false}) as ()=>void;
+  const blocked=vm.runInNewContext(code,{templateDocument:null,projectId:project.id,navigate:(path:string)=>calls.push(path),confirmLeave:()=>false}) as ()=>void;
   blocked();assert.equal(calls.length,1);
 });
 test("application keeps the original creative route alongside the reload-safe project route", () => {
@@ -181,3 +181,21 @@ test('approved presentation can explicitly edit Campaign Idea while legacy saves
 });
 
 test("modern save-and-generate consumes an explicitly edited campaign idea only after verified persistence",async()=>{const edited=projectBriefForm(project);edited.campaignIdea="A newly edited campaign idea";const calls:string[]=[];let saved:WorkspaceProject=project;await generateProjectConcepts({updateProject:async(id,body)=>{calls.push("save");saved={...project,...body,brief:{...project.brief,...body.brief as object}} as WorkspaceProject;return saved;},generateConcepts:async()=>{calls.push("generate");assert.equal(saved.brief?.campaignIdea,edited.campaignIdea);return {concepts:[]};}},project,edited,{allowCampaignIdeaEdit:true});assert.deepEqual(calls,["save","generate"]);});
+
+ test('template drafts are separated without hiding actual ads reused from saved templates',async()=>{
+ const draft={id:'draft',name:'Draft',projectId:project.id,conceptSnapshot:{purpose:'brand-template-source'},brandSnapshot:{brandKitId:'kit-b'}};
+ const ad={id:'ad',name:'Ad',projectId:project.id,parentCreativeId:'draft',conceptSnapshot:{brandTemplateId:'saved-template'}};
+ assert.equal(isTemplateDraftCreative(draft),true);assert.equal(isTemplateDraftCreative(ad),false);
+ const loaded=await loadWorkspace({getProject:async()=>project,listCreatives:async()=>({items:[draft,ad]})},project.id);
+ assert.deepEqual(loaded.creatives,[ad]);assert.equal(loaded.templateDraftCount,1);
+ const modern=await loadWorkspace({getProject:async()=>project,listCreatives:async()=>({items:[ad],templateDraftCount:3})},project.id);assert.equal(modern.templateDraftCount,3);
+ assert.equal(editorReturnPath(draft),'/brands/kit-b/templates?tab=brand&mode=ai&source=draft');assert.equal(editorReturnPath(ad),projectWorkspacePath(project.id));
+ });
+ test('template Canvas returns to Brand Template review and preserves unsaved cancellation',()=>{
+ const source=readFileSync(process.cwd()+'/src/pages/AdStudio/AdStudioEditor.tsx','utf8'),tree=ts.createSourceFile('editor.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);let expression:ts.Expression|undefined;
+ function visit(node:ts.Node){if(ts.isVariableDeclaration(node)&&node.name.getText(tree)==='goProjects')expression=node.initializer;ts.forEachChild(node,visit);}visit(tree);assert.ok(expression);
+ const code=ts.transpileModule('const fn='+expression.getText(tree)+';fn;',{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+ const calls:string[]=[],draft={id:'draft',projectId:'internal',name:'Draft',documentPurpose:'template-draft' as const,templateContext:{brandKitId:'brand',draftKind:'native' as const}};
+ for(const allow of [false,true]){const back=vm.runInNewContext(code,{templateDocument:draft,projectId:'internal',editorReturnPath,navigate:(path:string)=>calls.push(path),confirmLeave:()=>allow}) as ()=>void;back();}
+ assert.deepEqual(calls,['/brands/brand/templates?tab=brand&mode=native&source=draft']);
+ });

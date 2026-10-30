@@ -1,3 +1,4 @@
+import { editorReturnPath, isTemplateDraftCreative, type WorkspaceCreative } from "./lib/projectWorkspace";
 import { useCreativeAssetUrls } from './canvas/useCreativeAssetUrls';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -91,6 +92,7 @@ export default function AdStudioEditor() {
   const [saving, setSaving] = useState(false);
   const [saveState, setSaveState] = useState<"saved" | "dirty" | "saving">("saved");
   const [name, setName] = useState("Creative");
+  const [templateDocument,setTemplateDocument]=useState<WorkspaceCreative|null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [brandSnapshot, setBrandSnapshot] = useState<BrandSnapshotView | null>(null);
   const [brandKit, setBrandKit] = useState<BrandKitSummary | null>(null);
@@ -175,6 +177,7 @@ export default function AdStudioEditor() {
     if (!creativeId) return;
     const creative = await adStudioApi.getCreative(creativeId);
     setName(creative.name);
+    setTemplateDocument(isTemplateDraftCreative(creative)?creative:null);
     setProjectId(creative.projectId ?? null);
     const loaded = creative.sceneGraph as AdSceneGraph;
     setGraph(loaded);
@@ -423,7 +426,7 @@ export default function AdStudioEditor() {
 
   const goProjects = () => {
     if (!confirmLeave()) return;
-    navigate(projectId ? "/create/ad/projects/" + encodeURIComponent(projectId) : "/create/ad");
+    navigate(templateDocument ? editorReturnPath(templateDocument) : projectId ? "/create/ad/projects/" + encodeURIComponent(projectId) : "/create/ad");
   };
 
   const animateThisAd = async () => {
@@ -606,7 +609,7 @@ export default function AdStudioEditor() {
   );
 
   const variationsPanel =
-    creativeId ? (
+    templateDocument ? <p className="text-xs text-muted-foreground">Review and save this template in Brand Template Studio before creating campaign variations.</p> : creativeId ? (
       <VariationsPanel
         creativeId={creativeId}
         projectId={projectId}
@@ -689,7 +692,7 @@ export default function AdStudioEditor() {
       id="ad-studio-canvas"
     >
       <SEO title={`${name} | Ad Studio · Editor Canvas`} />
-      <AdStudioTopNav
+      {!templateDocument && <AdStudioTopNav
         hideBrand
         active="canvas"
         recentCreativeId={creativeId}
@@ -700,7 +703,7 @@ export default function AdStudioEditor() {
           }
           if (id === "concepts") navigate("/create/ad");
         }}
-      />
+      />}
       <div className="w0a-editor-toolbar shrink-0">
         <div className="w0a-editor-toolbar__meta min-w-0">
           <Button
@@ -709,10 +712,11 @@ export default function AdStudioEditor() {
             size="sm"
             className="h-7 px-2"
             onClick={goProjects}
-            aria-label="Back to Ad Studio projects"
+            aria-label={templateDocument ? "Back to template review" : "Back to Ad Studio projects"}
           >
-            <ArrowLeft size={14} className="mr-1" aria-hidden /> {projectId ? "Back to Project" : "Projects"}
+            <ArrowLeft size={14} className="mr-1" aria-hidden /> {templateDocument ? "Review template" : projectId ? "Back to Project" : "Projects"}
           </Button>
+          {templateDocument && <Badge variant="outline">Template draft</Badge>}
           <h2 className="text-sm font-semibold truncate max-w-[12rem] sm:max-w-[18rem]">{name}</h2>
           {brandName ? (
             <Badge variant="secondary" className="max-w-[10rem] truncate" title={brandName}>
@@ -837,7 +841,7 @@ export default function AdStudioEditor() {
           >
             {previewMode ? "Exit preview" : "Preview"}
           </Button>
-          {isAdStudioAnimatedEnabled() ? (
+          {!templateDocument && isAdStudioAnimatedEnabled() ? (
             <Button
               type="button"
               size="sm"
@@ -1063,7 +1067,7 @@ export default function AdStudioEditor() {
         />
       ) : null}
 
-      {graph && creativeId ? (
+      {graph && creativeId && !templateDocument ? (
         <IntelligentAdStudioHost
           ownerUserId={ownerUserId}
           projectId={projectId}

@@ -31,6 +31,7 @@ export function useAdProjectWorkspace() {
   const { projectId = "" } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const [project, setProject] = useState<WorkspaceProject | null>(null);
+  const [templateDraftCount,setTemplateDraftCount]=useState(0);
   const [creatives, setCreatives] = useState<WorkspaceCreative[]>([]);
   const [brand, setBrand] = useState<BrandKitSummary | null>(null);
   const [selectedConceptId, setSelectedConceptId] = useState<string | null>(
@@ -85,6 +86,7 @@ export function useAdProjectWorkspace() {
       if (epoch !== loadEpoch.current) return;
       setProject(result.project);
       setCreatives(result.creatives);
+      setTemplateDraftCount(result.templateDraftCount);
       const nextForm = projectBriefForm(result.project);
       setForm(nextForm);
       setSavedForm(JSON.stringify(nextForm));
@@ -316,6 +318,7 @@ export function useAdProjectWorkspace() {
     project,
     setProject,
     creatives,
+    templateDraftCount,
     brand,
     selectedConceptId,
     setSelectedConceptId,

@@ -13,6 +13,10 @@ export type WorkspaceCreative = {
   selectedCharacterIds?: string[];
   imageRenderMode?: 'background' | 'template-proposal';
   proposalDirection?: string;
+  documentPurpose?: 'template-draft'|'campaign-ad';
+  templateContext?: {brandKitId:string;draftKind:'ai'|'native';brandTemplateId?:string};
+  conceptSnapshot?: Record<string,unknown>|null;
+  brandSnapshot?: Record<string,unknown>|null;
 };
 export const projectWorkspacePath = (id: string) => "/create/ad/projects/" + encodeURIComponent(id);
 export const creativeEditorPath = (id: string) => "/create/ad/" + encodeURIComponent(id);
@@ -47,13 +51,13 @@ export function newWorkspaceProject(name: string, campaignIdea: string, brandKit
 }
 export interface WorkspaceReader {
   getProject: (id: string) => Promise<WorkspaceProject>;
-  listCreatives: (id: string) => Promise<{ items: WorkspaceCreative[] }>;
+  listCreatives: (id: string) => Promise<{ items: WorkspaceCreative[];templateDraftCount?:number }>;
 }
 export async function loadWorkspace(api: WorkspaceReader, id: string) {
   const [project, result] = await Promise.all([api.getProject(id), api.listCreatives(id)]);
   if (project.id !== id || result.items.some(c => c.projectId !== id))
     throw Error("The project could not be loaded safely. Please retry.");
-  return { project, creatives: result.items };
+  return { project, creatives: result.items.filter(c=>!isTemplateDraftCreative(c)),templateDraftCount:Math.max(result.templateDraftCount || 0,result.items.filter(isTemplateDraftCreative).length) };
 }
 export interface WorkspaceCreator {
   createFromTemplate: (id: string, body: {
@@ -129,3 +133,11 @@ export async function selectProjectExample(api: WorkspaceBriefWriter, project: W
   return { project: await saveWorkspaceBrief(api, project, form), form };
 }
 
+
+export const isTemplateDraftCreative = (creative: WorkspaceCreative) => creative.documentPurpose==='template-draft' || creative.conceptSnapshot?.purpose==='brand-template-source';
+export function editorReturnPath(creative: Pick<WorkspaceCreative,'id'|'projectId'|'templateContext'|'documentPurpose'|'conceptSnapshot'>){
+  if(isTemplateDraftCreative(creative as WorkspaceCreative) && creative.templateContext)return '/brands/'+encodeURIComponent(creative.templateContext.brandKitId)+'/templates?tab=brand&mode='+creative.templateContext.draftKind+'&source='+encodeURIComponent(creative.id);
+  const legacy=creative as WorkspaceCreative;
+  if(isTemplateDraftCreative(legacy) && typeof legacy.brandSnapshot?.brandKitId==='string')return '/brands/'+encodeURIComponent(legacy.brandSnapshot.brandKitId)+'/templates?tab=brand&mode=ai&source='+encodeURIComponent(creative.id);
+  return projectWorkspacePath(creative.projectId);
+}

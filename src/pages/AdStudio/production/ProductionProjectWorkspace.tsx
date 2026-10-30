@@ -362,7 +362,7 @@ export default function ProductionProjectWorkspace({
           </button>
           <button className="xp-secondary" aria-current={screen === "visual-lab" ? "page" : undefined} disabled={!creative && !project.brandKitId} title={!creative && !project.brandKitId ? "Select a saved creative first" : undefined} onClick={() => {
             if (creative) go("visual-lab", {creativeId:creative.id});
-            else if (project.brandKitId && c.confirmLeave()) c.navigate("/brands/" + encodeURIComponent(project.brandKitId) + "/templates?tab=brand&mode=ai&campaign=" + encodeURIComponent(project.id));
+            else if (project.brandKitId) go("templates");
             else if (!project.brandKitId) go("workspace");
           }}>AI Ad Creation</button>
           {project.brandKitId && (
@@ -374,6 +374,7 @@ export default function ProductionProjectWorkspace({
             </Link>
           )}
         </nav>
+        {c.templateDraftCount>0 && project.brandKitId && <p className="xp-notice">{c.templateDraftCount} template draft(s) are available in <Link to={'/brands/'+encodeURIComponent(project.brandKitId)+'/templates?tab=brand'}>Brand Template Studio</Link>. They are not campaign ads.</p>}
         {project.brandKitId && c.brand && (
           <section
             className="bp-campaign-brand"

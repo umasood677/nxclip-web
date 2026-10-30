@@ -13,6 +13,7 @@ import type { NormalizedBrandContext } from "../../BrandKits/lib/brandContext";
 import { BrandHomePreview, aspectForFormat } from "./BrandHomePreview";
 
 type Props = {
+  useLabel?: string;
   limit?: number;
   selectedFormat: string;
   busy?: boolean;
@@ -69,6 +70,7 @@ function categoryFor(layoutFamily: string): string {
 }
 
 export function TemplateGallery({
+  useLabel = "Use template",
   selectedFormat,
   limit,
   busy,
@@ -182,7 +184,7 @@ export function TemplateGallery({
                         Creating…
                       </>
                     ) : (
-                      "Use template"
+                      useLabel
                     )}
                   </button>
                 </div>
@@ -220,7 +222,7 @@ export function TemplateGallery({
                   disabled={busy}
                   onClick={() => onUseTemplate(tpl.templateId, format)}
                 >
-                  Use template
+                  {useLabel}
                 </button>
               </div>
             </article>
