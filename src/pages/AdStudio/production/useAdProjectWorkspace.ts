@@ -24,6 +24,7 @@ import {
   type WorkspaceProject,
   type WorkspaceCreative,
 } from "../lib/projectWorkspace";
+import { projectExperiencePath } from "./experienceRoutes";
 export type StartMode = "choose" | "templates" | "examples" | "concepts" | null;
 /** One existing project controller shared by legacy and approved-M2B presentation. */
 export function useAdProjectWorkspace() {
@@ -232,7 +233,7 @@ export function useAdProjectWorkspace() {
       navigate(creativeEditorPath(creative.id));
     });
   };
-  const openConcept = (id: string) => {
+  const openConcept = (id: string, destination: "canvas" | "ai" = "canvas") => {
     if (!project) return;
     void run(async () => {
       const creative = await createProjectConcept(
@@ -241,7 +242,7 @@ export function useAdProjectWorkspace() {
         id,
         concepts,
       );
-      navigate(creativeEditorPath(creative.id));
+      navigate(destination === "ai" ? projectExperiencePath(project.id,"visual-lab",{creativeId:creative.id,conceptId:id}) : creativeEditorPath(creative.id));
     });
   };
   const saveIdea = async () => {

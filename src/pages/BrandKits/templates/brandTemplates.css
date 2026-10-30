@@ -10,10 +10,10 @@
 .bt-root .bt-toolbar .xp-field{min-width:160px;flex:1;margin:0}
 .bt-root .bt-toolbar .xp-check{display:flex;align-items:center;gap:8px;align-self:center;font-size:13px}
 .bt-root .bt-toolbar .xp-primary{align-self:flex-end}
-.bt-root .bt-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.bt-root .bt-gallery,.bt-root #ad-studio-catalog .w0a-grid-3{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 .bt-root .bt-card{min-width:0;overflow:hidden;border:1px solid var(--xp-line);border-radius:14px;background:var(--xp-panel,#14161c)}
-.bt-root .bt-card-art{height:390px;padding:16px;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at top,#ffffff09,transparent 75%);overflow:hidden}
-.bt-root .bt-card .xp-card-copy{display:flex;flex-direction:column;gap:10px;padding:20px}
+.bt-root .bt-card-art{height:280px;padding:12px;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at top,#ffffff09,transparent 75%);overflow:hidden}
+.bt-root .bt-card .xp-card-copy{display:flex;flex-direction:column;gap:10px;padding:16px}
 .bt-root .bt-card h3{font-size:16px;line-height:1.4;margin:0}
 .bt-root .bt-card p{font-size:12px;line-height:1.5;margin:0;color:var(--xp-muted)}
 .bt-root .bt-card .xp-primary{width:100%;margin-top:8px}
@@ -27,8 +27,8 @@
 .bt-root .bt-ai-workspace header p,.bt-root small{font-size:12px;line-height:1.6;color:var(--xp-muted)}
 .bt-root .bt-ai-setup{display:grid;gap:20px}
 .bt-root .bt-setup-fields{grid-template-columns:repeat(3,minmax(0,1fr))}
-@media(max-width:1100px){.bt-root .bt-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:700px){.bt-root .xp-main{padding:20px 14px}.bt-root .xp-page-head{align-items:flex-start;flex-direction:column}.bt-root .bt-gallery,.bt-root .xp-split,.bt-root .bt-setup-fields{grid-template-columns:minmax(0,1fr)}.bt-root .bt-card-art{height:390px}.bt-root .bt-card-art [data-scene-stage]{max-width:100%}}
+@media(max-width:1100px){.bt-root .bt-gallery,.bt-root #ad-studio-catalog .w0a-grid-3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.bt-root .xp-main{padding:20px 14px}.bt-root .xp-page-head{align-items:flex-start;flex-direction:column}.bt-root .bt-gallery,.bt-root #ad-studio-catalog .w0a-grid-3,.bt-root .xp-split,.bt-root .bt-setup-fields{grid-template-columns:minmax(0,1fr)}.bt-root .bt-card-art{height:280px}.bt-root .bt-card-art [data-scene-stage]{max-width:100%}}
 
 .bt-root .bt-scene-preview{width:100%;display:flex;justify-content:center;min-width:0}
 
@@ -40,6 +40,7 @@
 .bt-root .bt-toolbar .xp-actions{gap:16px;}
 .bt-root .bt-toolbar .xp-field{flex:1 1 180px;max-width:320px;}
 .bt-root .bt-toolbar .xp-primary{height:44px;min-height:44px;flex:0 1 auto;margin:0;}
+.bt-root .bt-toolbar .xp-check{align-self:flex-end;min-height:44px;margin:0;white-space:nowrap;}
 .bt-root .bt-toolbar .xp-check input{width:16px;height:16px;flex:none;}
 .bt-root .bt-card{display:flex;flex-direction:column;}
 .bt-root .bt-card .xp-card-copy{flex:1;}

@@ -9,11 +9,12 @@ import { hasGeneratedBackground } from "../../AdStudio/production/imageExecution
 import { AdProjectCreateForm } from "../../AdStudio/components/CreateAdProjectDialog";
 import { compatibleTemplateProjects } from "./brandTemplateModel";
 import {
-  projectWorkspacePath,
+  creativeEditorPath,
   type WorkspaceCreative,
   type WorkspaceProject,
 } from "../../AdStudio/lib/projectWorkspace";
 import { TEMPLATE_CATALOG_V1 } from "../../AdStudio/canvas/templateCatalog";
+import { projectExperiencePath } from "../../AdStudio/production/experienceRoutes";
 import { AD_FORMATS } from "../../AdStudio/types";
 import { useAuthenticatedBrandAssetUrls } from "../../AdStudio/canvas/useAuthenticatedBrandAssetUrls";
 import { useCreativeAssetUrls } from "../../AdStudio/canvas/useCreativeAssetUrls";
@@ -34,6 +35,16 @@ export function verifyTemplateSource(
     throw Error("This creative is unavailable for the selected Brand Kit.");
   return value;
 }
+export function TemplateCampaignNavigation({source}: {source: Pick<WorkspaceCreative, "id" | "projectId">}) {
+  return <nav className="xp-actions bt-ai-campaign-links" aria-label="Continue campaign">
+    <Link className="xp-secondary" to={projectExperiencePath(source.projectId,"workspace",{creativeId:source.id})}>Campaign workspace</Link>
+    <Link className="xp-secondary" to={projectExperiencePath(source.projectId,"brief",{creativeId:source.id})}>Working Brief</Link>
+    <Link className="xp-secondary" to={projectExperiencePath(source.projectId,"templates",{creativeId:source.id})}>Visual Templates</Link>
+    <Link className="xp-secondary" to={projectExperiencePath(source.projectId,"concepts",{creativeId:source.id})}>Concept Gallery</Link>
+    <Link className="xp-secondary" to={projectExperiencePath(source.projectId,"director",{creativeId:source.id})}>Creative Director</Link>
+    <Link className="xp-secondary" to={creativeEditorPath(source.id)}>Open in Canvas</Link>
+  </nav>;
+}
 export function BrandTemplateAiWorkspace({
   kit,
   projects,
@@ -48,9 +59,10 @@ export function BrandTemplateAiWorkspace({
   const navigate = useNavigate(),
     [params, setParams] = useSearchParams(),
     pending = useRef(false);
-  const [format, setFormat] = useState(initialFormat),
+  const requestedCampaign = projects.find(p => p.id === params.get("campaign") && p.brandKitId === kit.id);
+  const [format, setFormat] = useState(requestedCampaign?.outputFormat || initialFormat),
     [layout, setLayout] = useState("product-hero"),
-    [projectId, setProjectId] = useState(""),
+    [projectId, setProjectId] = useState(requestedCampaign?.id || ""),
     [source, setSource] = useState<WorkspaceCreative | null>(null),
     [busy, setBusy] = useState(false),
     [loading, setLoading] = useState(false),
@@ -219,19 +231,11 @@ export function BrandTemplateAiWorkspace({
               </small>
             </section>
           )}
-          <Link
-            className="xp-text-button"
-            to={
-              projectWorkspacePath(source.projectId) +
-              "?view=visual-lab&creative=" +
-              encodeURIComponent(source.id)
-            }
-          >
-            Open campaign creative
-          </Link>
+          <TemplateCampaignNavigation source={source} />
           <ProductionImageGeneration
             key={source.id}
             source={source}
+            initialInstruction={allProjects.find(p => p.id === source.projectId)?.brief?.creativeDirection || allProjects.find(p => p.id === source.projectId)?.brief?.campaignIdea || ""}
             brand={kit}
             assetUrls={urls}
             onSaved={async (creative) => {

@@ -2,7 +2,7 @@ import { characterReviewIssues } from "../../BrandKits/guided/brandCharacterMode
 import type { BrandKitSummary } from "../../BrandKits/lib/brandKitTypes";
 import React, { useEffect, useRef, useState } from "react";
 import { adImageApi } from "../../../services/apiClient";
-import { SceneStage } from "../canvas/SceneStage";
+import { BrandTemplateScenePreview as ResponsiveScenePreview } from "../../BrandKits/templates/BrandTemplateScenePreview";
 import { Skeleton } from "../../../components/ui/skeleton";
 import type { WorkspaceCreative } from "../lib/projectWorkspace";
 import {
@@ -21,12 +21,14 @@ export function ProductionImageGeneration({
   brand,
   assetUrls,
   initialOperation = "generate",
+  initialInstruction = "",
   onSaved,
 }: {
   source: WorkspaceCreative;
   brand?: BrandKitSummary | null;
   assetUrls: Readonly<Record<string, string>>;
   initialOperation?: AdImageOperation;
+  initialInstruction?: string;
   onSaved: (saved: WorkspaceCreative) => Promise<void>;
 }) {
   const canEdit = hasGeneratedBackground(source),
@@ -35,7 +37,7 @@ export function ProductionImageGeneration({
   const [operation, setOperation] = useState<AdImageOperation>(
       canEdit ? initialOperation : "generate",
     ),
-    [instruction, setInstruction] = useState(""),
+    [instruction, setInstruction] = useState(initialInstruction.slice(0, 4000)),
     [quote, setQuote] = useState<ImageQuote | null>(null),
     [consent, setConsent] = useState(false),
     [busy, setBusy] = useState(false),
@@ -204,26 +206,26 @@ export function ProductionImageGeneration({
     setConsent(false);
   };
   return (
-    <div className="xp-split">
-      <section className="xp-panel">
-        <SceneStage
+    <div className="xp-split ai-generation-workspace">
+      <section className="xp-panel ai-generation-preview">
+        <ResponsiveScenePreview
           graph={source.sceneGraph}
           assetUrls={assetUrls}
           size="hero"
           showSafeArea
         />
-        <span className="xp-status">Saved source / {source.name}</span>
+        <span className="xp-status">{canEdit ? "AI artwork · saved creative" : "Starting layout · not AI-generated"}</span>
         <p>
-          Generate a background behind your editable product, logo and text layers. Source photos retain their original backgrounds.
+          Your original product, logo and text stay editable.
         </p>
       </section>
-      <section className="xp-panel">
+      <section className="xp-panel ai-generation-controls">
         <h2>
           {operation === "refine"
             ? "Direct the next refinement."
             : operation === "variation"
               ? "A new visual expression."
-              : "Build the world around your product."}
+              : "Generate your AI advertisement."}
         </h2>
         {!enabled && (
           <p className="xp-notice">
@@ -251,9 +253,74 @@ export function ProductionImageGeneration({
         </label>
         {!canEdit && (
           <p>
-            Generate a background before creating AI variations or refinements.
+            Describe your scene, check readiness, then approve one generation.
           </p>
         )}
+        <label className="xp-field">
+          Creative direction
+          <textarea
+            rows={4}
+            value={instruction}
+            maxLength={4000}
+            disabled={busy || !!requestId}
+            onChange={(e) => {
+              setInstruction(e.target.value);
+              change();
+            }}
+            placeholder="Describe the scene and the changes you want. Text and logos remain editable layers."
+          />
+        </label>
+        <button
+          className="xp-secondary"
+          disabled={!enabled || busy || !!requestId || !valid}
+          onClick={() => void estimate()}
+        >
+          {busy ? "Please wait…" : "Check AI generation readiness"}
+        </button>
+        {!instruction.trim() && <small>Enter creative direction to continue.</small>}
+        {quote && (
+          <>
+            <dl className="xp-spec">
+              <dt>Provider / exact model</dt>
+              <dd>
+                {quote.provider} / {quote.modelId}
+              </dd>
+              <dt>Scope</dt>
+              <dd>
+                AI background plate; {quote.referenceCount} owned background
+                reference(s)
+              </dd>
+            </dl>
+            <p>
+              Uses Google credits. No automatic retries or model fallback. Review results before use.
+            </p>
+            <p className="xp-notice">
+              {(quote.productLayerCount ?? 0) > 0
+                ? `${quote.productLayerCount} original product photo(s) protected; backgrounds retained.`
+                : "Background only. Add a product photo in Canvas for a product advertisement."}
+            </p>
+            <label className="xp-check">
+              <input
+                type="checkbox"
+                checked={consent}
+                disabled={busy || !!requestId}
+                onChange={(e) => setConsent(e.target.checked)}
+              />
+              I approve one owner-UAT provider request and its selected
+              background references.
+            </label>
+
+          </>
+        )}
+            <button
+              className="xp-primary"
+              disabled={!enabled || busy || !!requestId || !consent || !quote || !valid}
+              onClick={() => void generate()}
+            >
+              {busy ? "Generating…" : "Generate AI advertisement"}
+            </button>
+        <details className="ai-character-options">
+          <summary>Models &amp; Mascots <span>{selectedCharacterIds.length ? selectedCharacterIds.length + " selected" : "Optional"}</span></summary>
         <fieldset className="xp-panel space-y-3" disabled={busy || !!requestId}>
           <legend className="text-sm font-semibold">
             Models & Mascots for this ad
@@ -338,66 +405,7 @@ export function ProductionImageGeneration({
             creative before export.
           </p>
         </fieldset>
-        <label className="xp-field">
-          Lighting, environment and creative direction
-          <textarea
-            value={instruction}
-            maxLength={4000}
-            disabled={busy || !!requestId}
-            onChange={(e) => {
-              setInstruction(e.target.value);
-              change();
-            }}
-            placeholder="Describe the scene and the changes you want. Text and logos remain editable layers."
-          />
-        </label>
-        <button
-          className="xp-secondary"
-          disabled={!enabled || busy || !!requestId || !valid}
-          onClick={() => void estimate()}
-        >
-          Check source and model
-        </button>
-        {quote && (
-          <>
-            <dl className="xp-spec">
-              <dt>Provider / exact model</dt>
-              <dd>
-                {quote.provider} / {quote.modelId}
-              </dd>
-              <dt>Scope</dt>
-              <dd>
-                AI background plate; {quote.referenceCount} owned background
-                reference(s)
-              </dd>
-            </dl>
-            <p>
-              Uses Google credits. No automatic retries or model fallback. Review results before use.
-            </p>
-            <p className="xp-notice">
-              {(quote.productLayerCount ?? 0) > 0
-                ? `${quote.productLayerCount} original product photo(s) protected; backgrounds retained.`
-                : "Background only. Add a product photo in Canvas for a product advertisement."}
-            </p>
-            <label className="xp-check">
-              <input
-                type="checkbox"
-                checked={consent}
-                disabled={busy || !!requestId}
-                onChange={(e) => setConsent(e.target.checked)}
-              />
-              I approve one owner-UAT provider request and its selected
-              background references.
-            </label>
-            <button
-              className="xp-primary"
-              disabled={!enabled || busy || !!requestId || !consent}
-              onClick={() => void generate()}
-            >
-              Generate and save a new creative
-            </button>
-          </>
-        )}
+        </details>
         {busy && (
           <div role="status">
             <Skeleton className="h-16 w-full" />

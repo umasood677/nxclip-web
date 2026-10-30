@@ -51,6 +51,7 @@ import "../../AdStudio/uxPreview/preview.css";
 import "../../AdStudio/uxPreview/roadmap.css";
 import "../../AdStudio/styles/production-theme.css";
 import "../guided/guidedBrand.css";
+import "../../AdStudio/production/imageGeneration.css";
 import "./brandTemplates.css";
 
 type Draft = {
@@ -738,7 +739,7 @@ export default function BrandTemplateLibrary() {
                       graph={t.sceneGraph}
                       assetUrls={urls}
                       size="card"
-                      maxHeight={360}
+                      maxHeight={256}
                     />
                     </div>
                     <div className="xp-card-copy">

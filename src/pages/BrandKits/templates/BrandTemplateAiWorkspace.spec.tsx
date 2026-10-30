@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import {
   BrandTemplateAiWorkspace,
+  TemplateCampaignNavigation,
   verifyTemplateSource,
 } from "./BrandTemplateAiWorkspace";
 test("AI entry renders the existing campaign path without automatically generating or writing", () => {
@@ -91,4 +92,24 @@ test("reopen rejects another Brand Kit and invalid versions", () => {
     ).id,
     "source",
   );
+});
+
+ test("campaign AI entry preselects only the same-brand campaign and its aspect ratio", () => {
+  const projects = [{id:"owned", name:"Owned landscape campaign", brandKitId:"brand", outputFormat:"landscape_1920x1080"},{id:"foreign",name:"Other brand campaign",brandKitId:"other",outputFormat:"landscape_1920x1080"}];
+  const render = (campaign:string) => renderToStaticMarkup(<MemoryRouter initialEntries={["/?mode=ai&campaign="+campaign]}><BrandTemplateAiWorkspace kit={{id:"brand",name:"Synthetic brand"}} projects={projects} initialFormat="portrait_1080x1350" onBack={()=>{}} /></MemoryRouter>);
+  const owned = render("owned");
+  assert.match(owned, /value="owned" selected=""/);
+  assert.match(owned, /value="landscape_1920x1080" selected=""/);
+  const foreign = render("foreign");
+  assert.doesNotMatch(foreign, /value="foreign"/);
+  assert.match(foreign, /value="portrait_1080x1350" selected=""/);
+ });
+
+test("template draft links preserve the persisted campaign and creative through every workflow stage", () => {
+ const html = renderToStaticMarkup(<MemoryRouter><TemplateCampaignNavigation source={{id:"creative/a",projectId:"campaign/b"}} /></MemoryRouter>);
+ const links = [...html.matchAll(/href="([^"]+)"/g)].map(m=>new URL(m[1].replace(/&amp;/g,"&"),"http://localhost"));
+ assert.equal(links.length,6);
+ assert.deepEqual(links.slice(0,5).map(x=>x.searchParams.get("view")),["workspace","brief","templates","concepts","director"]);
+ for(const link of links.slice(0,5)){assert.equal(link.pathname,"/create/ad/projects/campaign%2Fb");assert.equal(link.searchParams.get("creative"),"creative/a");}
+ assert.equal(links[5].pathname,"/create/ad/creative%2Fa");
 });

@@ -38,6 +38,7 @@ import { ProductionCreativeExtensions } from "./ProductionCreativeExtensions";
 import "../uxPreview/preview.css";
 import "../uxPreview/roadmap.css";
 import "../styles/production-theme.css";
+import "./imageGeneration.css";
 import "../../BrandKits/guided/guidedBrand.css";
 
 /** Approved presentation over the existing project controller; no second editor or persistence engine. */
@@ -98,7 +99,11 @@ export default function ProductionProjectWorkspace({
       creativeId?: string;
       templateId?: string;
     },
-  ) => c.navigate(projectExperiencePath(c.projectId, next, selection));
+  ) => c.navigate(projectExperiencePath(c.projectId, next, {
+    creativeId: query.get("creative") || undefined,
+    conceptId: query.get("concept") || undefined,
+    ...selection,
+  }));
   useEffect(() => {
     title.current?.focus();
   }, [screen]);
@@ -277,9 +282,10 @@ export default function ProductionProjectWorkspace({
               ) : (
                 <div className="xp-panel">
                   <span className="xp-kicker">
-                    CREATIVE DIRECTION / VISUAL NOT GENERATED
+                    CAMPAIGN CONCEPT
                   </span>
-                  <h2>{item.primaryHeadline}</h2>
+                  <h2>{item.title}</h2>
+                  {item.primaryHeadline !== item.title && <p className="bp-concept-headline">{item.primaryHeadline}</p>}
                   <p>{item.creativeDirection}</p>
                 </div>
               )}
@@ -287,8 +293,8 @@ export default function ProductionProjectWorkspace({
                 <span className="xp-status">
                   {c.source || "Saved concept; provenance not supplied"}
                 </span>
-                <h3>{item.title}</h3>
-                <p>{item.supportingCopy}</p>
+                {item.sceneGraph && <h3>{item.title}</h3>}
+                {item.supportingCopy && ![item.creativeDirection,item.primaryHeadline,item.title].includes(item.supportingCopy) && <p>{item.supportingCopy}</p>}
                 <button
                   className="xp-primary"
                   onClick={() => selectConcept(item.conceptId)}
@@ -342,18 +348,23 @@ export default function ProductionProjectWorkspace({
           </button>
         </div>
         <nav className="bp-workspace-nav" aria-label="Campaign workspace">
-          <button className="xp-secondary" onClick={editBrief}>
+          <button className="xp-secondary" aria-current={screen === "brief" ? "page" : undefined} onClick={editBrief}>
             Working Brief
           </button>
-          <button className="xp-secondary" onClick={() => go("templates")}>
+          <button className="xp-secondary" aria-current={screen === "templates" ? "page" : undefined} onClick={() => go("templates")}>
             Visual Templates
           </button>
-          <button className="xp-secondary" onClick={() => go("concepts")}>
+          <button className="xp-secondary" aria-current={screen === "concepts" ? "page" : undefined} onClick={() => go("concepts")}>
             Concept Gallery
           </button>
-          <button className="xp-secondary" onClick={() => go("director")}>
+          <button className="xp-secondary" aria-current={screen === "director" ? "page" : undefined} onClick={() => go("director")}>
             Creative Director
           </button>
+          <button className="xp-secondary" aria-current={screen === "visual-lab" ? "page" : undefined} disabled={!creative && !project.brandKitId} title={!creative && !project.brandKitId ? "Select a saved creative first" : undefined} onClick={() => {
+            if (creative) go("visual-lab", {creativeId:creative.id});
+            else if (project.brandKitId && c.confirmLeave()) c.navigate("/brands/" + encodeURIComponent(project.brandKitId) + "/templates?tab=brand&mode=ai&campaign=" + encodeURIComponent(project.id));
+            else if (!project.brandKitId) go("workspace");
+          }}>AI Ad Creation</button>
           {project.brandKitId && (
             <Link
               className="xp-secondary"
@@ -772,10 +783,7 @@ export default function ProductionProjectWorkspace({
           <>
             <div className="xp-section-heading">
               <p className="xp-lede">
-                Compare direction before committing to a creative. Unrendered
-                concepts are shown as strategy, with no illustrative image
-                presented as live AI output. Select “Compare direction” on at
-                least two cards to enable comparison.
+                Choose a campaign concept, then create its editable layout. AI image generation is the next step.
               </p>
               <button
                 className="xp-secondary"
@@ -869,6 +877,7 @@ export default function ProductionProjectWorkspace({
                     />
                     Create Editable Creative →
                   </button>
+                  <button className="xp-primary" disabled={c.busy || c.draftDirty} onClick={() => c.openConcept(concept.conceptId,"ai")}><Sparkles size={15} /> Generate AI advertisement</button>
                   <button
                     className="xp-secondary"
                     onClick={() => go("compare")}
@@ -993,6 +1002,7 @@ export default function ProductionProjectWorkspace({
             <ProductionImageGeneration
               key={creative.id + screen}
               source={creative}
+              initialInstruction={screen === "variation-lab" ? "" : c.form.creativeDirection || c.form.campaignIdea || ""}
               brand={c.brand}
               assetUrls={c.assetUrls}
               initialOperation={
