@@ -7,7 +7,7 @@ import { Skeleton } from "../../../components/ui/skeleton";
 import { ProductionImageGeneration } from "../../AdStudio/production/ProductionImageGeneration";
 import { hasGeneratedBackground } from "../../AdStudio/production/imageExecutionModel";
 import { AdProjectCreateForm } from "../../AdStudio/components/CreateAdProjectDialog";
-import { compatibleTemplateProjects } from "./brandTemplateModel";
+import { compatibleTemplateProjects, isTemplateSourceLoading } from "./brandTemplateModel";
 import {
   creativeEditorPath,
   type WorkspaceCreative,
@@ -101,6 +101,7 @@ export function BrandTemplateAiWorkspace({
         );
         if (c.id !== sourceId) throw Error("Creative context changed.");
         if (active) {
+          setLoading(false);
           setSource(c);
           setGenerated(hasGeneratedBackground(c));
           setProjectId(c.projectId);
@@ -191,7 +192,7 @@ export function BrandTemplateAiWorkspace({
       <header>
         <span className="xp-kicker">AI CREATIVE STUDIO</span>
         <h2>
-          <Sparkles size={22} /> Design with your brand
+          <Sparkles size={22} /> {generated ? "Review your AI result" : "Create your AI template"}
         </h2>
         <p>
           Original product and logo layers. AI-generated scenery. Editable copy.
@@ -202,12 +203,24 @@ export function BrandTemplateAiWorkspace({
           {error}
         </p>
       )}
-      {loading ? (
-        <Skeleton className="h-96 w-full" />
+      {isTemplateSourceLoading(loading, sourceId, source?.id) ? (
+        <section className="xp-panel" role="status" aria-live="polite"><h3>Opening your saved creative…</h3><Skeleton className="h-40 w-full" /></section>
       ) : source ? (
         <>
+          <TemplateCampaignNavigation source={source} />
+          <ProductionImageGeneration
+            key={source.id}
+            source={source}
+            initialInstruction={allProjects.find(p => p.id === source.projectId)?.brief?.creativeDirection || allProjects.find(p => p.id === source.projectId)?.brief?.campaignIdea || ""}
+            brand={kit}
+            assetUrls={urls}
+            onSaved={async (creative) => {
+              remember(verifyTemplateSource(creative, allProjects, kit.id));
+              setGenerated(true);
+            }}
+          />
           {generated && (
-            <section className="xp-panel bt-ai-setup">
+            <section className="xp-panel bt-ai-publish">
               <h3>Save to Brand Templates</h3>
               <label className="xp-field">
                 Template name
@@ -231,18 +244,6 @@ export function BrandTemplateAiWorkspace({
               </small>
             </section>
           )}
-          <TemplateCampaignNavigation source={source} />
-          <ProductionImageGeneration
-            key={source.id}
-            source={source}
-            initialInstruction={allProjects.find(p => p.id === source.projectId)?.brief?.creativeDirection || allProjects.find(p => p.id === source.projectId)?.brief?.campaignIdea || ""}
-            brand={kit}
-            assetUrls={urls}
-            onSaved={async (creative) => {
-              remember(verifyTemplateSource(creative, allProjects, kit.id));
-              setGenerated(true);
-            }}
-          />
         </>
       ) : (
         <div className="xp-panel bt-ai-setup">

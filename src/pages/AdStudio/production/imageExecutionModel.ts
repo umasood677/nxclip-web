@@ -103,3 +103,7 @@ export function assertCharacterQuote(
       "The Content/AI runtime has not verified this model selection. Activate the updated services before generation.",
     );
 }
+
+export function imageSourceIssue(creative: WorkspaceCreative): string | null {
+  return creative.sceneGraph?.layers.some(l=>l.id.includes(':slotHint:')) ? 'This layout has empty product slots. Complete them in Canvas or start with Product hero before generation.' : null;
+}

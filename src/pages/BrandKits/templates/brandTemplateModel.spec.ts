@@ -137,3 +137,11 @@ test("explicit copy preview overrides native catalog defaults without changing a
   assert.equal(templateHeadline(graph), "Original message");
   assert.deepEqual(result.layers[1], graph.layers[1]);
 });
+
+test('received matching source cannot remain hidden by a stale loading flag', async () => {
+  const {isTemplateSourceLoading}=await import('./brandTemplateModel');
+  assert.equal(isTemplateSourceLoading(true,'saved','saved'),false);
+  assert.equal(isTemplateSourceLoading(true,'saved',undefined),true);
+  assert.equal(isTemplateSourceLoading(true,'new','old'),true);
+  assert.equal(isTemplateSourceLoading(false,'saved','saved'),false);
+});

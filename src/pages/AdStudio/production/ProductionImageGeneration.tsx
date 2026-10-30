@@ -10,6 +10,7 @@ import {
   savedCharacterSelection,
   toggleAdCharacter,
   hasGeneratedBackground,
+  imageSourceIssue,
   realImagesEnabled,
   validateImageQuote,
   verifyGeneratedCreative,
@@ -91,7 +92,9 @@ export function ProductionImageGeneration({
     expectedVersion: source.currentVersion ?? 1,
     selectedCharacterIds,
   };
+  const sourceIssue = imageSourceIssue(source);
   const valid =
+    !sourceIssue &&
     instruction.trim().length > 0 &&
     instruction.length <= 4000 &&
     selectionReady;
@@ -227,12 +230,13 @@ export function ProductionImageGeneration({
               ? "A new visual expression."
               : "Generate your AI advertisement."}
         </h2>
+        {sourceIssue && <p className="xp-notice" role="alert">{sourceIssue}</p>}
         {!enabled && (
           <p className="xp-notice">
             AI generation needs local activation.
           </p>
         )}
-        <label className="xp-field">
+        {canEdit ? <label className="xp-field">
           Creative operation
           <select
             value={operation}
@@ -250,7 +254,8 @@ export function ProductionImageGeneration({
               Natural-language refinement
             </option>
           </select>
-        </label>
+        </label> : <div className="ai-operation-label"><strong>New AI background</strong><p>Variations and refinement become available after generation.</p></div>}
+        {!!requestId && <p role="status">A previous request is retained. Check its status below before starting another.</p>}
         {!canEdit && (
           <p>
             Describe your scene, check readiness, then approve one generation.

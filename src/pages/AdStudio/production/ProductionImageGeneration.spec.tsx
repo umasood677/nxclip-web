@@ -13,6 +13,8 @@ const render = (value = source) => renderToStaticMarkup(<ProductionImageGenerati
 test("AI action and direction remain visible before optional model controls", () => {
   const html = render();
   assert.match(html, /Starting layout · not AI-generated/);
+  assert.doesNotMatch(html, /<select/);
+  assert.match(html, /Variations and refinement become available/);
   assert.ok(html.indexOf("Creative direction") < html.indexOf("Check AI generation readiness"));
   assert.ok(html.indexOf("Generate AI advertisement") < html.indexOf('<details class="ai-character-options"'));
   assert.match(html, /<details class="ai-character-options">/);
@@ -32,6 +34,8 @@ test("reopened generated creative is identified separately from a starting layou
   const generated: WorkspaceCreative = { ...source, sceneGraph: { ...source.sceneGraph!, layers: [{ id: "ai-background-owned", type: "image", x:0,y:0,width:1080,height:1350,zIndex:0,assetId:"owned-artwork" }] } };
   const html = render(generated);
   assert.match(html, /AI artwork · saved creative/);
+  assert.match(html, /<select/);
+  assert.match(html, /AI visual variation/);
   assert.doesNotMatch(html, /Starting layout · not AI-generated/);
 });
 

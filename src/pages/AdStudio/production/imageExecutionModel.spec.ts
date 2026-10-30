@@ -107,3 +107,11 @@ test("older runtimes cannot silently ignore an explicit profile choice",()=>{
  assert.throws(()=>assertCharacterQuote({...quote(),characterSelectionSupported:true,selectedCharacterIds:["other"]},["chosen"]),/runtime/);
  assert.doesNotThrow(()=>assertCharacterQuote({...quote(),characterSelectionSupported:true,selectedCharacterIds:["chosen"]},["chosen"]));
 });
+
+test("incomplete native collection slots block image execution readiness", async () => {
+  const { imageSourceIssue } = await import("./imageExecutionModel");
+  const draft = creative("source");
+  draft.sceneGraph!.layers.push({id:"collection:slotHint:products:2",type:"shape",shape:"rectangle",fill:"#000000",x:0,y:0,width:100,height:100,zIndex:1});
+  assert.match(imageSourceIssue(draft) || "", /empty product slots/);
+  assert.equal(imageSourceIssue(creative("complete")), null);
+});

@@ -85,3 +85,8 @@ export function applyBrandTemplateCopy(
   }
   return next;
 }
+
+/** A received matching creative is ready even while a previous load flag settles. */
+export function isTemplateSourceLoading(loading: boolean, requestedId: string | null, receivedId?: string) {
+  return loading && (!receivedId || receivedId !== requestedId);
+}

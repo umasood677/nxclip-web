@@ -60,3 +60,8 @@
   .bt-root .bt-toolbar .xp-primary{align-self:stretch;flex:auto;}
   .bt-root .xp-page-head>.xp-primary{align-self:flex-start;}
 }
+
+.bt-root .bt-ai-publish{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px 20px;align-items:end;padding:20px}
+.bt-root .bt-ai-publish h3,.bt-root .bt-ai-publish small{grid-column:1/-1;margin:0}
+.bt-root .bt-ai-publish .xp-primary{align-self:end;min-height:44px;margin:0}
+@media(max-width:700px){.bt-root .bt-ai-publish{grid-template-columns:minmax(0,1fr)}}
