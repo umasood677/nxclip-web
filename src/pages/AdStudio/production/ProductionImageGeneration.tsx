@@ -52,7 +52,7 @@ export function ProductionImageGeneration({
     [instruction, setInstruction] = useState(initialInstruction.slice(0, 4000)),
     [quote, setQuote] = useState<ImageQuote | null>(null),
     [consent, setConsent] = useState(false),
-    [busy, setBusy] = useState(false),
+    [activity, setActivity] = useState<"readiness" | "generation" | "status" | "recovery" | null>(null),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [retained, setRetained] = useState(false),
@@ -64,6 +64,7 @@ export function ProductionImageGeneration({
         return "";
       }
     });
+  const busy = activity !== null;
   const [selectedCharacterIds, setSelectedCharacterIds] = useState(() =>
     savedCharacterSelection(source),
   );
@@ -87,12 +88,11 @@ export function ProductionImageGeneration({
     eligible.some((p) => p.id === id),
   );
   const epoch = useRef(0);
-  useEffect(
-    () => () => {
-      epoch.current++;
-    },
-    [],
-  );
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   useEffect(() => {
     setQuote(null);
     setConsent(false);
@@ -113,23 +113,23 @@ export function ProductionImageGeneration({
   const estimate = async () => {
     if (!enabled || !valid || busy || requestId) return;
     const n = ++epoch.current;
-    setBusy(true);
+    setActivity("readiness");
     setError("");
     try {
       const q = validateImageQuote(await adImageApi.quote(source.id, input));
       assertCharacterQuote(q, selectedCharacterIds);
       assertImageRenderMode(q,renderMode);
-      if (n === epoch.current) {
+      if (mounted.current && n === epoch.current) {
         setQuote(q);
         setConsent(false);
       }
     } catch (e) {
-      if (n === epoch.current)
+      if (mounted.current && n === epoch.current)
         setError(
           e instanceof Error ? e.message : "Execution preflight unavailable",
         );
     } finally {
-      if (n === epoch.current) setBusy(false);
+      if (mounted.current && n === epoch.current) setActivity(null);
     }
   };
   useEffect(()=>{
@@ -139,7 +139,7 @@ export function ProductionImageGeneration({
     if (!enabled || !quote || !consent || busy || requestId || !valid) return;
     const n = ++epoch.current,
       id = crypto.randomUUID();
-    setBusy(true);
+    setActivity("generation");
     setError("");
     setRequestId(id);
     try {
@@ -158,31 +158,31 @@ export function ProductionImageGeneration({
         source,
       );
       if (proposal && saved.imageRenderMode !== "template-proposal")throw Error("The saved result is not a finished-template proposal. Check retained status before retrying.");
-      if (n === epoch.current) {
+      if (mounted.current && n === epoch.current) {
         setMessage(
           "AI background saved in a new editable creative; original preserved.",
         );
         await onSaved(saved);
       }
     } catch (e) {
-      if (n === epoch.current)
+      if (mounted.current && n === epoch.current)
         setError(
           e instanceof Error
             ? e.message
             : "Outcome uncertain. Check retained status; do not resubmit paid work.",
         );
     } finally {
-      if (n === epoch.current) setBusy(false);
+      if (mounted.current && n === epoch.current) setActivity(null);
     }
   };
   const status = async () => {
     if (!requestId || busy) return;
     const n = ++epoch.current;
-    setBusy(true);
+    setActivity("status");
     setError("");
     try {
       const s = await adImageApi.status(source.id, requestId);
-      if (n === epoch.current) {
+      if (mounted.current && n === epoch.current) {
         setRetained(s.hasRetainedImage);
         setMessage(
           "Actual request status: " +
@@ -193,32 +193,32 @@ export function ProductionImageGeneration({
         );
       }
     } catch (e) {
-      if (n === epoch.current)
+      if (mounted.current && n === epoch.current)
         setError(e instanceof Error ? e.message : "Status unavailable");
     } finally {
-      if (n === epoch.current) setBusy(false);
+      if (mounted.current && n === epoch.current) setActivity(null);
     }
   };
   const recover = async () => {
     if (!retained || busy || !requestId) return;
     const n = ++epoch.current;
-    setBusy(true);
+    setActivity("recovery");
     setError("");
     try {
       const saved = verifyGeneratedCreative(
         await adImageApi.recover(source.id, requestId),
         source,
       );
-      if (n === epoch.current) await onSaved(saved);
+      if (mounted.current && n === epoch.current) await onSaved(saved);
     } catch (e) {
-      if (n === epoch.current)
+      if (mounted.current && n === epoch.current)
         setError(
           e instanceof Error
             ? e.message
             : "Recovery failed; retained output requires review",
         );
     } finally {
-      if (n === epoch.current) setBusy(false);
+      if (mounted.current && n === epoch.current) setActivity(null);
     }
   };
   const change = () => {
@@ -304,7 +304,7 @@ export function ProductionImageGeneration({
           disabled={!enabled || busy || !!requestId || !valid}
           onClick={() => void estimate()}
         >
-          {busy ? "Please wait…" : "Check AI generation readiness"}
+          {activity === "readiness" ? "Checking readiness…" : "Check AI generation readiness"}
         </button>
         {!instruction.trim() && <small>Enter creative direction to continue.</small>}
         {quote && (
@@ -344,7 +344,7 @@ export function ProductionImageGeneration({
               disabled={!enabled || busy || !!requestId || !consent || !quote || !valid}
               onClick={() => void generate()}
             >
-              {busy ? "Generating…" : proposal ? "Generate template preview" : "Generate AI advertisement"}
+              {activity === "generation" ? "Generating…" : proposal ? "Generate template preview" : "Generate AI advertisement"}
             </button>
         {!proposal && <details className="ai-character-options">
           <summary>Models &amp; Mascots <span>{selectedCharacterIds.length ? selectedCharacterIds.length + " selected" : "Optional"}</span></summary>
@@ -436,8 +436,11 @@ export function ProductionImageGeneration({
         {busy && (
           <div role="status">
             <Skeleton className="h-16 w-full" />
-            Waiting for the actual provider or application response. Leaving
-            does not cancel paid work.
+            {activity === "readiness"
+              ? "Checking provider readiness. No generation has started."
+              : activity === "generation"
+                ? "Waiting for the provider response. Leaving does not cancel paid work."
+                : "Checking the saved request and its output."}
           </div>
         )}
         {requestId && (
