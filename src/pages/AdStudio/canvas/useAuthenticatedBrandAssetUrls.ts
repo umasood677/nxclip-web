@@ -1,76 +1,37 @@
-import { useEffect, useState } from "react";
-import type { BrandKitSummary } from "../../BrandKits/lib/brandKitTypes";
-import { getAccessToken } from "../../../services/auth/authService";
-import { buildBrandAssetUrlMap, type BrandAssetUrlMap } from "./brandAssetUrls";
+import { useEffect, useMemo, useState } from 'react';
+import type { BrandKitSummary } from '../../BrandKits/lib/brandKitTypes';
+import { useAuthToken } from '../../../services/auth/authService';
+import { buildBrandAssetUrlMap, type BrandAssetUrlMap } from './brandAssetUrls';
+import { resolveBaseGatewayUrl } from '../../../services/apiClient';
+import { protectedBrandMediaPath } from '../../BrandKits/lib/secureBrandMedia';
+import { brandMediaLoader } from './brandMediaLoader';
 
-import { resolveBaseGatewayUrl } from "../../../services/apiClient";
-import {
-  protectedBrandMediaPath,
-  isUsableBrandImage,
-} from "../../BrandKits/lib/secureBrandMedia";
-
-/**
- * Brand Kit `readUrl` values for local/gateway media require Authorization.
- * `<img src>` cannot send Bearer tokens, so hydrate those URLs to blob: object URLs.
- * Public https readUrls (e.g. signed GCS) pass through unchanged.
- */
-export function useAuthenticatedBrandAssetUrls(
-  brandKit: BrandKitSummary | null | undefined,
-): BrandAssetUrlMap {
-  const [urls, setUrls] = useState<BrandAssetUrlMap>(() =>
-    buildBrandAssetUrlMap(brandKit),
-  );
-
+/** Share authenticated bytes; each mounted consumer owns and revokes its own blob URLs. */
+export function useAuthenticatedBrandAssetUrls(brandKit: BrandKitSummary | null | undefined): BrandAssetUrlMap {
+  const token = useAuthToken(), gateway = typeof window === 'undefined' ? '' : resolveBaseGatewayUrl(), brandId = brandKit?.id || '';
+  const signature = JSON.stringify(buildBrandAssetUrlMap(brandKit));
+  const base = useMemo(() => JSON.parse(signature) as BrandAssetUrlMap, [signature]);
+  const publicUrls = useMemo(() => Object.fromEntries(Object.entries(base).filter(([, url]) => !protectedBrandMediaPath(url, brandId))), [base, brandId]);
+  const scope = brandId + '\0' + signature + '\0' + gateway + '\0' + token;
+  const [hydrated, setHydrated] = useState<{scope: string; urls: BrandAssetUrlMap}>({scope: '', urls: {}});
   useEffect(() => {
     let cancelled = false;
     const created: string[] = [];
-    const base = buildBrandAssetUrlMap(brandKit);
-    setUrls(base);
-
-    const token = getAccessToken();
-    const entries = Object.entries(base).filter(
-      ([, url]) => protectedBrandMediaPath(url, brandKit?.id || "") !== null,
-    );
-    if (!token || entries.length === 0) {
-      return () => {
-        cancelled = true;
-      };
-    }
-
+    if (!token) { brandMediaLoader.clear(); return; }
     void (async () => {
-      const next: Record<string, string> = { ...base };
-      await Promise.all(
-        entries.map(async ([id, url]) => {
-          try {
-            const path = protectedBrandMediaPath(url, brandKit?.id || "");
-            if (!path) return;
-            const fetchUrl = `/api/gateway-proxy${path}`;
-            const res = await fetch(fetchUrl, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "X-Target-Gateway-Url": resolveBaseGatewayUrl(),
-              },
-              redirect: "error",
-            });
-            if (!res.ok) return;
-            const blob = await res.blob();
-            if (cancelled || !isUsableBrandImage(blob)) return;
-            const obj = URL.createObjectURL(blob);
-            created.push(obj);
-            next[id] = obj;
-          } catch {
-            /* keep gateway URL — SceneStage shows unavailable on error */
-          }
-        }),
-      );
-      if (!cancelled) setUrls(next);
+      const next: Record<string, string> = {...publicUrls};
+      await Promise.all(Object.entries(base).map(async ([id, url]) => {
+        if (!protectedBrandMediaPath(url, brandId)) return;
+        try {
+          const blob = await brandMediaLoader.load(brandId, url, token, gateway);
+          if (cancelled) return;
+          const objectUrl = URL.createObjectURL(blob);
+          created.push(objectUrl); next[id] = objectUrl;
+        } catch { /* No automatic retry or unauthenticated img fallback. */ }
+      }));
+      if (!cancelled) setHydrated({scope, urls: next});
     })();
-
-    return () => {
-      cancelled = true;
-      for (const u of created) URL.revokeObjectURL(u);
-    };
-  }, [brandKit]);
-
-  return urls;
+    return () => { cancelled = true; created.forEach(url => URL.revokeObjectURL(url)); };
+  }, [base, brandId, gateway, publicUrls, scope, token]);
+  return hydrated.scope === scope ? hydrated.urls : publicUrls;
 }
