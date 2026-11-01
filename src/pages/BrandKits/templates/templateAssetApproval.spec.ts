@@ -11,3 +11,14 @@ test('source approval omits unrelated model profiles and voice fields',()=>{
 });
 test('approval preserves required studio fields and deduplicates source identifiers',()=>{const patch=templateAssetApprovalPatch(kit,'model-photo');assert.deepEqual(patch.voice.studio.approvedAssetIds,['model-photo']);assert.equal(patch.voice.studio.schemaVersion,1);assert.equal(patch.voice.studio.identityApproved,true);});
 test('foreign, pending and unversioned sources cannot produce a patch',()=>{assert.throws(()=>templateAssetApprovalPatch(kit,'foreign'),/this Brand Kit/);assert.throws(()=>templateAssetApprovalPatch({...kit,assets:[{id:'product',status:'pending'}]},'product'),/ready/);assert.throws(()=>templateAssetApprovalPatch({...kit,version:undefined},'product'),/Reload/);});
+
+test('replaced, missing and pending historical approvals cannot poison a new source approval',()=>{
+ const input={...kit,voice:{...kit.voice,studio:{...kit.voice!.studio!,approvedAssetIds:['removed','model-photo','pending','product','model-photo']}},assets:[...kit.assets!,{id:'pending',status:'pending'}]};
+ const before=JSON.stringify(input),patch=templateAssetApprovalPatch(input,'product');
+ assert.deepEqual(patch.voice.studio.approvedAssetIds,['model-photo','product']);assert.equal(JSON.stringify(input),before);
+ assert.equal('characters'in patch.voice.studio,false);
+});
+test('newly uploaded replacement is not implicitly approved in place of the old source',()=>{
+ const input={...kit,voice:{...kit.voice,studio:{...kit.voice!.studio!,approvedAssetIds:['removed']}},assets:[{id:'replacement',status:'ready'},{id:'product',status:'ready'}]};
+ assert.deepEqual(templateAssetApprovalPatch(input,'product').voice.studio.approvedAssetIds,['product']);
+});

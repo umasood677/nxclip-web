@@ -147,15 +147,17 @@ export default function BrandTemplateLibrary() {
       setItems(result.items);
       setTemplateDrafts(drafts.items);
     } catch {
+      if (request !== requestVersion.current) return;
       setError(
         "The owned Brand Kit and template library could not be loaded. Check feature readiness and retry.",
       );
     } finally {
-      setLoading(false);
+      if (request === requestVersion.current) setLoading(false);
     }
   }, [brandId, enabled, templateId]);
   useEffect(() => {
     void load();
+    return () => { requestVersion.current += 1; };
   }, [load]);
   useEffect(()=>{
     if(!selected?.saved || !canReuseTemplate(selected))return;let active=true;

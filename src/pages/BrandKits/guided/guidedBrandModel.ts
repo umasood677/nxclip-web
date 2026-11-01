@@ -1,3 +1,4 @@
+import {readyBrandSourceIds} from '../lib/readyBrandSources';
 import { CREATOR_CATEGORY_NICHES } from "../../../lib/creatorNiches";
 import snapshot from "./taxonomy.snapshot.json";
 import type {
@@ -183,7 +184,7 @@ export function guidedPayload(
       nicheId: draft.nicheId,
       businessType: draft.businessType,
       businessGoals: [...draft.goals],
-      approvedAssetIds: [...draft.approvedAssetIds],
+      approvedAssetIds: readyBrandSourceIds(draft.approvedAssetIds,existing?.assets),
       identityApproved: draft.identityApproved,
       guidelinesApproved: draft.guidelinesApproved,
     },

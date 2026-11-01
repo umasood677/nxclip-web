@@ -109,3 +109,10 @@ test("saving a named draft does not fabricate identity approval or AI analysis",
   assert.equal(guidedPayload(draft).voice.studio, undefined);
   assert.equal(draft.identityApproved, false);
 });
+
+test('guided save retains only ready source approvals without implicitly approving replacements',()=>{
+ const kit:BrandKitSummary={id:'kit',name:'Fixture',assets:[{id:'kept',status:'ready'},{id:'replacement',status:'ready'},{id:'pending',status:'pending'}]};
+ const draft={...newGuidedDraft(),name:'Fixture',categoryId:'General',nicheId:'Fashion',approvedAssetIds:['removed','kept','pending','kept']};
+ const before=JSON.stringify(draft),payload=guidedPayload(draft,kit);
+ assert.deepEqual(payload.voice.studio?.approvedAssetIds,['kept']);assert.equal(JSON.stringify(draft),before);
+});
