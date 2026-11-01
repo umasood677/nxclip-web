@@ -171,3 +171,20 @@
 .bt-root .bt-advanced-options fieldset{margin-top:10px;max-width:420px}.bt-root .bt-setup-validation{margin:0;padding-left:17px;font-size:11px;line-height:1.6;color:#d9bd8d}
 .bt-root .bt-quick-creator button:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:600px){.bt-root .bt-format-field{align-items:flex-start;flex-direction:column;gap:7px}.bt-root .bt-format-options{display:grid;grid-template-columns:1fr 1fr;width:100%}.bt-root .bt-product-settings>header{align-items:flex-start;flex-direction:column;gap:8px}.bt-root .bt-product-mode{align-self:stretch}.bt-root .bt-product-mode button{flex:1}.bt-root .bt-quick-creator .bt-source-layout--single .bt-product-slots{max-width:360px}}
+
+/* My Brand Templates reuse the Default Templates card presentation. */
+.bt-root .bt-library-tile{position:relative;display:flex;flex-direction:column;min-width:0}
+.bt-root .bt-library-tile .w0a-card-body{display:flex;flex-direction:column;gap:12px;flex:1;padding:12px 14px 14px}
+.bt-root .bt-library-tile .w0a-card-body h3{margin:0}
+.bt-root .bt-library-tile .w0a-card-body>.w0a-btn{margin-top:auto;min-height:42px;width:100%}
+.bt-root .bt-library-tile .bt-tile-art{display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.bt-root .bt-library-tile .bt-scene-preview{width:100%;height:100%}
+.bt-root .bt-library-tile [data-scene-stage]{border:0;border-radius:0;box-shadow:none;max-width:100%}
+.bt-root .bt-tile-meta{display:flex;align-items:center;gap:8px;justify-content:space-between;min-width:0}.bt-root .bt-tile-meta .w0a-meta{min-width:0}.bt-root .bt-tile-status{flex:none;padding:4px 7px;border:1px solid #d2b47e45;border-radius:5px;background:#101116df;color:#e1c493;font-size:10px;line-height:1.3;max-width:50%}
+.bt-root .bt-library-tile .w0a-formats{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0}
+.bt-root .bt-tile-actions{display:flex;gap:4px;align-items:center;margin-left:auto}
+.bt-root .bt-tile-actions button{display:grid;place-items:center;width:28px;height:28px;padding:0;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--w0a-muted)}
+.bt-root .bt-tile-actions button:hover:not(:disabled){border-color:var(--w0a-border);background:#ffffff08;color:var(--w0a-text)}
+.bt-root .bt-tile-actions button:focus-visible{outline:2px solid var(--w0a-accent);outline-offset:2px}
+.bt-root .bt-tile-actions button:disabled{opacity:.4;cursor:not-allowed}
+.bt-root .bt-library-tile .bt-cleanup-placeholder{height:100%;min-height:160px}

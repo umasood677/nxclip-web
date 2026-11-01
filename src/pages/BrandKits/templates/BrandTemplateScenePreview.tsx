@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { SceneStage } from "../../AdStudio/canvas/SceneStage";
-type Props = React.ComponentProps<typeof SceneStage>;
+type Props = React.ComponentProps<typeof SceneStage> & {fillCard?:boolean};
 /** Fit the existing renderer to its card; retain the scene's exact aspect ratio. */
-export function BrandTemplateScenePreview(props: Props) {
+export function BrandTemplateScenePreview({fillCard=false,...props}: Props) {
   const host = useRef<HTMLDivElement>(null),
     [width, setWidth] = useState(260);
   useEffect(() => {
@@ -17,7 +17,7 @@ export function BrandTemplateScenePreview(props: Props) {
   }, []);
   return (
     <div ref={host} className="bt-scene-preview">
-      <SceneStage {...props} maxWidth={width} />
+      <SceneStage {...props} maxWidth={width} maxHeight={fillCard && props.graph?.canvas.width ? width*props.graph.canvas.height/props.graph.canvas.width : props.maxHeight} />
     </div>
   );
 }

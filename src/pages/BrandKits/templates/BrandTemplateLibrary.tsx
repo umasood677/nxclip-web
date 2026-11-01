@@ -1,3 +1,4 @@
+import {BrandTemplateTile} from './BrandTemplateTile';
 import './templateSources.css';
 import {TemplateBulkActions,TemplateDeleteDialog} from './TemplateBulkDelete';
 import {deletionEntries,deletionKey,deletionPayload,deletionSummary,type TemplateDeleteEntry,type TemplateDeleteResult,type DeletableTemplateDraft} from './templateDeletion';
@@ -23,7 +24,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { ArrowLeft, Check, Copy, Archive, Palette, X, Plus, Trash2, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Copy, Archive, Palette, X, Plus, Sparkles } from "lucide-react";
 import {
   brandApi,
   brandTemplateApi,
@@ -768,51 +769,23 @@ export default function BrandTemplateLibrary() {
                 onAction={() => go("/brands/" + brandId + "/guided?step=ready")}
               />
             ) : (
-              <div className="bt-gallery">{unlistedDrafts(items,templateDrafts,search).map(d=><article className={'bt-card'+(deleteSelection.includes('draft:'+d.id)?' bt-card-selected':'')} key={'draft:'+d.id}>
- <label className="bt-card-select"><input type="checkbox" aria-label={'Select '+d.name} checked={deleteSelection.includes('draft:'+d.id)} disabled={busy} onChange={()=>toggleDelete(deletionEntries([], [d])[0])}/><span className="sr-only">Select template</span></label>
- <div className="bt-card-art">{d.deletionPending?<span className="bt-cleanup-placeholder"><Trash2 size={28}/> Cleanup pending</span>:<BrandTemplateScenePreview graph={d.sceneGraph} assetUrls={urls} size="card" maxHeight={256}/>}</div>
- <div className="xp-card-copy"><span className="xp-status">{d.deletionPending?'Cleanup pending':'Draft · '+(d.templateContext?.draftKind==='native'?'Native':'AI proposal')}</span><h3>{d.name}</h3>
- <div className="xp-actions"><button className="xp-secondary" disabled={busy||d.deletionPending} onClick={()=>go(base+'?tab=brand&mode='+(d.templateContext?.draftKind||'ai')+'&source='+encodeURIComponent(d.id))}>Open draft</button>
- <button className="xp-text-button" disabled={busy} onClick={()=>discardDraft(d.id)}><Trash2 size={14}/>{d.deletionPending?'Retry cleanup':'Delete'}</button></div></div></article>)}
-
-                {visible.map((t) => (
-                  <article className={'bt-card'+(deleteSelection.includes('template:'+t.id)?' bt-card-selected':'')} key={t.id}>
-                    <label className="bt-card-select"><input type="checkbox" aria-label={'Select '+t.name} checked={deleteSelection.includes('template:'+t.id)} disabled={busy} onChange={()=>toggleDelete(deletionEntries([t],[])[0])}/><span className="sr-only">Select template</span></label>
-                    <div className="bt-card-art">
-                    {t.deletion?<span className="bt-cleanup-placeholder"><Trash2 size={28}/> Cleanup pending</span>:<BrandTemplateScenePreview
-                      graph={t.sceneGraph}
-                      assetUrls={urls}
-                      size="card"
-                      maxHeight={256}
-                    />}
-                    </div>
-                    <div className="xp-card-copy">
-                      <span className="xp-status">
-                        {t.deletion?'Cleanup pending':t.state+' · '+(t.saved?'Saved':'Review required')}
-                      </span>
-                      <h3>{t.name}</h3>
-                      <p>
-                        {AD_FORMATS.find((f) => f.id === t.format)?.label ||
-                          t.format}{" "}
-                        · {t.provenance.method === "provider-ai-creative" ? "AI artwork" : "Editable layout"}
-                      </p>
-                      <p>
-                        {t.blockers.length
-                          ? `${t.blockers.length} unresolved source requirements`
-                          : "Editable text, product & logo"}
-                      </p>
-                      <button
-                        className="xp-primary"
-                        disabled={busy||!!t.deletion}
-                        onClick={() =>
-                          go(base + "/" + encodeURIComponent(t.id))
-                        }
-                      >
-                        Preview template →
-                      </button><div className="xp-actions">{t.state==='suggested'&&<button className="xp-text-button" disabled={busy} onClick={()=>reviewCard(t,'reject')}><X size={14}/> Reject</button>}{t.state!=='archived'&&<button className="xp-text-button" disabled={busy} onClick={()=>reviewCard(t,'archive')}><Archive size={14}/> Archive</button>}<button type="button" className="xp-text-button" disabled={busy} onClick={()=>setDeleteRequest(deletionEntries([t],[]))}><Trash2 size={14}/>{t.deletion?'Retry cleanup':'Delete'}</button></div>
-                    </div>
-                  </article>
-                ))}
+              <div className="bt-gallery" aria-label="My Brand Templates">
+                {unlistedDrafts(items,templateDrafts,search).map(d=><BrandTemplateTile key={'draft:'+d.id}
+                  name={d.name} graph={d.sceneGraph} assetUrls={urls} status={d.deletionPending?'Cleanup pending':'Draft'}
+                  kind={d.templateContext?.draftKind==='native'?'Editable layout':'AI proposal'}
+                  selected={deleteSelection.includes('draft:'+d.id)} busy={busy} pending={d.deletionPending}
+                  onToggle={()=>toggleDelete(deletionEntries([], [d])[0])}
+                  onPreview={()=>go(base+'?tab=brand&mode='+(d.templateContext?.draftKind||'ai')+'&source='+encodeURIComponent(d.id))}
+                  onDelete={()=>discardDraft(d.id)}/>)}
+                {visible.map(t=><BrandTemplateTile key={t.id} name={t.name} graph={t.sceneGraph} assetUrls={urls} format={t.format}
+                  status={t.deletion?'Cleanup pending':t.saved?'Saved':t.state==='suggested'?'Review needed':t.state[0].toUpperCase()+t.state.slice(1)}
+                  kind={t.provenance.method==='provider-ai-creative'?'AI artwork':'Editable layout'}
+                  selected={deleteSelection.includes('template:'+t.id)} busy={busy} pending={!!t.deletion}
+                  onToggle={()=>toggleDelete(deletionEntries([t],[])[0])}
+                  onPreview={()=>go(base+'/'+encodeURIComponent(t.id))}
+                  onReject={t.state==='suggested'?()=>reviewCard(t,'reject'):undefined}
+                  onArchive={t.state!=='archived'?()=>reviewCard(t,'archive'):undefined}
+                  onDelete={()=>setDeleteRequest(deletionEntries([t],[]))}/>)}
               </div>
             )}
           </>
