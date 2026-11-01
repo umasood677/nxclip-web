@@ -1,3 +1,4 @@
+import {templateAssetApprovalPatch} from './templateAssetApproval';
 import React,{useRef,useState} from 'react';
 import {Upload,Library,Check} from 'lucide-react';
 import {Dialog,DialogContent,DialogTitle} from '../../../components/ui/dialog';
@@ -14,7 +15,7 @@ export function TemplateAssetPicker({kit,kind='product',onClose,onKitUpdated,onS
  const file=useRef<HTMLInputElement>(null),urls=useAuthenticatedBrandAssetUrls(current);
  const update=(value:BrandKitSummary)=>{if(value.id!==kit.id)throw Error('Brand Kit context changed.');setCurrent(value);onKitUpdated(value);};
  const upload=async(image:File)=>{setBusy(true);setError('');try{const result=await uploadBrandImage(brandApi,putToUploadUrl,kit.id,kind==='model'?'brand_model':'product_image',image);update(result.kit);if(kind==='model')setProfiles(true);}catch(e){setError(e instanceof Error?e.message:'Upload failed.');throw e;}finally{setBusy(false);}};
- const approve=async(id:string)=>{if(busy)return;setBusy(true);setError('');try{const studio=current.voice?.studio;if(!studio)throw Error('Complete Brand Kit identity first.');update(await brandApi.updateKit(kit.id,{expectedVersion:current.version,voice:{...current.voice,studio:{...studio,approvedAssetIds:[...new Set([...(studio.approvedAssetIds||[]),id])]}}}));}catch(e){setError(e instanceof Error?e.message:'Approval failed.');}finally{setBusy(false);}};
+ const approve=async(id:string)=>{if(busy)return;setBusy(true);setError('');try{update(await brandApi.updateKit(kit.id,templateAssetApprovalPatch(current,id)));}catch(e){setError(e instanceof Error?e.message:'Approval failed.');}finally{setBusy(false);}};
  return <Dialog open onOpenChange={open=>{if(!open&&!busy)onClose();}}><DialogContent className="bt-source-dialog !max-w-[900px] !w-[94vw] !max-h-[90dvh] overflow-y-auto"><DialogTitle>{kind==='model'?'Choose a Brand Model':'Choose a product photograph'}</DialogTitle>
  <div className="xp-actions"><button type="button" className="xp-secondary" disabled={busy} onClick={()=>file.current?.click()}><Upload size={15}/> Upload</button><button type="button" className="xp-secondary" disabled={busy} onClick={()=>setLibrary(true)}><Library size={15}/> Content Library</button>{kind==='model'&&<button type="button" className="xp-secondary" onClick={()=>setProfiles(v=>!v)}>Manage profiles</button>}</div>
  <input ref={file} type="file" accept="image/png,image/jpeg,image/webp" hidden disabled={busy} onChange={e=>{const f=e.target.files?.[0];e.target.value='';if(f)void upload(f).catch(()=>{});}}/>
