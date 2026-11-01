@@ -69,6 +69,8 @@ export type BrandAssetEntry = {
   readUrl?: string | null;
 };
 
+/** Existing BrandProductDto wire shape; the API does not expose a product-to-photo link. */
+export type BrandProductEntry={id:string;name:string;sku?:string|null;description?:string|null;status:string;sortOrder?:number};
 /** Shared kit shape used by Brand Kit Studio and Ad Studio picker. */
 export type BrandKitSummary = {
   updatedAt?: string;
@@ -82,6 +84,7 @@ export type BrandKitSummary = {
   colors?: BrandColorEntry[];
   typography?: BrandTypographyEntry[];
   assets?: BrandAssetEntry[];
+  products?: BrandProductEntry[];
 };
 
 export type EditorSection =

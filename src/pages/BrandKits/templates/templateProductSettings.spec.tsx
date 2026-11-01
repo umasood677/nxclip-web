@@ -27,12 +27,12 @@ test('selected product previews render the real thumbnail as an accessible image
 });
 test('single-product setup uses a bounded card beside model controls and removes the requested copy',()=>{
  const html=renderToStaticMarkup(<TemplateProductSettings value={initial} showCount={false} onChange={()=>{}} kit={{id:'kit',name:'Fixture',assets:[]}} onKitUpdated={()=>{}}/>);
- assert.match(html,/bt-source-layout--single/);assert.equal((html.match(/class="bt-product-card"/g)||[]).length,1);assert.doesNotMatch(html,/>Product count<|Colors guide the design|Each real shade/);assert.match(html,/bt-model-controls/);assert.match(html,/No model selected/);
+ assert.match(html,/bt-source-layout--single/);assert.equal((html.match(/class="bt-product-card"/g)||[]).length,1);assert.doesNotMatch(html,/>Product count<|Colors guide the design|Each real shade/);assert.match(html,/bt-model-controls/);assert.match(html,/No model/);
 });
 test('uploaded model photos remain visible until a permitted profile is created',()=>{
  const kit:BrandKitSummary={id:'kit',name:'Fixture',assets:[{id:'photo',role:'brand_model',label:'Uploaded brand portrait',status:'ready',mimeType:'image/png'}]};
  assert.deepEqual(templateModelChoices(kit),[{id:'reference:photo',name:'Uploaded brand portrait',assetId:'photo',eligible:false,status:'Profile needed'}]);
- const html=renderToStaticMarkup(<TemplateProductSettings value={initial} onChange={()=>{}} kit={kit} onKitUpdated={()=>{}}/>);assert.match(html,/Uploaded brand portrait/);assert.match(html,/Profile needed/);assert.match(html,/<option[^>]*disabled=""/);assert.match(html,/>Review /);
+ const html=renderToStaticMarkup(<TemplateProductSettings value={initial} onChange={()=>{}} kit={kit} onKitUpdated={()=>{}}/>);assert.match(html,/Uploaded brand portrait/);assert.match(html,/Profile needed/);assert.doesNotMatch(html,/<option[^>]*value="reference:photo"/);assert.match(html,/>Review /);
 });
 test('expired profile references are explained and cannot be silently selected',()=>{
  const p:BrandCharacterProfile={id:'profile',name:'Existing model',kind:'human-model',status:'approved',referenceAssetIds:['photo'],appearance:'',style:'',wardrobe:'',expressions:'',consistencyRules:'',permissions:{commercialUse:true,likenessConsent:true,origin:'consented',scopes:['ad-studio'],evidence:'Synthetic fixture',expiresAt:'2000-01-01T00:00:00Z'}};

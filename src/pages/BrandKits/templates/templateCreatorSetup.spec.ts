@@ -1,0 +1,56 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {brandKitProductChoices,automaticTemplateProducts,chooseTemplateProduct,templateCreatorIssues,TEMPLATE_IDEA_SUGGESTIONS} from './templateCreatorSetup';
+import type {BrandKitSummary} from '../lib/brandKitTypes';
+const kit:BrandKitSummary={id:'brand',name:'Synthetic brand',version:9,products:[{id:'sku-red',name:'Signature Red',status:'active',sku:'RED'},{id:'retired',name:'Retired',status:'archived'}],assets:[{id:'a',label:'Original red photograph',role:'product_image',status:'ready'},{id:'b',label:'Original plum photograph',role:'product_image',status:'ready'},{id:'c',label:'Unreviewed photograph',role:'product_image',status:'ready'},{id:'pending',role:'product_image',status:'pending'},{id:'logo',role:'logo_primary',status:'ready'}],voice:{studio:{schemaVersion:1,categoryId:'beauty',nicheId:'lipstick',businessGoals:[],identityApproved:true,guidelinesApproved:true,approvedAssetIds:['a','b','logo']}}};
+test('product records and photographs remain distinct; no product/photo association is invented',()=>{
+ const choices=brandKitProductChoices(kit);assert.deepEqual(choices.map(c=>c.key),['product:sku-red','photo:a','photo:b','photo:c']);assert.equal(choices[0].assetId,undefined);assert.equal(choices[0].sku,'RED');assert.equal(choices[3].approved,false);
+});
+test('automatic mode binds only approved photographs and leaves unavailable requested products unbound',()=>{
+ const before=JSON.stringify(kit),c=automaticTemplateProducts(kit,'Show three lipstick shades','chosen-model');
+ assert.equal(c.slots.length,3);assert.deepEqual(c.slots.map(s=>s.assetId),['a','b',undefined]);assert.equal(c.modelProfileId,'chosen-model');assert.equal(JSON.stringify(kit),before);
+});
+test('collection mode derives count from available approved references, capped at existing four-slot contract',()=>{
+ assert.equal(automaticTemplateProducts(kit,'A product collection').slots.length,2);
+ assert.equal(automaticTemplateProducts({...kit,assets:[]},'A product collection').slots.length,1);
+ assert.equal(automaticTemplateProducts(kit,'A cinematic hero').slots.length,1);
+});
+test('manual selection preserves color/model and appends explicit product references without mutating inputs',()=>{
+ const initial={schemaVersion:1 as const,slots:[{label:'Existing',assetId:'a',color:'#123456'}],modelProfileId:'model'},before=JSON.stringify(initial);
+ let c=chooseTemplateProduct(initial,0,brandKitProductChoices(kit)[0]);assert.equal(c.slots[0].assetId,undefined);assert.equal(c.slots[0].label,'Signature Red');assert.equal(c.slots[0].color,'#123456');
+ c=chooseTemplateProduct(c,0,brandKitProductChoices(kit)[1]);c=chooseTemplateProduct(c,1,brandKitProductChoices(kit)[2]);c=chooseTemplateProduct(c,2,{key:'photo:third',label:'Third actual photo',assetId:'third',kind:'photograph',approved:true});
+ assert.deepEqual(c.slots.map(s=>s.assetId),['a','b','third']);assert.equal(c.modelProfileId,'model');assert.equal(JSON.stringify(initial),before);
+ assert.throws(()=>chooseTemplateProduct(c,4,brandKitProductChoices(kit)[1]),/four products/);
+});
+test('inline validation distinguishes missing references, unapproved photos and invalid models',()=>{
+ const c=automaticTemplateProducts(kit,'Three products');assert.match(templateCreatorIssues(kit,c,'Three products',false,true).join(' '),/Choose a photograph/);
+ assert.deepEqual(templateCreatorIssues(kit,c,'Three products',false,true,true),[]);
+ assert.match(templateCreatorIssues(kit,{schemaVersion:1,slots:[{label:'Unreviewed',assetId:'c'}]},'Hero',false,true).join(' '),/approve the photograph/);
+ assert.match(templateCreatorIssues(kit,{...automaticTemplateProducts(kit,'Hero'),modelProfileId:'unavailable'},'Hero',false,true).join(' '),/model authorization/);
+ assert.match(templateCreatorIssues(kit,automaticTemplateProducts(kit,''),'',false,false).join(' '),/Describe your creative idea/);
+ assert.deepEqual(templateCreatorIssues(kit,automaticTemplateProducts(kit,'Hero'),'Hero',false,true),[]);
+});
+import {readFileSync} from 'node:fs';import ts from 'typescript';import vm from 'node:vm';
+const source=readFileSync(process.cwd()+'/src/pages/BrandKits/templates/BrandTemplateAiWorkspace.tsx','utf8'),tree=ts.createSourceFile('setup.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+let prepareNode:ts.FunctionDeclaration|undefined,chipCallback:ts.Expression|undefined;
+function visit(n:ts.Node){if(ts.isFunctionDeclaration(n)&&n.name?.text==='prepare')prepareNode=n;if(ts.isJsxAttribute(n)&&n.name.getText(tree)==='onClick'&&n.initializer&&ts.isJsxExpression(n.initializer)&&n.initializer.expression?.getText(tree).includes('setDirection(s.idea)'))chipCallback=n.initializer.expression;ts.forEachChild(n,visit);}visit(tree);assert.ok(prepareNode);assert.ok(chipCallback);
+test('each suggestion chip populates the idea without starting generation',()=>{
+ const code=ts.transpileModule('const click='+chipCallback.getText(tree)+';click;',{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+ for(const s of TEMPLATE_IDEA_SUGGESTIONS){let value='';const click=vm.runInNewContext(code,{s,setDirection:(v:string)=>{value=v;}}) as ()=>void;click();assert.equal(value,s.idea);}
+});
+function harness(configuration:ReturnType<typeof automaticTemplateProducts>,idea='An editorial collection'){
+ const calls:{kind:string;body:Record<string,unknown>}[]=[],errors:string[]=[],requested:boolean[]=[];
+ const code=ts.transpileModule(prepareNode!.getText(tree)+';prepare;',{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+ const prepare=vm.runInNewContext(code,{pending:{current:false},kit,effectiveConfiguration:configuration,direction:idea,native:false,layoutValid:true,layout:'auto',format:'portrait_1080x1350',templateCreatorIssues,setError:(s:string)=>errors.push(s),setBusy:()=>{},setConfiguration:()=>{},setGenerationRequested:(v:boolean)=>requested.push(v),remember:()=>{},brandTemplateApi:{createAiSource:async(_id:string,body:Record<string,unknown>)=>{calls.push({kind:'ai',body});return {};},createNativeSource:async(_id:string,body:Record<string,unknown>)=>{calls.push({kind:'native',body});return {};}}}) as (draftOnly?:boolean)=>Promise<void>;
+ return {prepare,calls,errors,requested};
+}
+for(const count of [1,2])test('explicit '+count+'-product generation retains the existing configuration/API shape',async()=>{
+ const c=automaticTemplateProducts(kit,count===1?'Hero':'Two products'),h=harness(c);await h.prepare();assert.equal(h.calls.length,1);assert.equal(h.calls[0].kind,'ai');
+ assert.equal(h.calls[0].body.configuration,c);assert.equal(h.calls[0].body.templateId,'product-hero');assert.equal(h.calls[0].body.expectedBrandVersion,9);assert.deepEqual(h.requested,[true]);
+});
+test('invalid generation is blocked before any API request; editable draft can retain missing slots',async()=>{
+ const c=automaticTemplateProducts(kit,'Three products'),h=harness(c);await h.prepare();assert.equal(h.calls.length,0);assert.match(h.errors.join(' '),/Choose a photograph/);await h.prepare(true);assert.equal(h.calls[0].kind,'native');assert.deepEqual(h.requested,[]);
+});
+test('labels and advanced options are concise; manual Product Count is absent',()=>{
+ assert.match(source,/Describe your creative idea/);assert.match(source,/<details className="bt-advanced-options"><summary>Advanced Options/);assert.doesNotMatch(source,/<details[^>]*\bopen\b|Product count/);
+ const library=readFileSync(process.cwd()+'/src/pages/BrandKits/templates/BrandTemplateLibrary.tsx','utf8');assert.doesNotMatch(library,/Create with AI/);assert.match(library,/Generate Template/);
+});

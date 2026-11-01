@@ -7,7 +7,7 @@ import {BrandTemplateAiWorkspace,TemplateDraftNavigation,verifyTemplateSource} f
 const source={id:'draft',projectId:'storage',name:'Template',currentVersion:1,documentPurpose:'template-draft' as const,templateContext:{brandKitId:'brand',draftKind:'ai' as const},sceneGraph:{schemaVersion:'1.0' as const,canvas:{width:1080,height:1080},layers:[]}};
 for(const kind of ['ai','native'] as const)test(kind+' entry prepares a template without campaign selection or automatic generation',()=>{
  const html=renderToStaticMarkup(<MemoryRouter><BrandTemplateAiWorkspace kit={{id:'brand',name:'Synthetic brand'}} entryKind={kind} initialFormat='portrait_1080x1350' onBack={()=>{}}/></MemoryRouter>);
- assert.match(html,kind==='ai'?/Describe your template/:/Preview template/);if(kind==='ai')assert.match(html,/Generate template/);assert.match(html,/Format/);assert.match(html,kind==='ai'?/Composition guidance/:/Layout/);if(kind==='ai')assert.match(html,/Let AI compose from my brief/);
+ assert.match(html,kind==='ai'?/Describe your creative idea/:/Preview template/);if(kind==='ai')assert.match(html,/Generate Template/);assert.match(html,/Format/);assert.match(html,kind==='ai'?/Composition guidance/:/Layout/);if(kind==='ai')assert.match(html,/Let AI compose from my brief/);
  assert.doesNotMatch(html,/Create a campaign|Owned campaign|Working Brief|name="campaign"/);assert.equal(html.includes("/create/ad/projects"),false);
 });
 test('draft resolution requires owned-brand context, template purpose and persisted version',()=>{
@@ -35,5 +35,5 @@ test('generated proposal proceeds directly to one review record without approvin
 
 test('setup uses one control row, a full-width description field and a shared action footer',()=>{
  const html=renderToStaticMarkup(<MemoryRouter><BrandTemplateAiWorkspace kit={{id:'brand',name:'Fixture'}} initialFormat="portrait_1080x1350" onBack={()=>{}}/></MemoryRouter>);
- assert.match(html,/bt-description-field/);assert.match(html,/rows="3"/);assert.equal((html.match(/Product count/g)||[]).length,1);assert.match(html,/bt-setup-actions/);assert.ok(html.indexOf('Draft editable layout')<html.indexOf('Generate template'));assert.doesNotMatch(html,/Add a photograph to every slot|Colors guide the design/);
+ assert.match(html,/bt-description-field/);assert.match(html,/rows="3"/);assert.equal((html.match(/Product count/g)||[]).length,0);assert.match(html,/bt-setup-actions/);assert.ok(html.indexOf('Draft Editable Layout')<html.indexOf('Generate Template'));assert.doesNotMatch(html,/Add a photograph to every slot|Colors guide the design/);
 });

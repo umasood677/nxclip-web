@@ -23,7 +23,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { ArrowLeft, Check, Copy, Archive, Palette, X, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, Copy, Archive, Palette, X, Plus, Trash2, Sparkles } from "lucide-react";
 import {
   brandApi,
   brandTemplateApi,
@@ -455,7 +455,7 @@ export default function BrandTemplateLibrary() {
             </h1>
 
           </div>
-          <button className="xp-primary" onClick={() => go(base + "?tab=brand&mode=ai")}><Plus size={16} /> Create with AI</button>
+          <button className="xp-primary" onClick={() => go(base + "?tab=brand&mode=ai")}><Sparkles size={16} aria-hidden="true" /> Generate Template</button>
         </header>}
         {error && (
           <div className="xp-notice" role="alert">
