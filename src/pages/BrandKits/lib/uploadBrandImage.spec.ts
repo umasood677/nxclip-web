@@ -22,6 +22,7 @@ test("the shared image protocol uploads original bytes once and confirms the sam
   const calls: string[] = [];
   const result = await uploadBrandImage(
     {
+      getKit:async()=>({...kit,assetUploadPolicy:'append-product-model-v1'}),
       requestAssetUploadUrl: async (id, body) => {
         assert.equal(id, "owned");
         assert.equal(body.role, "brand_model");
@@ -60,6 +61,7 @@ test("failed binary upload is not retried and never confirms or links an image",
     () =>
       uploadBrandImage(
         {
+          getKit:async()=>({...kit,assetUploadPolicy:'append-product-model-v1'}),
           requestAssetUploadUrl: async () => ({
             assetId: "asset",
             uploadUrl: "https://upload.example.test/synthetic",

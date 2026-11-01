@@ -73,6 +73,7 @@ export type BrandAssetEntry = {
 export type BrandProductEntry={id:string;name:string;sku?:string|null;description?:string|null;status:string;sortOrder?:number};
 /** Shared kit shape used by Brand Kit Studio and Ad Studio picker. */
 export type BrandKitSummary = {
+  assetUploadPolicy?: 'append-product-model-v1';
   updatedAt?: string;
   id: string;
   name: string;
