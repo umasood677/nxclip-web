@@ -85,3 +85,42 @@
 .bt-root .bt-ai-workspace header:empty{display:none}
 
 .bt-product-settings{border-top:1px solid #ffffff14;padding-top:20px;display:grid;gap:16px}.bt-product-settings header{display:flex;justify-content:space-between;align-items:center;gap:16px}.bt-product-settings h3{margin:0;font-size:16px}.bt-product-slots,.bt-source-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}.bt-product-slots article,.bt-source-choice{display:grid;gap:10px;padding:14px;border:1px solid #ffffff18;border-radius:10px;background:#17191f}.bt-source-choice img{width:100%;height:140px;object-fit:contain}.bt-product-slots input[type=color]{height:38px;padding:4px}.bt-product-settings small{color:#aaa6b3}.tc-source-bindings{border-bottom:1px solid #ffffff18;padding-bottom:18px;margin-bottom:18px}.tc-source-bindings h3{font-size:16px}
+
+/* Compact Create Template form. Scoped to production authoring, never prototype screens. */
+.bt-root .bt-ai-setup{max-width:1180px;padding:18px 20px;gap:14px}
+.bt-root .bt-ai-setup .xp-field{margin:0;gap:5px;min-width:0;max-width:none;font-size:12px}
+.bt-root .bt-ai-setup input,.bt-root .bt-ai-setup select{min-height:36px;height:36px;padding:7px 9px;line-height:1.4}
+.bt-root .bt-ai-setup .bt-description-field{width:100%;min-width:0;max-width:none;align-self:stretch}
+.bt-root .bt-ai-setup .bt-description-field textarea{display:block;width:100%!important;max-width:none!important;min-width:0;min-height:88px;max-height:240px;resize:vertical;padding:10px 12px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;box-sizing:border-box}
+.bt-root .bt-ai-setup .bt-setup-fields{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(90px,.5fr);gap:12px}
+.bt-root .bt-product-settings{padding-top:12px;gap:10px}
+.bt-root .bt-product-settings>header{min-height:20px;gap:12px}.bt-root .bt-product-settings>header h3{margin:0;font-size:14px;font-weight:600}
+.bt-root .bt-source-layout{display:grid;gap:14px;min-width:0}
+.bt-root .bt-source-layout--single{grid-template-columns:minmax(260px,360px) minmax(0,1fr);align-items:start;gap:20px}
+.bt-root .bt-product-slots{grid-template-columns:repeat(var(--bt-products),minmax(0,1fr));max-width:calc(var(--bt-products)*290px + (var(--bt-products) - 1)*12px);width:100%;gap:12px;align-items:start}
+.bt-root .bt-source-layout--single .bt-product-slots{max-width:none}
+.bt-root .bt-product-slots .bt-product-card{display:grid;grid-template-columns:76px minmax(0,1fr);gap:10px;padding:10px;border-radius:9px;min-width:0;align-items:center;background:#ffffff03}
+.bt-root .bt-product-thumb{width:76px;height:96px;min-height:0;padding:0;overflow:hidden;display:grid;place-items:center;border:1px solid #ffffff16;border-radius:7px;background:#101116;color:var(--xp-muted)}
+.bt-root .bt-product-thumb img,.bt-root .bt-model-reference-thumb img{width:100%;height:100%;max-height:none;object-fit:contain;display:block}
+.bt-root .bt-source-thumb-empty{display:grid;justify-items:center;gap:4px;padding:6px;font-size:10px;text-align:center}
+.bt-root .bt-product-card-fields{display:grid;gap:7px;min-width:0}.bt-root .bt-product-card-fields .xp-field{font-size:11px}
+.bt-root .bt-product-card-fields input{font-size:12px;padding:6px 7px;height:32px;min-height:32px}
+.bt-root .bt-product-asset-name{font-size:10px;color:var(--xp-muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0}
+.bt-root .bt-product-card-actions{display:flex;align-items:center;gap:7px;min-width:0}
+.bt-root .bt-shade-chip{display:flex;flex:none;margin:0}.bt-root .bt-product-slots .bt-shade-chip input[type=color]{width:28px;height:28px;min-height:28px;padding:2px;border:1px solid #ffffff25;border-radius:5px;cursor:pointer}
+.bt-root .bt-product-change,.bt-root .bt-product-clear{display:inline-flex;align-items:center;justify-content:center;gap:4px;border:0;background:transparent;color:var(--xp-accent,#d2b47e);padding:3px 0;min-height:28px;font-size:11px;line-height:1.3}
+.bt-root .bt-product-clear{margin-left:auto;flex:none;width:24px;color:var(--xp-muted)}.bt-root .bt-product-change:hover,.bt-root .bt-product-clear:hover{color:#f1dcba}
+.bt-root .bt-model-settings{display:grid;gap:10px;min-width:0;max-width:760px}
+.bt-root .bt-model-controls{display:grid;grid-template-columns:minmax(140px,1fr) auto;gap:12px;align-items:end}
+.bt-root .bt-model-controls>.xp-secondary{align-self:end;height:36px;min-height:36px;margin:0;padding:7px 11px;font-size:12px;white-space:nowrap}
+.bt-root .bt-model-reference{display:flex;align-items:center;gap:10px;min-width:0;padding:8px 10px;border:1px solid #ffffff12;border-radius:8px;background:#ffffff02}
+.bt-root .bt-model-reference-thumb{height:48px;width:42px;flex:none;overflow:hidden;border-radius:5px;background:#111217}
+.bt-root .bt-model-reference-copy{display:grid;gap:2px;min-width:0;flex:1}.bt-root .bt-model-reference-copy strong{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bt-root .bt-model-reference-copy span{font-size:10px;color:var(--xp-muted)}
+.bt-root .bt-setup-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:10px;padding-top:12px;border-top:1px solid #ffffff14}
+.bt-root .bt-setup-actions .xp-primary,.bt-root .bt-setup-actions .xp-secondary{margin:0;min-height:38px;height:38px;min-width:0;padding:8px 14px;font-size:12px}
+.bt-root .bt-product-settings button:focus-visible{outline:2px solid #d2b47e;outline-offset:2px}
+@media(max-width:1000px){.bt-root .bt-product-slots{grid-template-columns:repeat(2,minmax(0,1fr));max-width:none}.bt-root .bt-source-layout--single{grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:14px}.bt-root .bt-model-controls{grid-template-columns:minmax(0,1fr)}.bt-root .bt-model-controls>.xp-secondary{justify-self:start}}
+@media(max-width:760px){.bt-root .bt-source-layout--single{grid-template-columns:1fr}.bt-root .bt-source-layout--single .bt-product-slots{grid-template-columns:minmax(0,360px)}.bt-root .bt-model-controls{grid-template-columns:minmax(0,1fr) auto}.bt-root .bt-ai-setup{padding:16px;gap:12px}.bt-root .bt-ai-setup .bt-setup-fields{grid-template-columns:1fr 1fr}.bt-root .bt-product-count{max-width:130px!important}}
+@media(max-width:480px){.bt-root .bt-product-slots{grid-template-columns:1fr}.bt-root .bt-model-controls{grid-template-columns:1fr}.bt-root .bt-model-controls>.xp-secondary{justify-self:start}.bt-root .bt-ai-setup .bt-setup-fields{grid-template-columns:1fr}.bt-root .bt-setup-actions{justify-content:stretch}.bt-root .bt-setup-actions>button{flex:1}}
+
+@media(max-width:1000px){.bt-root .bt-source-layout--single .bt-product-slots{grid-template-columns:1fr}}

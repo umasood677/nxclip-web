@@ -32,3 +32,8 @@ test('generated proposal proceeds directly to one review record without approvin
  await handler(generated);assert.deepEqual(order,['retain','review']);
  assert.equal(text.includes('proposalReviewed:true'),false);assert.equal(text.includes('Review this template</h3>'),false);
 });
+
+test('setup uses one control row, a full-width description field and a shared action footer',()=>{
+ const html=renderToStaticMarkup(<MemoryRouter><BrandTemplateAiWorkspace kit={{id:'brand',name:'Fixture'}} initialFormat="portrait_1080x1350" onBack={()=>{}}/></MemoryRouter>);
+ assert.match(html,/bt-description-field/);assert.match(html,/rows="3"/);assert.equal((html.match(/Product count/g)||[]).length,1);assert.match(html,/bt-setup-actions/);assert.ok(html.indexOf('Draft editable layout')<html.indexOf('Generate template'));assert.doesNotMatch(html,/Add a photograph to every slot|Colors guide the design/);
+});

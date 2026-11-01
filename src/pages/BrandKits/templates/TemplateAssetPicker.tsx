@@ -10,8 +10,20 @@ import {characterReviewIssues} from '../guided/brandCharacterModel';
 import {useAuthenticatedBrandAssetUrls} from '../../AdStudio/canvas/useAuthenticatedBrandAssetUrls';
 import type {BrandKitSummary} from '../lib/brandKitTypes';
 export function eligibleTemplateProfiles(kit:BrandKitSummary){return (kit.voice?.studio?.characters||[]).filter(p=>p.status==='approved'&&p.permissions.scopes.includes('ad-studio')&&!characterReviewIssues(p,kit.assets||[]).length&&kit.voice?.studio?.approvedAssetIds?.includes(p.referenceAssetIds[0])&&(kit.assets||[]).some(a=>a.id===p.referenceAssetIds[0]&&['brand_model','other'].includes(a.role||'')));}
-export function TemplateAssetPicker({kit,kind='product',onClose,onKitUpdated,onSelect}:{kit:BrandKitSummary;kind?:'product'|'model';onClose:()=>void;onKitUpdated:(kit:BrandKitSummary)=>void;onSelect:(assetId:string,profileId?:string)=>void}){
- const [current,setCurrent]=useState(kit),[busy,setBusy]=useState(false),[error,setError]=useState(''),[library,setLibrary]=useState(false),[profiles,setProfiles]=useState(false);
+/** Show uploaded references without granting or silently selecting model usage. */
+export function templateModelChoices(kit:BrandKitSummary){
+ const eligible=new Set(eligibleTemplateProfiles(kit).map(p=>p.id)),profiles=kit.voice?.studio?.characters||[];
+ const choices=profiles.map(p=>{
+  const issues=characterReviewIssues(p,kit.assets||[]),assetId=p.referenceAssetIds[0];
+  const status=eligible.has(p.id)?'Available':p.status==='archived'?'Archived':p.status==='draft'?'Profile needs review':issues.some(i=>/expired|invalid/i.test(i))?'Authorization expired':!p.permissions.scopes.includes('ad-studio')?'Ad Studio permission needed':!assetId?'Reference needed':!kit.voice?.studio?.approvedAssetIds?.includes(assetId)?'Reference approval needed':'Permissions need review';
+  return {id:p.id,name:p.name,assetId,eligible:eligible.has(p.id),status};
+ });
+ const linked=new Set(profiles.flatMap(p=>p.referenceAssetIds));
+ for(const asset of kit.assets||[])if(asset.role==='brand_model'&&asset.status==='ready'&&!linked.has(asset.id))choices.push({id:'reference:'+asset.id,name:asset.label||asset.fileName||'Uploaded model',assetId:asset.id,eligible:false,status:'Profile needed'});
+ return choices;
+}
+export function TemplateAssetPicker({kit,kind='product',initialManageProfiles=false,onClose,onKitUpdated,onSelect}:{kit:BrandKitSummary;kind?:'product'|'model';initialManageProfiles?:boolean;onClose:()=>void;onKitUpdated:(kit:BrandKitSummary)=>void;onSelect:(assetId:string,profileId?:string)=>void}){
+ const [current,setCurrent]=useState(kit),[busy,setBusy]=useState(false),[error,setError]=useState(''),[library,setLibrary]=useState(false),[profiles,setProfiles]=useState(initialManageProfiles);
  const file=useRef<HTMLInputElement>(null),urls=useAuthenticatedBrandAssetUrls(current);
  const update=(value:BrandKitSummary)=>{if(value.id!==kit.id)throw Error('Brand Kit context changed.');setCurrent(value);onKitUpdated(value);};
  const upload=async(image:File)=>{setBusy(true);setError('');try{const result=await uploadBrandImage(brandApi,putToUploadUrl,kit.id,kind==='model'?'brand_model':'product_image',image);update(result.kit);if(kind==='model')setProfiles(true);}catch(e){setError(e instanceof Error?e.message:'Upload failed.');throw e;}finally{setBusy(false);}};
