@@ -27,6 +27,7 @@ export function ProductionImageGeneration({
   initialInstruction = "",
   renderMode = source.imageRenderMode || "background",
   autoPreflight = false,
+  executeRequested = false,
   onProviderUnavailable,
   onCustomize,
   onReview,
@@ -40,6 +41,7 @@ export function ProductionImageGeneration({
   initialInstruction?: string;
   renderMode?: "background" | "template-proposal";
   autoPreflight?: boolean;
+  executeRequested?: boolean;
   onProviderUnavailable?: () => Promise<void>;
   onCustomize?: () => void;
   onReview?: () => void;
@@ -48,7 +50,7 @@ export function ProductionImageGeneration({
 }) {
   const proposal = renderMode === "template-proposal";
   const [refiningProposal,setRefiningProposal]=useState(false);
-  const autoAttempt=useRef(false),executing=useRef(false);
+  const autoAttempt=useRef(false),executing=useRef(false),explicitIntentConsumed=useRef(false);
   const canEdit = hasGeneratedBackground(source),
     enabled = realImagesEnabled(),
     key = "nxclip:ad-image-request:" + source.id;
@@ -192,6 +194,13 @@ export function ProductionImageGeneration({
       if (mounted.current && n === epoch.current) setActivity(null);
     }
   };
+  // In-memory intent comes only from the owner's Generate click in template setup.
+  // It is never persisted in the URL: refresh/reopen cannot start paid work.
+  useEffect(()=>{
+    if(executeRequested && proposal && enabled && valid && !busy && !requestId && !explicitIntentConsumed.current){
+      explicitIntentConsumed.current=true;void generate();
+    }
+  },[executeRequested,proposal,enabled,valid,busy,requestId,generate]);
   const status = async () => {
     if (!requestId || busy) return;
     const n = ++epoch.current;

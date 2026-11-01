@@ -11,7 +11,7 @@ type Node = {type: unknown; props: Record<string, unknown>; children: unknown[]}
 const source={id:'fixture-source',name:'Fixture',projectId:'fixture-scope',currentVersion:1,sceneGraph:{schemaVersion:'1.0',canvas:{width:1080,height:1350},layers:[]}};
 const validQuote=()=>({schemaVersion:'1.0',sourceHash:'a'.repeat(64),quoteHash:'b'.repeat(64),catalogId:'fixture',provider:'vertex',modelId:'fixture-model',estimatedCostUsd:null,pricingVersion:'usage-only',imageCount:1,inputScope:'editable-template-proposal',sourceTreatment:'reference-guided-proposal',referenceCount:1,costBasis:'usage-only',characterSelectionSupported:true,selectedCharacterIds:[]});
 function deferred<T>(){let resolve!:(v:T)=>void,reject!:(e:Error)=>void;const promise=new Promise<T>((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};}
-function harness(retained=false,onProviderUnavailable?:()=>Promise<void>){
+function harness(retained=false,onProviderUnavailable?:()=>Promise<void>,executeRequested=false){
  const text=readFileSync(process.cwd()+'/src/pages/AdStudio/production/ProductionImageGeneration.tsx','utf8');
  const tree=ts.createSourceFile('component.tsx',text,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  const declaration=tree.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='ProductionImageGeneration');assert.ok(declaration);
@@ -28,7 +28,7 @@ function harness(retained=false,onProviderUnavailable?:()=>Promise<void>){
   adImageApi:{quote:()=>{quotes++;return quote.promise;},execute:()=>{executions++;return generation.promise;}},
   crypto:{randomUUID:()=> 'fixture-request'},sessionStorage:{getItem:()=>retained?'retained-request':null,setItem:()=>{},removeItem:()=>{}},
  });
- const render=()=>{index=0;return component({source,assetUrls:{},renderMode:'template-proposal',initialInstruction:'Cinematic fixture',autoPreflight:true,onProviderUnavailable,onSaved:async()=>{}}) as Node;};
+ const render=()=>{index=0;return component({source,assetUrls:{},renderMode:'template-proposal',initialInstruction:'Cinematic fixture',autoPreflight:!executeRequested,executeRequested,onProviderUnavailable,onSaved:async()=>{}}) as Node;};
  const flush=()=>{const work=pending;pending=[];for(const i of work){const e=effects.get(i)!;e.cleanup?.();const result=e.setup();e.cleanup=typeof result==='function'?result as ()=>void:undefined;}};
  const replay=()=>{const entries=[...effects.values()];for(const e of entries)e.cleanup?.();for(const e of entries){const result=e.setup();e.cleanup=typeof result==='function'?result as ()=>void:undefined;}};
  return {render,flush,replay,unmount:()=>{for(const e of effects.values())e.cleanup?.();},quote,generation,get writes(){return writes;},get quotes(){return quotes;},get executions(){return executions;}};
@@ -66,4 +66,14 @@ test('provider unavailable before execution offers native fallback without spend
 });
 test('authorization and invalid input failures never fall back or execute',async()=>{
  for(const statusCode of [400,401,403,409,429]){let fallbacks=0;const h=harness(false,async()=>{fallbacks++;});h.render();h.flush();h.quote.reject(Object.assign(new Error('Blocked'),{statusCode}));await settle();assert.equal(fallbacks,0);assert.equal(h.executions,0);}
+});
+
+
+test('setup Generate intent completes one request without an intermediate confirmation page',async()=>{
+ const h=harness(false,undefined,true);h.render();h.flush();h.replay();assert.equal(h.quotes,1);assert.equal(h.executions,0);
+ h.quote.resolve(validQuote());await settle();assert.equal(h.executions,1);h.replay();assert.equal(h.executions,1);
+ h.generation.reject(Error('fixture outcome'));await settle();assert.match(content(h.render()),/retained|Check retained status/);
+});
+test('refresh with retained request cannot repeat the setup generation intent',()=>{
+ const h=harness(true,undefined,true);h.render();h.flush();h.replay();assert.equal(h.quotes,0);assert.equal(h.executions,0);
 });
