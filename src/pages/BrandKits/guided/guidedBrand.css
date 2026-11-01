@@ -666,3 +666,17 @@
 
 /* Preserve rounded clipping without creating a false scroll container for the focused preview. */
 .xp-root.bp-guided-root { overflow:clip; }
+
+/* Ready is a compact identity preview and a brand-scoped collection. */
+.bp-guided-root .bp-ready-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,440px);gap:20px;align-items:start}
+.bp-ready-brochure{border:1px solid #ffffff16;border-radius:12px;padding:16px;background:#15161b;display:grid;gap:12px}
+.bp-ready-brochure-cover{max-height:360px;overflow:hidden;pointer-events:none;border-radius:8px}
+.bp-ready-brochure-cover .bp-brochure{margin:0!important}
+.bp-guided-root .bp-ready-templates{grid-column:1/-1}
+.bp-ready-templates>header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+.bp-ready-templates h2{margin:0!important;font-size:20px!important}
+.bp-ready-template-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.bp-ready-template-grid>a{min-width:0;display:grid;gap:8px;padding:12px;border:1px solid #ffffff16;border-radius:10px;background:#101116;text-decoration:none}
+.bp-ready-template-grid strong{font-size:13px}.bp-ready-template-grid small{font-size:11px;color:#aaa6b3}
+@media(max-width:1000px){.bp-ready-template-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.bp-guided-root .bp-ready-layout{grid-template-columns:1fr}.bp-ready-templates>header{flex-wrap:wrap}.bp-ready-template-grid{grid-template-columns:1fr}}

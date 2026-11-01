@@ -74,6 +74,7 @@ type Props = {
   canvasBackground?: string;
   onCanvasBackground?: (hex: string) => void;
   previewMode?: boolean;
+  compactTransforms?: boolean;
 };
 
 function isTextLayer(layer: AdSceneLayer): layer is AdTextLayer {
@@ -91,6 +92,7 @@ export function AdStudioTypographyPanel({
   canvasBackground,
   onCanvasBackground,
   previewMode,
+  compactTransforms = false,
 }: Props) {
   if (previewMode) {
     return (
@@ -203,7 +205,7 @@ export function AdStudioTypographyPanel({
 
       {layer ? (
         <>
-          <CharacteristicSlider
+          {!compactTransforms && <CharacteristicSlider
             label="Opacity"
             value={Math.round((layer.opacity ?? 1) * 100)}
             display={`${Math.round((layer.opacity ?? 1) * 100)}%`}
@@ -212,9 +214,9 @@ export function AdStudioTypographyPanel({
             step={1}
             disabled={locked}
             onChange={(pct) => onChange({ opacity: pct / 100 })}
-          />
+          />}
 
-          {onAlign ? (
+          {onAlign && !compactTransforms ? (
             <div>
               <Label className="text-[10px] font-bold text-muted-foreground">
                 Align to canvas
@@ -238,7 +240,7 @@ export function AdStudioTypographyPanel({
             </div>
           ) : null}
 
-          <div className="grid grid-cols-2 gap-2">
+          {!compactTransforms && <div className="grid grid-cols-2 gap-2">
             {(
               [
                 ["X", "x", layer.x],
@@ -262,7 +264,7 @@ export function AdStudioTypographyPanel({
                 />
               </div>
             ))}
-          </div>
+          </div>}
         </>
       ) : null}
 

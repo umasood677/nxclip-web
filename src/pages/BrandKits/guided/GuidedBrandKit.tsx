@@ -1,3 +1,4 @@
+import {BrandKitBrochurePreview,BrandKitReadyCollection} from './BrandKitReadyCollection';
 import { toast } from "sonner";
 import { saveGuidedBrand } from "./saveGuidedBrand";
 import "../components/brandCharacters.css";
@@ -30,8 +31,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { ArrowLeft, Check, Save, Plus } from "lucide-react";
-import { isBrandTemplatesEnabled } from "../templates/brandTemplateModel";
+import { ArrowLeft, Check, Save } from "lucide-react";
 import { brandApi } from "../../../services/apiClient";
 import { Skeleton } from "../../../components/ui/skeleton";
 import { EmptyState } from "../../../components/common/EmptyState";
@@ -1064,14 +1064,7 @@ export function GuidedBrandKitWorkspace({
                   <button className="xp-secondary" onClick={() => go("assets")}>
                     Manage assets
                   </button>
-                  {kit && (
-                    <Link
-                      className="xp-primary"
-                      to={"/brands/" + kit.id + "/templates?tab=brand"}
-                    >
-                      Open Brand Templates →
-                    </Link>
-                  )}
+
 
                   <Link className="xp-primary" to="/create/ad">
                     Open Ad Studio →
@@ -1081,45 +1074,8 @@ export function GuidedBrandKitWorkspace({
                   <p className="bp-last-updated">Last Updated: <time dateTime={kit.updatedAt}>{new Date(kit.updatedAt).toLocaleString()}</time></p>
                 )}
               </section>
-              {kit && (
-                <section className="xp-panel bp-template-launch">
-                  <div>
-                    <span className="xp-kicker">
-                      NEXT / BRAND TEMPLATE STUDIO
-                    </span>
-                    <h2>A template collection made from your identity.</h2>
-                    <p>Design with AI, then review and save your collection.</p>
-                    {!isBrandTemplatesEnabled() && (
-                      <p role="status" className="xp-notice">
-                        Template generation controls are disabled in this local
-                        frontend. The Template Studio will explain the
-                        activation requirement.
-                      </p>
-                    )}
-                  </div>
-                  <Link
-                    className="xp-primary"
-                    to={`/brands/${encodeURIComponent(kit.id)}/templates?tab=brand&mode=ai`}
-                    onClick={(e) => {
-                      if (JSON.stringify(draft) !== saved.current) {
-                        e.preventDefault();
-                        setError(
-                          "Save your Brand Kit changes before opening Template Studio.",
-                        );
-                      }
-                    }}
-                  >
-                    <Plus size={16} aria-hidden />
-                    Create with AI
-                  </Link>
-                </section>
-              )}
-              {kit && (
-                <BrandKitBrochure
-                  kit={kit}
-                  dirty={JSON.stringify(draft) !== saved.current}
-                />
-              )}
+              {kit && <BrandKitBrochurePreview kit={kit} dirty={JSON.stringify(draft)!==saved.current}/>}
+              {kit && <BrandKitReadyCollection kit={kit} dirty={JSON.stringify(draft)!==saved.current}/>}
             </div>
           )}
         </fieldset>

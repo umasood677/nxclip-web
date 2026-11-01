@@ -1,3 +1,4 @@
+import {templateResponseId,unlistedDrafts,templateError} from './templateLibraryWorkflow';
 import { useCreativeAssetUrls } from "../../AdStudio/canvas/useCreativeAssetUrls";
 import { BrandTemplateScenePreview } from "./BrandTemplateScenePreview";
 import { toast } from "sonner";
@@ -113,7 +114,7 @@ export default function BrandTemplateLibrary() {
     return kit;
   }, [kit, brandId]);
   const brandUrls = useAuthenticatedBrandAssetUrls(assetKit);
-  const generatedUrls = useCreativeAssetUrls(items.flatMap(t=>t.provenance.sourceCreativeId?[t.provenance.sourceCreativeId]:[]));
+  const generatedUrls = useCreativeAssetUrls([...items.flatMap(t=>t.provenance.sourceCreativeId?[t.provenance.sourceCreativeId]:[]),...templateDrafts.map(d=>d.id)]);
   const urls = {...brandUrls,...generatedUrls};
   const {graph:draftPreview,loading:previewLoading,error:previewError,retry:retryPreview}=useBrandTemplateDraftPreview(brandId,selected,draft);
   const load = useCallback(async () => {
@@ -198,14 +199,24 @@ export default function BrandTemplateLibrary() {
     setMessage("");
     try {
       await work();
-    } catch {
-      setError(
-        "The request could not be completed. Reload to verify the saved state before retrying; review source permissions and blockers. Your current customization is retained.",
-      );
+    } catch (e) {
+      if ((e as {statusCode?:number})?.statusCode === 409 && !dirty) {
+        try { if(selected)upsert(await brandTemplateApi.get(brandId,selected.id));else setItems((await brandTemplateApi.list(brandId)).items); } catch { /* retain current edits */ }
+      }
+      setError(templateError(e));
     } finally {
       setBusy(false);running.current=false;
     }
   };
+  const reviewCard=(record:BrandTemplate,value:'reject'|'archive')=>void run(async()=>{
+    const result=await brandTemplateApi.action(brandId,record.id,record.revision,value);
+    templateResponseId(result,record.id);upsert(result);toast.success(value==='reject'?'Template rejected.':'Template archived.');
+  });
+  const discardDraft=(id:string)=>void run(async()=>{
+    if(!window.confirm('Discard this template draft?'))return;
+    await brandTemplateApi.discardDraft(brandId,id);
+    setTemplateDrafts(old=>old.filter(d=>d.id!==id));toast.success('Draft discarded.');
+  });
   const previewNative=(id:AdStudioTemplateId,chosen:string)=>void run(async()=>{
     if(!kit?.version)throw Error('Brand Kit required');
     const draft=await brandTemplateApi.createNativeSource(brandId,{templateId:id,format:chosen,expectedBrandVersion:kit.version});
@@ -242,7 +253,8 @@ export default function BrandTemplateLibrary() {
         value,
         value === "approve" && depictionReviewed,
       );
-      const fresh = await brandTemplateApi.get(brandId, result.id);
+      templateResponseId(result,selected.id,value === "duplicate");
+      const fresh = result;
       upsert(fresh);
       if (activeBrand.current !== brandId) return;
       if (value === "duplicate")
@@ -260,7 +272,7 @@ export default function BrandTemplateLibrary() {
         ...draft,
         expectedRevision: selected.revision,
       });
-      upsert(await brandTemplateApi.get(brandId, result.id));
+      templateResponseId(result,selected.id);upsert(result);
       setMessage(
         "Customization saved as a suggestion. Review and approval are required again.",
       );
@@ -413,19 +425,17 @@ export default function BrandTemplateLibrary() {
           >
             <ArrowLeft size={14} /> {kit.name}
           </Link>
-          <span>Brand Templates</span>
+          <Link to={base} onClick={e=>{if(dirty&&!window.confirm("Leave without saving template customization?"))e.preventDefault();}}>Brand Templates</Link>
         </nav>
         {!["ai","native"].includes(params.get("mode") || "") && <header className="xp-page-head">
           <div>
-            <span className="xp-kicker">
-              BRAND TEMPLATE STUDIO
-            </span>
+
             <h1><Palette size={26} aria-hidden="true" />
               {selected
                 ? "Review template"
                 : "Your brand. Every composition."}
             </h1>
-            <p>Design a collection. Make it unmistakably yours.</p>
+
           </div>
           <button className="xp-primary" onClick={() => go(base + "?tab=brand&mode=ai")}><Plus size={16} /> Create with AI</button>
         </header>}
@@ -622,9 +632,7 @@ export default function BrandTemplateLibrary() {
                 </div>
                 {selected.provenance.method==='native-template-engine' ? <button className="xp-secondary" disabled={busy || dirty} onClick={editNativeInCanvas}>Customize in Canvas →</button> : selected.provenance.sourceCreativeId && <button className="xp-secondary" onClick={()=>go(creativeEditorPath(selected.provenance.sourceCreativeId!))}>Customize in Canvas →</button>}
                 <button className="xp-primary" disabled={busy || dirty || !canReuseTemplate(selected)} onClick={()=>document.getElementById('template-project-selection')?.scrollIntoView({behavior:'smooth',block:'center'})}>Use Template in Ad Studio →</button>
-                <button className="xp-text-button" onClick={() => go(base)}>
-                  Back to brand library →
-                </button>
+
               </section>
             </div>
             {canReuseTemplate(selected) && reviewProject}
@@ -656,10 +664,10 @@ export default function BrandTemplateLibrary() {
                   setParams({ tab: "brand" });
                 }}
               >
-                My Brand Templates ({items.length})
+                My Brand Templates ({items.length + unlistedDrafts(items,templateDrafts).length})
               </button>
             </div>
-            {templateDrafts.length>0 && <details className="xp-panel bt-template-drafts"><summary>Template drafts &amp; proposals ({templateDrafts.length})</summary><div className="bt-draft-list">{templateDrafts.map(d=><div key={d.id} className="xp-actions"><strong>{d.name}</strong><button className="xp-secondary" onClick={()=>go(base+'?tab=brand&mode='+(d.templateContext?.draftKind || 'ai')+'&source='+encodeURIComponent(d.id))}>Resume template</button></div>)}</div></details>}
+
             <div className="xp-panel bt-toolbar">
               <div className="xp-actions">
                 <label className="xp-field">
@@ -725,7 +733,7 @@ export default function BrandTemplateLibrary() {
                 />
 
               </>
-            ) : !visible.length ? (
+            ) : !visible.length && !unlistedDrafts(items,templateDrafts,search).length ? (
               <EmptyState
                 title={
                   items.length
@@ -741,7 +749,12 @@ export default function BrandTemplateLibrary() {
                 onAction={() => go("/brands/" + brandId + "/guided?step=ready")}
               />
             ) : (
-              <div className="bt-gallery">
+              <div className="bt-gallery">{unlistedDrafts(items,templateDrafts,search).map(d=><article className="bt-card" key={'draft:'+d.id}>
+ <div className="bt-card-art"><BrandTemplateScenePreview graph={d.sceneGraph} assetUrls={urls} size="card" maxHeight={256}/></div>
+ <div className="xp-card-copy"><span className="xp-status">Draft · {d.templateContext?.draftKind==='native'?'Native':'AI proposal'}</span><h3>{d.name}</h3>
+ <div className="xp-actions"><button className="xp-secondary" onClick={()=>go(base+'?tab=brand&mode='+(d.templateContext?.draftKind||'ai')+'&source='+encodeURIComponent(d.id))}>Open draft</button>
+ <button className="xp-text-button" disabled={busy} onClick={()=>discardDraft(d.id)}><X size={14}/> Discard</button></div></div></article>)}
+
                 {visible.map((t) => (
                   <article className="bt-card" key={t.id}>
                     <div className="bt-card-art">
@@ -774,7 +787,7 @@ export default function BrandTemplateLibrary() {
                         }
                       >
                         Preview template →
-                      </button>
+                      </button><div className="xp-actions">{t.state==='suggested'&&<button className="xp-text-button" disabled={busy} onClick={()=>reviewCard(t,'reject')}><X size={14}/> Reject</button>}{t.state!=='archived'&&<button className="xp-text-button" disabled={busy} onClick={()=>reviewCard(t,'archive')}><Archive size={14}/> Archive</button>}</div>
                     </div>
                   </article>
                 ))}

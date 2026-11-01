@@ -48,10 +48,10 @@ test("saved campaign direction can prefill the editable instruction without auth
 test("a new template proposal hides the native starter and offers the preview action without generating",()=>{
  const html=renderToStaticMarkup(<ProductionImageGeneration source={source} renderMode="template-proposal" autoPreflight assetUrls={{}} initialInstruction="Cinematic product hero" onSaved={async()=>{}}/>);
  assert.match(html,/Your preview will appear here/);
- assert.match(html,/Generate template preview/);
+ assert.match(html,/Generate template/);
  assert.doesNotMatch(html,/Starting layout · not AI-generated/);
  assert.doesNotMatch(html,/ai-character-options/);
- assert.match(html,/disabled=""[^>]*>Generate template preview/);
+ assert.match(html,/disabled=""[^>]*>Generate template/);
 });
 test("a completed template proposal leads with the finished scene and existing Canvas action",()=>{
  const generated:WorkspaceCreative={...source,imageRenderMode:"template-proposal",sceneGraph:{...source.sceneGraph!,layers:[{id:"ai-background-result",type:"image",assetId:"artwork",x:0,y:0,width:1080,height:1350,zIndex:0},{id:"headline",type:"text",text:"Editable brand headline",x:100,y:100,width:700,height:100,zIndex:2}]}};

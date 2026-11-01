@@ -587,6 +587,7 @@ export default function AdStudioEditor() {
   const typographyPanel = (
     <AdStudioTypographyPanel
       layer={selected}
+      compactTransforms={!!templateDocument}
       previewMode={previewMode}
       onChange={(patch) => {
         if (!selectedLayerId) return;
@@ -604,7 +605,7 @@ export default function AdStudioEditor() {
 
   const templateControls = <><TemplateCanvasControls key={creativeId} graph={graph} brand={brandKit} selectedId={selectedLayerId} readOnly={previewMode} onSelect={setSelectedLayerId}
     onPatch={(id,patch)=>{if(previewMode || graph.layers.find(l=>l.id===id)?.locked)return;applyGraph(g=>updateLayer(g,id,patch));}}
-    onMove={liveMove} onResize={liveResize} onCommit={commitTransform} onCenter={id=>{if(previewMode)return;applyGraph(g=>safeCenter(g,id));}} onBackground={color=>{if(!previewMode)applyGraph(g=>setCanvasBackground(g,color));}}/><section className="tc-slider-typography" aria-label="Typography controls"><label className="tc-field">Text layer<select value={selected?.type === "text" ? selected.id : ""} onChange={e=>setSelectedLayerId(e.target.value)} disabled={previewMode}><option value="" disabled>Select a text layer</option>{graph.layers.filter(l=>l.type==="text").map(l=><option key={l.id} value={l.id}>{l.name || "Text layer"}</option>)}</select></label>{typographyPanel}</section></>;
+    onMove={liveMove} onResize={liveResize} onCommit={commitTransform} onCenter={id=>{if(previewMode)return;applyGraph(g=>safeCenter(g,id));}} onBackground={color=>{if(!previewMode)applyGraph(g=>setCanvasBackground(g,color));}}/><section className="tc-slider-typography" aria-label="Typography controls">{typographyPanel}</section></>;
   const brandPanel = (
     <BrandPanel
       snapshot={brandSnapshot}

@@ -16,3 +16,14 @@
 .nxclip-production .ai-proposal-result{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:24px;align-items:start}
 .nxclip-production .ai-proposal-pending{min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:12px;color:var(--xp-muted)}
 @media(max-width:900px){.nxclip-production .ai-proposal-result{grid-template-columns:minmax(0,1fr)}}
+
+.ai-generation-progress{display:grid;justify-items:center;gap:10px;padding:28px 16px;border:1px solid #d2b47e30;border-radius:12px;background:radial-gradient(ellipse at top,#d2b47e12,transparent 75%);text-align:center}
+.ai-generation-progress strong{font-size:14px}.ai-generation-progress>span{font-size:12px;color:#aaa6b3}
+.ai-generation-orbit{position:relative;display:grid;place-items:center;width:64px;height:64px;border:1px solid #d2b47e40;border-radius:50%;color:#d2b47e;margin-bottom:8px}
+.ai-generation-orbit>svg{animation:ai-preview-breathe 2s ease-in-out infinite}
+.ai-generation-orbit i{position:absolute;inset:-4px;border:2px solid transparent;border-top-color:#d2b47e;border-radius:50%;animation:ai-preview-orbit 1.8s linear infinite}
+.ai-generation-orbit i:nth-of-type(2){inset:4px;animation-direction:reverse;animation-duration:2.8s;opacity:.4}
+.ai-generation-orbit i:nth-of-type(3){display:none}
+@keyframes ai-preview-orbit{to{transform:rotate(360deg)}}
+@keyframes ai-preview-breathe{50%{opacity:.45;transform:scale(.88)}}
+@media(prefers-reduced-motion:reduce){.ai-generation-orbit i,.ai-generation-orbit>svg{animation:none}}

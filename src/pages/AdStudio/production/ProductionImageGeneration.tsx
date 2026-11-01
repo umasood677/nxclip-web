@@ -4,7 +4,6 @@ import type { BrandKitSummary } from "../../BrandKits/lib/brandKitTypes";
 import React, { useEffect, useRef, useState } from "react";
 import { adImageApi } from "../../../services/apiClient";
 import { BrandTemplateScenePreview as ResponsiveScenePreview } from "../../BrandKits/templates/BrandTemplateScenePreview";
-import { Skeleton } from "../../../components/ui/skeleton";
 import type { WorkspaceCreative } from "../lib/projectWorkspace";
 import {
   assertCharacterQuote,
@@ -28,6 +27,7 @@ export function ProductionImageGeneration({
   initialInstruction = "",
   renderMode = source.imageRenderMode || "background",
   autoPreflight = false,
+  onProviderUnavailable,
   onCustomize,
   onReview,
   compact = false,
@@ -40,6 +40,7 @@ export function ProductionImageGeneration({
   initialInstruction?: string;
   renderMode?: "background" | "template-proposal";
   autoPreflight?: boolean;
+  onProviderUnavailable?: () => Promise<void>;
   onCustomize?: () => void;
   onReview?: () => void;
   compact?: boolean;
@@ -47,7 +48,7 @@ export function ProductionImageGeneration({
 }) {
   const proposal = renderMode === "template-proposal";
   const [refiningProposal,setRefiningProposal]=useState(false);
-  const autoAttempt=useRef(false);
+  const autoAttempt=useRef(false),executing=useRef(false);
   const canEdit = hasGeneratedBackground(source),
     enabled = realImagesEnabled(),
     key = "nxclip:ad-image-request:" + source.id;
@@ -130,6 +131,7 @@ export function ProductionImageGeneration({
         setConsent(false);
       }
     } catch (e) {
+      if (proposal && onProviderUnavailable && [502,503].includes(Number((e as {statusCode?:number})?.statusCode))) { await onProviderUnavailable(); return; }
       if (mounted.current && n === epoch.current)
         setError(
           e instanceof Error ? e.message : "Execution preflight unavailable",
@@ -142,7 +144,15 @@ export function ProductionImageGeneration({
     if(autoPreflight && enabled && valid && !quote && !requestId && !autoAttempt.current){autoAttempt.current=true;void estimate();}
   },[autoPreflight,enabled,valid,quote,requestId,estimate]);
   const generate = async () => {
-    if (!enabled || !quote || !consent || busy || requestId || !valid) return;
+    if (!enabled || (!proposal && (!quote || !consent)) || busy || requestId || !valid || executing.current) return;
+    executing.current=true;
+    let executionQuote=quote;
+    if (!executionQuote) {
+      setActivity('readiness');setError('');
+      try { executionQuote=validateImageQuote(await adImageApi.quote(source.id,input));assertCharacterQuote(executionQuote,selectedCharacterIds);assertImageRenderMode(executionQuote,renderMode);if(compact && proposal)assertSingleTemplateReview(executionQuote); }
+      catch(e){executing.current=false;if(mounted.current){setActivity(null);if(proposal && onProviderUnavailable && [502,503].includes(Number((e as {statusCode?:number})?.statusCode))){await onProviderUnavailable();return;}setError(e instanceof Error?e.message:'Could not prepare this generation.');}return;}
+    }
+    if (!mounted.current){executing.current=false;return;}
     const n = ++epoch.current,
       id = crypto.randomUUID();
     setActivity("generation");
@@ -158,7 +168,7 @@ export function ProductionImageGeneration({
         await adImageApi.execute(source.id, {
           ...input,
           requestId: id,
-          approvedQuoteHash: validateImageQuote(quote).quoteHash,
+          approvedQuoteHash: validateImageQuote(executionQuote).quoteHash,
           allowPaidProvider: true,
         }),
         source,
@@ -178,6 +188,7 @@ export function ProductionImageGeneration({
             : "Outcome uncertain. Check retained status; do not resubmit paid work.",
         );
     } finally {
+      executing.current=false;
       if (mounted.current && n === epoch.current) setActivity(null);
     }
   };
@@ -306,7 +317,7 @@ export function ProductionImageGeneration({
           />
         </label>
         </details>
-        {!quote && <button
+        {!proposal && !quote && <button
           className="xp-secondary"
           disabled={!enabled || busy || !!requestId || !valid}
           onClick={() => void estimate()}
@@ -315,9 +326,8 @@ export function ProductionImageGeneration({
         </button>
         }
         {!instruction.trim() && <small>Enter creative direction to continue.</small>}
-        {quote && (
+        {quote && !proposal && (
           <>
-            <details className="ai-request-details"><summary>Google · {quote.modelId}</summary><p>One image using {quote.referenceCount} approved reference(s). Uses Google credits; no automatic retries.</p><p>{proposal?"Check the product depiction before approval.":"Original product and text remain separate layers."}</p></details>
             <label className="xp-check">
               <input
                 type="checkbox"
@@ -332,10 +342,10 @@ export function ProductionImageGeneration({
         )}
             <button
               className="xp-primary"
-              disabled={!enabled || busy || !!requestId || !consent || !quote || !valid}
+              disabled={!enabled || busy || !!requestId || (!proposal && (!consent || !quote)) || !valid}
               onClick={() => void generate()}
             >
-              {activity === "generation" ? "Generating…" : proposal ? "Generate template preview" : "Generate AI advertisement"}
+              {activity === "generation" ? "Generating…" : proposal ? "Generate template" : "Generate AI advertisement"}
             </button>
         {!proposal && <details className="ai-character-options">
           <summary>Models &amp; Mascots <span>{selectedCharacterIds.length ? selectedCharacterIds.length + " selected" : "Optional"}</span></summary>
@@ -424,16 +434,11 @@ export function ProductionImageGeneration({
           </p>
         </fieldset>
         </details>}
-        {busy && (
-          <div role="status">
-            <Skeleton className="h-16 w-full" />
-            {activity === "readiness"
-              ? "Checking provider readiness. No generation has started."
-              : activity === "generation"
-                ? "Waiting for the provider response. Leaving does not cancel paid work."
-                : "Checking the saved request and its output."}
-          </div>
-        )}
+        {busy && <div className="ai-generation-progress" role="status" aria-live="polite">
+          <div className="ai-generation-orbit" aria-hidden="true"><SparklesIcon/><i/><i/><i/></div>
+          <strong>{activity==='generation'?'Creating your template preview…':activity==='readiness'?'Preparing your design…':'Loading your saved result…'}</strong>
+          <span>{activity==='generation'?'Your design is taking shape. You can keep this page open.':'Just a moment.'}</span>
+        </div>}
         {requestId && !busy && (
           <>
             <button

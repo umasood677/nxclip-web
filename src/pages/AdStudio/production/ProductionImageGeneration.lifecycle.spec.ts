@@ -11,7 +11,7 @@ type Node = {type: unknown; props: Record<string, unknown>; children: unknown[]}
 const source={id:'fixture-source',name:'Fixture',projectId:'fixture-scope',currentVersion:1,sceneGraph:{schemaVersion:'1.0',canvas:{width:1080,height:1350},layers:[]}};
 const validQuote=()=>({schemaVersion:'1.0',sourceHash:'a'.repeat(64),quoteHash:'b'.repeat(64),catalogId:'fixture',provider:'vertex',modelId:'fixture-model',estimatedCostUsd:null,pricingVersion:'usage-only',imageCount:1,inputScope:'editable-template-proposal',sourceTreatment:'reference-guided-proposal',referenceCount:1,costBasis:'usage-only',characterSelectionSupported:true,selectedCharacterIds:[]});
 function deferred<T>(){let resolve!:(v:T)=>void,reject!:(e:Error)=>void;const promise=new Promise<T>((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};}
-function harness(retained=false){
+function harness(retained=false,onProviderUnavailable?:()=>Promise<void>){
  const text=readFileSync(process.cwd()+'/src/pages/AdStudio/production/ProductionImageGeneration.tsx','utf8');
  const tree=ts.createSourceFile('component.tsx',text,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  const declaration=tree.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='ProductionImageGeneration');assert.ok(declaration);
@@ -28,7 +28,7 @@ function harness(retained=false){
   adImageApi:{quote:()=>{quotes++;return quote.promise;},execute:()=>{executions++;return generation.promise;}},
   crypto:{randomUUID:()=> 'fixture-request'},sessionStorage:{getItem:()=>retained?'retained-request':null,setItem:()=>{},removeItem:()=>{}},
  });
- const render=()=>{index=0;return component({source,assetUrls:{},renderMode:'template-proposal',initialInstruction:'Cinematic fixture',autoPreflight:true,onSaved:async()=>{}}) as Node;};
+ const render=()=>{index=0;return component({source,assetUrls:{},renderMode:'template-proposal',initialInstruction:'Cinematic fixture',autoPreflight:true,onProviderUnavailable,onSaved:async()=>{}}) as Node;};
  const flush=()=>{const work=pending;pending=[];for(const i of work){const e=effects.get(i)!;e.cleanup?.();const result=e.setup();e.cleanup=typeof result==='function'?result as ()=>void:undefined;}};
  const replay=()=>{const entries=[...effects.values()];for(const e of entries)e.cleanup?.();for(const e of entries){const result=e.setup();e.cleanup=typeof result==='function'?result as ()=>void:undefined;}};
  return {render,flush,replay,unmount:()=>{for(const e of effects.values())e.cleanup?.();},quote,generation,get writes(){return writes;},get quotes(){return quotes;},get executions(){return executions;}};
@@ -38,9 +38,9 @@ const content=(value:unknown):string=>Array.isArray(value)?value.map(content).jo
 const settle=async()=>{for(let i=0;i<5;i++)await Promise.resolve();};
 test('successful quote survives StrictMode replay, clears readiness and never starts paid work',async()=>{
  const h=harness();h.render();h.flush();h.replay();assert.equal(h.quotes,1);
- const waiting=h.render();assert.match(content(waiting),/Checking readiness/);assert.match(content(waiting),/No generation has started/);assert.doesNotMatch(content(waiting),/Generating…/);
- h.quote.resolve(validQuote());await settle();const ready=h.render();assert.doesNotMatch(content(ready),/Checking readiness/);assert.match(content(ready),/fixture-model/);assert.match(content(ready),/I approve one Google request/);assert.equal(h.executions,0);
- const generate=flatten(ready).find(n=>n.type==='button'&&content(n)==='Generate template preview');assert.equal(generate?.props.disabled,true);
+ const waiting=h.render();assert.match(content(waiting),/Preparing your design/);assert.doesNotMatch(content(waiting),/Creating your template preview/);
+ h.quote.resolve(validQuote());await settle();const ready=h.render();assert.doesNotMatch(content(ready),/Checking readiness/);assert.doesNotMatch(content(ready),/fixture-model|Check AI generation readiness/);assert.doesNotMatch(content(ready),/I approve one Google request/);assert.equal(h.executions,0);
+ const generate=flatten(ready).find(n=>n.type==='button'&&content(n)==='Generate template');assert.equal(generate?.props.disabled,false);
 });
 test('failed quote after replay clears readiness and presents an actionable error without executing',async()=>{
  const h=harness();h.render();h.flush();h.replay();h.quote.reject(Error('Readiness unavailable'));await settle();const view=h.render();assert.match(content(view),/Readiness unavailable/);assert.doesNotMatch(content(view),/Checking readiness|Generating…/);assert.equal(h.quotes,1);assert.equal(h.executions,0);
@@ -48,12 +48,22 @@ test('failed quote after replay clears readiness and presents an actionable erro
 test('real unmount discards a late response and performs no component state writes',async()=>{
  const h=harness();h.render();h.flush();h.unmount();const before=h.writes;h.quote.resolve(validQuote());await settle();assert.equal(h.writes,before);assert.equal(h.executions,0);
 });
-test('only explicit consent and Generate submit one mocked execution; replay never retries it',async()=>{
+test('one deliberate Generate click submits one mocked execution; replay never retries it',async()=>{
  const h=harness();h.render();h.flush();h.replay();h.quote.resolve(validQuote());await settle();let view=h.render();
- const consent=flatten(view).find(n=>n.type==='input'&&n.props.type==='checkbox');assert.ok(consent);(consent.props.onChange as (e:unknown)=>void)({target:{checked:true}});
- view=h.render();const generate=flatten(view).find(n=>n.type==='button'&&content(n)==='Generate template preview');assert.equal(generate?.props.disabled,false);(generate!.props.onClick as ()=>void)();assert.equal(h.executions,1);
- h.replay();assert.equal(h.executions,1);assert.match(content(h.render()),/Generating…/);h.generation.reject(Error('Fixture uncertain outcome'));await settle();assert.match(content(h.render()),/retained|Check retained status/);assert.equal(h.executions,1);
+ assert.equal(flatten(view).some(n=>n.type==='input'&&n.props.type==='checkbox'),false);
+ view=h.render();const generate=flatten(view).find(n=>n.type==='button'&&content(n)==='Generate template');assert.equal(generate?.props.disabled,false);(generate!.props.onClick as ()=>void)();(generate!.props.onClick as ()=>void)();assert.equal(h.executions,1);
+ h.replay();assert.equal(h.executions,1);assert.match(content(h.render()),/Creating your template preview/);h.generation.reject(Error('Fixture uncertain outcome'));await settle();assert.match(content(h.render()),/retained|Check retained status/);assert.equal(h.executions,1);
 });
 test('retained request blocks automatic preflight and any new execution',()=>{
  const h=harness(true);h.render();h.flush();h.replay();assert.equal(h.quotes,0);assert.equal(h.executions,0);assert.match(content(h.render()),/previous request is retained/);
+});
+
+
+test('provider unavailable before execution offers native fallback without spending or retrying',async()=>{
+ let fallbacks=0;const h=harness(false,async()=>{fallbacks++;});h.render();h.flush();
+ const error=Object.assign(new Error('Provider unavailable'),{statusCode:503});h.quote.reject(error);await settle();
+ assert.equal(fallbacks,1);assert.equal(h.executions,0);assert.equal(h.quotes,1);
+});
+test('authorization and invalid input failures never fall back or execute',async()=>{
+ for(const statusCode of [400,401,403,409,429]){let fallbacks=0;const h=harness(false,async()=>{fallbacks++;});h.render();h.flush();h.quote.reject(Object.assign(new Error('Blocked'),{statusCode}));await settle();assert.equal(fallbacks,0);assert.equal(h.executions,0);}
 });

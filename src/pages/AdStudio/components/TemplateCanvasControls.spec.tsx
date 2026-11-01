@@ -100,3 +100,10 @@ test('inline icon handlers target their own layer without changing selection; lo
  const readonly=nodes(component({...props,readOnly:true})).filter(n=>n.props.className==='tc-layer-icon');
  assert.ok(readonly.length);assert.ok(readonly.every(n=>n.props.disabled===true));
 });
+
+test('template inspector uses range sliders for opacity and rotation and omits manual transforms',()=>{
+ const html=renderToStaticMarkup(<TemplateCanvasControls graph={graph} selectedId='product' readOnly={false} {...callbacks}/>);
+ assert.match(html,/Opacity %/);assert.match(html,/Rotation °/);assert.doesNotMatch(html,/type="number"/);
+ const panel=renderToStaticMarkup(<AdStudioTypographyPanel layer={graph.layers[1]!} compactTransforms onChange={()=>{}} onAlign={()=>{}}/>);
+ assert.doesNotMatch(panel,/Align to canvas|type="number"/);assert.match(panel,/Characteristics/);
+});

@@ -73,3 +73,13 @@
 .bt-root .ai-generation-controls details{font-size:12px;color:var(--xp-muted);margin:0}.bt-root .ai-generation-controls summary{cursor:pointer;padding:8px 0;color:var(--xp-text)}
 .bt-root .bt-review .xp-panel{padding:24px}.bt-root .bt-review fieldset{gap:14px}.bt-root .bt-review .xp-field{margin:0;gap:6px}.bt-root .bt-review h2{font-size:20px;margin:0 0 18px}.bt-root .bt-review textarea{min-height:80px}
 @media(max-width:700px){.bt-root .bt-setup-fields{grid-template-columns:1fr}.bt-root .bt-ai-setup,.bt-root .bt-review .xp-panel{padding:18px}.bt-root .bt-ai-setup .xp-primary{width:100%}}
+
+/* One compact page header and one collection for all review states. */
+.bt-root .xp-main{gap:20px!important;padding-top:22px!important}
+.bt-root .xp-breadcrumb{margin:0!important;letter-spacing:.04em!important;display:flex;align-items:center;gap:10px;font-size:12px}
+.bt-root .xp-page-head{margin:0!important;padding:0!important;min-height:0!important;align-items:center}
+.bt-root .xp-page-head h1{font-size:28px!important;margin:0!important;line-height:1.25}
+.bt-root .bt-toolbar{padding:16px!important;margin:0!important}
+.bt-root .bt-card .xp-card-copy{padding:16px;gap:10px}
+.bt-root .bt-card .xp-card-copy p{margin:0!important}
+.bt-root .bt-ai-workspace header:empty{display:none}
