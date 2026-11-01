@@ -94,6 +94,7 @@ export default function BrandTemplateLibrary() {
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const setMessage = (message: string) => { if (message) toast.success(message); };
+  const [depictionReviewed,setDepictionReviewed]=useState(false);
   const [search, setSearch] = useState(""),
     [archived, setArchived] = useState(false),
     [format, setFormat] = useState("portrait_1080x1350"),
@@ -133,6 +134,7 @@ export default function BrandTemplateLibrary() {
         brandTemplateApi.list(brandId),
         brandTemplateApi.listDrafts(brandId).catch(()=>({items:[]})),
       ]);
+      if(templateId && !result.items.some(t=>t.id===templateId)) result.items.push(await brandTemplateApi.get(brandId,templateId));
       if (request !== requestVersion.current) return;
       if (
         brand.id !== brandId ||
@@ -149,7 +151,7 @@ export default function BrandTemplateLibrary() {
     } finally {
       setLoading(false);
     }
-  }, [brandId, enabled]);
+  }, [brandId, enabled, templateId]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -160,6 +162,7 @@ export default function BrandTemplateLibrary() {
   },[selected?.id,selected?.saved,selected?.revision]);
   useEffect(() => {
     setDraft(selected ? draftFor(selected) : null);
+    setDepictionReviewed(false);
     setProjectId("");
     setMessage("");
   }, [selected]);
@@ -237,6 +240,7 @@ export default function BrandTemplateLibrary() {
         selected.id,
         selected.revision,
         value,
+        value === "approve" && depictionReviewed,
       );
       const fresh = await brandTemplateApi.get(brandId, result.id);
       upsert(fresh);
@@ -411,20 +415,20 @@ export default function BrandTemplateLibrary() {
           </Link>
           <span>Brand Templates</span>
         </nav>
-        <header className="xp-page-head">
+        {!["ai","native"].includes(params.get("mode") || "") && <header className="xp-page-head">
           <div>
             <span className="xp-kicker">
               BRAND TEMPLATE STUDIO
             </span>
             <h1><Palette size={26} aria-hidden="true" />
               {selected
-                ? "Customize your template"
+                ? "Review template"
                 : "Your brand. Every composition."}
             </h1>
             <p>Design a collection. Make it unmistakably yours.</p>
           </div>
           <button className="xp-primary" onClick={() => go(base + "?tab=brand&mode=ai")}><Plus size={16} /> Create with AI</button>
-        </header>
+        </header>}
         {error && (
           <div className="xp-notice" role="alert">
             {error}
@@ -448,7 +452,7 @@ export default function BrandTemplateLibrary() {
           />
         ) : selected && draft ? (
           <>
-            <div className="xp-split">
+            <div className="xp-split bt-review">
               <section className="xp-panel">
                 {previewLoading ? <Skeleton className="h-96 w-full"/> : <BrandTemplateScenePreview
                   maxHeight={560}
@@ -475,7 +479,7 @@ export default function BrandTemplateLibrary() {
                 ))}
               </section>
               <section className="xp-panel">
-                <h2>{selected.name}</h2>
+                <h2>Template details</h2>
 
                 <fieldset
                   disabled={busy || selected.state === "archived"}
@@ -570,6 +574,7 @@ export default function BrandTemplateLibrary() {
                     Save customization
                   </button>
                 </fieldset>
+                {selected.provenance.renderMode==="template-proposal" && !selected.provenance.productDepictionReviewed && <label className="xp-check"><input type="checkbox" checked={depictionReviewed} onChange={e=>setDepictionReviewed(e.target.checked)}/>I reviewed the product, packaging and brand copy.</label>}
                 <div className="xp-actions">
                   {(
                     [
@@ -595,7 +600,7 @@ export default function BrandTemplateLibrary() {
                           busy ||
                           dirty ||
                           (a === "save" && selected.state !== "approved") ||
-                          (a === "approve" && selected.blockers.length > 0)
+                          (a === "approve" && (selected.blockers.length > 0 || (selected.provenance.renderMode === "template-proposal" && !selected.provenance.productDepictionReviewed && !depictionReviewed)))
                         }
                         key={a}
                         onClick={() => action(a)}
@@ -615,7 +620,7 @@ export default function BrandTemplateLibrary() {
                       </button>
                     ))}
                 </div>
-                {selected.provenance.method==='native-template-engine' ? <button className="xp-secondary" disabled={busy || dirty} onClick={editNativeInCanvas}>Customize in Canvas →</button> : selected.provenance.sourceCreativeId && <button className="xp-secondary" onClick={()=>go(base+'?tab=brand&mode=ai&source='+encodeURIComponent(selected.provenance.sourceCreativeId!))}>Edit source proposal →</button>}
+                {selected.provenance.method==='native-template-engine' ? <button className="xp-secondary" disabled={busy || dirty} onClick={editNativeInCanvas}>Customize in Canvas →</button> : selected.provenance.sourceCreativeId && <button className="xp-secondary" onClick={()=>go(creativeEditorPath(selected.provenance.sourceCreativeId!))}>Customize in Canvas →</button>}
                 <button className="xp-primary" disabled={busy || dirty || !canReuseTemplate(selected)} onClick={()=>document.getElementById('template-project-selection')?.scrollIntoView({behavior:'smooth',block:'center'})}>Use Template in Ad Studio →</button>
                 <button className="xp-text-button" onClick={() => go(base)}>
                   Back to brand library →

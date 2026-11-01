@@ -18,7 +18,7 @@ test("AI action and direction remain visible before optional model controls", ()
   assert.ok(html.indexOf("Creative direction") < html.indexOf("Check AI generation readiness"));
   assert.ok(html.indexOf("Generate AI advertisement") < html.indexOf('<details class="ai-character-options"'));
   assert.match(html, /<details class="ai-character-options">/);
-  assert.doesNotMatch(html, /<details[^>]*\bopen/);
+  assert.doesNotMatch(html, /<details class="ai-character-options"[^>]*\bopen/);
   assert.match(html, /disabled=""[^>]*>Generate AI advertisement/);
   assert.match(html, /Enter creative direction to continue/);
 });
@@ -47,7 +47,7 @@ test("saved campaign direction can prefill the editable instruction without auth
 
 test("a new template proposal hides the native starter and offers the preview action without generating",()=>{
  const html=renderToStaticMarkup(<ProductionImageGeneration source={source} renderMode="template-proposal" autoPreflight assetUrls={{}} initialInstruction="Cinematic product hero" onSaved={async()=>{}}/>);
- assert.match(html,/Your finished design will appear here/);
+ assert.match(html,/Your preview will appear here/);
  assert.match(html,/Generate template preview/);
  assert.doesNotMatch(html,/Starting layout · not AI-generated/);
  assert.doesNotMatch(html,/ai-character-options/);
@@ -57,4 +57,11 @@ test("a completed template proposal leads with the finished scene and existing C
  const generated:WorkspaceCreative={...source,imageRenderMode:"template-proposal",sceneGraph:{...source.sceneGraph!,layers:[{id:"ai-background-result",type:"image",assetId:"artwork",x:0,y:0,width:1080,height:1350,zIndex:0},{id:"headline",type:"text",text:"Editable brand headline",x:100,y:100,width:700,height:100,zIndex:2}]}};
  const html=renderToStaticMarkup(<ProductionImageGeneration source={generated} assetUrls={{}} onCustomize={()=>{}} onSaved={async()=>{}}/>);
  assert.match(html,/Finished template proposal/);assert.match(html,/Customize in Canvas/);assert.match(html,/Editable brand headline/);assert.match(html,/one image layer/);assert.match(html,/not verified product inventory/);assert.doesNotMatch(html,/Check AI generation readiness/);
+});
+
+test('compact template generation collapses technical detail and has one explicit review destination',()=>{
+ const generated:WorkspaceCreative={...source,imageRenderMode:'template-proposal',sceneGraph:{...source.sceneGraph!,layers:[{id:'ai-background-result',type:'image',assetId:'artwork',x:0,y:0,width:1080,height:1350,zIndex:0}]}};
+ const html=renderToStaticMarkup(<ProductionImageGeneration source={generated} compact assetUrls={{}} onReview={()=>{}} onCustomize={()=>{}} onSaved={async()=>{}}/>);
+ assert.equal((html.match(/Review template/g)||[]).length,1);assert.match(html,/About this artwork/);assert.doesNotMatch(html,/See the design. Make it yours.|I reviewed the product/);
+ const entry=renderToStaticMarkup(<ProductionImageGeneration source={source} compact assetUrls={{}} onSaved={async()=>{}}/>);assert.doesNotMatch(entry,/<details[^>]*open/);
 });

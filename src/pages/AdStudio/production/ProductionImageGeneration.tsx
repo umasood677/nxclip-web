@@ -9,6 +9,7 @@ import type { WorkspaceCreative } from "../lib/projectWorkspace";
 import {
   assertCharacterQuote,
   assertImageRenderMode,
+  assertSingleTemplateReview,
   savedCharacterSelection,
   toggleAdCharacter,
   hasGeneratedBackground,
@@ -28,6 +29,8 @@ export function ProductionImageGeneration({
   renderMode = source.imageRenderMode || "background",
   autoPreflight = false,
   onCustomize,
+  onReview,
+  compact = false,
   onSaved,
 }: {
   source: WorkspaceCreative;
@@ -38,6 +41,8 @@ export function ProductionImageGeneration({
   renderMode?: "background" | "template-proposal";
   autoPreflight?: boolean;
   onCustomize?: () => void;
+  onReview?: () => void;
+  compact?: boolean;
   onSaved: (saved: WorkspaceCreative) => Promise<void>;
 }) {
   const proposal = renderMode === "template-proposal";
@@ -119,6 +124,7 @@ export function ProductionImageGeneration({
       const q = validateImageQuote(await adImageApi.quote(source.id, input));
       assertCharacterQuote(q, selectedCharacterIds);
       assertImageRenderMode(q,renderMode);
+      if(compact && proposal)assertSingleTemplateReview(q);
       if (mounted.current && n === epoch.current) {
         setQuote(q);
         setConsent(false);
@@ -160,7 +166,7 @@ export function ProductionImageGeneration({
       if (proposal && saved.imageRenderMode !== "template-proposal")throw Error("The saved result is not a finished-template proposal. Check retained status before retrying.");
       if (mounted.current && n === epoch.current) {
         setMessage(
-          "AI background saved in a new editable creative; original preserved.",
+          proposal ? "Template preview saved." : "AI background saved in a new editable creative; original preserved.",
         );
         await onSaved(saved);
       }
@@ -228,13 +234,13 @@ export function ProductionImageGeneration({
   if(proposal && canEdit && !refiningProposal)return (
     <section className="ai-proposal-result" aria-label="Finished template proposal">
       <div className="xp-panel ai-generation-preview"><ResponsiveScenePreview graph={source.sceneGraph} assetUrls={assetUrls} size="hero" maxHeight={680}/></div>
-      <aside className="xp-panel ai-generation-controls"><span className="xp-kicker">YOUR TEMPLATE PROPOSAL</span><h2>See the design. Make it yours.</h2><p>Your brand typography, headline and logo are separate editable layers. The AI artwork is one image layer; original product photos are retained as hidden source layers in Canvas.</p><p className="xp-notice">Review the illustrated product and packaging before use. This is not verified product inventory.</p>{onCustomize && <button className="xp-primary" onClick={onCustomize}>Customize in Canvas →</button>}<button className="xp-secondary" onClick={()=>{setOperation("refine");change();setRefiningProposal(true);}}>Refine this design</button></aside>
+      <aside className="xp-panel ai-generation-controls"><h2>Your template preview</h2>{onReview && <button className="xp-primary" onClick={onReview}>Review template →</button>}{onCustomize && <button className="xp-secondary" onClick={onCustomize}>Customize in Canvas →</button>}<button className="xp-text-button" onClick={()=>{setOperation("refine");change();setRefiningProposal(true);}}>Refine this design</button><details><summary>About this artwork</summary><p>AI artwork is one image layer. Product depiction is not verified product inventory; review it before approval. Original photos remain available in Canvas.</p></details></aside>
     </section>
   );
   return (
     <div className="xp-split ai-generation-workspace">
       <section className="xp-panel ai-generation-preview">
-        {proposal && !canEdit ? <div className="ai-proposal-pending"><SparklesIcon/><h3>Your finished design will appear here</h3><p>Generate a visual proposal first, then customize it in Canvas.</p></div> : <ResponsiveScenePreview
+        {proposal && !canEdit ? <div className="ai-proposal-pending"><SparklesIcon/><h3>Your preview will appear here</h3></div> : <ResponsiveScenePreview
           graph={source.sceneGraph}
           assetUrls={assetUrls}
           size="hero"
@@ -278,14 +284,14 @@ export function ProductionImageGeneration({
               Natural-language refinement
             </option>
           </select>
-        </label> : <div className="ai-operation-label"><strong>{proposal ? "Finished template design" : "New AI background"}</strong><p>Variations and refinement become available after generation.</p></div>}
+        </label> : <div className="ai-operation-label"><strong>{proposal ? "Finished template design" : "New AI background"}</strong>{!compact && <p>Variations and refinement become available after generation.</p>}</div>}
         {!!requestId && <p role="status">A previous request is retained. Check its status below before starting another.</p>}
         {!canEdit && !proposal && (
           <p>
             Describe your scene, check readiness, then approve one generation.
           </p>
         )}
-        <label className="xp-field">
+        <details open={!compact}><summary>Edit creative direction</summary><label className="xp-field">
           Creative direction
           <textarea
             rows={4}
@@ -299,34 +305,19 @@ export function ProductionImageGeneration({
             placeholder="Describe the scene and the changes you want. Text and logos remain editable layers."
           />
         </label>
-        <button
+        </details>
+        {!quote && <button
           className="xp-secondary"
           disabled={!enabled || busy || !!requestId || !valid}
           onClick={() => void estimate()}
         >
           {activity === "readiness" ? "Checking readiness…" : "Check AI generation readiness"}
         </button>
+        }
         {!instruction.trim() && <small>Enter creative direction to continue.</small>}
         {quote && (
           <>
-            <dl className="xp-spec">
-              <dt>Provider / exact model</dt>
-              <dd>
-                {quote.provider} / {quote.modelId}
-              </dd>
-              <dt>Scope</dt>
-              <dd>
-                {proposal ? "Finished product artwork with editable brand layers" : "AI background plate"}; {quote.referenceCount} approved reference(s)
-              </dd>
-            </dl>
-            <p>
-              Uses Google credits. No automatic retries or model fallback. Review results before use.
-            </p>
-            <p className="xp-notice">
-              {proposal ? "The approved product reference is sent to Google for an illustrative design proposal. Product depiction requires your review; exact original pixels are retained separately in Canvas." : (quote.productLayerCount ?? 0) > 0
-                ? `${quote.productLayerCount} original product photo(s) protected; backgrounds retained.`
-                : "Background only. Add a product photo in Canvas for a product advertisement."}
-            </p>
+            <details className="ai-request-details"><summary>Google · {quote.modelId}</summary><p>One image using {quote.referenceCount} approved reference(s). Uses Google credits; no automatic retries.</p><p>{proposal?"Check the product depiction before approval.":"Original product and text remain separate layers."}</p></details>
             <label className="xp-check">
               <input
                 type="checkbox"
@@ -334,7 +325,7 @@ export function ProductionImageGeneration({
                 disabled={busy || !!requestId}
                 onChange={(e) => setConsent(e.target.checked)}
               />
-              {proposal ? "I approve one Google request using my approved product reference to create an illustrative template proposal." : "I approve one owner-UAT provider request and its selected background references."}
+              {proposal ? "I approve one Google request." : "I approve one owner-UAT provider request and its selected background references."}
             </label>
 
           </>
@@ -443,7 +434,7 @@ export function ProductionImageGeneration({
                 : "Checking the saved request and its output."}
           </div>
         )}
-        {requestId && (
+        {requestId && !busy && (
           <>
             <button
               className="xp-secondary"

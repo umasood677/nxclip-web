@@ -189,7 +189,7 @@ test("modern save-and-generate consumes an explicitly edited campaign idea only 
  const loaded=await loadWorkspace({getProject:async()=>project,listCreatives:async()=>({items:[draft,ad]})},project.id);
  assert.deepEqual(loaded.creatives,[ad]);assert.equal(loaded.templateDraftCount,1);
  const modern=await loadWorkspace({getProject:async()=>project,listCreatives:async()=>({items:[ad],templateDraftCount:3})},project.id);assert.equal(modern.templateDraftCount,3);
- assert.equal(editorReturnPath(draft),'/brands/kit-b/templates?tab=brand&mode=ai&source=draft');assert.equal(editorReturnPath(ad),projectWorkspacePath(project.id));
+ assert.equal(editorReturnPath(draft),'/brands/kit-b/templates?tab=brand&mode=ai&source=draft&review=1');assert.equal(editorReturnPath(ad),projectWorkspacePath(project.id));
  });
  test('template Canvas returns to Brand Template review and preserves unsaved cancellation',()=>{
  const source=readFileSync(process.cwd()+'/src/pages/AdStudio/AdStudioEditor.tsx','utf8'),tree=ts.createSourceFile('editor.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);let expression:ts.Expression|undefined;
@@ -197,5 +197,5 @@ test("modern save-and-generate consumes an explicitly edited campaign idea only 
  const code=ts.transpileModule('const fn='+expression.getText(tree)+';fn;',{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
  const calls:string[]=[],draft={id:'draft',projectId:'internal',name:'Draft',documentPurpose:'template-draft' as const,templateContext:{brandKitId:'brand',draftKind:'native' as const}};
  for(const allow of [false,true]){const back=vm.runInNewContext(code,{templateDocument:draft,projectId:'internal',editorReturnPath,navigate:(path:string)=>calls.push(path),confirmLeave:()=>allow}) as ()=>void;back();}
- assert.deepEqual(calls,['/brands/brand/templates?tab=brand&mode=native&source=draft']);
+ assert.deepEqual(calls,['/brands/brand/templates?tab=brand&mode=native&source=draft&review=1']);
  });

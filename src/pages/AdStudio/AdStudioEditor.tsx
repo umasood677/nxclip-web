@@ -54,6 +54,7 @@ import {
 import { AD_FORMATS, type AdSceneGraph, type AdSceneLayer } from "./types";
 import "../ImageStudio/components/image-edit-fonts.css";
 import "./styles/ad-studio-w0a.css";
+import "./styles/templateCanvas.css";
 import { W87_SYNTHETIC_EDITOR_ENABLED_DEFAULT } from "./composition/w87-synthetic-editor";
 import { W87SyntheticCompositionEditor } from "./composition/W87SyntheticCompositionEditor";
 import { IntelligentAdStudioHost } from "./intelligent/IntelligentAdStudioHost";
@@ -688,7 +689,8 @@ export default function AdStudioEditor() {
 
   return (
     <div
-      className="ad-studio-w0a ad-studio-w0a--editor flex flex-col gap-2 max-w-[100vw] overflow-hidden px-2 md:px-3 pb-2 h-[calc(100dvh-5.75rem)] md:h-[calc(100dvh-6.25rem)]"
+      className={(templateDocument ? "ad-template-canvas " : "") + "ad-studio-w0a ad-studio-w0a--editor flex flex-col gap-2 max-w-[100vw] overflow-hidden px-2 md:px-3 pb-2 h-[calc(100dvh-5.75rem)] md:h-[calc(100dvh-6.25rem)]"}
+      aria-label={templateDocument ? "Advanced template Canvas" : "Ad Studio Canvas"}
       id="ad-studio-canvas"
     >
       <SEO title={`${name} | Ad Studio · Editor Canvas`} />
@@ -704,6 +706,7 @@ export default function AdStudioEditor() {
           if (id === "concepts") navigate("/create/ad");
         }}
       />}
+      {templateDocument && <header className="template-canvas-heading"><Layers size={22}/><div><h1>Template Canvas</h1><p>{name}</p></div></header>}
       <div className="w0a-editor-toolbar shrink-0">
         <div className="w0a-editor-toolbar__meta min-w-0">
           <Button
@@ -864,13 +867,13 @@ export default function AdStudioEditor() {
             onClick={() => void persist()}
             disabled={saving || saveState === "saved"}
           >
-            <Save size={14} className="mr-1" /> Save
+            <Save size={14} className="mr-1" /> {templateDocument ? "Save draft" : "Save"}
           </Button>
         </div>
       </div>
 
       {/* Desktop / laptop workspace — L layers+composition / C stage / R tools */}
-      <div className="hidden lg:grid w0a-canvas-layout flex-1 min-h-0 overflow-hidden">
+      <div className={"hidden lg:grid w0a-canvas-layout flex-1 min-h-0 overflow-hidden" + (templateDocument ? " template-canvas-layout" : "")}>
         <aside className="w0a-pane h-full min-w-0">
           <div className="w0a-pane-scroll space-y-2">
             <CollapsiblePanel
@@ -881,7 +884,7 @@ export default function AdStudioEditor() {
             >
               <LayerList {...layerListProps} />
             </CollapsiblePanel>
-            <CollapsiblePanel
+            {!templateDocument && <CollapsiblePanel
               title="Creative composition"
               icon={<Wand2 size={12} />}
               defaultOpen
@@ -891,7 +894,7 @@ export default function AdStudioEditor() {
                 className="min-h-[8px]"
                 data-testid="intel-left-dock"
               />
-            </CollapsiblePanel>
+            </CollapsiblePanel>}
           </div>
         </aside>
 
@@ -920,7 +923,7 @@ export default function AdStudioEditor() {
         <aside className="w0a-pane h-full min-w-0">
           <div className="w0a-pane-scroll space-y-2">
             <CollapsiblePanel
-              title="Typography"
+              title={templateDocument ? "Layer properties" : "Typography"}
               icon={<Type size={12} />}
               defaultOpen
               badge={selected ? selected.name || selected.type : undefined}
@@ -934,13 +937,13 @@ export default function AdStudioEditor() {
             >
               {brandPanel}
             </CollapsiblePanel>
-            <CollapsiblePanel
+            {!templateDocument && <CollapsiblePanel
               title="Vars"
               icon={<Sparkles size={12} />}
               defaultOpen={false}
             >
               {variationsPanel}
-            </CollapsiblePanel>
+            </CollapsiblePanel>}
             <CollapsiblePanel
               title="Export"
               icon={<Download size={12} />}
@@ -955,7 +958,7 @@ export default function AdStudioEditor() {
             >
               {historyPanel}
             </CollapsiblePanel>
-            <CollapsiblePanel
+            {!templateDocument && <CollapsiblePanel
               title="Composition tools"
               icon={<Wand2 size={12} />}
               defaultOpen
@@ -965,7 +968,7 @@ export default function AdStudioEditor() {
                 className="min-h-[8px]"
                 data-testid="intel-right-dock"
               />
-            </CollapsiblePanel>
+            </CollapsiblePanel>}
           </div>
         </aside>
       </div>
@@ -1043,12 +1046,12 @@ export default function AdStudioEditor() {
         )}
       </div>
 
-      <p className="text-[10px] text-muted-foreground lg:hidden">
+      {!templateDocument && <p className="text-[10px] text-muted-foreground lg:hidden">
         Brand snapshot stays frozen unless you apply palette/fonts explicitly.{" "}
         <Link to="/brands" className="underline">
           Brand Kits
         </Link>
-      </p>
+      </p>}
 
       {W87_STAGE_A_EDITOR_MOUNT ? (
         <W87SyntheticCompositionEditor

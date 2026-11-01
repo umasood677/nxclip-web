@@ -2,6 +2,7 @@ import { validPreflightCost } from "../../../lib/aiExecutionPreflight";
 import type { WorkspaceCreative } from "../lib/projectWorkspace";
 export type AdImageOperation = "generate" | "variation" | "refine";
 export type ImageQuote = {
+  templateReviewMode?: "approval-page-v1";
   characterSelectionSupported?: true;
   selectedCharacterIds?: string[];
   schemaVersion: "1.0";
@@ -111,4 +112,8 @@ export function imageSourceIssue(creative: WorkspaceCreative): string | null {
 
 export function assertImageRenderMode(quote: ImageQuote, mode: 'background' | 'template-proposal') {
   if(quote.inputScope !== (mode === 'template-proposal' ? 'editable-template-proposal' : 'editable-ad-background') || (mode === 'template-proposal' && quote.sourceTreatment !== 'reference-guided-proposal'))throw Error('The active runtime has not verified finished-template proposal support. No generation was started.');
+}
+
+export function assertSingleTemplateReview(quote:ImageQuote){
+  if(quote.templateReviewMode!=="approval-page-v1")throw Error("Activate the updated Content service before generating this template. No generation was started.");
 }

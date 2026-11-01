@@ -136,8 +136,8 @@ export async function selectProjectExample(api: WorkspaceBriefWriter, project: W
 
 export const isTemplateDraftCreative = (creative: WorkspaceCreative) => creative.documentPurpose==='template-draft' || creative.conceptSnapshot?.purpose==='brand-template-source';
 export function editorReturnPath(creative: Pick<WorkspaceCreative,'id'|'projectId'|'templateContext'|'documentPurpose'|'conceptSnapshot'>){
-  if(isTemplateDraftCreative(creative as WorkspaceCreative) && creative.templateContext)return '/brands/'+encodeURIComponent(creative.templateContext.brandKitId)+'/templates?tab=brand&mode='+creative.templateContext.draftKind+'&source='+encodeURIComponent(creative.id);
+  if(isTemplateDraftCreative(creative as WorkspaceCreative) && creative.templateContext)return '/brands/'+encodeURIComponent(creative.templateContext.brandKitId)+'/templates?tab=brand&mode='+creative.templateContext.draftKind+'&source='+encodeURIComponent(creative.id)+'&review=1';
   const legacy=creative as WorkspaceCreative;
-  if(isTemplateDraftCreative(legacy) && typeof legacy.brandSnapshot?.brandKitId==='string')return '/brands/'+encodeURIComponent(legacy.brandSnapshot.brandKitId)+'/templates?tab=brand&mode=ai&source='+encodeURIComponent(creative.id);
+  if(isTemplateDraftCreative(legacy) && typeof legacy.brandSnapshot?.brandKitId==='string')return '/brands/'+encodeURIComponent(legacy.brandSnapshot.brandKitId)+'/templates?tab=brand&mode=ai&source='+encodeURIComponent(creative.id)+'&review=1';
   return projectWorkspacePath(creative.projectId);
 }

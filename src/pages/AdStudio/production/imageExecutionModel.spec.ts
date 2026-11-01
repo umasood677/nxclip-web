@@ -122,3 +122,8 @@ test("finished proposal scope cannot be accepted as the older background-only ru
  const proposal={...q,inputScope:'editable-template-proposal' as const,sourceTreatment:'reference-guided-proposal' as const};
  assert.equal(validateImageQuote(proposal,0.1),proposal);assert.doesNotThrow(()=>assertImageRenderMode(proposal,'template-proposal'));assert.throws(()=>assertImageRenderMode(proposal,'background'),/runtime has not verified/);
 });
+
+import {assertSingleTemplateReview} from './imageExecutionModel';
+test('compact review flow requires explicit compatible Content support before paid execution',()=>{
+ assert.throws(()=>assertSingleTemplateReview(quote()),/No generation was started/);assert.doesNotThrow(()=>assertSingleTemplateReview({...quote(),templateReviewMode:'approval-page-v1'}));
+});

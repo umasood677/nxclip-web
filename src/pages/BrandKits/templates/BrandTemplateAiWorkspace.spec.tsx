@@ -18,3 +18,17 @@ test('template navigation returns to brand library or existing Canvas, never a c
  const html=renderToStaticMarkup(<MemoryRouter><TemplateDraftNavigation source={{id:'draft/a'}} brandId='brand/b'/></MemoryRouter>);
  assert.equal(html.includes("/brands/brand%2Fb/templates?tab=brand"),true);assert.equal(html.includes("/create/ad/draft%2Fa"),true);assert.equal(html.includes("/projects/"),false);assert.doesNotMatch(html,/Campaign workspace|Concept Gallery/);
 });
+
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+import ts from 'typescript';
+test('generated proposal proceeds directly to one review record without approving or saving',async()=>{
+ const text=readFileSync(process.cwd()+'/src/pages/BrandKits/templates/BrandTemplateAiWorkspace.tsx','utf8');
+ const tree=ts.createSourceFile('workspace.tsx',text,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);let callback:ts.Expression|undefined;
+ function visit(n:ts.Node){if(ts.isJsxAttribute(n)&&n.name.getText(tree)==='onSaved'&&n.initializer&&ts.isJsxExpression(n.initializer))callback=n.initializer.expression;ts.forEachChild(n,visit);}visit(tree);assert.ok(callback);
+ const code=ts.transpileModule('const fn='+callback.getText(tree)+';fn;',{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+ const order:string[]=[];const generated={...source,id:'result',currentVersion:2};
+ const handler=vm.runInNewContext(code,{remember:(v:unknown)=>{assert.equal(v,generated);order.push('retain');},publish:async(v:unknown)=>{assert.equal(v,generated);order.push('review');}}) as (v:unknown)=>Promise<void>;
+ await handler(generated);assert.deepEqual(order,['retain','review']);
+ assert.equal(text.includes('proposalReviewed:true'),false);assert.equal(text.includes('Review this template</h3>'),false);
+});

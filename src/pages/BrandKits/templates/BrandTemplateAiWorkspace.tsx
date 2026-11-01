@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Sparkles, ArrowLeft, Plus } from "lucide-react";
-import { toast } from "sonner";
+
 import { brandTemplateApi } from "../../../services/apiClient";
 import { Skeleton } from "../../../components/ui/skeleton";
 import { ProductionImageGeneration } from "../../AdStudio/production/ProductionImageGeneration";
@@ -23,21 +23,21 @@ export function TemplateDraftNavigation({source,brandId}:{source:Pick<WorkspaceC
   return <nav className="xp-actions" aria-label="Template authoring"><Link className="xp-secondary" to={"/brands/"+encodeURIComponent(brandId)+"/templates?tab=brand"}>Brand Template library</Link><Link className="xp-secondary" to={creativeEditorPath(source.id)}>Customize in Canvas</Link></nav>;
 }
 export function BrandTemplateAiWorkspace({kit,initialFormat,onBack,entryKind="ai"}:{kit:BrandKitSummary;initialFormat:string;onBack:()=>void;entryKind?:"ai"|"native"}){
-  const navigate=useNavigate(),[params,setParams]=useSearchParams(),pending=useRef(false);
+  const navigate=useNavigate(),[params,setParams]=useSearchParams(),pending=useRef(false),reviewAttempt=useRef("");
   const [format,setFormat]=useState(initialFormat),[layout,setLayout]=useState("product-hero"),[direction,setDirection]=useState("");
   const [source,setSource]=useState<WorkspaceCreative|null>(null),[busy,setBusy]=useState(false),[loading,setLoading]=useState(false),[error,setError]=useState("");
-  const [name,setName]=useState(kit.name+" / Brand Template"),[proposalReviewed,setProposalReviewed]=useState(false);
+
   const sourceId=params.get("source"),kind=source?.templateContext?.draftKind || entryKind;
   const generated=!!source && hasGeneratedBackground(source),native=kind==="native";
   const brandUrls=useAuthenticatedBrandAssetUrls(kit),generatedUrls=useCreativeAssetUrls(source?[source.id]:[]),urls={...brandUrls,...generatedUrls};
   const remember=(value:WorkspaceCreative)=>{
-    const draft=verifyTemplateSource(value,kit.id);setLoading(false);setSource(draft);setProposalReviewed(false);
+    const draft=verifyTemplateSource(value,kit.id);setLoading(false);setSource(draft);
     const next=new URLSearchParams({tab:"brand",mode:draft.templateContext!.draftKind,source:draft.id});setParams(next,{replace:true});
   };
   useEffect(()=>{
     if(!sourceId || source?.id===sourceId)return;
     let active=true;setLoading(true);setError("");
-    void brandTemplateApi.getDraft(kit.id,sourceId).then(value=>{const draft=verifyTemplateSource(value,kit.id);if(draft.id!==sourceId)throw Error("Template draft context changed.");if(active){setLoading(false);setSource(draft);setName(draft.name);setProposalReviewed(false);}}).catch(e=>{if(active)setError(e instanceof Error?e.message:"Could not open this template draft.");}).finally(()=>{if(active)setLoading(false);});
+    void brandTemplateApi.getDraft(kit.id,sourceId).then(value=>{const draft=verifyTemplateSource(value,kit.id);if(draft.id!==sourceId)throw Error("Template draft context changed.");if(active){setLoading(false);setSource(draft);}}).catch(e=>{if(active)setError(e instanceof Error?e.message:"Could not open this template draft.");}).finally(()=>{if(active)setLoading(false);});
     return()=>{active=false;};
   },[sourceId,source?.id,kit.id]);
   const layouts=TEMPLATE_CATALOG_V1.filter(t=>(native || ["product-hero","minimal-editorial","product-launch","social-story"].includes(t.templateId))&&t.formats.some(f=>f===format));
@@ -48,28 +48,33 @@ export function BrandTemplateAiWorkspace({kit,initialFormat,onBack,entryKind="ai
     catch(e){setError(e instanceof Error?e.message:"Could not prepare your template draft.");}
     finally{setBusy(false);pending.current=false;}
   }
-  async function publish(){
-    if(!source || pending.current || !kit.version || (!native && !generated))return;
+  async function publish(value:WorkspaceCreative|null=source){
+    if(!value || pending.current || !kit.version || (value.templateContext?.draftKind!=="native" && !hasGeneratedBackground(value)))return;
     pending.current=true;setBusy(true);setError("");
-    try{const body={creativeId:source.id,expectedCreativeVersion:source.currentVersion!,expectedBrandVersion:kit.version,name,...(source.imageRenderMode==="template-proposal" && proposalReviewed?{proposalReviewed:true as const}:{})};
-      const record=await (native?brandTemplateApi.fromDraft(kit.id,body):brandTemplateApi.fromCreative(kit.id,body));
-      toast.success("Template ready for review.");navigate("/brands/"+encodeURIComponent(kit.id)+"/templates/"+encodeURIComponent(record.id));
+    try{const body={creativeId:value.id,expectedCreativeVersion:value.currentVersion!,expectedBrandVersion:kit.version,name:value.name};
+      const record=await (value.templateContext?.draftKind==="native"?brandTemplateApi.fromDraft(kit.id,body):brandTemplateApi.fromCreative(kit.id,body));
+navigate("/brands/"+encodeURIComponent(kit.id)+"/templates/"+encodeURIComponent(record.id));
     }catch(e){setError(e instanceof Error?e.message:"Could not submit the template for review. Your draft is retained.");}
     finally{setBusy(false);pending.current=false;}
   }
+  useEffect(()=>{
+    const key=source?.id+':'+source?.currentVersion;
+    if(params.get('review')==='1' && source?.id===sourceId && (native || generated) && reviewAttempt.current!==key){reviewAttempt.current=key;void publish(source);}
+  },[params,source,sourceId,native,generated,publish]);
   return <section className="bt-ai-workspace">
     <button className="xp-text-button" onClick={onBack}><ArrowLeft size={14}/> Back to Brand Templates</button>
-    <header><span className="xp-kicker">BRAND TEMPLATE STUDIO</span><h2><Sparkles size={22}/>{source?"Preview your Brand Template":native?"Start from a native layout":"Describe your Brand Template"}</h2><p>Preview. Customize. Review and save. Start a campaign when you choose to use the saved template.</p></header>
+    <header><span className="xp-kicker">BRAND TEMPLATE STUDIO</span><h2><Sparkles size={22}/>{source?"Template preview":native?"Choose your layout":"Create an AI template"}</h2></header>
     {error && <p className="bt-blocker" role="alert">{error}</p>}
     {isTemplateSourceLoading(loading,sourceId,source?.id)?<section className="xp-panel" role="status"><h3>Opening your template draft…</h3><Skeleton className="h-40 w-full"/></section>:source && source.id===sourceId?<>
-      <TemplateDraftNavigation source={source} brandId={kit.id}/>
-      {native?<div className="xp-split"><section className="xp-panel ai-generation-preview"><BrandTemplateScenePreview graph={source.sceneGraph} assetUrls={urls} size="hero" maxHeight={640}/></section><aside className="xp-panel"><h2>Make this template yours.</h2><p>Customize typography, copy, assets and layout in the existing Canvas.</p><Link className="xp-primary" to={creativeEditorPath(source.id)}>Customize in Canvas →</Link></aside></div>:generated && source.imageRenderMode!=="template-proposal"?<section className="xp-panel"><h3>Earlier background-only template draft</h3><BrandTemplateScenePreview graph={source.sceneGraph} assetUrls={urls} size="hero" maxHeight={560}/><button className="xp-primary" onClick={()=>{setSource(null);setLayout("product-hero");setParams({tab:"brand",mode:"ai"});}}>Start a finished template proposal</button></section>:<ProductionImageGeneration key={source.id} source={source} initialInstruction={source.proposalDirection || direction} renderMode="template-proposal" autoPreflight={!generated} onCustomize={()=>navigate(creativeEditorPath(source.id))} brand={kit} assetUrls={urls} onSaved={async value=>remember(value)}/>}
-      {(native || generated) && <section className="xp-panel bt-ai-publish"><h3>Review this template</h3><label className="xp-field">Template name<input value={name} maxLength={160} onChange={e=>setName(e.target.value)}/></label>{source.imageRenderMode==="template-proposal" && <label className="xp-check"><input type="checkbox" checked={proposalReviewed} onChange={e=>setProposalReviewed(e.target.checked)}/>I reviewed the product depiction, packaging and brand copy.</label>}<button className="xp-primary" disabled={busy || !name.trim() || (source.imageRenderMode==="template-proposal" && !proposalReviewed)} onClick={()=>void publish()}>{busy?"Opening review…":"Review template →"}</button><small>Approve, reject, save or duplicate in template review. No campaign or advertisement is created.</small></section>}
+
+      {native?<div className="xp-split"><section className="xp-panel ai-generation-preview"><BrandTemplateScenePreview graph={source.sceneGraph} assetUrls={urls} size="hero" maxHeight={640}/></section><aside className="xp-panel"><h2>Make this template yours.</h2><p>Customize typography, copy, assets and layout in the existing Canvas.</p><Link className="xp-primary" to={creativeEditorPath(source.id)}>Customize in Canvas →</Link></aside></div>:generated && source.imageRenderMode!=="template-proposal"?<section className="xp-panel"><h3>Earlier background-only template draft</h3><BrandTemplateScenePreview graph={source.sceneGraph} assetUrls={urls} size="hero" maxHeight={560}/><button className="xp-primary" onClick={()=>{setSource(null);setLayout("product-hero");setParams({tab:"brand",mode:"ai"});}}>Start a finished template proposal</button></section>:<ProductionImageGeneration key={source.id} source={source} initialInstruction={source.proposalDirection || direction} renderMode="template-proposal" compact autoPreflight={!generated} onReview={()=>void publish(source)} onCustomize={()=>navigate(creativeEditorPath(source.id))} brand={kit} assetUrls={urls} onSaved={async value=>{remember(value);await publish(value);}}/>}
+      {native && <button className="xp-primary" disabled={busy} onClick={()=>void publish(source)}>{busy?"Opening review…":"Review template →"}</button>}
+      {busy && <p role="status">Opening template review…</p>}
     </>:<div className="xp-panel bt-ai-setup">
       {!native && <label className="xp-field">Describe your template<textarea rows={4} value={direction} maxLength={4000} onChange={e=>setDirection(e.target.value)} placeholder="A cinematic luxury product template with refined typography and warm lighting."/></label>}
       <fieldset disabled={busy} className="bp-fieldset bt-setup-fields"><label className="xp-field">Format<select value={format} onChange={e=>{setFormat(e.target.value);setLayout("product-hero");}}>{AD_FORMATS.map(f=><option key={f.id} value={f.id}>{f.label}</option>)}</select></label><label className="xp-field">Starting composition<select value={layout} onChange={e=>setLayout(e.target.value)}>{layouts.map(t=><option key={t.templateId} value={t.templateId}>{t.name}</option>)}</select></label></fieldset>
-      <button className="xp-primary" disabled={busy || (!native && !direction.trim()) || !layouts.some(t=>t.templateId===layout)} onClick={()=>void prepare()}><Plus size={16}/>{busy?"Preparing…":native?"Preview template":"Continue to preview generation"}</button>
-      <small>{native?"Native layouts use your approved Brand Kit assets.":"One approved product photograph. Review the Google request before generation."}</small>
+      <button className="xp-primary" disabled={busy || (!native && !direction.trim()) || !layouts.some(t=>t.templateId===layout)} onClick={()=>void prepare()}><Plus size={16}/>{busy?"Preparing…":native?"Preview template":"Continue"}</button>
+
     </div>}
   </section>;
 }
