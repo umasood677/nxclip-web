@@ -3217,6 +3217,7 @@ export const adStudioApi = {
 
 /** Editable brand template lifecycle; backend gate and ownership checks remain authoritative. */
 export const brandTemplateApi = {
+ bulkDelete:(kit:string,items:import('../pages/BrandKits/templates/templateDeletion').TemplateDeleteItem[]):Promise<{items:import('../pages/BrandKits/templates/templateDeletion').TemplateDeleteResult[]}>=>performApiRequest('/brands/'+encodeURIComponent(kit)+'/templates/bulk-delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items})}),
  discardDraft:(kit:string,id:string):Promise<void>=>performApiRequest('/brands/'+encodeURIComponent(kit)+'/templates/drafts/'+encodeURIComponent(id),{method:'DELETE'}),
  listDrafts:(kit:string):Promise<{items:import('../pages/AdStudio/lib/projectWorkspace').WorkspaceCreative[]}>=>performApiRequest('/brands/'+encodeURIComponent(kit)+'/templates/drafts',{method:'GET'}),
  getDraft:(kit:string,id:string):Promise<import('../pages/AdStudio/lib/projectWorkspace').WorkspaceCreative>=>performApiRequest('/brands/'+encodeURIComponent(kit)+'/templates/drafts/'+encodeURIComponent(id),{method:'GET'}),

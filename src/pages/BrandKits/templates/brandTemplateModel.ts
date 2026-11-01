@@ -9,6 +9,7 @@ export type BrandTemplateAction =
   | "duplicate";
 /** Versioned wire shape; scene geometry remains the existing AdSceneGraph contract. */
 export interface BrandTemplate {
+  deletion?:{status:'pending'};
   schemaVersion: 1;
   id: string;
   brandKitId: string;

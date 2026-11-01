@@ -1,4 +1,6 @@
 import './templateSources.css';
+import {TemplateBulkActions,TemplateDeleteDialog} from './TemplateBulkDelete';
+import {deletionEntries,deletionKey,deletionPayload,deletionSummary,type TemplateDeleteEntry,type TemplateDeleteResult,type DeletableTemplateDraft} from './templateDeletion';
 import {templateResponseId,unlistedDrafts,templateError} from './templateLibraryWorkflow';
 import { useCreativeAssetUrls } from "../../AdStudio/canvas/useCreativeAssetUrls";
 import { BrandTemplateScenePreview } from "./BrandTemplateScenePreview";
@@ -21,7 +23,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { ArrowLeft, Check, Copy, Archive, Palette, X, Plus } from "lucide-react";
+import { ArrowLeft, Check, Copy, Archive, Palette, X, Plus, Trash2 } from "lucide-react";
 import {
   brandApi,
   brandTemplateApi,
@@ -39,7 +41,6 @@ import { AD_FORMATS } from "../../AdStudio/types";
 import {
   creativeEditorPath,
   type WorkspaceProject,
-  type WorkspaceCreative,
 } from "../../AdStudio/lib/projectWorkspace";
 import type { BrandKitSummary } from "../lib/brandKitTypes";
 import {
@@ -90,8 +91,10 @@ export default function BrandTemplateLibrary() {
   const [kit, setKit] = useState<BrandKitSummary | null>(null),
     [items, setItems] = useState<BrandTemplate[]>([]),
     [projects, setProjects] = useState<WorkspaceProject[]>([]);
-  const [templateDrafts,setTemplateDrafts]=useState<WorkspaceCreative[]>([]),[creatingCampaign,setCreatingCampaign]=useState(false);
+  const [templateDrafts,setTemplateDrafts]=useState<DeletableTemplateDraft[]>([]),[creatingCampaign,setCreatingCampaign]=useState(false);
   const running=useRef(false);
+  const [deleteSelection,setDeleteSelection]=useState<string[]>([]),[deleteRequest,setDeleteRequest]=useState<TemplateDeleteEntry[]|null>(null),[deleteResults,setDeleteResults]=useState<Array<TemplateDeleteResult&{name?:string}>>([]);
+  useEffect(()=>{setDeleteSelection([]);setDeleteRequest(null);setDeleteResults([]);},[brandId]);
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -102,6 +105,7 @@ export default function BrandTemplateLibrary() {
     [format, setFormat] = useState("portrait_1080x1350"),
     [projectId, setProjectId] = useState("");
   const [draft, setDraft] = useState<Draft | null>(null);
+  useEffect(()=>setDeleteSelection([]),[search,archived]);
   const requestVersion = useRef(0),
     activeBrand = useRef(brandId);
   activeBrand.current = brandId;
@@ -115,7 +119,7 @@ export default function BrandTemplateLibrary() {
     return kit;
   }, [kit, brandId]);
   const brandUrls = useAuthenticatedBrandAssetUrls(assetKit);
-  const generatedUrls = useCreativeAssetUrls([...items.flatMap(t=>t.provenance.sourceCreativeId?[t.provenance.sourceCreativeId]:[]),...templateDrafts.map(d=>d.id)]);
+  const generatedUrls = useCreativeAssetUrls([...items.filter(t=>!t.deletion).flatMap(t=>t.provenance.sourceCreativeId?[t.provenance.sourceCreativeId]:[]),...templateDrafts.filter(d=>!d.deletionPending).map(d=>d.id)]);
   const urls = {...brandUrls,...generatedUrls};
   const {graph:draftPreview,loading:previewLoading,error:previewError,retry:retryPreview}=useBrandTemplateDraftPreview(brandId,selected,draft);
   const load = useCallback(async () => {
@@ -215,11 +219,7 @@ export default function BrandTemplateLibrary() {
     const result=await brandTemplateApi.action(brandId,record.id,record.revision,value);
     templateResponseId(result,record.id);upsert(result);toast.success(value==='reject'?'Template rejected.':'Template archived.');
   });
-  const discardDraft=(id:string)=>void run(async()=>{
-    if(!window.confirm('Discard this template draft?'))return;
-    await brandTemplateApi.discardDraft(brandId,id);
-    setTemplateDrafts(old=>old.filter(d=>d.id!==id));toast.success('Draft discarded.');
-  });
+  const discardDraft=(id:string)=>{const source=templateDrafts.find(d=>d.id===id);if(source)setDeleteRequest(deletionEntries([], [source]));};
   const previewNative=(id:AdStudioTemplateId,chosen:string)=>void run(async()=>{
     if(!kit?.version)throw Error('Brand Kit required');
     const draft=await brandTemplateApi.createNativeSource(brandId,{templateId:id,format:chosen,expectedBrandVersion:kit.version});
@@ -351,11 +351,24 @@ export default function BrandTemplateLibrary() {
     );
   const visible = items.filter(
     (t) =>
-      (archived || t.state !== "archived") &&
+      (archived || t.state !== "archived" || !!t.deletion) &&
       `${t.name} ${t.sourceTemplateId}`
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
+  const visibleEntries=deletionEntries(visible,unlistedDrafts(items,templateDrafts,search));
+  const toggleDelete=(entry:TemplateDeleteEntry)=>setDeleteSelection(previous=>previous.includes(deletionKey(entry))?previous.filter(k=>k!==deletionKey(entry)):previous.length<50?[...previous,deletionKey(entry)]:previous);
+  const openBulkDelete=()=>{try{const keys=new Set(deletionPayload(visibleEntries,deleteSelection).map(deletionKey));setDeleteRequest(visibleEntries.filter(e=>keys.has(deletionKey(e))));}catch(e){toast.error(e instanceof Error?e.message:'Select templates again.');}};
+  const deleteTemplates=()=>void run(async()=>{
+    if(!deleteRequest)return;
+    const request=deletionPayload(deleteRequest,deleteRequest.map(deletionKey)),requestBrand=brandId;
+    const result=await brandTemplateApi.bulkDelete(requestBrand,request),summary=deletionSummary(result.items,request);
+    if(activeBrand.current!==requestBrand)return;
+    setDeleteResults(result.items.map(r=>({...r,name:deleteRequest.find(d=>deletionKey(d)===deletionKey(r))?.name})));setDeleteRequest(null);setDeleteSelection([]);
+    if(summary.pending)toast.warning(summary.deleted+' deleted; '+summary.pending+' need attention.');
+    else toast.success(summary.deleted+' template'+(summary.deleted===1?'':'s')+' deleted.');
+    await load();
+  });
   const reviewProject = (
     <section className="xp-panel" id="template-project-selection">
       <h3>Choose a campaign</h3>
@@ -415,6 +428,8 @@ export default function BrandTemplateLibrary() {
   return (
     <div className="xp-root nxclip-production bp-guided-root bt-root ad-studio-w0a">
       <main className="xp-main">
+        <TemplateDeleteDialog entries={deleteRequest} busy={busy} onCancel={()=>setDeleteRequest(null)} onConfirm={deleteTemplates}/>
+        {!!deleteResults.length&&<div className="bt-delete-results" role="status"><strong>Deletion results</strong><ul>{deleteResults.map(r=><li key={deletionKey(r)}>{(r.name||'Template')+': '}{r.status==='deleted'?'Deleted':r.message}{r.retainedObjects>0?' · Shared or protected files retained':''}</li>)}</ul><button type="button" className="xp-text-button" onClick={()=>setDeleteResults([])}>Dismiss</button></div>}
         <nav className="xp-breadcrumb" aria-label="Breadcrumb">
           <Link
             to={"/brands/" + brandId + "/guided?step=ready"}
@@ -723,6 +738,7 @@ export default function BrandTemplateLibrary() {
               </div>
 
             </div>
+            {tab==="brand"&&<TemplateBulkActions entries={visibleEntries} selected={deleteSelection} busy={busy} onSelect={setDeleteSelection} onDelete={openBulkDelete}/>}
             {tab === "default" ? (
               <>
                 <TemplateGallery
@@ -752,25 +768,27 @@ export default function BrandTemplateLibrary() {
                 onAction={() => go("/brands/" + brandId + "/guided?step=ready")}
               />
             ) : (
-              <div className="bt-gallery">{unlistedDrafts(items,templateDrafts,search).map(d=><article className="bt-card" key={'draft:'+d.id}>
- <div className="bt-card-art"><BrandTemplateScenePreview graph={d.sceneGraph} assetUrls={urls} size="card" maxHeight={256}/></div>
- <div className="xp-card-copy"><span className="xp-status">Draft · {d.templateContext?.draftKind==='native'?'Native':'AI proposal'}</span><h3>{d.name}</h3>
- <div className="xp-actions"><button className="xp-secondary" onClick={()=>go(base+'?tab=brand&mode='+(d.templateContext?.draftKind||'ai')+'&source='+encodeURIComponent(d.id))}>Open draft</button>
- <button className="xp-text-button" disabled={busy} onClick={()=>discardDraft(d.id)}><X size={14}/> Discard</button></div></div></article>)}
+              <div className="bt-gallery">{unlistedDrafts(items,templateDrafts,search).map(d=><article className={'bt-card'+(deleteSelection.includes('draft:'+d.id)?' bt-card-selected':'')} key={'draft:'+d.id}>
+ <label className="bt-card-select"><input type="checkbox" aria-label={'Select '+d.name} checked={deleteSelection.includes('draft:'+d.id)} disabled={busy} onChange={()=>toggleDelete(deletionEntries([], [d])[0])}/><span className="sr-only">Select template</span></label>
+ <div className="bt-card-art">{d.deletionPending?<span className="bt-cleanup-placeholder"><Trash2 size={28}/> Cleanup pending</span>:<BrandTemplateScenePreview graph={d.sceneGraph} assetUrls={urls} size="card" maxHeight={256}/>}</div>
+ <div className="xp-card-copy"><span className="xp-status">{d.deletionPending?'Cleanup pending':'Draft · '+(d.templateContext?.draftKind==='native'?'Native':'AI proposal')}</span><h3>{d.name}</h3>
+ <div className="xp-actions"><button className="xp-secondary" disabled={busy||d.deletionPending} onClick={()=>go(base+'?tab=brand&mode='+(d.templateContext?.draftKind||'ai')+'&source='+encodeURIComponent(d.id))}>Open draft</button>
+ <button className="xp-text-button" disabled={busy} onClick={()=>discardDraft(d.id)}><Trash2 size={14}/>{d.deletionPending?'Retry cleanup':'Delete'}</button></div></div></article>)}
 
                 {visible.map((t) => (
-                  <article className="bt-card" key={t.id}>
+                  <article className={'bt-card'+(deleteSelection.includes('template:'+t.id)?' bt-card-selected':'')} key={t.id}>
+                    <label className="bt-card-select"><input type="checkbox" aria-label={'Select '+t.name} checked={deleteSelection.includes('template:'+t.id)} disabled={busy} onChange={()=>toggleDelete(deletionEntries([t],[])[0])}/><span className="sr-only">Select template</span></label>
                     <div className="bt-card-art">
-                    <BrandTemplateScenePreview
+                    {t.deletion?<span className="bt-cleanup-placeholder"><Trash2 size={28}/> Cleanup pending</span>:<BrandTemplateScenePreview
                       graph={t.sceneGraph}
                       assetUrls={urls}
                       size="card"
                       maxHeight={256}
-                    />
+                    />}
                     </div>
                     <div className="xp-card-copy">
                       <span className="xp-status">
-                        {t.state} · {t.saved ? "Saved" : "Review required"}
+                        {t.deletion?'Cleanup pending':t.state+' · '+(t.saved?'Saved':'Review required')}
                       </span>
                       <h3>{t.name}</h3>
                       <p>
@@ -785,12 +803,13 @@ export default function BrandTemplateLibrary() {
                       </p>
                       <button
                         className="xp-primary"
+                        disabled={busy||!!t.deletion}
                         onClick={() =>
                           go(base + "/" + encodeURIComponent(t.id))
                         }
                       >
                         Preview template →
-                      </button><div className="xp-actions">{t.state==='suggested'&&<button className="xp-text-button" disabled={busy} onClick={()=>reviewCard(t,'reject')}><X size={14}/> Reject</button>}{t.state!=='archived'&&<button className="xp-text-button" disabled={busy} onClick={()=>reviewCard(t,'archive')}><Archive size={14}/> Archive</button>}</div>
+                      </button><div className="xp-actions">{t.state==='suggested'&&<button className="xp-text-button" disabled={busy} onClick={()=>reviewCard(t,'reject')}><X size={14}/> Reject</button>}{t.state!=='archived'&&<button className="xp-text-button" disabled={busy} onClick={()=>reviewCard(t,'archive')}><Archive size={14}/> Archive</button>}<button type="button" className="xp-text-button" disabled={busy} onClick={()=>setDeleteRequest(deletionEntries([t],[]))}><Trash2 size={14}/>{t.deletion?'Retry cleanup':'Delete'}</button></div>
                     </div>
                   </article>
                 ))}

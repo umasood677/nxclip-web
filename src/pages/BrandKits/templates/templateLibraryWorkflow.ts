@@ -4,7 +4,7 @@ export function templateResponseId(value: Partial<BrandTemplate> | null | undefi
  if (!value?.id || ['undefined','null'].includes(value.id) || (!duplicate && value.id !== expected)) throw Error('Template response has no matching identity. Reload the library to verify the saved state.');
  return value.id;
 }
-export function unlistedDrafts(records: BrandTemplate[], drafts: WorkspaceCreative[], search = '') {
+export function unlistedDrafts<T extends WorkspaceCreative>(records: BrandTemplate[], drafts: T[], search = '') {
  const published = new Set(records.flatMap(t=>t.provenance.sourceCreativeId ? [t.provenance.sourceCreativeId] : []));
  return drafts.filter(d=>!published.has(d.id)&&d.name.toLowerCase().includes(search.toLowerCase()));
 }
