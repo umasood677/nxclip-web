@@ -1,3 +1,4 @@
+import { CanvasPreviewDialog } from "./components/CanvasPreviewDialog";
 import type {StudioCanvasHeaderContext} from "../../components/layouts/DashboardLayout";
 import {TemplateCanvasControls} from "./components/TemplateCanvasControls";
 import {defaultTemplateSelection,safeCenter} from "./lib/templateCanvasModel";
@@ -603,7 +604,7 @@ export default function AdStudioEditor() {
 
   const templateControls = <><TemplateCanvasControls key={creativeId} graph={graph} brand={brandKit} selectedId={selectedLayerId} readOnly={previewMode} onSelect={setSelectedLayerId}
     onPatch={(id,patch)=>{if(previewMode || graph.layers.find(l=>l.id===id)?.locked)return;applyGraph(g=>updateLayer(g,id,patch));}}
-    onMove={liveMove} onResize={liveResize} onCommit={commitTransform} onCenter={id=>{if(previewMode)return;applyGraph(g=>safeCenter(g,id));}} onBackground={color=>{if(!previewMode)applyGraph(g=>setCanvasBackground(g,color));}}/><details className="tc-advanced-styling"><summary>Advanced layer styling</summary>{typographyPanel}</details></>;
+    onMove={liveMove} onResize={liveResize} onCommit={commitTransform} onCenter={id=>{if(previewMode)return;applyGraph(g=>safeCenter(g,id));}} onBackground={color=>{if(!previewMode)applyGraph(g=>setCanvasBackground(g,color));}}/><section className="tc-slider-typography" aria-label="Typography controls"><label className="tc-field">Text layer<select value={selected?.type === "text" ? selected.id : ""} onChange={e=>setSelectedLayerId(e.target.value)} disabled={previewMode}><option value="" disabled>Select a text layer</option>{graph.layers.filter(l=>l.type==="text").map(l=><option key={l.id} value={l.id}>{l.name || "Text layer"}</option>)}</select></label>{typographyPanel}</section></>;
   const brandPanel = (
     <BrandPanel
       snapshot={brandSnapshot}
@@ -1046,7 +1047,7 @@ export default function AdStudioEditor() {
         {mobileTab === "layers" && (
           <Card className="glass border-border">
             <CardContent className="pt-4">
-              <LayerList {...layerListProps} />
+              <LayerList {...layerListProps} presentation={templateDocument ? "advanced" : "stack"} readOnly={previewMode} />
             </CardContent>
           </Card>
         )}
@@ -1103,6 +1104,7 @@ export default function AdStudioEditor() {
           }}
         />
       ) : null}
+      <CanvasPreviewDialog open={previewMode} onOpenChange={setPreviewMode} graph={graph} name={name} assetUrls={assetUrls} storageKeyUrls={storageKeyUrls} />
     </div>
   );
 }

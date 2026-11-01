@@ -1,7 +1,6 @@
 import React,{useRef,useState} from 'react';
 import type {AdSceneGraph,AdSceneLayer,AdTextLayer} from '../types';
 import type {BrandKitSummary} from '../../BrandKits/lib/brandKitTypes';
-import {AD_STUDIO_FONTS} from '../lib/adFonts';
 import {isRasterArtwork,positionPatch,scaledPlacement,templateTextLayers} from '../lib/templateCanvasModel';
 type Props={graph:AdSceneGraph;brand?:BrandKitSummary|null;selectedId:string|null;readOnly:boolean;onPatch:(id:string,patch:Partial<AdSceneLayer>)=>void;onSelect:(id:string)=>void;onMove:(id:string,x:number,y:number)=>void;onResize:(id:string,width:number,height:number)=>void;onCommit:()=>void;onCenter:(id:string)=>void;onBackground:(color:string)=>void};
 function Range({label,value,min,max,step=1,disabled,onChange,onCommit}:{label:string;value:number;min:number;max:number;step?:number;disabled:boolean;onChange:(n:number)=>void;onCommit:()=>void}){
@@ -17,7 +16,7 @@ export function TemplateCanvasControls({graph,brand,selectedId,readOnly,onPatch,
  const bases=useRef(new Map<string,{width:number;height:number}>());
  if(image && !bases.current.has(image.id))bases.current.set(image.id,{width:image.width,height:image.height});
  const base=image?bases.current.get(image.id):undefined;
- const {headline,cta,brand:brandText}=templateTextLayers(graph);
+ const {brand:brandText}=templateTextLayers(graph);
  const disabled=(l:AdSceneLayer|undefined)=>readOnly || !l || !!l.locked;
  const move=(layer:AdSceneLayer,axis:'x'|'y',percent:number)=>{const next=positionPatch(graph,layer.id,axis,percent).layers.find(l=>l.id===layer.id);if(next){onSelect(layer.id);onMove(layer.id,next.x,next.y);}};
  const editText=(layer:AdTextLayer|undefined,text:string)=>{if(layer){onSelect(layer.id);onPatch(layer.id,{text} as Partial<AdTextLayer>);}};
@@ -27,21 +26,13 @@ export function TemplateCanvasControls({graph,brand,selectedId,readOnly,onPatch,
   <section><h3>Product placement</h3>
    <label className="tc-field">Image layer<select value={image?.id || ''} disabled={readOnly || !images.length} onChange={e=>{onCommit();setTarget(e.target.value);onSelect(e.target.value);}}>{!images.length&&<option value="">No image layers</option>}{images.map(l=><option key={l.id} value={l.id}>{isRasterArtwork(l)?'AI artwork (whole image)':l.name || 'Image layer'}{l.visible===false?' · hidden':''}</option>)}</select></label>
    {image&&isRasterArtwork(image)&&<p className="tc-caption">The product is embedded in this artwork; placement moves the whole image.</p>}
-   {image&&image.visible===false&&<p className="tc-caption">This source layer is hidden. Use Layers → Toggle visibility to show it.</p>}
+   {image&&image.visible===false&&<p className="tc-caption">This source layer is hidden. Use the eye icon in Layers to show it.</p>}
    <Range label={imageLabel+' horizontal %'} value={image?100*image.x/graph.canvas.width:0} min={-100} max={100} disabled={disabled(image)} onChange={n=>image&&move(image,'x',n)} onCommit={onCommit}/>
    <Range label={imageLabel+' vertical %'} value={image?100*image.y/graph.canvas.height:0} min={-100} max={100} disabled={disabled(image)} onChange={n=>image&&move(image,'y',n)} onCommit={onCommit}/>
    <Range label={imageLabel+' scale'} value={image&&base?image.width/base.width:1} min={.1} max={3} step={.01} disabled={disabled(image)} onChange={n=>{if(image&&base){const p=scaledPlacement(image,base,n);onSelect(image.id);onMove(image.id,p.x,p.y);onResize(image.id,p.width,p.height);}}} onCommit={onCommit}/>
    <button className="tc-button" disabled={disabled(image)} onClick={()=>{if(image){onCommit();onSelect(image.id);onCenter(image.id);}}}>Align to safe center</button>
    <label className="tc-field">Canvas background<input type="color" value={graph.canvas.backgroundColor || '#111827'} disabled={readOnly} onChange={e=>onBackground(e.target.value)}/></label>
    {image&&isRasterArtwork(image)&&<p className="tc-caption">Canvas color sits behind the artwork. Relighting requires AI refinement.</p>}
-  </section>
-  <section><h3>Typography</h3>
-   <label className="tc-field">Headline<textarea rows={3} value={headline?.text || ''} disabled={disabled(headline)} onChange={e=>editText(headline,e.target.value)} placeholder="No headline layer"/></label>
-   <label className="tc-field">CTA<input value={cta?.text || ''} disabled={disabled(cta)} onChange={e=>editText(cta,e.target.value)} placeholder="No CTA layer"/></label>
-   <label className="tc-field">Heading font<select value={headline?.fontFamily || 'Inter'} disabled={disabled(headline)} onChange={e=>patch(headline,{fontFamily:e.target.value,fontId:AD_STUDIO_FONTS.find(f=>f.family===e.target.value)?.id} as Partial<AdTextLayer>)}>{headline?.fontFamily&&!AD_STUDIO_FONTS.some(f=>f.family===headline.fontFamily)&&<option value={headline.fontFamily}>{headline.fontFamily}</option>}{AD_STUDIO_FONTS.map(f=><option key={f.id} value={f.family}>{f.label}</option>)}</select></label>
-   <label className="tc-field">Heading size<input type="number" min={8} max={300} value={headline?.fontSize ?? 48} disabled={disabled(headline)} onChange={e=>{const n=Number(e.target.value);if(Number.isFinite(n)&&n>=8&&n<=300)patch(headline,{fontSize:n} as Partial<AdTextLayer>);}}/></label>
-   <label className="tc-field">Text alignment<select value={headline?.align || 'left'} disabled={disabled(headline)} onChange={e=>patch(headline,{align:e.target.value as AdTextLayer['align']} as Partial<AdTextLayer>)}>{['left','center','right'].map(v=><option key={v}>{v}</option>)}</select></label>
-   <label className="tc-field">Heading color<input type="color" value={headline?.color || '#ffffff'} disabled={disabled(headline)} onChange={e=>patch(headline,{color:e.target.value} as Partial<AdTextLayer>)}/></label>
   </section>
   <section><h3>Logo / brand text</h3><label className="tc-field">Brand text<input value={brandText?.text || ''} disabled={disabled(brandText)} onChange={e=>editText(brandText,e.target.value)} placeholder="No brand text layer"/></label>
    <Range label="Logo horizontal %" value={logo?100*logo.x/graph.canvas.width:0} min={0} max={100} disabled={disabled(logo)} onChange={n=>logo&&move(logo,'x',n)} onCommit={onCommit}/>

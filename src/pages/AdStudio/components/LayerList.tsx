@@ -1,3 +1,4 @@
+import type React from 'react';
 import {
   Eye,
   EyeOff,
@@ -85,10 +86,37 @@ export function LayerList({
   onReorder,
 }: LayerListProps) {
   const sorted = sortLayers(layers).reverse();
-  if(presentation==='advanced'){
-    const chosen=layers.find(l=>l.id===selectedLayerId),visible=sorted.filter(l=>l.visible!==false),hidden=sorted.filter(l=>l.visible===false);
-    const row=(layer:AdSceneLayer)=><button key={layer.id} type="button" className={'tc-layer-button'+(layer.id===selectedLayerId?' is-selected':'')} aria-pressed={layer.id===selectedLayerId} onClick={()=>onSelect(layer.id)}><LayerTypeIcon type={layer.type}/><span>{previewLabel(layer)}</span>{layer.locked&&<Lock size={13}/>}</button>;
-    return <section className="tc-layers" aria-label="Layers"><h3>Layers <span>({layers.length})</span></h3><div className="tc-layer-buttons">{visible.map(row)}</div>{hidden.length>0&&<details open={!!chosen&&chosen.visible===false}><summary>Hidden source layers ({hidden.length})</summary><div className="tc-layer-buttons">{hidden.map(row)}</div></details>}{chosen?<div className="tc-layer-actions"><p className="tc-caption">{previewLabel(chosen)}</p><button className="tc-button" disabled={readOnly} onClick={()=>onToggleVisible(chosen.id)}>{chosen.visible===false?'Show layer':'Toggle visibility'}</button><button className="tc-button" disabled={readOnly} onClick={()=>onToggleLock(chosen.id)}>{chosen.locked?'Unlock layer':'Toggle lock'}</button><label className="tc-field">Layer order<span className="tc-action-row"><button className="tc-button" disabled={readOnly || chosen.locked} onClick={()=>onReorder(chosen.id,'up')}>Forward</button><button className="tc-button" onClick={()=>onReorder(chosen.id,'down')}>Backward</button></span></label><div className="tc-action-row"><button className="tc-button" disabled={readOnly || chosen.locked} onClick={()=>onDuplicate(chosen.id)}>Duplicate</button><button className="tc-button" disabled={readOnly || chosen.locked} onClick={()=>onDelete(chosen.id)}>Delete</button></div></div>:<p className="tc-caption">Select a layer to edit.</p>}</section>;
+  if (presentation === 'advanced') {
+    const chosen = layers.find(l => l.id === selectedLayerId);
+    const row = (layer: AdSceneLayer) => {
+      const label = previewLabel(layer);
+      const hidden = layer.visible === false;
+      const immutable = readOnly || !!layer.locked;
+      const action = (name: string, icon: React.ReactNode, callback: () => void, disabled = readOnly) => (
+        <button type="button" className="tc-layer-icon" aria-label={name + ': ' + label}
+          title={name} disabled={disabled} onClick={callback}>{icon}</button>
+      );
+      return <div key={layer.id} className={'tc-layer-row' + (layer.id === selectedLayerId ? ' is-selected' : '')}>
+        <button type="button" className="tc-layer-select" aria-pressed={layer.id === selectedLayerId}
+          title={label} onClick={() => onSelect(layer.id)}><LayerTypeIcon type={layer.type}/><span>{label}</span></button>
+        <div className="tc-layer-tools" role="group" aria-label={'Actions for ' + label}>
+          {action(hidden ? 'Show layer' : 'Hide layer', hidden ? <EyeOff size={14}/> : <Eye size={14}/>, () => onToggleVisible(layer.id))}
+          {action(layer.locked ? 'Unlock layer' : 'Lock layer', layer.locked ? <Lock size={14}/> : <Unlock size={14}/>, () => onToggleLock(layer.id))}
+          {action('Bring forward', <ChevronUp size={14}/>, () => onReorder(layer.id, 'up'), immutable || sorted[0]?.id === layer.id)}
+          {action('Send backward', <ChevronDown size={14}/>, () => onReorder(layer.id, 'down'), immutable || sorted.at(-1)?.id === layer.id)}
+          {action('Duplicate layer', <Copy size={14}/>, () => onDuplicate(layer.id), immutable)}
+          {action('Delete layer', <Trash2 size={14}/>, () => onDelete(layer.id), immutable)}
+        </div>
+      </div>;
+    };
+    const hidden = sorted.filter(l => l.visible === false);
+    return <section className="tc-layers" aria-label="Layers">
+      <h3>Layers <span>({layers.length})</span></h3>
+      <div className="tc-layer-buttons">{sorted.filter(l => l.visible !== false).map(row)}</div>
+      {hidden.length > 0 && <details open={!!chosen && chosen.visible === false}>
+        <summary>Hidden source layers ({hidden.length})</summary><div className="tc-layer-buttons">{hidden.map(row)}</div>
+      </details>}
+    </section>;
   }
 
   return (
