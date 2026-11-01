@@ -19,6 +19,8 @@ import { sortLayers } from "../lib/sceneGraph";
 import type { AdSceneLayer } from "../types";
 
 interface LayerListProps {
+  presentation?: "stack" | "advanced";
+  readOnly?: boolean;
   layers: AdSceneLayer[];
   selectedLayerId: string | null;
   onSelect: (id: string) => void;
@@ -72,6 +74,8 @@ function previewLabel(layer: AdSceneLayer): string {
 
 export function LayerList({
   layers,
+  presentation = "stack",
+  readOnly = false,
   selectedLayerId,
   onSelect,
   onToggleVisible,
@@ -81,6 +85,12 @@ export function LayerList({
   onReorder,
 }: LayerListProps) {
   const sorted = sortLayers(layers).reverse();
+  if(presentation==='advanced'){
+    const chosen=layers.find(l=>l.id===selectedLayerId),visible=sorted.filter(l=>l.visible!==false),hidden=sorted.filter(l=>l.visible===false);
+    const row=(layer:AdSceneLayer)=><button key={layer.id} type="button" className={'tc-layer-button'+(layer.id===selectedLayerId?' is-selected':'')} aria-pressed={layer.id===selectedLayerId} onClick={()=>onSelect(layer.id)}><LayerTypeIcon type={layer.type}/><span>{previewLabel(layer)}</span>{layer.locked&&<Lock size={13}/>}</button>;
+    return <section className="tc-layers" aria-label="Layers"><h3>Layers <span>({layers.length})</span></h3><div className="tc-layer-buttons">{visible.map(row)}</div>{hidden.length>0&&<details open={!!chosen&&chosen.visible===false}><summary>Hidden source layers ({hidden.length})</summary><div className="tc-layer-buttons">{hidden.map(row)}</div></details>}{chosen?<div className="tc-layer-actions"><p className="tc-caption">{previewLabel(chosen)}</p><button className="tc-button" disabled={readOnly} onClick={()=>onToggleVisible(chosen.id)}>{chosen.visible===false?'Show layer':'Toggle visibility'}</button><button className="tc-button" disabled={readOnly} onClick={()=>onToggleLock(chosen.id)}>{chosen.locked?'Unlock layer':'Toggle lock'}</button><label className="tc-field">Layer order<span className="tc-action-row"><button className="tc-button" disabled={readOnly || chosen.locked} onClick={()=>onReorder(chosen.id,'up')}>Forward</button><button className="tc-button" onClick={()=>onReorder(chosen.id,'down')}>Backward</button></span></label><div className="tc-action-row"><button className="tc-button" disabled={readOnly || chosen.locked} onClick={()=>onDuplicate(chosen.id)}>Duplicate</button><button className="tc-button" disabled={readOnly || chosen.locked} onClick={()=>onDelete(chosen.id)}>Delete</button></div></div>:<p className="tc-caption">Select a layer to edit.</p>}</section>;
+  }
+
   return (
     <div className="space-y-2" role="list" aria-label="Layers">
       <div className="flex items-center justify-between px-0.5 pb-0.5">

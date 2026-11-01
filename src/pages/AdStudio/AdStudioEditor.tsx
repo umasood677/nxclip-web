@@ -1,3 +1,5 @@
+import {TemplateCanvasControls} from "./components/TemplateCanvasControls";
+import {defaultTemplateSelection,safeCenter} from "./lib/templateCanvasModel";
 import { editorReturnPath, isTemplateDraftCreative, type WorkspaceCreative } from "./lib/projectWorkspace";
 import { useCreativeAssetUrls } from './canvas/useCreativeAssetUrls';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -179,8 +181,10 @@ export default function AdStudioEditor() {
     const creative = await adStudioApi.getCreative(creativeId);
     setName(creative.name);
     setTemplateDocument(isTemplateDraftCreative(creative)?creative:null);
+
     setProjectId(creative.projectId ?? null);
     const loaded = creative.sceneGraph as AdSceneGraph;
+    if(isTemplateDraftCreative(creative))setSelectedLayerId(current=>loaded.layers.some(l=>l.id===current)?current:defaultTemplateSelection(loaded));
     setGraph(loaded);
     setFitZoom(true);
     if (!originalGraphRef.current) {
@@ -592,6 +596,9 @@ export default function AdStudioEditor() {
     />
   );
 
+  const templateControls = <><TemplateCanvasControls key={creativeId} graph={graph} brand={brandKit} selectedId={selectedLayerId} readOnly={previewMode} onSelect={setSelectedLayerId}
+    onPatch={(id,patch)=>{if(previewMode || graph.layers.find(l=>l.id===id)?.locked)return;applyGraph(g=>updateLayer(g,id,patch));}}
+    onMove={liveMove} onResize={liveResize} onCommit={commitTransform} onCenter={id=>{if(previewMode)return;applyGraph(g=>safeCenter(g,id));}} onBackground={color=>{if(!previewMode)applyGraph(g=>setCanvasBackground(g,color));}}/><details className="tc-advanced-styling"><summary>Advanced layer styling</summary>{typographyPanel}</details></>;
   const brandPanel = (
     <BrandPanel
       snapshot={brandSnapshot}
@@ -719,15 +726,15 @@ export default function AdStudioEditor() {
           >
             <ArrowLeft size={14} className="mr-1" aria-hidden /> {templateDocument ? "Review template" : projectId ? "Back to Project" : "Projects"}
           </Button>
-          {templateDocument && <Badge variant="outline">Template draft</Badge>}
-          <h2 className="text-sm font-semibold truncate max-w-[12rem] sm:max-w-[18rem]">{name}</h2>
-          {brandName ? (
+
+          {!templateDocument && <h2 className="text-sm font-semibold truncate max-w-[12rem] sm:max-w-[18rem]">{name}</h2>}
+          {!templateDocument && (brandName ? (
             <Badge variant="secondary" className="max-w-[10rem] truncate" title={brandName}>
               {brandName}
             </Badge>
           ) : (
             <Badge variant="outline">Neutral</Badge>
-          )}
+          ))}
           <Badge variant="outline">
             {saveState === "saved"
               ? "Saved"
@@ -758,6 +765,7 @@ export default function AdStudioEditor() {
           >
             Redo
           </Button>
+          {templateDocument && <Button type="button" variant="outline" size="sm" disabled={saving} onClick={()=>void persist()}>Capture version</Button>}
           <Button
             type="button"
             variant="outline"
@@ -876,14 +884,15 @@ export default function AdStudioEditor() {
       <div className={"hidden lg:grid w0a-canvas-layout flex-1 min-h-0 overflow-hidden" + (templateDocument ? " template-canvas-layout" : "")}>
         <aside className="w0a-pane h-full min-w-0">
           <div className="w0a-pane-scroll space-y-2">
-            <CollapsiblePanel
+            {templateDocument ? <LayerList {...layerListProps} presentation="advanced" readOnly={previewMode}/> : (            <CollapsiblePanel
               title="Layers"
               icon={<Layers size={12} />}
               defaultOpen
               badge={graph.layers.length}
             >
-              <LayerList {...layerListProps} />
+              <LayerList {...layerListProps} presentation={templateDocument?"advanced":"stack"} readOnly={previewMode} />
             </CollapsiblePanel>
+)}
             {!templateDocument && <CollapsiblePanel
               title="Creative composition"
               icon={<Wand2 size={12} />}
@@ -922,7 +931,7 @@ export default function AdStudioEditor() {
 
         <aside className="w0a-pane h-full min-w-0">
           <div className="w0a-pane-scroll space-y-2">
-            <CollapsiblePanel
+            {templateDocument ? templateControls : (            <CollapsiblePanel
               title={templateDocument ? "Layer properties" : "Typography"}
               icon={<Type size={12} />}
               defaultOpen
@@ -930,6 +939,7 @@ export default function AdStudioEditor() {
             >
               {typographyPanel}
             </CollapsiblePanel>
+)}
             <CollapsiblePanel
               title="Brand"
               icon={<Palette size={12} />}
@@ -984,7 +994,7 @@ export default function AdStudioEditor() {
             [
               { id: "canvas" as const, label: "Canvas" },
               { id: "layers" as const, label: "Layers" },
-              ...sideTabs.map((t) => ({
+              ...sideTabs.filter(t=>!templateDocument || t.id!=="variations").map((t) => ({
                 id: t.id as SideTab | "layers" | "canvas",
                 label: t.label,
               })),
@@ -1041,7 +1051,7 @@ export default function AdStudioEditor() {
           mobileTab === "export" ||
           mobileTab === "history") && (
           <Card className="glass border-border">
-            <CardContent className="pt-4">{renderSideContent(mobileTab)}</CardContent>
+            <CardContent className="pt-4">{templateDocument && mobileTab==="typography" ? templateControls : renderSideContent(mobileTab)}</CardContent>
           </Card>
         )}
       </div>
