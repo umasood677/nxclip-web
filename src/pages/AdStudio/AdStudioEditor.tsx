@@ -1,9 +1,10 @@
+import type {StudioCanvasHeaderContext} from "../../components/layouts/DashboardLayout";
 import {TemplateCanvasControls} from "./components/TemplateCanvasControls";
 import {defaultTemplateSelection,safeCenter} from "./lib/templateCanvasModel";
 import { editorReturnPath, isTemplateDraftCreative, type WorkspaceCreative } from "./lib/projectWorkspace";
 import { useCreativeAssetUrls } from './canvas/useCreativeAssetUrls';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -79,6 +80,9 @@ function isConflictError(e: unknown): boolean {
 }
 
 export default function AdStudioEditor() {
+  const {pathname}=useLocation();
+  const headerContext=useOutletContext<StudioCanvasHeaderContext|undefined>();
+  const setCanvasHeader=headerContext?.setCanvasHeader;
   const { creativeId } = useParams<{ creativeId: string }>();
   const navigate = useNavigate();
   const ownerUserId = useMemo(() => {
@@ -96,6 +100,7 @@ export default function AdStudioEditor() {
   const [saveState, setSaveState] = useState<"saved" | "dirty" | "saving">("saved");
   const [name, setName] = useState("Creative");
   const [templateDocument,setTemplateDocument]=useState<WorkspaceCreative|null>(null);
+  useEffect(()=>{setCanvasHeader?.({path:pathname,template:!!templateDocument});return()=>setCanvasHeader?.(null);},[pathname,templateDocument?.id,setCanvasHeader]);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [brandSnapshot, setBrandSnapshot] = useState<BrandSnapshotView | null>(null);
   const [brandKit, setBrandKit] = useState<BrandKitSummary | null>(null);
@@ -700,7 +705,7 @@ export default function AdStudioEditor() {
       aria-label={templateDocument ? "Advanced template Canvas" : "Ad Studio Canvas"}
       id="ad-studio-canvas"
     >
-      <SEO title={`${name} | Ad Studio · Editor Canvas`} />
+      <SEO title={`${name} | Ad Studio · ${templateDocument ? "Template Canvas" : "Editor Canvas"}`} />
       {!templateDocument && <AdStudioTopNav
         hideBrand
         active="canvas"
@@ -713,7 +718,7 @@ export default function AdStudioEditor() {
           if (id === "concepts") navigate("/create/ad");
         }}
       />}
-      {templateDocument && <header className="template-canvas-heading"><Layers size={22}/><div><h1>Template Canvas</h1><p>{name}</p></div></header>}
+
       <div className="w0a-editor-toolbar shrink-0">
         <div className="w0a-editor-toolbar__meta min-w-0">
           <Button

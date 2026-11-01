@@ -8,10 +8,13 @@ import { BarChart3, Bell, Clapperboard, FileImage, Home, LayoutDashboard, Layout
  * DashboardLayout wraps authenticated routes with the AppShell.
  * It provides a consistent navigation experience across the dashboard.
  */
+export type StudioCanvasHeaderContext = { setCanvasHeader:(value:{path:string;template:boolean}|null)=>void };
 export default function DashboardLayout() {
   const { t } = useTranslation();
   const location = useLocation();
   const [title, setTitle] = useState("");
+  const [canvasHeader,setCanvasHeader]=useState<{path:string;template:boolean}|null>(null);
+  const isTemplateCanvas=canvasHeader?.path===location.pathname && canvasHeader.template;
 
   const isDashboard = location.pathname === "/dashboard";
   const isLibrary = location.pathname === "/my-content" || location.pathname === "/library";
@@ -109,6 +112,7 @@ export default function DashboardLayout() {
         defaultValue: "Generate images and memes with AI.",
       });
     }
+    if (isTemplateCanvas) return t("ad_studio.header.template_subtitle", {defaultValue:"Brief, concepts, and editable static templates"});
     if (isAdStudio) {
       return t("ad_studio.header.subtitle", {
         defaultValue: "Brief, concepts, and editable static ads.",
@@ -137,6 +141,7 @@ export default function DashboardLayout() {
     isAnalytics,
     isImageStudio,
     isAdStudio,
+    isTemplateCanvas,
     isCreateHub,
     isClipEditor,
     isNotifications,
@@ -184,8 +189,8 @@ export default function DashboardLayout() {
     isNotifications;
 
   return (
-    <AppShell title={title} subtitle={subtitle} titleIcon={titleIcon} dense={dense}>
-      <Outlet />
+    <AppShell title={isTemplateCanvas ? t("nav.ad_studio_template_canvas",{defaultValue:"Ad Studio · Template Canvas"}) : title} subtitle={subtitle} titleIcon={titleIcon} dense={dense}>
+      <Outlet context={{setCanvasHeader} satisfies StudioCanvasHeaderContext} />
     </AppShell>
   );
 }
