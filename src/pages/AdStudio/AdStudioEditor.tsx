@@ -1,3 +1,5 @@
+import '../BrandKits/templates/templateSources.css';
+import {TemplateSourceBindings} from "./components/TemplateSourceBindings";
 import { CanvasPreviewDialog } from "./components/CanvasPreviewDialog";
 import type {StudioCanvasHeaderContext} from "../../components/layouts/DashboardLayout";
 import {TemplateCanvasControls} from "./components/TemplateCanvasControls";
@@ -603,7 +605,7 @@ export default function AdStudioEditor() {
     />
   );
 
-  const templateControls = <><TemplateCanvasControls key={creativeId} graph={graph} brand={brandKit} selectedId={selectedLayerId} readOnly={previewMode} onSelect={setSelectedLayerId}
+  const templateControls = <>{brandKit&&<TemplateSourceBindings graph={graph} brand={brandKit} selectedId={selectedLayerId} readOnly={previewMode} onKitUpdated={value=>{setBrandKit(value);lastPersistedHashRef.current=null;markDirty();}} onGraph={(next,id)=>{applyGraph(()=>next);setSelectedLayerId(id);}} onRefine={()=>{void ensureSaved().then(ok=>{if(ok)navigate('/brands/'+encodeURIComponent(brandKit.id)+'/templates?tab=brand&mode=ai&source='+encodeURIComponent(creativeId!)+'&refine=1');});}}/>}<TemplateCanvasControls key={creativeId} graph={graph} brand={brandKit} selectedId={selectedLayerId} readOnly={previewMode} onSelect={setSelectedLayerId}
     onPatch={(id,patch)=>{if(previewMode || graph.layers.find(l=>l.id===id)?.locked)return;applyGraph(g=>updateLayer(g,id,patch));}}
     onMove={liveMove} onResize={liveResize} onCommit={commitTransform} onCenter={id=>{if(previewMode)return;applyGraph(g=>safeCenter(g,id));}} onBackground={color=>{if(!previewMode)applyGraph(g=>setCanvasBackground(g,color));}}/><section className="tc-slider-typography" aria-label="Typography controls">{typographyPanel}</section></>;
   const brandPanel = (

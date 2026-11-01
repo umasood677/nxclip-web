@@ -1,3 +1,4 @@
+import './templateSources.css';
 import {templateResponseId,unlistedDrafts,templateError} from './templateLibraryWorkflow';
 import { useCreativeAssetUrls } from "../../AdStudio/canvas/useCreativeAssetUrls";
 import { BrandTemplateScenePreview } from "./BrandTemplateScenePreview";
@@ -548,7 +549,7 @@ export default function BrandTemplateLibrary() {
                             : definition?.formats[0] || draft.format,
                         });
                       }}
-                      disabled={selected.provenance.method === "provider-ai-creative"}
+                      disabled={selected.provenance.method === "provider-ai-creative" || selected.sceneGraph.layers.some(l=>l.id.startsWith('template-product-slot-')||l.id.includes(':slotHint:'))}
                     >
                       {TEMPLATE_CATALOG_V1.map((t) => (
                         <option key={t.templateId} value={t.templateId}>
@@ -561,7 +562,7 @@ export default function BrandTemplateLibrary() {
                     Format
                     <select
                       value={draft.format}
-                      disabled={selected.provenance.method === "provider-ai-creative"}
+                      disabled={selected.provenance.method === "provider-ai-creative" || selected.sceneGraph.layers.some(l=>l.id.startsWith('template-product-slot-')||l.id.includes(':slotHint:'))}
                       onChange={(e) => patch({ format: e.target.value })}
                     >
                       {AD_FORMATS.filter((f) =>

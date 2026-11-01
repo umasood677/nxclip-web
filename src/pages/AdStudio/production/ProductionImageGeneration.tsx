@@ -49,7 +49,7 @@ export function ProductionImageGeneration({
   onSaved: (saved: WorkspaceCreative) => Promise<void>;
 }) {
   const proposal = renderMode === "template-proposal";
-  const [refiningProposal,setRefiningProposal]=useState(false);
+  const [refiningProposal,setRefiningProposal]=useState(initialOperation === "refine");
   const autoAttempt=useRef(false),executing=useRef(false),explicitIntentConsumed=useRef(false);
   const canEdit = hasGeneratedBackground(source),
     enabled = realImagesEnabled(),

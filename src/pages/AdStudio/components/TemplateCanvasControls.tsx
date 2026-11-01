@@ -21,9 +21,9 @@ export function TemplateCanvasControls({graph,brand,selectedId,readOnly,onPatch,
  const move=(layer:AdSceneLayer,axis:'x'|'y',percent:number)=>{const next=positionPatch(graph,layer.id,axis,percent).layers.find(l=>l.id===layer.id);if(next){onSelect(layer.id);onMove(layer.id,next.x,next.y);}};
  const editText=(layer:AdTextLayer|undefined,text:string)=>{if(layer){onSelect(layer.id);onPatch(layer.id,{text} as Partial<AdTextLayer>);}};
  const patch=(layer:AdSceneLayer|undefined,value:Partial<AdSceneLayer>)=>{if(layer){onSelect(layer.id);onPatch(layer.id,value);}};
- const imageLabel=image&&isRasterArtwork(image)?'Artwork':'Product';
+ const imageLabel=image&&isRasterArtwork(image)?'Artwork':image?.id.startsWith('brand-character-')?'Model':'Product';
  return <div className="tc-controls">
-  <section><h3>Product placement</h3>
+  <section><h3>{imageLabel==='Model'?'Model placement':'Product placement'}</h3>
    <label className="tc-field">Image layer<select value={image?.id || ''} disabled={readOnly || !images.length} onChange={e=>{onCommit();setTarget(e.target.value);onSelect(e.target.value);}}>{!images.length&&<option value="">No image layers</option>}{images.map(l=><option key={l.id} value={l.id}>{isRasterArtwork(l)?'AI artwork (whole image)':l.name || 'Image layer'}{l.visible===false?' · hidden':''}</option>)}</select></label>
    {image&&isRasterArtwork(image)&&<p className="tc-caption">The product is embedded in this artwork; placement moves the whole image.</p>}
    {image&&image.visible===false&&<p className="tc-caption">This source layer is hidden. Use the eye icon in Layers to show it.</p>}
