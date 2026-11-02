@@ -1,4 +1,5 @@
-import {BrandKitBrochurePreview,BrandKitReadyCollection} from './BrandKitReadyCollection';
+import '../components/brandProductPhotos.css';
+import {BrandKitReadySummary} from './BrandKitReadyCollection';
 import { toast } from "sonner";
 import { saveGuidedBrand } from "./saveGuidedBrand";
 import "../components/brandCharacters.css";
@@ -90,6 +91,7 @@ export function GuidedBrandKitWorkspace({
     navigate = useNavigate(),
     [params, setParams] = useSearchParams();
   const brandId = initialBrandId || routeBrandId;
+  const [modelPhotoRequest,setModelPhotoRequest]=useState<{brandId:string;assetId:string;requestId:number}|null>(null);
   const [embeddedStep, setEmbeddedStep] = useState<GuidedStep>("brand");
   const raw = embedded ? embeddedStep : params.get("step"),
     step: GuidedStep = GUIDED_STEPS.includes(raw as GuidedStep)
@@ -638,8 +640,33 @@ export function GuidedBrandKitWorkspace({
                 </>
               ) : (
                 <BrandAssetsSection
+                  modelProfilePanel={kit && (
+                <section
+                  className="bp-character-section"
+                  id={`brand-${kit.id}-characters`}
+                >
+                  <div>
+                    <BrandCharactersSection
+                    modelPhotoRequest={modelPhotoRequest}
+                    photoCardSelection
+                      kit={kit}
+                      onDraftStateChange={(dirty, busy) => {
+                        characterEditor.current = { dirty, busy };
+                      }}
+                      disabled={JSON.stringify(draft) !== saved.current}
+                      onKitUpdated={(updated) => {
+                        setKit(updated);
+                        setDraft(draftFromKit(updated));
+                        saved.current = JSON.stringify(draftFromKit(updated));
+                      }}
+                    />
+                  </div>
+                </section>
+              )}
                   brandId={kit.id}
                   assets={kit.assets || []}
+                  modelProfiles={kit.voice?.studio?.characters}
+                  onUseModelImage={assetId=>{setModelPhotoRequest({brandId:kit.id,assetId,requestId:Date.now()});document.getElementById("brand-"+kit.id+"-characters")?.scrollIntoView({behavior:"smooth",block:"start"});}}
                   onManageCharacters={() =>
                     document
                       .getElementById(`brand-${kit.id}-characters`)
@@ -701,27 +728,7 @@ export function GuidedBrandKitWorkspace({
                 </div>
               )}
 
-              {kit && (
-                <section
-                  className="bp-character-section"
-                  id={`brand-${kit.id}-characters`}
-                >
-                  <div>
-                    <BrandCharactersSection
-                      kit={kit}
-                      onDraftStateChange={(dirty, busy) => {
-                        characterEditor.current = { dirty, busy };
-                      }}
-                      disabled={JSON.stringify(draft) !== saved.current}
-                      onKitUpdated={(updated) => {
-                        setKit(updated);
-                        setDraft(draftFromKit(updated));
-                        saved.current = JSON.stringify(draftFromKit(updated));
-                      }}
-                    />
-                  </div>
-                </section>
-              )}
+
               <div className="xp-actions">
                 <button className="xp-primary" onClick={() => go("identity")}>
                   Review identity →
@@ -1032,52 +1039,7 @@ export function GuidedBrandKitWorkspace({
               </section>
             </>
           )}
-          {step === "ready" && (
-            <div className="bp-ready-layout">
-              <section className="xp-panel">
-                <h2>{kit?.name || draft.name}</h2>
-                <p>
-                  {BRAND_TAXONOMY.find((c) => c.id === draft.categoryId)?.label}{" "}
-                  /{" "}
-                  {
-                    BRAND_TAXONOMY.find(
-                      (c) => c.id === draft.categoryId,
-                    )?.niches.find((n) => n.id === draft.nicheId)?.label
-                  }
-                </p>
-                {!kit ||
-                !kit.voice?.studio?.identityApproved ||
-                !kit.voice.studio.guidelinesApproved ? (
-                  <p className="xp-notice">
-                    Complete and save the reviewed identity before using it
-                    downstream.
-                  </p>
-                ) : (
-                  <p className="xp-notice">
-                    Identity and guidelines reviewed.
-                  </p>
-                )}
-                <div className="xp-actions">
-                  <button className="xp-secondary" onClick={() => go("brand")}>
-                    Edit Brand Kit
-                  </button>
-                  <button className="xp-secondary" onClick={() => go("assets")}>
-                    Manage assets
-                  </button>
-
-
-                  <Link className="xp-primary" to="/create/ad">
-                    Open Ad Studio →
-                  </Link>
-                </div>
-                {kit?.updatedAt && (
-                  <p className="bp-last-updated">Last Updated: <time dateTime={kit.updatedAt}>{new Date(kit.updatedAt).toLocaleString()}</time></p>
-                )}
-              </section>
-              {kit && <BrandKitBrochurePreview kit={kit} dirty={JSON.stringify(draft)!==saved.current}/>}
-              {kit && <BrandKitReadyCollection kit={kit} dirty={JSON.stringify(draft)!==saved.current}/>}
-            </div>
-          )}
+          {step === "ready" && (kit ? <BrandKitReadySummary kit={kit} dirty={JSON.stringify(draft)!==saved.current} urls={sourceUrls} onEdit={()=>go("brand")} onAssets={()=>go("assets")}/> : <section className="xp-panel"><h2>Save your Brand Kit</h2><p>Save the current draft to open its overview.</p></section>)}
         </fieldset>
       </main>
     </div>

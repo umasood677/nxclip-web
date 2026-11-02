@@ -133,3 +133,22 @@ export function characterUnchangedAfterAssetUpdate(
     current = after.voice?.studio?.characters?.find((p) => p.id === profileId);
   return JSON.stringify(prior) === JSON.stringify(current);
 }
+
+/** Open a linked profile or prepare an unsaved model draft; never save or approve it. */
+export function profileForModelPhoto(kit:{assets?:BrandAssetEntry[];voice?:{studio?:{characters?:BrandCharacterProfile[]}}},assetId:string){
+ const asset=kit.assets?.find(a=>a.id===assetId&&a.role==="brand_model"&&a.status==="ready"&&a.mimeType?.startsWith("image/"));
+ if(!asset)throw Error("Choose a ready model image from this Brand Kit.");
+ const profile=modelProfileForAsset(kit.voice?.studio?.characters||[],kit.assets||[],assetId);
+ return profile?structuredClone(profile):attachCharacterReference({...newBrandCharacter(),kind:"human-model",name:asset.label||asset.fileName||""},kit,assetId);
+}
+
+export function modelProfileForAsset(profiles:BrandCharacterProfile[],assets:BrandAssetEntry[],assetId:string,now=new Date()){
+ const linked=profiles.filter(profile=>profile.referenceAssetIds.includes(assetId));
+ return linked.find(profile=>profile.status==="approved"&&characterReviewIssues(profile,assets,now).length===0)||linked.find(profile=>profile.status!=="archived")||linked[0];
+}
+export function modelPhotoPresentation(profiles:BrandCharacterProfile[],assets:BrandAssetEntry[],assetId:string,now=new Date()){
+ const profile=modelProfileForAsset(profiles,assets,assetId,now);
+ if(!profile)return {action:"Use model image",status:"",approved:false,linked:false};
+ if(profile.status==="approved"){const issues=characterReviewIssues(profile,assets,now);if(!issues.length)return {action:"Edit profile",status:"Approved",approved:true,linked:true};return {action:"Review profile",status:issues.some(issue=>/expired|invalid/i.test(issue))?"Authorization expired":"Review needed",approved:false,linked:true};}
+ return {action:profile.status==="draft"?"Complete profile":"Edit profile",status:profile.status==="draft"?"Draft":"Archived",approved:false,linked:true};
+}

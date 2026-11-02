@@ -1,10 +1,11 @@
+import {productPhotoName} from '../components/productPhotoModel';
 import { toast } from "sonner";
 import { uploadBrandImage } from "../lib/uploadBrandImage";
 import { BrandContentLibraryPicker } from "../components/BrandContentLibraryPicker";
 import { useAuthenticatedBrandAssetUrls } from "../../AdStudio/canvas/useAuthenticatedBrandAssetUrls";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Save, Upload, ImagePlus, Loader2 } from "lucide-react";
+import { Plus, Save, Upload, ImagePlus, Loader2, Users } from "lucide-react";
 import { Input } from "../../../components/ui/input";
 import { Textarea } from "../../../components/ui/textarea";
 import { EmptyState } from "../../../components/common/EmptyState";
@@ -14,6 +15,7 @@ import type {
   BrandKitSummary,
 } from "../lib/brandKitTypes";
 import {
+  profileForModelPhoto,
   CHARACTER_SCOPES,
   characterReviewIssues,
   newBrandCharacter,
@@ -22,12 +24,16 @@ import {
 } from "./brandCharacterModel";
 type Props = {
   kit: BrandKitSummary;
+  modelPhotoRequest?:{brandId:string;assetId:string;requestId:number}|null;
+  photoCardSelection?:boolean;
   disabled?: boolean;
   onKitUpdated: (kit: BrandKitSummary) => void;
   onDraftStateChange?: (dirty: boolean, busy: boolean) => void;
 };
 export function BrandCharactersSection({
   kit,
+  modelPhotoRequest,
+  photoCardSelection=false,
   disabled = false,
   onKitUpdated,
   onDraftStateChange,
@@ -59,7 +65,7 @@ export function BrandCharactersSection({
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
-  const choose = (next: BrandCharacterProfile) => {
+  const choose = useCallback((next: BrandCharacterProfile) => {
     if (operation.current) return;
     if (dirty && !window.confirm("Discard unsaved character edits?")) return;
     setDiscardRequested(false);
@@ -72,7 +78,7 @@ export function BrandCharactersSection({
     draftVersion.current = kit.version;
     setError("");
     setMessage("");
-  };
+  },[dirty,kit.version,kit.voice?.studio?.characters]);
   const profiles = kit.voice?.studio?.characters || [],
     assets = (kit.assets || []).filter(
       (a) => a.status === "ready" && a.mimeType?.startsWith("image/"),
@@ -142,14 +148,10 @@ export function BrandCharactersSection({
         brandApi,
         putToUploadUrl,
         kit.id,
-        target.kind === "human-model" ? "brand_model" : "other",
+        "brand_model",
         file,
         {
-          label: target.name
-            ? `${target.name} reference`
-            : target.kind === "human-model"
-              ? "Model reference"
-              : "Mascot / character reference",
+          label: productPhotoName(file.name,kit.assets||[]),
           description: target.appearance.trim() || undefined,
           usageGuidance: target.consistencyRules.trim() || undefined,
         },
@@ -187,6 +189,8 @@ export function BrandCharactersSection({
       setUploading(false);
     }
   };
+  const handledPhotoRequest=useRef("");
+  useEffect(()=>{if(!modelPhotoRequest||modelPhotoRequest.brandId!==kit.id||disabled||saving||uploading||operation.current)return;const key=kit.id+":"+modelPhotoRequest.requestId;if(handledPhotoRequest.current===key)return;handledPhotoRequest.current=key;try{choose(profileForModelPhoto(kit,modelPhotoRequest.assetId));}catch(e){setError(e instanceof Error?e.message:"This model image is unavailable.");}},[modelPhotoRequest,kit,disabled,saving,uploading,choose]);
   const unlinkedModels = assets.filter(
     (a) =>
       a.role === "brand_model" &&
@@ -205,7 +209,7 @@ export function BrandCharactersSection({
     <section className="space-y-5 bp-characters">
       <header>
         <h2 className="text-xl font-semibold">
-          Models & Mascots ({profiles.length})
+          <Users size={16}/> Models & Mascots ({profiles.length})
         </h2>
       </header>
       {disabled && (
@@ -312,7 +316,7 @@ export function BrandCharactersSection({
                         )
                         .join(" · "),
                     ],
-                  ].map(([label, value]) => (
+                  ].filter(([,value])=>value?.trim()).map(([label, value]) => (
                     <div key={label}>
                       <dt>{label}</dt>
                       <dd
@@ -329,7 +333,7 @@ export function BrandCharactersSection({
             ))}
           </div>
         )}
-        {!!unlinkedModels.length && (
+        {!photoCardSelection && !!unlinkedModels.length && (
           <section className="bp-character-existing">
             <h3>Your uploaded model references</h3>
             <div className="bp-character-source-grid">
@@ -366,7 +370,7 @@ export function BrandCharactersSection({
         {!profiles.length && !draft && (
           <EmptyState
             title="No character profiles yet"
-            description="Choose an uploaded model above or add a profile. Upload and Content Library controls appear inside the profile alongside its characteristics. Approval remains an explicit decision."
+            description="Add a model or mascot, link its photos, and confirm permitted use."
           />
         )}
         {draft && dirty && (
@@ -379,7 +383,7 @@ export function BrandCharactersSection({
             <div className="grid gap-6 xl:grid-cols-2 bp-character-editor">
               <section className="rounded-xl border border-white/10 bg-white/[0.02] p-5 space-y-4">
                 <label className="grid gap-2 text-sm">
-                  Character name
+                  Profile name
                   <Input
                     value={draft.name}
                     maxLength={120}
@@ -387,7 +391,7 @@ export function BrandCharactersSection({
                   />
                 </label>
                 <label className="grid gap-2 text-sm">
-                  Character type
+                  Profile type
                   <select
                     className="h-10 rounded-md border border-input bg-background px-3"
                     value={draft.kind}
@@ -397,16 +401,17 @@ export function BrandCharactersSection({
                       })
                     }
                   >
-                    <option value="human-model">Authorized human model</option>
-                    <option value="mascot">Fictional mascot</option>
+                    <option value="human-model">Real person / model</option>
+                    <option value="mascot">Mascot</option>
                     <option value="fictional-character">
                       Fictional character
                     </option>
                   </select>
                 </label>
+                <label className="grid gap-2 text-sm">Key characteristics <span className="text-xs text-muted-foreground">Optional</span><Textarea rows={2} maxLength={1500} value={draft.appearance} onChange={e=>edit({appearance:e.target.value})} placeholder="Only details the advertisement should preserve."/></label>
+                <details className="bp-character-optional"><summary>Additional creative preferences <span>Optional</span></summary><div>
                 {(
                   [
-                    "appearance",
                     "style",
                     "wardrobe",
                     "expressions",
@@ -428,20 +433,14 @@ export function BrandCharactersSection({
                       maxLength={
                         key === "consistencyRules"
                           ? 2000
-                          : key === "appearance"
-                            ? 1500
-                            : 1000
+                          : 1000
                       }
                       value={draft[key]}
                       onChange={(e) => edit({ [key]: e.target.value })}
                     />
                   </label>
                 ))}
-                <p className="text-xs text-muted-foreground">
-                  {draft.kind === "human-model"
-                    ? "Describe the authorized person's appearance and the details future creatives should retain. A reference image and explicit likeness permission are required before approval."
-                    : "A fictional identity profile can be saved without an image. Creating artwork requires a separate explicit generation action once available."}
-                </p>
+                </div></details>
               </section>
               <section className="rounded-xl border border-white/10 bg-white/[0.02] p-5 space-y-4">
                 <h3 className="font-semibold">Reference images</h3>
@@ -584,7 +583,7 @@ export function BrandCharactersSection({
                 <hr className="border-white/10" />
                 <h3 className="font-semibold">Usage authorization</h3>
                 <label className="grid gap-2 text-sm">
-                  Authorization basis
+                  Permission source
                   <select
                     className="h-10 rounded-md border border-input bg-background px-3"
                     value={draft.permissions.origin}
@@ -611,7 +610,7 @@ export function BrandCharactersSection({
                       permission({ commercialUse: e.target.checked })
                     }
                   />
-                  I have authority for commercial use within the selected scopes
+                  I have permission for commercial use
                 </label>
                 {draft.kind === "human-model" && (
                   <label className="flex gap-3 text-sm">
@@ -622,7 +621,7 @@ export function BrandCharactersSection({
                         permission({ likenessConsent: e.target.checked })
                       }
                     />
-                    I have explicit permission to use this person's likeness
+                    This person has consented to use of their likeness
                   </label>
                 )}
                 <fieldset className="bp-character-scopes">
@@ -655,15 +654,16 @@ export function BrandCharactersSection({
                   </div>
                 </fieldset>
                 <label className="grid gap-2 text-sm">
-                  Authorization record / reference
-                  <Textarea
+                  Permission reference
+                  <Input
+                    placeholder="Model release, license or permission reference"
                     value={draft.permissions.evidence}
                     maxLength={1000}
                     onChange={(e) => permission({ evidence: e.target.value })}
                   />
                 </label>
                 <label className="grid gap-2 text-sm">
-                  Authorization valid through (UTC, optional)
+                  Permission expiry (optional, UTC)
                   <Input
                     type="date"
                     value={draft.permissions.expiresAt?.slice(0, 10) || ""}
@@ -676,13 +676,8 @@ export function BrandCharactersSection({
                     }
                   />
                 </label>
-                <p className="text-xs text-muted-foreground">
-                  These are owner declarations, not independent legal
-                  verification. Approval does not guarantee identity
-                  preservation by a provider.
-                </p>
                 <label className="grid gap-2 text-sm">
-                  Review state
+                  Profile status
                   <select
                     className="h-10 rounded-md border border-input bg-background px-3"
                     value={draft.status}
@@ -694,13 +689,13 @@ export function BrandCharactersSection({
                     }
                   >
                     <option value="draft">
-                      Draft — unavailable to generation
+                      Draft
                     </option>
                     <option value="approved">
-                      Approved for declared scopes
+                      Approved for selected uses
                     </option>
                     <option value="archived">
-                      Archived — unavailable to generation
+                      Archived
                     </option>
                   </select>
                 </label>

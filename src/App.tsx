@@ -89,6 +89,7 @@ const AnimatedAdStudioEditor = lazy(
 const AnimatedAdStudioUnavailable = lazy(
   () => import("./pages/AdStudio/AnimatedAdStudioUnavailable"),
 );
+const BrandKitOverview = lazy(() => import("./pages/BrandKits/overview/BrandKitOverview"));
 const BrandTemplateLibrary = lazy(() => import("./pages/BrandKits/templates/BrandTemplateLibrary"));
 const GuidedBrandKit = lazy(() => import("./pages/BrandKits/guided/GuidedBrandKit"));
 const BrandKits = lazy(() => import("./pages/BrandKits/BrandKits"));
@@ -467,6 +468,7 @@ export default function App() {
                     />
                     <Route path="/brands" element={<BrandKits />} />
                     <Route path="/brands/new/guided" element={<GuidedBrandKit />} />
+                    <Route path="/brands/:brandId/overview" element={<BrandKitOverview />} />
                     <Route path="/brands/:brandId/guided" element={<GuidedBrandKit />} />
                     <Route path="/brands/:brandId/templates" element={<BrandTemplateLibrary />} />
                     <Route path="/brands/:brandId/templates/:templateId" element={<BrandTemplateLibrary />} />

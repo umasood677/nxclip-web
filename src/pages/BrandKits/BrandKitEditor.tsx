@@ -1,3 +1,4 @@
+import './components/brandProductPhotos.css';
 import "./components/brandCharacters.css";
 import "./components/brandVoice.css";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -103,6 +104,7 @@ function draftsEqual(a: unknown, b: unknown): boolean {
 export default function BrandKitEditor() {
   const { brandId } = useParams<{ brandId: string }>();
   const navigate = useNavigate();
+  const [modelPhotoRequest,setModelPhotoRequest]=useState<{brandId:string;assetId:string;requestId:number}|null>(null);
   const [section, setSection] = useState<EditorSection>("identity");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("identity");
   const [loading, setLoading] = useState(true);
@@ -674,15 +676,18 @@ export default function BrandKitEditor() {
 
           {section === "assets" && brandId ? (
             <BrandAssetsSection
+              modelProfilePanel={isGuidedBrandEnabled()?<section id={"brand-"+kit.id+"-characters"}><BrandCharactersSection kit={kit} modelPhotoRequest={modelPhotoRequest} photoCardSelection disabled={dirty} onKitUpdated={applyKit}/></section>:undefined}
               brandId={brandId}
               assets={kit.assets ?? []}
+              modelProfiles={kit.voice?.studio?.characters}
+              onUseModelImage={isGuidedBrandEnabled()?assetId=>{setModelPhotoRequest({brandId:kit.id,assetId,requestId:Date.now()});document.getElementById("brand-"+kit.id+"-characters")?.scrollIntoView({behavior:"smooth",block:"start"});}:undefined}
               onKitUpdated={(next) => {
                 setKit(next);
               }}
             />
           ) : null}
 
-          {section === "characters" && isGuidedBrandEnabled() ? <BrandCharactersSection kit={kit} disabled={dirty} onKitUpdated={applyKit}/> : null}
+          {section === "characters" && isGuidedBrandEnabled() ? <BrandCharactersSection modelPhotoRequest={modelPhotoRequest} photoCardSelection kit={kit} disabled={dirty} onKitUpdated={applyKit}/> : null}
 
           {section === "voice" ? (
             <BrandVoiceSection value={voice} onChange={setVoice} />

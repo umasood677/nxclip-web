@@ -1,33 +1,17 @@
-import React,{useEffect,useState} from 'react';
+import React from 'react';
 import {Link} from 'react-router-dom';
-import {Plus,Maximize2} from 'lucide-react';
-import {brandTemplateApi} from '../../../services/apiClient';
-import {Skeleton} from '../../../components/ui/skeleton';
-import {Dialog,DialogContent,DialogTitle} from '../../../components/ui/dialog';
-import {BrandKitBrochure} from './BrandKitBrochure';
-import {BrandTemplateScenePreview} from '../templates/BrandTemplateScenePreview';
-import {isBrandTemplatesEnabled,type BrandTemplate} from '../templates/brandTemplateModel';
-import {useAuthenticatedBrandAssetUrls} from '../../AdStudio/canvas/useAuthenticatedBrandAssetUrls';
-import {useCreativeAssetUrls} from '../../AdStudio/canvas/useCreativeAssetUrls';
-import {unlistedDrafts} from '../templates/templateLibraryWorkflow';
-import type {WorkspaceCreative} from '../../AdStudio/lib/projectWorkspace';
+import {ArrowRight,Palette,Layers,Image,Megaphone,Pencil,Check} from 'lucide-react';
+import {brandOverviewPaths,overviewInventory,overviewCharacterState} from '../overview/brandOverviewModel';
 import type {BrandKitSummary} from '../lib/brandKitTypes';
-export function BrandKitBrochurePreview({kit,dirty}:{kit:BrandKitSummary;dirty:boolean}){
- const [open,setOpen]=useState(false);
- return <section className="bp-ready-brochure"><div className="bp-ready-brochure-cover"><BrandKitBrochure kit={kit} dirty={dirty} summary/></div>
- <button type="button" className="xp-secondary" onClick={()=>setOpen(true)}><Maximize2 size={15}/> View Brand Kit</button>
- <Dialog open={open} onOpenChange={setOpen}><DialogContent className="!max-w-[1100px] !w-[96vw] !max-h-[94dvh] overflow-y-auto"><DialogTitle>{kit.name} · Brand Kit</DialogTitle><BrandKitBrochure kit={kit} dirty={dirty}/></DialogContent></Dialog></section>;
-}
-export function BrandKitReadyCollection({kit,dirty}:{kit:BrandKitSummary;dirty:boolean}){
- const [records,setRecords]=useState<BrandTemplate[]>([]),[drafts,setDrafts]=useState<WorkspaceCreative[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
- const enabled=isBrandTemplatesEnabled(),base='/brands/'+encodeURIComponent(kit.id)+'/templates';
- const brandUrls=useAuthenticatedBrandAssetUrls(kit),generated=useCreativeAssetUrls(records.flatMap(t=>t.provenance.sourceCreativeId?[t.provenance.sourceCreativeId]:[]));
- useEffect(()=>{let active=true;setLoading(true);setRecords([]);setDrafts([]);setError('');
- if(!enabled){setLoading(false);return;}
- void Promise.all([brandTemplateApi.list(kit.id),brandTemplateApi.listDrafts(kit.id)]).then(([r,d])=>{if(active){setRecords(r.items.filter(t=>t.brandKitId===kit.id));setDrafts(d.items);}}).catch(()=>{if(active)setError('Templates could not be loaded.');}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};
- },[kit.id,enabled]);
- const unmatched=unlistedDrafts(records,drafts);
- return <section className="xp-panel bp-ready-templates"><header><h2>Brand Templates ({records.length+unmatched.length})</h2><Link className="xp-primary" aria-disabled={dirty} to={dirty?'#':base+'?tab=brand&mode=ai'}><Plus size={15}/> Create template</Link></header>
- {loading?<Skeleton className="h-40 w-full"/>:error?<p role="alert">{error}</p>:!records.length&&!unmatched.length?<p>No templates yet.</p>:<div className="bp-ready-template-grid">{records.map(t=><Link key={t.id} to={base+'/'+encodeURIComponent(t.id)}><BrandTemplateScenePreview graph={t.sceneGraph} assetUrls={{...brandUrls,...generated}} size="card" maxHeight={180}/><strong>{t.name}</strong><small>{t.saved?'Saved':t.state} · {kit.name}</small></Link>)}{unmatched.map(d=><Link key={d.id} to={base+'?tab=brand&mode='+(d.templateContext?.draftKind||'ai')+'&source='+encodeURIComponent(d.id)}><strong>{d.name}</strong><small>Draft · {kit.name}</small></Link>)}</div>}
+import '../overview/brandOverview.css';
+export function BrandKitReadySummary({kit,dirty,urls,onEdit,onAssets}:{kit:BrandKitSummary;dirty:boolean;urls:Record<string,string>;onEdit:()=>void;onAssets:()=>void}){
+ const paths=brandOverviewPaths(kit.id),inventory=overviewInventory(kit),logo=inventory.logos.find(a=>a.role==='logo_primary')||inventory.logos[0];
+ const leave=(e:React.MouseEvent<HTMLAnchorElement>)=>{if(dirty&&!window.confirm('Open the saved Brand Kit without saving these changes?'))e.preventDefault();};
+ return <section className="xp-panel bp-ready-summary">
+  <header><div className="bp-ready-mark">{logo&&urls[logo.id]?<img src={urls[logo.id]} alt={kit.name+' logo'}/>:<Palette size={30}/>}</div><div><h2>{kit.name}</h2>{kit.voice?.tagline&&<p>{kit.voice.tagline}</p>}<span className="bp-ready-state"><Check size={13}/>{inventory.reviewed?'Ready':'Review needed'}</span></div></header>
+  <div className="bp-ready-identity-preview"><div>{(kit.colors||[]).map((color,i)=><span key={color.role||i} style={{backgroundColor:color.hex}} title={(color.name||color.role||'Color')+' '+color.hex}/>)}</div><span>{(kit.typography||[]).slice(0,2).map(t=>t.family).join(' · ')||'Typography not set'}</span></div>
+  <dl className="bp-ready-counts"><div><dt>Assets</dt><dd>{inventory.assets.length}</dd></div><div><dt>Product photos</dt><dd>{inventory.productPhotos.length}</dd></div><div><dt>Usable profiles</dt><dd>{inventory.characters.filter(p=>overviewCharacterState(p,kit).usable).length}</dd></div></dl>
+  <div className="xp-actions"><Link className="xp-primary" to={paths.overview} onClick={leave}>View Brand Kit <ArrowRight size={15}/></Link><button type="button" className="xp-secondary" onClick={onEdit}><Pencil size={14}/> Edit Brand Kit</button><button type="button" className="xp-secondary" onClick={onAssets}><Image size={14}/> Manage Assets</button><Link className="xp-secondary" to={paths.createAd} onClick={leave}><Megaphone size={14}/> Open Ad Studio</Link></div>
+  <footer><Link to={paths.templates} onClick={leave}><Layers size={14}/> Brand Templates <ArrowRight size={13}/></Link>{kit.updatedAt&&<span>Last updated <time dateTime={kit.updatedAt}>{new Date(kit.updatedAt).toLocaleString()}</time></span>}</footer>
  </section>;
 }

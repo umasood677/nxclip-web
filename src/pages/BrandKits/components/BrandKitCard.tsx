@@ -75,7 +75,7 @@ export function BrandKitCard({
       )}
     >
       <Link
-        to={`/brands/${kit.id}`}
+        to={`/brands/${encodeURIComponent(kit.id)}/overview`}
         className="bk-brand-cover"
         aria-label={`Open ${kit.name} brand identity`}
         style={{ "--bk-brand-accent": brandAccent } as React.CSSProperties}
@@ -148,7 +148,7 @@ export function BrandKitCard({
                   />
                 ) : null}
                 <Link
-                  to={`/brands/${kit.id}`}
+                  to={`/brands/${encodeURIComponent(kit.id)}/overview`}
                   className="truncate font-display text-base font-semibold text-foreground hover:underline"
                 >
                   {kit.name}
@@ -168,7 +168,7 @@ export function BrandKitCard({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
-                    onClick={() => navigate(`/brands/${kit.id}`)}
+                    onClick={() => navigate(`/brands/${encodeURIComponent(kit.id)}/overview`)}
                   >
                     <Pencil size={14} className="mr-2" />
                     Open Brand Kit
@@ -250,7 +250,7 @@ export function BrandKitCard({
             className="flex-1"
             asChild
           >
-            <Link to={`/brands/${kit.id}`}>
+            <Link to={`/brands/${encodeURIComponent(kit.id)}/overview`}>
               <Pencil size={12} className="mr-1" /> Open Brand Kit
             </Link>
           </Button>
