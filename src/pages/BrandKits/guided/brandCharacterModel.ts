@@ -148,7 +148,15 @@ export function modelProfileForAsset(profiles:BrandCharacterProfile[],assets:Bra
 }
 export function modelPhotoPresentation(profiles:BrandCharacterProfile[],assets:BrandAssetEntry[],assetId:string,now=new Date()){
  const profile=modelProfileForAsset(profiles,assets,assetId,now);
- if(!profile)return {action:"Use model image",status:"",approved:false,linked:false};
+ if(!profile)return {action:"Create profile",status:"Profile needed",approved:false,linked:false};
  if(profile.status==="approved"){const issues=characterReviewIssues(profile,assets,now);if(!issues.length)return {action:"Edit profile",status:"Approved",approved:true,linked:true};return {action:"Review profile",status:issues.some(issue=>/expired|invalid/i.test(issue))?"Authorization expired":"Review needed",approved:false,linked:true};}
  return {action:profile.status==="draft"?"Complete profile":"Edit profile",status:profile.status==="draft"?"Draft":"Archived",approved:false,linked:true};
+}
+
+/** Profile saves do not resubmit unrelated asset approvals or creative settings. */
+export function characterProfilePatch(kit:import('../lib/brandKitTypes').BrandKitSummary,profile:BrandCharacterProfile,expectedVersion:number|undefined){
+ const studio=kit.voice?.studio;
+ if(!studio||!Number.isSafeInteger(expectedVersion)||expectedVersion!==kit.version)throw Error('Brand Kit changed. Reopen the profile before saving; your draft is retained.');
+ const issues=characterReviewIssues(profile,kit.assets||[]);if(issues.length)throw Error(issues.join(' '));
+ return {expectedVersion,voice:{studio:{schemaVersion:studio.schemaVersion,categoryId:studio.categoryId,nicheId:studio.nicheId,businessGoals:studio.businessGoals,identityApproved:studio.identityApproved,guidelinesApproved:studio.guidelinesApproved,characters:[...(studio.characters||[]).filter(p=>p.id!==profile.id),profile]}}};
 }

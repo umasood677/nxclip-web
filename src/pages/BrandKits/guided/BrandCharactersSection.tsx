@@ -4,7 +4,6 @@ import { uploadBrandImage } from "../lib/uploadBrandImage";
 import { BrandContentLibraryPicker } from "../components/BrandContentLibraryPicker";
 import { useAuthenticatedBrandAssetUrls } from "../../AdStudio/canvas/useAuthenticatedBrandAssetUrls";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { Plus, Save, Upload, ImagePlus, Loader2, Users } from "lucide-react";
 import { Input } from "../../../components/ui/input";
 import { Textarea } from "../../../components/ui/textarea";
@@ -15,6 +14,7 @@ import type {
   BrandKitSummary,
 } from "../lib/brandKitTypes";
 import {
+  characterProfilePatch,
   profileForModelPhoto,
   CHARACTER_SCOPES,
   characterReviewIssues,
@@ -45,6 +45,9 @@ export function BrandCharactersSection({
   const [discardRequested, setDiscardRequested] = useState(false);
   const [uploading, setUploading] = useState(false),
     [libraryOpen, setLibraryOpen] = useState(false);
+  const editorRef=useRef<HTMLDivElement>(null);
+  const activeProfileId=draft?.id;
+  useEffect(()=>{if(!activeProfileId)return;editorRef.current?.scrollIntoView({behavior:"smooth",block:"nearest"});editorRef.current?.querySelector<HTMLInputElement>("input:not([type=checkbox])")?.focus({preventScroll:true});},[activeProfileId]);
   const inputRef = useRef<HTMLInputElement>(null),
     operation = useRef(false);
   const assetUrls = useAuthenticatedBrandAssetUrls(kit);
@@ -102,21 +105,13 @@ export function BrandCharactersSection({
     setError("");
     setMessage("");
     try {
-      const updated: BrandKitSummary = await brandApi.updateKit(kit.id, {
-        expectedVersion: draftVersion.current,
-        voice: {
-          studio: {
-            ...kit.voice.studio,
-            characters: [...profiles.filter((p) => p.id !== draft.id), draft],
-          },
-        },
-      });
+      const updated: BrandKitSummary = await brandApi.updateKit(kit.id, characterProfilePatch(kit,draft,draftVersion.current));
       onKitUpdated(updated);
       baseline.current = JSON.stringify(draft);
       draftVersion.current = updated.version;
       setDraft(null);
       setMessage(
-        "Character profile saved.",
+        "Profile saved.",
       );
     } catch (e) {
       setError(
@@ -206,10 +201,10 @@ export function BrandCharactersSection({
       />
     );
   return (
-    <section className="space-y-5 bp-characters">
+    <section className={"space-y-5 bp-characters"+(draft?" bp-characters--editing":"")}>
       <header>
         <h2 className="text-xl font-semibold">
-          <Users size={16}/> Models & Mascots ({profiles.length})
+          <Users size={16}/> {draft?(draft.kind==="human-model"?"Model profile":"Character profile"):"Models & Mascots ("+profiles.length+")"}
         </h2>
       </header>
       {disabled && (
@@ -226,7 +221,7 @@ export function BrandCharactersSection({
         disabled={disabled || saving || uploading}
         className="min-w-0 space-y-5"
       >
-        <div className="flex flex-wrap gap-3 bp-character-actions">
+        {!draft&&<><div className="flex flex-wrap gap-3 bp-character-actions">
           <button
             type="button"
             className="xp-primary"
@@ -373,13 +368,14 @@ export function BrandCharactersSection({
             description="Add a model or mascot, link its photos, and confirm permitted use."
           />
         )}
+        </>}
         {draft && dirty && (
           <p className="bp-character-draft-status" role="status">
             Unsaved profile changes
           </p>
         )}
         {draft && (
-          <div className="bp-character-editor-shell">
+          <div ref={editorRef} className="bp-character-editor-shell" role="region" aria-label="Profile editor">
             <div className="grid gap-6 xl:grid-cols-2 bp-character-editor">
               <section className="rounded-xl border border-white/10 bg-white/[0.02] p-5 space-y-4">
                 <label className="grid gap-2 text-sm">
@@ -484,10 +480,6 @@ export function BrandCharactersSection({
                     Choose from Content Library
                   </button>
                 </div>
-                <p className="bp-character-explainer">
-                  References link to existing assets; they are not duplicate
-                  uploads.
-                </p>
                 <p className="bp-character-selection-count">
                   {draft.referenceAssetIds.length} / 8 references selected
                 </p>
@@ -565,21 +557,6 @@ export function BrandCharactersSection({
                     ))}
                   </details>
                 )}
-                <Link
-                  className="inline-flex text-sm underline underline-offset-4"
-                  to={"/brands/" + kit.id + "/guided?step=assets"}
-                  onClick={(event) => {
-                    if (
-                      dirty &&
-                      !window.confirm(
-                        "Leave without saving the character draft? Cancel to stay and save.",
-                      )
-                    )
-                      event.preventDefault();
-                  }}
-                >
-                  Manage uploaded references
-                </Link>
                 <hr className="border-white/10" />
                 <h3 className="font-semibold">Usage authorization</h3>
                 <label className="grid gap-2 text-sm">
@@ -711,7 +688,7 @@ export function BrandCharactersSection({
                   disabled={saving}
                 >
                   <Save size={15} />
-                  {saving ? "Saving…" : "Save character profile"}
+                  {saving ? "Saving…" : "Save profile"}
                 </button>
                 <button
                   type="button"

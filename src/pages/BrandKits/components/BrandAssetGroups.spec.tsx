@@ -12,12 +12,12 @@ test('logos and campaign references are fixed cards with replacement but no dele
  for(const role of roles)assert.match(html,new RegExp('product-name-'+role));
  assert.equal((html.match(/Description &amp; usage/g)||[]).length,5);assert.doesNotMatch(html,/bpp-remove/);assert.doesNotMatch(html,/Uploaded candidates|Drop image or upload/);
 });
-test('every model photo exposes Use model image directly, without calling it while viewing',()=>{
+test('every model photo exposes Create profile directly, without calling it while viewing',()=>{
  const assets=['front','side'].map(id=>({id,role:'brand_model',status:'ready',mimeType:'image/png',label:id}));
  let calls=0;const html=renderToStaticMarkup(<BrandAssetsSection brandId="kit" assets={assets} onKitUpdated={()=>{}} onUseModelImage={()=>calls++}/>);
- assert.equal((html.match(/>Use model image<\/span>/g)||[]).length,2);assert.equal(calls,0);
+ assert.equal((html.match(/>Create profile<\/span>/g)||[]).length,2);assert.equal(calls,0);
 });
-test('Use model image opens a linked profile without modifying approval or creating a duplicate',()=>{
+test('Create profile opens a linked profile without modifying approval or creating a duplicate',()=>{
  const profile={...newBrandCharacter('profile'),name:'Existing model',referenceAssetIds:['photo'],status:'approved' as const};
  const kit={assets:[{id:'photo',role:'brand_model',status:'ready',mimeType:'image/png'}],voice:{studio:{characters:[profile]}}},before=JSON.stringify(kit);
  const result=profileForModelPhoto(kit,'photo');assert.equal(result.id,'profile');assert.equal(result.status,'approved');assert.notEqual(result,profile);assert.equal(JSON.stringify(kit),before);
@@ -36,12 +36,12 @@ test('singleton replacement is explicit and guarded, and model selection stays b
 
 test("empty logo/reference slots offer Add image and never Delete",()=>{const html=renderToStaticMarkup(<BrandAssetsSection brandId="kit" assets={[]} onKitUpdated={()=>{}}/>);assert.equal((html.match(/bpp-empty-slot/g)||[]).length,5);for(const label of ["Primary logo","Light logo","Dark logo","Brand icon","Campaign reference"])assert.ok(html.includes(label));assert.doesNotMatch(html,/bpp-remove|>Replace image</);});
 
-test('approved model photos show a non-button Approved badge and Edit profile instead of Use model image',()=>{
+test('approved model photos show a non-button Approved badge and Edit profile instead of Create profile',()=>{
  const assets=[{id:'linked',role:'brand_model',status:'ready',mimeType:'image/png',label:'Approved model'},{id:'unlinked',role:'brand_model',status:'ready',mimeType:'image/png',label:'New reference'}];
  const profile={...newBrandCharacter('linked-profile'),name:'Approved model',kind:'human-model' as const,status:'approved' as const,referenceAssetIds:['linked'],permissions:{commercialUse:true,likenessConsent:true,origin:'licensed' as const,scopes:['ad-studio' as const],evidence:'Synthetic release'}};
  const html=renderToStaticMarkup(<BrandAssetsSection brandId="kit" assets={assets} modelProfiles={[profile]} onKitUpdated={()=>{}} onUseModelImage={()=>{}}/>);
  assert.match(html,/<span class="bpp-model-status"[^>]*data-approved="true"[^>]*>Approved<\/span>/);
- assert.equal((html.match(/>Use model image<\/span>/g)||[]).length,1);assert.match(html,/>Edit profile<\/span>/);
+ assert.equal((html.match(/>Create profile<\/span>/g)||[]).length,1);assert.match(html,/>Edit profile<\/span>/);
  assert.doesNotMatch(html,/<button[^>]*>Approved<\/button>/);assert.match(html,/class="bpp-model-action"/);
 });
 test('expired approved profiles show Review profile and are never labelled currently approved',()=>{

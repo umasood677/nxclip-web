@@ -372,3 +372,23 @@
 .bp-character-scopes label { display:flex; gap:8px; align-items:center; font-size:13px; }
 .bp-character-scopes input { accent-color:var(--xp-accent,#c4a574); }
 @media(max-width:600px) { .bp-character-profile-card { padding:18px; } .bp-character-profile-heading .bp-character-avatar { width:64px; height:80px; } .bp-character-editor-footer .bp-character-actions { justify-content:flex-start; } }
+
+/* Edit in the existing right-hand profile panel; keep the image library in place. */
+.bp-model-profiles:has(.bp-characters--editing){position:sticky;top:80px;max-height:calc(100dvh - 100px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.bp-model-profiles .bp-characters--editing{gap:12px}
+.bp-model-profiles .bp-character-editor{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.bp-model-profiles .bp-character-editor>section{padding:0;background:none;border:0;border-radius:0}
+.bp-model-profiles .bp-character-editor>section+section{border-top:1px solid var(--xp-line,#ffffff20);padding-top:14px}
+.bp-model-profiles .bp-character-editor label{gap:5px;font-size:12px}
+.bp-model-profiles .bp-character-editor input:not([type=checkbox]),.bp-model-profiles .bp-character-editor select{height:36px;min-height:36px;padding:6px 9px}
+.bp-model-profiles .bp-character-editor textarea{min-height:64px;padding:8px 9px}
+.bp-model-profiles .bp-character-editor h3{font-size:13px;margin:0}
+.bp-model-profiles .bp-character-draft-status{padding:0;border:0;margin:8px 0;color:var(--xp-accent,#c4a574);font-size:11px}
+.bp-model-profiles .bp-character-editor-footer{position:sticky;bottom:-16px;z-index:2;background:#171920;border-top:1px solid var(--xp-line,#ffffff20);padding:12px 0;margin-top:14px}
+.bp-model-profiles .bp-character-editor-footer .bp-character-actions{justify-content:stretch;gap:8px}
+.bp-model-profiles .bp-character-editor-footer .bp-character-actions>button{flex:1;min-height:36px;font-size:12px}
+.bp-model-profiles .bp-character-upload-actions{gap:8px}
+.bp-model-profiles .bp-character-upload-actions>button{font-size:11px;min-height:32px;padding:6px 8px}
+.bp-model-profiles .bp-character-selection-count{margin:8px 0;font-size:11px}
+.bp-model-profiles .bp-character-optional{font-size:12px}.bp-model-profiles .bp-character-optional>div{display:grid;gap:10px;padding-top:10px}
+@media(max-width:1000px){.bp-model-profiles:has(.bp-characters--editing){position:static;max-height:none;overflow:visible}.bp-model-profiles .bp-character-editor-footer{bottom:0}}

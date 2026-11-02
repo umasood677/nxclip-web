@@ -63,10 +63,15 @@
 .bp-model-profiles .bp-character-characteristics>div{display:grid;grid-template-columns:86px minmax(0,1fr);gap:10px;padding:9px 0;border-bottom:1px solid #ffffff10}
 .bp-model-profiles .bp-character-characteristics dt{font-size:11px;color:#aaa4b4;letter-spacing:normal}
 .bp-model-profiles .bp-character-characteristics dd{margin:0;font-size:11px;line-height:1.55;color:#e3dce8;overflow-wrap:anywhere}
-.bp-model-workspace:has(.bp-character-editor-shell){grid-template-columns:1fr}
+
 @media(max-width:1000px){.bp-model-workspace--with-profiles{grid-template-columns:1fr}.bp-model-profiles{padding:14px}}
 
 .bp-model-profiles .bp-character-section{margin:0;padding:0;border:0}.bp-model-profiles .bp-characters>fieldset{margin-top:12px}.bp-model-profiles .bp-character-profile-list{margin-top:14px}
 
 /* Keep scrollable logo rows and the adjacent profile workspace within the wizard. */
 .bpp-assets,.bpp-section,.bpp-grid,.bp-model-workspace{min-width:0;max-width:100%;box-sizing:border-box}.bpp-assets{width:100%}
+
+/* Fixed logo slots use the same compact secondary action treatment as asset cards. */
+.bpp-section .bpp-actions .bpp-replace{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto;min-height:34px;padding:6px 9px;border:1px solid #ffffff1c;border-radius:6px;background:#ffffff04;color:var(--xp-text,#e4e2dd);font:inherit;font-size:11px;font-weight:500;line-height:1.35;white-space:nowrap;box-shadow:none;transition:background .15s,border-color .15s}
+.bpp-section .bpp-actions .bpp-replace:hover:not(:disabled){background:#ffffff0a;border-color:#ffffff30;filter:none}
+.bpp-section .bpp-actions .bpp-replace svg{width:14px;height:14px;flex-shrink:0}
