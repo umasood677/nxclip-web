@@ -11,7 +11,7 @@ const LOGO_ROLES=ASSET_SLOTS.filter(slot=>slot.role!=='product_image'&&slot.role
 export function BrandAssetsSection({brandId,assets,onKitUpdated,onManageCharacters,onUseModelImage,modelProfiles=[],modelProfilePanel}:Props){
  const kit=useMemo(()=>({id:brandId,name:'',assets}),[brandId,assets]),assetUrls=useAuthenticatedBrandAssetUrls(kit);
  return <div className="space-y-5 bpp-assets" id={'brand-'+brandId+'-assets'}>
- <h2 className="font-display text-lg font-semibold">Logos &amp; Assets ({assets.length})</h2>
+
  <BrandProductPhotos key={brandId+':logos'} brandId={brandId} assets={assets} urls={assetUrls} onKitUpdated={onKitUpdated} role="logo_primary" roleOptions={LOGO_ROLES} title="Logos & campaign references" addLabel="Add logo or reference" singleRow/>
  <BrandProductPhotos key={brandId+':products'} brandId={brandId} assets={assets} urls={assetUrls} onKitUpdated={onKitUpdated}/>
  <div className={"bp-model-workspace"+(modelProfilePanel?" bp-model-workspace--with-profiles":"")}>  <BrandProductPhotos key={brandId+':models'} brandId={brandId} assets={assets} urls={assetUrls} onKitUpdated={onKitUpdated} role="brand_model" modelProfiles={modelProfiles} onManageCharacters={onManageCharacters} onUseModelImage={onUseModelImage}/>{modelProfilePanel&&<aside className="bp-model-profiles">{modelProfilePanel}</aside>}</div>

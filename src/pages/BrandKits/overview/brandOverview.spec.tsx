@@ -49,3 +49,10 @@ test('overview route stays protected and uses existing authenticated data access
  assert.match(source,/brandApi.getKit\(brandId\)/);assert.match(source,/result.id!==brandId/);assert.match(source,/active=false/);
  assert.doesNotMatch(source,/brandApi\.(create|update|delete)|fetch\(|localStorage/);
 });
+
+test('Ready distinguishes review, missing identity configuration and unsaved state without data writes',()=>{
+ const Ready=loadReady(),before=JSON.stringify(kit),html=renderToStaticMarkup(<Ready kit={kit} dirty={true} urls={{}} onEdit={()=>{}} onAssets={()=>{}}/>);
+ assert.match(html,/Unsaved changes/);assert.match(html,/Brand Kit readiness/);assert.match(html,/Brand identity/);assert.match(html,/Creative guidelines/);assert.match(html,/0 colors · 0 fonts/);assert.match(html,/1 available/);assert.equal((html.match(/data-complete="true"/g)||[]).length,3);assert.equal(JSON.stringify(kit),before);
+ const missing={...kit,voice:{...kit.voice,studio:{...kit.voice!.studio!,identityApproved:false,guidelinesApproved:false}}};
+ const needsReview=renderToStaticMarkup(<Ready kit={missing} dirty={false} urls={{}} onEdit={()=>{}} onAssets={()=>{}}/>);assert.match(needsReview,/Review needed/);assert.match(needsReview,/Review identity/);assert.match(needsReview,/Review guidelines/);
+});

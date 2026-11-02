@@ -682,3 +682,16 @@
 @media(max-width:700px){.bp-guided-root .bp-ready-layout{grid-template-columns:1fr}.bp-ready-templates>header{flex-wrap:wrap}.bp-ready-template-grid{grid-template-columns:1fr}}
 
 .bp-character-optional{border-top:1px solid #ffffff14;padding-top:12px}.bp-character-optional summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-size:12px;color:#d2bc96}.bp-character-optional summary span{font-size:10px;color:#9f99aa}.bp-character-optional>div{display:grid;gap:12px;margin-top:12px}
+
+/* Compact wizard chrome retains all seven steps. */
+.bp-guided-root .xp-main{padding:20px 24px;max-width:none}
+.bp-guided-root .xp-page-heading{gap:16px;margin:0 0 14px;align-items:center}
+.bp-guided-root .xp-breadcrumb{margin-bottom:6px}
+.bp-guided-root .xp-page-heading h1{font-size:clamp(22px,2vw,28px);line-height:1.2;margin:0}
+.bp-guided-root .xp-page-heading .xp-actions{gap:8px}
+.bp-guided-root .xp-page-heading .xp-secondary{padding:9px 13px;min-height:38px}
+.bp-guided-root .xp-wizard-steps{position:sticky;top:0;z-index:5;display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;padding:8px 0 12px;margin:0 0 16px;background:var(--xp-bg,#0d0e11);scrollbar-width:thin}
+.bp-guided-root .xp-wizard-steps button{flex:none;padding:8px 12px;min-height:38px;font-size:12px}
+.bp-guided-root .xp-wizard-steps button>span{width:22px;height:22px;font-size:11px}
+.bp-guided-root .bp-fieldset>.xp-panel:has(>.bpp-assets){padding:16px}
+@media(max-width:700px){.bp-guided-root .xp-main{padding:16px}.bp-guided-root .xp-page-heading{flex-wrap:wrap}.bp-guided-root .xp-page-heading .xp-actions{width:100%;justify-content:flex-start}.bp-guided-root .xp-wizard-steps{margin-bottom:12px}}

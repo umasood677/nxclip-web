@@ -214,12 +214,12 @@ export default function BrandKitDashboard() {
   };
 
   return (
-    <div className="xp-root nxclip-production bk-library space-y-6">
+    <div className="xp-root nxclip-production bk-library space-y-4">
       <SEO title="Brand Kit Studio | NxClip" />
 
       <section className="bk-library-hero">
-        <div className="relative flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-3 max-w-xl">
+        <div className="bk-library-heading">
+          <div className="bk-library-title">
             <div className="flex items-center gap-2 text-primary">
               <Palette size={18} />
               <span className="text-xs font-semibold uppercase tracking-[0.16em]">
@@ -227,12 +227,10 @@ export default function BrandKitDashboard() {
               </span>
             </div>
             <h1 className="text-3xl md:text-4xl font-display font-semibold tracking-tight text-foreground leading-[1.1]">
-              A home for every brand you build.
+              Your Brand Kits
             </h1>
             <p className="text-sm md:text-base text-muted-foreground">
-              Your identity, products and creative direction — together in one
-              place. Open any Brand Kit to refine its palette, voice and asset
-              library.
+              Identity, assets and templates — together in one place.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -253,10 +251,7 @@ export default function BrandKitDashboard() {
             </Button>
           </div>
         </div>
-      </section>
-
-      {!loading && !error && kits.length>0 && <div className="bk-library-summary" aria-label="Brand library overview"><div><strong>{kits.length}</strong><span>Brand identities</span></div><div><strong>{kits.reduce((total,kit)=>total+(kit.assets?.filter(asset=>asset.status==="ready").length||0),0)}</strong><span>Uploaded assets</span></div><div><strong>{kits.filter(kit=>kit.typography?.length).length}</strong><span>With typography</span></div>{import.meta.env.DEV && <Link to="/create/ad/uat">Open UAT checklist →</Link>}</div>}
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="bk-library-tools">
         <div className="relative max-w-md flex-1">
           <Search
             size={16}
@@ -299,6 +294,9 @@ export default function BrandKitDashboard() {
           </Button>
         </div>
       </div>
+
+      </section>
+
 
       {loading ? (
         <div
@@ -368,6 +366,8 @@ export default function BrandKitDashboard() {
           ))}
         </div>
       )}
+
+      {import.meta.env.DEV && <footer className="bk-library-footer"><Link to="/create/ad/uat">UAT checklist →</Link></footer>}
 
       <BrandKitImportDialog
         open={importOpen}

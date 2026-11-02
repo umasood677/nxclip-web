@@ -70,7 +70,7 @@ const TITLES = [
   "A brand starts with a story.",
   "Find your creative territory.",
   "What does success look like?",
-  "Build a library with a point of view.",
+  "Brand assets",
   "An identity, ready for your judgment.",
   "Make the signature unmistakable.",
   "Your brand. Ready to create.",
