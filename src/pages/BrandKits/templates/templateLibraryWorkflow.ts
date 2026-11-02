@@ -5,8 +5,9 @@ export function templateResponseId(value: Partial<BrandTemplate> | null | undefi
  return value.id;
 }
 export function unlistedDrafts<T extends WorkspaceCreative>(records: BrandTemplate[], drafts: T[], search = '') {
+ const templateIds=new Set(records.map(t=>t.id));
  const published = new Set(records.flatMap(t=>t.provenance.sourceCreativeId ? [t.provenance.sourceCreativeId] : []));
- return drafts.filter(d=>!published.has(d.id)&&d.name.toLowerCase().includes(search.toLowerCase()));
+ return drafts.filter(d=>!published.has(d.id)&&!templateIds.has(d.templateContext?.brandTemplateId||String(d.conceptSnapshot?.brandTemplateId||''))&&d.name.toLowerCase().includes(search.toLowerCase()));
 }
 export function templateError(value: unknown) {
  const e=value as {statusCode?:number;message?:string};
