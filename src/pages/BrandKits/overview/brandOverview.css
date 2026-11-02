@@ -75,3 +75,13 @@
 .bp-ready-counts dd small{font-size:11px;font-weight:400;color:#aaa4b5}
 @media(max-width:800px){.bp-ready-checklist{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:420px){.bp-ready-checklist{grid-template-columns:1fr}.bp-ready-counts{grid-template-columns:1fr}}
+
+/* Keep owned header images visible while profiles are edited; campaign permission gates are separate. */
+.bo-hero--with-art{min-height:320px}
+.bo-hero .bo-hero-media{width:42%;inset:58px 0 52px auto;padding:6px 24px;gap:20px}
+.bo-hero .bo-hero-card--model{flex:0 1 164px;height:205px;max-height:none}
+.bo-hero .bo-hero-card--product{flex:0 1 140px;height:175px;max-height:none}
+.bo-hero-card>.bo-asset-image{width:100%;height:100%;aspect-ratio:auto;border-radius:inherit}
+.bo-hero .bo-hero-card--model img{object-fit:cover;object-position:center 20%}
+@media(max-width:760px){.bo-hero--with-art{min-height:0}.bo-hero .bo-hero-media{position:relative;inset:auto;width:100%;height:224px;padding:14px 16px;gap:18px}.bo-hero .bo-hero-card--model{flex-basis:152px;height:190px}.bo-hero .bo-hero-card--product{flex-basis:128px;height:160px}}
+@media(max-width:400px){.bo-hero .bo-hero-media{gap:12px;padding-left:8px;padding-right:8px}.bo-hero .bo-hero-card--model{flex-basis:136px;height:170px}.bo-hero .bo-hero-card--product{flex-basis:112px;height:140px}}

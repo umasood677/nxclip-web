@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {MemoryRouter} from 'react-router-dom';
 import {BrandOverviewProducts} from './BrandOverviewProducts';
-import {overviewHeaderAssets} from './brandOverviewModel';
+import {overviewHeaderAssets,overviewCharacterState} from './brandOverviewModel';
 import {newBrandCharacter} from '../guided/brandCharacterModel';
 import type {BrandKitSummary} from '../lib/brandKitTypes';
 const assets=['Red','Maroon','Brown'].map((name,index)=>({id:'photo-'+index,role:'product_image',status:'ready',mimeType:'image/png',label:name}));
@@ -31,8 +31,20 @@ test('header chooses brand-owned product and eligible model references without a
  const before=JSON.stringify(configured),header=overviewHeaderAssets(configured);
  assert.equal(header.model?.id,model.id);assert.equal(header.product?.id,'photo-1');assert.equal(JSON.stringify(configured),before);
  const expired={...profile,permissions:{...profile.permissions,expiresAt:'2000-01-01'}};
- assert.equal(overviewHeaderAssets({...configured,voice:{studio:{...configured.voice!.studio!,characters:[expired]}}}).model,undefined);
+ assert.equal(overviewHeaderAssets({...configured,voice:{studio:{...configured.voice!.studio!,characters:[expired]}}}).model?.id,model.id);
 });
 
 
 test("Brand Kit header reuses Ad Studio framed image styling without changing prototype assets",()=>{const root=process.cwd()+"/src/pages/BrandKits/overview/",source=readFileSync(root+"BrandKitOverview.tsx","utf8"),css=readFileSync(root+"brandOverview.css","utf8");assert.match(source,/w0a-ads-hero__frame bo-hero-card bo-hero-card--model/);assert.match(source,/w0a-ads-hero__frame bo-hero-card bo-hero-card--product/);assert.match(css,/border-radius:10px/);assert.match(css,/bo-hero-card--product\{transform:translateY\(8px\) rotate\(6deg\)/);});
+
+test('an uploaded model remains in the private header while its profile is a draft, without granting campaign permission',()=>{
+ const model={id:'draft-photo',role:'brand_model',status:'ready',mimeType:'image/png'},profile={...newBrandCharacter('draft-profile'),name:'Draft model',referenceAssetIds:[model.id]},current:BrandKitSummary={...kit,assets:[model],voice:{studio:{schemaVersion:1,categoryId:'Beauty',nicheId:'Beauty',businessGoals:[],identityApproved:true,guidelinesApproved:true,approvedAssetIds:[],characters:[profile]}}},before=JSON.stringify(current);
+ assert.equal(overviewHeaderAssets(current).model?.id,model.id);assert.equal(overviewCharacterState(profile,current).usable,false);assert.equal(JSON.stringify(current),before);
+});
+test('header model fallback uses only ready model images owned by the current kit',()=>{
+ const current:BrandKitSummary={...kit,assets:[{id:'pending',role:'brand_model',status:'pending',mimeType:'image/png'},{id:'other',role:'campaign_reference',status:'ready',mimeType:'image/png'}]};assert.equal(overviewHeaderAssets(current).model,undefined);
+ current.assets!.push({id:'ready-model',role:'brand_model',status:'ready',mimeType:'image/png'});assert.equal(overviewHeaderAssets(current).model?.id,'ready-model');
+});
+test('model header frame remains mounted during URL loading and uses a larger responsive portrait',()=>{
+ const source=readFileSync('src/pages/BrandKits/overview/BrandKitOverview.tsx','utf8'),css=readFileSync('src/pages/BrandKits/overview/brandOverview.css','utf8');assert.match(source,/headerAssets.model&&<div/);assert.doesNotMatch(source,/headerAssets.model&&urls\[headerAssets.model.id\]&&/);assert.match(source,/<AssetPreview asset=\{headerAssets.model\}/);assert.match(css,/bo-hero-card--model\{flex:0 1 164px;height:205px/);assert.match(css,/@media\(max-width:400px\)/);
+});

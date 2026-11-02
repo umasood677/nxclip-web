@@ -21,10 +21,11 @@ export function overviewCharacterState(profile:BrandCharacterProfile,kit:BrandKi
 }
 
 
+/** Private owner preview only; this selection never grants generation or campaign permission. */
 export function overviewHeaderAssets(kit:BrandKitSummary){
  const inventory=overviewInventory(kit),approved=new Set(kit.voice?.studio?.approvedAssetIds||[]);
  const profile=inventory.characters.find(p=>overviewCharacterState(p,kit).usable&&p.referenceAssetIds.some(id=>inventory.images.some(a=>a.id===id)));
- return {product:inventory.productPhotos.find(a=>approved.has(a.id))||inventory.productPhotos[0],model:profile?inventory.images.find(a=>profile.referenceAssetIds.includes(a.id)):undefined};
+ return {product:inventory.productPhotos.find(a=>approved.has(a.id))||inventory.productPhotos[0],model:(profile?inventory.images.find(a=>profile.referenceAssetIds.includes(a.id)):undefined)||inventory.images.find(a=>a.role==='brand_model')};
 }
 
 export function overviewModelEntries(kit:BrandKitSummary){

@@ -22,6 +22,7 @@ import './brandOverview.css';
 
 function AssetPreview({asset,url}:{asset:BrandAssetEntry;url?:string}){
  const [failed,setFailed]=useState(false);
+ useEffect(()=>setFailed(false),[asset.id,url]);
  const label=asset.label||asset.fileName||ASSET_SLOTS.find(s=>s.role===asset.role)?.label||'Brand asset';
  return <div className="bo-asset-image">{url&&!failed?<img src={url} alt={label} onError={()=>setFailed(true)}/>:failed?<span><Image size={22}/> Preview unavailable</span>:<Skeleton className="h-full w-full" aria-label={'Loading '+label}/>}</div>;
 }
@@ -38,7 +39,7 @@ export function BrandKitOverviewContent({kit}:{kit:BrandKitSummary}){
   <main className="bo-main">
    <nav className="bo-breadcrumb" aria-label="Breadcrumb"><Link to="/brands"><ArrowLeft size={15}/> Brand Kits</Link><span>/</span><span>{kit.name}</span></nav>
    <header className={"bo-hero"+(hasHeaderArt?" bo-hero--with-art":"")}>
-    {hasHeaderArt&&<div className="bo-hero-media" aria-hidden="true">{headerAssets.model&&urls[headerAssets.model.id]&&<div className="w0a-ads-hero__frame bo-hero-card bo-hero-card--model"><img className="bo-hero-model" src={urls[headerAssets.model.id]} alt=""/></div>}{headerAssets.product&&urls[headerAssets.product.id]&&<div className="w0a-ads-hero__frame bo-hero-card bo-hero-card--product"><img className="bo-hero-product" src={urls[headerAssets.product.id]} alt=""/></div>}</div>}
+    {hasHeaderArt&&<div className="bo-hero-media" aria-hidden="true">{headerAssets.model&&<div className="w0a-ads-hero__frame bo-hero-card bo-hero-card--model"><AssetPreview asset={headerAssets.model} url={urls[headerAssets.model.id]}/></div>}{headerAssets.product&&<div className="w0a-ads-hero__frame bo-hero-card bo-hero-card--product"><AssetPreview asset={headerAssets.product} url={urls[headerAssets.product.id]}/></div>}</div>}
     <div className="bo-hero-brand"><div className="bo-brand-mark">{logo?<AssetPreview asset={logo} url={urls[logo.id]}/>:<Palette size={42}/>}</div><div className="bo-hero-copy"><div className="bo-title-row"><h1>{kit.name}</h1><span className="bo-state" data-status={kit.status||'draft'}>{kit.status||'Draft'}</span></div>
     {kit.voice?.tagline&&<p className="bo-tagline">{kit.voice.tagline}</p>}{kit.description&&<p className="bo-description">{kit.description}</p>}{updated&&<span className="bo-updated">Last updated <time dateTime={kit.updatedAt}>{updated}</time></span>}</div></div>
     <Link className="bo-button" to={paths.edit}><Pencil size={15}/> Edit Brand Kit</Link>

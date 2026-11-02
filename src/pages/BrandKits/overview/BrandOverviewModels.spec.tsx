@@ -37,9 +37,9 @@ test('profile details stay beside model photos before additional assets and rend
  assert.ok(html.indexOf('Model photographs')<html.indexOf('bp-model-profiles'));assert.ok(html.indexOf('bp-model-profiles')<html.indexOf('Additional assets'));
  assert.match(html,/Actual saved appearance/);assert.match(html,/Editorial/);assert.doesNotMatch(html,/Not specified/);
 });
-test('profile styling uses Brand Details-style rows with a full-width correction editor fallback',()=>{
+test('profile styling keeps Brand Details-style rows and the editor beside model images',()=>{
  const root=process.cwd()+'/src/pages/BrandKits/',css=readFileSync(root+'components/brandProductPhotos.css','utf8'),wizard=readFileSync(root+'guided/GuidedBrandKit.tsx','utf8');
  assert.match(css,/bp-model-profiles \.bp-character-characteristics>div\{display:grid;grid-template-columns:86px minmax\(0,1fr\)/);
- assert.match(css,/bp-model-workspace:has\(\.bp-character-editor-shell\)\{grid-template-columns:1fr/);
+ assert.doesNotMatch(css,/bp-model-workspace:has\(\.bp-character-editor-shell\)\{grid-template-columns:1fr/);
  assert.equal((wizard.match(/<BrandCharactersSection/g)||[]).length,1);assert.match(wizard,/modelProfilePanel=\{kit/);
 });
