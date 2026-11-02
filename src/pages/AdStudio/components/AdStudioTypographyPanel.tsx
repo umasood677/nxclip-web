@@ -138,7 +138,7 @@ export function AdStudioTypographyPanel({
               type="color"
               className="h-9 w-12 p-1 cursor-pointer"
               value={canvasBackground || "#111827"}
-              onChange={(e) => onCanvasBackground(e.target.value)}
+              onInput={(e) => onCanvasBackground(e.currentTarget.value)}
               aria-label="Canvas background color"
             />
             <Input
@@ -359,6 +359,7 @@ export function AdStudioTypographyPanel({
               }
             />
             <ColorSwatchRow
+              livePreview
               label="Stroke color"
               value={text.strokeColor || "#000000"}
               swatches={CANONICAL_EFFECT_COLORS}
@@ -387,6 +388,7 @@ export function AdStudioTypographyPanel({
               }
             />
             <ColorSwatchRow
+              livePreview
               label="Shadow color"
               value={text.shadow?.color || "#000000"}
               swatches={CANONICAL_EFFECT_COLORS}
@@ -429,6 +431,7 @@ export function AdStudioTypographyPanel({
           </div>
 
           <ColorSwatchRow
+            livePreview
             label="Text color"
             value={text.color || "#FFFFFF"}
             swatches={CANONICAL_FILL_COLORS}
@@ -474,8 +477,8 @@ export function AdStudioTypographyPanel({
               className="mt-1 h-9 w-full p-1"
               value={(layer as { fill?: string }).fill ?? "#2563eb"}
               disabled={locked}
-              onChange={(e) =>
-                onChange({ fill: e.target.value } as Partial<AdSceneLayer>)
+              onInput={(e) =>
+                onChange({ fill: e.currentTarget.value } as Partial<AdSceneLayer>)
               }
             />
           </div>

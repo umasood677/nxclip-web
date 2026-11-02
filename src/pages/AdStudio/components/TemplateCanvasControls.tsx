@@ -31,7 +31,7 @@ export function TemplateCanvasControls({graph,brand,selectedId,readOnly,onPatch,
    <Range label={imageLabel+' vertical %'} value={image?100*image.y/graph.canvas.height:0} min={-100} max={100} disabled={disabled(image)} onChange={n=>image&&move(image,'y',n)} onCommit={onCommit}/>
    <Range label={imageLabel+' scale'} value={image&&base?image.width/base.width:1} min={.1} max={3} step={.01} disabled={disabled(image)} onChange={n=>{if(image&&base){const p=scaledPlacement(image,base,n);onSelect(image.id);onMove(image.id,p.x,p.y);onResize(image.id,p.width,p.height);}}} onCommit={onCommit}/>
    <button className="tc-button" disabled={disabled(image)} onClick={()=>{if(image){onCommit();onSelect(image.id);onCenter(image.id);}}}>Align to safe center</button>
-   <label className="tc-field">Canvas background<input type="color" value={graph.canvas.backgroundColor || '#111827'} disabled={readOnly} onChange={e=>onBackground(e.target.value)}/></label>
+   <label className="tc-field">Canvas background<input type="color" value={graph.canvas.backgroundColor || '#111827'} disabled={readOnly} onInput={e=>onBackground(e.currentTarget.value)}/></label>
    {image&&isRasterArtwork(image)&&<p className="tc-caption">Canvas color sits behind the artwork. Relighting requires AI refinement.</p>}
   </section>
   <section><h3>Logo / brand text</h3><label className="tc-field">Brand text<input value={brandText?.text || ''} disabled={disabled(brandText)} onChange={e=>editText(brandText,e.target.value)} placeholder="No brand text layer"/></label>

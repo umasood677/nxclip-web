@@ -103,9 +103,8 @@ function CharacteristicSlider({
 }
 
 /**
- * Swatch row + custom picker. Native `input[type=color]` fires React onChange on every
- * drag frame; commit only on the native `change` event (picker dismiss) so canvas/preview
- * stays responsive. Local draft updates the hex label while dragging.
+ * Swatch row + custom picker. Existing editors commit on picker dismissal;
+ * Ad Studio opts into livePreview so native input events also update its Canvas.
  */
 export function ColorSwatchRow({
   label,
@@ -113,12 +112,14 @@ export function ColorSwatchRow({
   onChange,
   swatches,
   disabled,
+  livePreview = false,
 }: {
   label: string;
   value: string;
   onChange: (hex: string) => void;
   swatches: Array<{ hex: string; label: string }>;
   disabled?: boolean;
+  livePreview?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const onChangeRef = useRef(onChange);
@@ -134,19 +135,27 @@ export function ColorSwatchRow({
   useEffect(() => {
     const el = inputRef.current;
     if (!el) return;
+    let lastApplied = normalized;
     const commit = () => {
+      if (el.disabled) return;
       const hex = el.value.toUpperCase();
       setDraft(hex);
-      onChangeRef.current(hex);
+      if (!livePreview || hex !== lastApplied) {
+        lastApplied = hex;
+        onChangeRef.current(hex);
+      }
     };
-    const preview = () => setDraft(el.value.toUpperCase());
+    const preview = () => {
+      if (livePreview) commit();
+      else if (!el.disabled) setDraft(el.value.toUpperCase());
+    };
     el.addEventListener('change', commit);
     el.addEventListener('input', preview);
     return () => {
       el.removeEventListener('change', commit);
       el.removeEventListener('input', preview);
     };
-  }, []);
+  }, [livePreview, normalized]);
 
   return (
     <div className="space-y-2">
@@ -192,7 +201,7 @@ export function ColorSwatchRow({
             type="color"
             value={draft}
             onChange={() => {
-              /* commit handled by native `change` listener — avoid per-frame parent updates */
+              /* Native listeners handle editor-specific live preview and final commits. */
             }}
             className="absolute inset-0 cursor-pointer opacity-0"
             aria-label={`Custom ${label.toLowerCase()}`}
