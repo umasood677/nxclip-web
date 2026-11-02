@@ -32,7 +32,7 @@ export function chooseTemplateProduct(c:TemplateProductConfiguration,index:numbe
 export function templateCreatorIssues(kit:BrandKitSummary,c:TemplateProductConfiguration,idea:string,native:boolean,layoutValid:boolean,draftOnly=false):string[]{
  const issues:string[]=[];
  if(!kit.version)issues.push('Reload the Brand Kit before continuing.');
- if(!native&&!idea.trim())issues.push('Describe your creative idea.');
+ if(!native&&!draftOnly&&!idea.trim())issues.push('Describe your creative idea.');
  if(!layoutValid)issues.push('Choose a composition that supports this format.');
  if(c.modelProfileId&&!eligibleTemplateProfiles(kit).some(p=>p.id===c.modelProfileId))issues.push('Review the selected model authorization or choose No model.');
  for(const slot of c.slots){

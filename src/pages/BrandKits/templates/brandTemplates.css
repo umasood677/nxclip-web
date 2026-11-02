@@ -227,3 +227,55 @@
 
 .bt-root .bt-library-tile .w0a-card-body{gap:12px}
 .bt-root .bt-library-tile .w0a-card-body>.w0a-btn{min-height:42px}
+
+/* Review-only density: preserve library and creator layouts. */
+.bt-root.bt-review-page .xp-main{padding:16px 22px;gap:14px}
+.bt-root.bt-review-page .xp-breadcrumb{margin:0;gap:10px;display:flex;align-items:center;font-size:12px}
+.bt-root.bt-review-page .xp-page-head{gap:12px}
+.bt-root.bt-review-page h1{font-size:26px;margin:0;line-height:1.2}
+.bt-root .bt-review{align-items:stretch;gap:18px}
+.bt-root .bt-review>.xp-panel{padding:18px;display:flex;flex-direction:column;min-width:0}
+.bt-root .bt-review-art{width:100%;height:clamp(300px,calc(100dvh - 315px),520px);min-height:300px;flex:1;display:flex;align-items:center;justify-content:center}
+.bt-root .bt-review-art>.bt-scene-preview{height:100%;align-items:center}
+.bt-root .bt-review-media-state{height:100%;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#ffffff03;border:1px solid var(--xp-line);border-radius:12px;color:var(--xp-muted);font-size:12px}
+.bt-root .bt-review-media-state[role=status] svg{animation:bt-review-spin 1.2s linear infinite}
+.bt-root .bt-preview-actions{display:flex;justify-content:center;gap:10px;padding-top:12px}
+.bt-root .bt-preview-panel>.xp-status{align-self:flex-start;margin-top:10px;font-size:10px}
+.bt-root .bt-preview-panel .bt-blocker{margin:8px 0 0;padding:6px 10px;font-size:12px}
+.bt-root .bt-review-details h2{font-size:19px;margin:0 0 12px}
+.bt-root .bt-review .bt-details-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+.bt-root .bt-details-fields>.xp-field:nth-of-type(1),.bt-root .bt-details-fields>.xp-field:nth-of-type(2){grid-column:1/-1}
+.bt-root .bt-review .xp-field{gap:5px;font-size:12px}
+.bt-root .bt-review .xp-field input,.bt-root .bt-review .xp-field select{min-height:36px;height:36px;padding:7px 10px;font-size:12px}
+.bt-root .bt-review .xp-field textarea{min-height:58px;height:58px;padding:7px 10px;font-size:12px;resize:vertical}
+.bt-root .bt-details-fields>small{align-self:center;font-size:10px}
+.bt-root .bt-details-fields>button{justify-self:end}
+.bt-root .bt-review .xp-primary,.bt-root .bt-review .xp-secondary{min-height:36px;padding:8px 12px;gap:7px;font-size:12px;margin:0;border-radius:8px}
+.bt-root .bt-review .xp-check{display:flex;gap:8px;align-items:center;font-size:11px;margin:12px 0}
+.bt-root .bt-review-actions{gap:8px;margin-top:12px}
+.bt-root .bt-review-use{margin-top:12px;display:flex}
+.bt-root .bt-review-use>button{width:100%}
+@keyframes bt-review-spin{to{transform:rotate(360deg)}}
+@media(max-width:800px){.bt-root .bt-review{grid-template-columns:minmax(0,1fr)}.bt-root .bt-review-art{flex:none;height:420px}.bt-root.bt-review-page .xp-main{padding:16px}.bt-root .bt-review-actions{gap:8px}}
+@media(max-width:450px){.bt-root .bt-review .bt-details-fields{grid-template-columns:1fr}.bt-root .bt-details-fields>.xp-field{grid-column:1!important}.bt-root .bt-details-fields>button{justify-self:stretch}.bt-root .bt-review-actions>button{flex:1;min-width:100px}}
+@media(prefers-reduced-motion:reduce){.bt-root .bt-review-media-state[role=status] svg{animation:none}}
+
+/* Compact authoring surface: editing space first, actions always discoverable. */
+.bt-root.bt-creator-page .xp-main{padding:16px 22px;gap:12px}
+.bt-root.bt-creator-page .xp-breadcrumb{margin:0;font-size:12px}
+.bt-root .bt-ai-workspace{gap:12px}
+.bt-root .bt-ai-workspace>header h2{font-size:24px;margin:0;line-height:1.25}
+.bt-root .bt-quick-creator{padding:16px 18px;gap:10px}
+.bt-root .bt-quick-creator .bt-description-field textarea{min-height:72px;max-height:180px;padding:8px 10px;font-size:12px}
+.bt-root .bt-idea-suggestions{gap:6px}
+.bt-root .bt-quick-creator .bt-product-settings{padding-top:10px;gap:8px}
+.bt-root .bt-creator-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;border-top:1px solid var(--xp-line);padding-top:10px}
+.bt-root .bt-creator-footer .bt-advanced-options{border:0;padding:0;min-width:220px;flex:1}
+.bt-root .bt-creator-footer .bt-setup-actions{padding:0;border:0;gap:8px;margin:0}
+.bt-root .bt-creator-footer .bt-advanced-options fieldset{margin-top:8px}
+@media(max-width:760px){.bt-root.bt-creator-page .xp-main{padding:14px}.bt-root .bt-creator-footer{align-items:flex-start}.bt-root .bt-creator-footer .bt-setup-actions{flex:1;justify-content:flex-end}}
+@media(max-width:480px){.bt-root .bt-creator-footer{gap:12px}.bt-root .bt-creator-footer>.bt-advanced-options,.bt-root .bt-creator-footer>.bt-setup-actions{flex-basis:100%}.bt-root .bt-creator-footer .bt-setup-actions>button{flex:1}}
+.bt-root .bt-details-fields>.xp-actions{grid-column:1/-1;gap:8px}
+
+/* Readable thumbnail states are UI overlays, never tiny exported scene text. */
+.bt-thumbnail-state{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#191b22;color:#bfc2ce;font-size:13px;text-align:center;padding:16px;box-sizing:border-box}.bt-thumbnail-spinner{animation:bt-review-spin 1.2s linear infinite}@media(prefers-reduced-motion:reduce){.bt-thumbnail-spinner{animation:none}}

@@ -1,3 +1,7 @@
+import {templateRecency} from './templateRecency';
+import {templateCanvasPath} from './templateCanvasLink';
+import {TemplateReviewMedia} from './TemplateReviewMedia';
+import {TemplateRenderReview} from './TemplateRenderReview';
 import {BrandTemplateGallery} from './BrandTemplateGallery';
 import {BrandTemplateTile} from './BrandTemplateTile';
 import './templateSources.css';
@@ -5,7 +9,6 @@ import {TemplateBulkActions,TemplateDeleteDialog} from './TemplateBulkDelete';
 import {deletionEntries,deletionKey,deletionPayload,deletionFeedback,type TemplateDeleteEntry,type TemplateDeleteResult,type DeletableTemplateDraft} from './templateDeletion';
 import {templateResponseId,unlistedDrafts,templateError} from './templateLibraryWorkflow';
 import { useCreativeAssetUrls } from "../../AdStudio/canvas/useCreativeAssetUrls";
-import { BrandTemplateScenePreview } from "./BrandTemplateScenePreview";
 import { toast } from "sonner";
 import { AdProjectCreateForm } from "../../AdStudio/components/CreateAdProjectDialog";
 import { BrandTemplateAiWorkspace } from "./BrandTemplateAiWorkspace";
@@ -331,6 +334,7 @@ export default function BrandTemplateLibrary() {
         </div>
       </main>
     );
+  if (loading && (templateId || params.get("source")))return <div className="xp-root nxclip-production bp-guided-root bt-root bt-review-page"><main className="xp-main"><h1>Review template</h1><TemplateRenderReview phase="Loading template review…"/></main></div>;
   if (loading)
     return (
       <div className="grid gap-6 p-6" aria-label="Loading template library">
@@ -427,7 +431,7 @@ export default function BrandTemplateLibrary() {
     </section>
   );
   return (
-    <div className={"xp-root nxclip-production bp-guided-root bt-root ad-studio-w0a"+(!selected&&!["ai","native"].includes(params.get("mode")||"")?" bt-library-page":"")}>
+    <div className={"xp-root nxclip-production bp-guided-root bt-root ad-studio-w0a"+(selected||templateId||params.get("source")?" bt-review-page":!["ai","native"].includes(params.get("mode")||"")?" bt-library-page":" bt-creator-page")}>
       <main className="xp-main">
         <TemplateDeleteDialog entries={deleteRequest} busy={busy} onCancel={()=>setDeleteRequest(null)} onConfirm={deleteTemplates}/>
         {!!deleteResults.length&&<div className="bt-delete-results" role="status"><strong>Deletion results</strong><ul>{deleteResults.map(r=><li key={deletionKey(r)}>{(r.name||'Template')+': '}{r.status==='deleted'?'Deleted':r.message}{r.retainedObjects>0?' · Shared or protected files retained':''}</li>)}</ul><button type="button" className="xp-text-button" onClick={()=>setDeleteResults([])}>Dismiss</button></div>}
@@ -482,14 +486,8 @@ export default function BrandTemplateLibrary() {
         ) : selected && draft ? (
           <>
             <div className="xp-split bt-review">
-              <section className="xp-panel">
-                {previewLoading ? <Skeleton className="h-96 w-full"/> : <BrandTemplateScenePreview
-                  maxHeight={560}
-                  graph={draftPreview}
-                  assetUrls={urls}
-                  size="hero"
-                  showSafeArea
-                />}
+              <section className="xp-panel bt-preview-panel">
+                <TemplateReviewMedia graph={draftPreview} urls={urls} busy={previewLoading} onRetry={()=>void load()}/>
                 {previewError&&<p role="alert" className="bt-blocker">{previewError} <button className="xp-text-button" onClick={retryPreview}>Retry preview</button></p>}
                 <span className="xp-status">
                   {selected.saved ? "Saved" : selected.state === "approved" ? "Ready to save" : "Review needed"}
@@ -501,18 +499,19 @@ export default function BrandTemplateLibrary() {
                     ...(selected.reuseIssues || []),
 
                   ]),
-                ].map((text) => (
+                ].filter(text=>text!=="Approve and save this template before reuse.").map((text) => (
                   <p className="bt-blocker" key={text}>
                     {text}
                   </p>
                 ))}
+                <div className="bt-preview-actions">{selected.provenance.method==='native-template-engine' ? <button className="xp-secondary" disabled={busy || dirty} onClick={editNativeInCanvas}>Customize in Canvas →</button> : selected.provenance.sourceCreativeId && <button className="xp-secondary" onClick={()=>go(templateCanvasPath(selected.provenance.sourceCreativeId!,selected.id,selected.revision))}>Customize in Canvas →</button>}</div>
               </section>
-              <section className="xp-panel">
+              <section className="xp-panel bt-review-details">
                 <h2>Template details</h2>
 
                 <fieldset
                   disabled={busy || selected.state === "archived"}
-                  className="bp-fieldset"
+                  className="bp-fieldset bt-details-fields"
                 >
                   <label className="xp-field">
                     Template name
@@ -594,7 +593,7 @@ export default function BrandTemplateLibrary() {
                       ))}
                     </select>
                   </label>
-                  <small>Changes require a new approval before reuse.</small>
+                  <small>Edits require reapproval.</small>
                   <button
                     className="xp-secondary"
                     disabled={!dirty || !draft.name.trim() || previewLoading || !!previewError}
@@ -604,7 +603,7 @@ export default function BrandTemplateLibrary() {
                   </button>
                 </fieldset>
                 {selected.provenance.renderMode==="template-proposal" && !selected.provenance.productDepictionReviewed && <label className="xp-check"><input type="checkbox" checked={depictionReviewed} onChange={e=>setDepictionReviewed(e.target.checked)}/>I reviewed the product, packaging and brand copy.</label>}
-                <div className="xp-actions">
+                <div className="xp-actions bt-review-actions">
                   {(
                     [
                       "approve",
@@ -649,8 +648,7 @@ export default function BrandTemplateLibrary() {
                       </button>
                     ))}
                 </div>
-                {selected.provenance.method==='native-template-engine' ? <button className="xp-secondary" disabled={busy || dirty} onClick={editNativeInCanvas}>Customize in Canvas →</button> : selected.provenance.sourceCreativeId && <button className="xp-secondary" onClick={()=>go(creativeEditorPath(selected.provenance.sourceCreativeId!))}>Customize in Canvas →</button>}
-                <button className="xp-primary" disabled={busy || dirty || !canReuseTemplate(selected)} onClick={()=>document.getElementById('template-project-selection')?.scrollIntoView({behavior:'smooth',block:'center'})}>Use Template in Ad Studio →</button>
+                <div className="bt-review-use"><button className="xp-primary" disabled={busy || dirty || !canReuseTemplate(selected)} onClick={()=>document.getElementById('template-project-selection')?.scrollIntoView({behavior:'smooth',block:'center'})}>Use Template in Ad Studio →</button></div>
 
               </section>
             </div>
@@ -770,14 +768,14 @@ export default function BrandTemplateLibrary() {
               />
             ) : (
               <BrandTemplateGallery label="My Brand Templates">
-                {unlistedDrafts(items,templateDrafts,search).map(d=><BrandTemplateTile key={'draft:'+d.id}
+                {templateRecency(visible,unlistedDrafts(items,templateDrafts,search)).map(entry=>entry.kind==='draft'?((d)=><BrandTemplateTile key={'draft:'+d.id}
                   name={d.name} graph={d.sceneGraph} assetUrls={urls} status={d.deletionPending?'Cleanup pending':'Draft'}
                   kind={d.templateContext?.draftKind==='native'?'Editable layout':'AI proposal'}
                   selected={deleteSelection.includes('draft:'+d.id)} busy={busy} pending={d.deletionPending}
                   onToggle={()=>toggleDelete(deletionEntries([], [d])[0])}
                   onPreview={()=>go(base+'?tab=brand&mode='+(d.templateContext?.draftKind||'ai')+'&source='+encodeURIComponent(d.id))}
-                  onDelete={()=>discardDraft(d.id)}/>)}
-                {visible.map(t=><BrandTemplateTile key={t.id} name={t.name} graph={t.sceneGraph} assetUrls={urls} format={t.format}
+                  onDelete={()=>discardDraft(d.id)}/>)(entry.draft):((t)=>
+                <BrandTemplateTile key={t.id} name={t.name} graph={t.sceneGraph} assetUrls={urls} format={t.format}
                   status={t.deletion?'Cleanup pending':t.saved?'Saved':t.state==='suggested'?'Review needed':t.state[0].toUpperCase()+t.state.slice(1)}
                   kind={t.provenance.method==='provider-ai-creative'?'AI artwork':'Editable layout'}
                   selected={deleteSelection.includes('template:'+t.id)} busy={busy} pending={!!t.deletion}
@@ -785,7 +783,7 @@ export default function BrandTemplateLibrary() {
                   onPreview={()=>go(base+'/'+encodeURIComponent(t.id))}
                   onReject={t.state==='suggested'?()=>reviewCard(t,'reject'):undefined}
                   onArchive={t.state!=='archived'?()=>reviewCard(t,'archive'):undefined}
-                  onDelete={()=>setDeleteRequest(deletionEntries([t],[]))}/>)}
+                  onDelete={()=>setDeleteRequest(deletionEntries([t],[]))}/>)(entry.record))}
               </BrandTemplateGallery>
             )}
           </>

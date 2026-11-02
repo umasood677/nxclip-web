@@ -26,7 +26,7 @@ export function TemplateRenderReview({
     return l && "text" in l ? l.text || "" : "";
   };
   return (
-    <div className="xp-split bt-render-review" aria-busy={active}>
+    <div className="xp-split bt-render-review bt-review" aria-busy={active}>
       <section
         className="xp-panel bt-render-preview"
         aria-label="Template preview"
@@ -51,9 +51,9 @@ export function TemplateRenderReview({
           </strong>
         </div>
       </section>
-      <section className="xp-panel bt-render-details">
+      <section className="xp-panel bt-render-details bt-review-details">
         <h2>Template details</h2>
-        <fieldset disabled className="bp-fieldset">
+        <fieldset disabled className="bp-fieldset bt-details-fields">
           <label className="xp-field">
             Template name
             <input readOnly value={source?.name || name || "Brand Template"} />

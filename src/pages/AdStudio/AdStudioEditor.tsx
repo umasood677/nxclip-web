@@ -1,3 +1,4 @@
+import {retainTemplateTarget,templateEditTarget} from '../BrandKits/templates/templateCanvasLink';
 import '../BrandKits/templates/templateSources.css';
 import {TemplateSourceBindings} from "./components/TemplateSourceBindings";
 import { CanvasPreviewDialog } from "./components/CanvasPreviewDialog";
@@ -28,7 +29,7 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { SEO } from "../../components/SEO";
-import { adStudioApi, brandApi } from "../../services/apiClient";
+import { adStudioApi, brandApi, brandTemplateApi } from "../../services/apiClient";
 import type { BrandKitSummary } from "../BrandKits/lib/brandKitTypes";
 import { useAuthenticatedBrandAssetUrls } from "./canvas/useAuthenticatedBrandAssetUrls";
 import { sanitizeSceneGraphForClient } from "./canvas/sanitizeSceneGraph";
@@ -83,7 +84,7 @@ function isConflictError(e: unknown): boolean {
 }
 
 export default function AdStudioEditor() {
-  const {pathname}=useLocation();
+  const {pathname,search:canvasSearch}=useLocation();
   const headerContext=useOutletContext<StudioCanvasHeaderContext|undefined>();
   const setCanvasHeader=headerContext?.setCanvasHeader;
   const { creativeId } = useParams<{ creativeId: string }>();
@@ -183,15 +184,25 @@ export default function AdStudioEditor() {
   );
 
   const originalGraphRef = useRef<AdSceneGraph | null>(null);
+  const templateLoadedRef=useRef("");
 
   const reloadCreative = useCallback(async () => {
     if (!creativeId) return;
     const creative = await adStudioApi.getCreative(creativeId);
-    setName(creative.name);
+    const target=templateEditTarget(canvasSearch),loadKey=creativeId+canvasSearch;
+    let canvasTemplate:Awaited<ReturnType<typeof brandTemplateApi.get>>|null=null;
+    if(target && isTemplateDraftCreative(creative) && creative.templateContext && templateLoadedRef.current!==loadKey){
+      canvasTemplate=await brandTemplateApi.get(creative.templateContext.brandKitId,target.id);
+      if(canvasTemplate.revision!==target.revision || canvasTemplate.provenance.sourceCreativeId!==creative.id)throw Error("Template changed. Reopen it from the library.");
+      templateLoadedRef.current=loadKey;
+    }
+    setName(canvasTemplate?.name||creative.name);
     setTemplateDocument(isTemplateDraftCreative(creative)?creative:null);
 
     setProjectId(creative.projectId ?? null);
-    const loaded = creative.sceneGraph as AdSceneGraph;
+    const loaded = (canvasTemplate?.sceneGraph||creative.sceneGraph) as AdSceneGraph;
+    const sourceGraph=creative.sceneGraph as AdSceneGraph;
+    const synchronizeTemplate=JSON.stringify(loaded)!==JSON.stringify(sourceGraph);
     if(isTemplateDraftCreative(creative))setSelectedLayerId(current=>loaded.layers.some(l=>l.id===current)?current:defaultTemplateSelection(loaded));
     setGraph(loaded);
     setFitZoom(true);
@@ -202,19 +213,19 @@ export default function AdStudioEditor() {
     const snap = normalizeBrandSnapshot(creative.brandSnapshot);
     setBrandSnapshot(snap);
     setCurrentVersion(creative.currentVersion ?? 1);
-    setSaveState("saved");
+    setSaveState(synchronizeTemplate?"dirty":"saved");
     setHistory([]);
     setFuture([]);
     editEpochRef.current = 0;
     dragBaselineRef.current = null;
     lastPersistedHashRef.current = JSON.stringify(
-      sanitizeSceneGraphForClient(loaded) ?? loaded,
+      sanitizeSceneGraphForClient(sourceGraph) ?? sourceGraph,
     );
     await refreshBrandKit({
       projectIdHint: creative.projectId ?? null,
       snapshotKitId: snap?.brandKitId ?? null,
     });
-  }, [creativeId, refreshBrandKit]);
+  }, [creativeId, canvasSearch, refreshBrandKit]);
 
   useEffect(() => {
     if (!creativeId) return;
@@ -439,7 +450,7 @@ export default function AdStudioEditor() {
 
   const goProjects = () => {
     if (!confirmLeave()) return;
-    navigate(templateDocument ? editorReturnPath(templateDocument) : projectId ? "/create/ad/projects/" + encodeURIComponent(projectId) : "/create/ad");
+    navigate(templateDocument ? retainTemplateTarget(editorReturnPath(templateDocument),canvasSearch) : projectId ? "/create/ad/projects/" + encodeURIComponent(projectId) : "/create/ad");
   };
 
   const animateThisAd = async () => {

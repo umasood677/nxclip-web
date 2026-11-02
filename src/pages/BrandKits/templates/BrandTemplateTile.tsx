@@ -12,7 +12,7 @@ export function BrandTemplateTile({name,graph,assetUrls,format,status,kind,selec
  return <article className={'w0a-card bt-library-tile'+(selected?' bt-card-selected':'')}>
   {!hideSelection&&<label className="bt-card-select"><input type="checkbox" aria-label={'Select '+name} checked={selected} disabled={busy} onChange={onToggle}/><span className="sr-only">Select template</span></label>}
   <div className="w0a-brand-preview bt-tile-art">
-   {pending?<span className="bt-cleanup-placeholder"><Trash2 size={28}/> Cleanup pending</span>:<BrandTemplateScenePreview graph={graph||null} assetUrls={assetUrls} size="card" fillCard label={name+' visual preview'}/>}
+   {pending?<span className="bt-cleanup-placeholder"><Trash2 size={28}/> Cleanup pending</span>:<BrandTemplateScenePreview graph={graph||null} assetUrls={assetUrls} size="card" fillCard readablePlaceholder label={name+' visual preview'}/>}
   </div>
   <div className="w0a-card-body">
    <h3>{name}</h3><div className="bt-tile-meta"><div className="w0a-meta">{kind} · {ratio}</div><span className="bt-tile-status">{status}</span></div>

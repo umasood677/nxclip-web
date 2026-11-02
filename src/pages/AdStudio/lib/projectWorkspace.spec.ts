@@ -1,3 +1,4 @@
+import {retainTemplateTarget} from "../../BrandKits/templates/templateCanvasLink";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { editorReturnPath, isTemplateDraftCreative, newWorkspaceProject, projectBriefForm, workspaceBrief, loadWorkspace, createProjectTemplate, createProjectConcept, projectWorkspacePath, creativeEditorPath, type WorkspaceProject, type WorkspaceCreative } from "./projectWorkspace";
@@ -196,6 +197,6 @@ test("modern save-and-generate consumes an explicitly edited campaign idea only 
  function visit(node:ts.Node){if(ts.isVariableDeclaration(node)&&node.name.getText(tree)==='goProjects')expression=node.initializer;ts.forEachChild(node,visit);}visit(tree);assert.ok(expression);
  const code=ts.transpileModule('const fn='+expression.getText(tree)+';fn;',{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
  const calls:string[]=[],draft={id:'draft',projectId:'internal',name:'Draft',documentPurpose:'template-draft' as const,templateContext:{brandKitId:'brand',draftKind:'native' as const}};
- for(const allow of [false,true]){const back=vm.runInNewContext(code,{templateDocument:draft,projectId:'internal',editorReturnPath,navigate:(path:string)=>calls.push(path),confirmLeave:()=>allow}) as ()=>void;back();}
+ for(const allow of [false,true]){const back=vm.runInNewContext(code,{templateDocument:draft,projectId:'internal',editorReturnPath,retainTemplateTarget,canvasSearch:"",navigate:(path:string)=>calls.push(path),confirmLeave:()=>allow}) as ()=>void;back();}
  assert.deepEqual(calls,['/brands/brand/templates?tab=brand&mode=native&source=draft&review=1']);
  });
