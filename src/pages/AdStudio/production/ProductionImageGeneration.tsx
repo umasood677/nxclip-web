@@ -1,3 +1,4 @@
+import {TemplateRenderReview} from "../../BrandKits/templates/TemplateRenderReview";
 import { Sparkles as SparklesIcon } from "lucide-react";
 import { characterReviewIssues } from "../../BrandKits/guided/brandCharacterModel";
 import type { BrandKitSummary } from "../../BrandKits/lib/brandKitTypes";
@@ -251,6 +252,13 @@ export function ProductionImageGeneration({
     setQuote(null);
     setConsent(false);
   };
+  if(proposal && !canEdit && compact)return <TemplateRenderReview source={source} format={source.sceneGraph.canvas.width===source.sceneGraph.canvas.height?'square_1080':source.sceneGraph.canvas.width>source.sceneGraph.canvas.height?'landscape_1920x1080':source.sceneGraph.canvas.height/source.sceneGraph.canvas.width>1.5?'vertical_1080x1920':'portrait_1080x1350'} active={enabled&&(busy||executeRequested&&!error&&!requestId)} phase={error?'Your template needs attention':!enabled?'Generation is unavailable':requestId&&!busy?'Check your saved generation':activity==='readiness'?'Preparing your design…':'Rendering your template…'}>
+    {error&&<p className="xp-notice" role="alert">{error}</p>}
+    {!enabled&&<p className="xp-notice">AI generation needs local activation.</p>}
+    {!busy&&!requestId&&(!executeRequested||!!error)&&<button className="xp-primary" disabled={!enabled||!valid} onClick={()=>void generate()}>Generate Template</button>}
+    {message&&<p role="status">{message}</p>}
+    {!busy&&requestId&&<div className="xp-actions"><button className="xp-secondary" onClick={()=>void status()}>Check saved status</button>{retained&&<button className="xp-secondary" onClick={()=>void recover()}>Open saved result</button>}</div>}
+  </TemplateRenderReview>;
   if(proposal && canEdit && !refiningProposal)return (
     <section className="ai-proposal-result" aria-label="Finished template proposal">
       <div className="xp-panel ai-generation-preview"><ResponsiveScenePreview graph={source.sceneGraph} assetUrls={assetUrls} size="hero" maxHeight={680}/></div>
