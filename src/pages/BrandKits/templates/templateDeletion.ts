@@ -20,3 +20,10 @@ export function deletionSummary(results:TemplateDeleteResult[],request:TemplateD
  if(results.length!==request.length||new Set(results.map(deletionKey)).size!==request.length||results.some(r=>!keys.has(deletionKey(r))||!['deleted','cleanup_pending','blocked'].includes(r.status)))throw Error('Deletion response could not be verified. Reload to check the saved state.');
  return {deleted:results.filter(r=>r.status==='deleted').length,pending:results.filter(r=>r.status!=='deleted').length,removedObjects:results.reduce((sum,r)=>sum+r.removedObjects,0),retainedObjects:results.reduce((sum,r)=>sum+r.retainedObjects,0)};
 }
+
+export function deletionFeedback(results:TemplateDeleteResult[],request:TemplateDeleteItem[]){
+ const summary=deletionSummary(results,request);
+ if(!summary.deleted)return {tone:'error' as const,message:results.find(r=>r.message)?.message||'Nothing was deleted. Reload and review the selected templates.'};
+ if(summary.pending)return {tone:'warning' as const,message:summary.deleted+' deleted; '+summary.pending+' need attention.'};
+ return {tone:'success' as const,message:summary.deleted+' template'+(summary.deleted===1?'':'s')+' deleted.'};
+}

@@ -1,5 +1,5 @@
 import React from 'react';import {test} from 'node:test';import assert from 'node:assert/strict';import {renderToStaticMarkup} from 'react-dom/server';
-import {deletionEntries,deletionKey,deletionPayload,deletionSummary,type TemplateDeleteResult} from './templateDeletion';
+import {deletionEntries,deletionKey,deletionPayload,deletionSummary,deletionFeedback,type TemplateDeleteResult} from './templateDeletion';
 import {TemplateBulkActions,TemplateDeleteDialog} from './TemplateBulkDelete';
 import type {BrandTemplate} from './brandTemplateModel';import type {WorkspaceCreative} from '../../AdStudio/lib/projectWorkspace';
 const entries=deletionEntries([{id:'template',name:'Rejected design',revision:4,state:'rejected'},{id:'pending',name:'Retry design',revision:5,state:'archived',deletion:{status:'pending'}}] as BrandTemplate[],[{id:'draft',name:'Draft design',currentVersion:2,deletionPending:true}] as Array<WorkspaceCreative&{deletionPending:boolean}>);
@@ -34,6 +34,12 @@ test('confirmed bulk action makes one API request, reports results and reloads w
  function visit(n:ts.Node){if(ts.isVariableDeclaration(n)&&n.name.getText(tree)==='deleteTemplates')expression=n.initializer;ts.forEachChild(n,visit);}visit(tree);assert.ok(expression);
  const code=ts.transpileModule('const handler='+expression.getText(tree)+';handler;',{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
  const order:string[]=[];let result:unknown,work:Promise<void>|undefined;
- const handler=vm.runInNewContext(code,{deleteRequest:[entries[0]],brandId:'brand',activeBrand:{current:'brand'},deletionPayload,deletionKey,deletionSummary,run:(fn:()=>Promise<void>)=>{work=fn();return work;},brandTemplateApi:{bulkDelete:async(kit:string,items:unknown[])=>{assert.equal(kit,'brand');assert.equal(items.length,1);order.push('delete');return {items:[{kind:'template',id:'template',status:'deleted',removedObjects:1,retainedObjects:0}]};}},setDeleteResults:(r:unknown)=>{result=r;},setDeleteRequest:()=>{},setDeleteSelection:()=>{},toast:{success:()=>order.push('toast'),warning:()=>assert.fail()},load:async()=>{order.push('reload');}}) as ()=>Promise<void>;
+ const handler=vm.runInNewContext(code,{deleteRequest:[entries[0]],brandId:'brand',activeBrand:{current:'brand'},deletionPayload,deletionKey,deletionSummary,deletionFeedback,run:(fn:()=>Promise<void>)=>{work=fn();return work;},brandTemplateApi:{bulkDelete:async(kit:string,items:unknown[])=>{assert.equal(kit,'brand');assert.equal(items.length,1);order.push('delete');return {items:[{kind:'template',id:'template',status:'deleted',removedObjects:1,retainedObjects:0}]};}},setDeleteResults:(r:unknown)=>{result=r;},setDeleteRequest:()=>{},setDeleteSelection:()=>{},toast:{success:()=>order.push('toast'),warning:()=>assert.fail()},load:async()=>{order.push('reload');}}) as ()=>Promise<void>;
  handler();await work;assert.deepEqual(order,['delete','toast','reload']);assert.match(JSON.stringify(result),/Rejected design/);
+});
+
+test('a fully blocked request displays the reason rather than a misleading zero-deleted toast',()=>{
+ const request=deletionPayload(entries,['draft:draft']);
+ const result=[{...request[0],status:'blocked' as const,removedObjects:0,retainedObjects:0,message:'Only template drafts can be deleted here.'}];
+ assert.deepEqual(deletionFeedback(result,request),{tone:'error',message:'Only template drafts can be deleted here.'});
 });

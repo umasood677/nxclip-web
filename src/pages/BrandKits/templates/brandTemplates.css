@@ -188,3 +188,42 @@
 .bt-root .bt-tile-actions button:focus-visible{outline:2px solid var(--w0a-accent);outline-offset:2px}
 .bt-root .bt-tile-actions button:disabled{opacity:.4;cursor:not-allowed}
 .bt-root .bt-library-tile .bt-cleanup-placeholder{height:100%;min-height:160px}
+
+/* Library-only density; creation, review and Canvas retain their own layouts. */
+.bt-library-page .xp-main{gap:12px!important;padding:16px 20px!important}
+.bt-library-page .xp-breadcrumb{margin:0;padding:0;font-size:12px;min-height:22px;letter-spacing:normal}
+.bt-library-page .xp-page-head{padding:0;min-height:40px}
+.bt-library-page .xp-page-head h1{font-size:clamp(21px,2vw,28px)!important;margin:0;line-height:1.2}
+.bt-library-page .xp-page-head .xp-primary{min-height:36px;padding:8px 12px;font-size:12px}
+.bt-library-page [role=tablist]{margin:0;padding:0;gap:8px}
+.bt-library-page [role=tablist] button{min-height:34px;padding:7px 12px;font-size:12px}
+.bt-library-page .bt-toolbar{padding:12px!important;margin:0;min-height:0}
+.bt-library-page .bt-toolbar .xp-actions{gap:12px;margin:0}
+.bt-library-page .bt-toolbar .xp-field{gap:5px;min-width:130px;font-size:11px;flex:1 1 180px;max-width:300px}
+.bt-library-page .bt-toolbar input:not([type=checkbox]),.bt-library-page .bt-toolbar select{min-height:36px;height:36px;padding:7px 10px;font-size:12px}
+.bt-library-page .bt-toolbar .xp-check{min-height:36px;font-size:12px}
+.bt-library-page .bt-toolbar .xp-primary{min-height:36px;height:36px;padding:7px 12px;font-size:12px}
+.bt-library-page .bt-bulk-actions{margin:0;padding:7px 10px;gap:10px;min-height:36px}
+@media(max-width:700px){.bt-library-page .xp-main{padding:12px!important}.bt-library-page .xp-page-head{flex-direction:row;align-items:center;gap:12px;flex-wrap:wrap}.bt-library-page .bt-toolbar .xp-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.bt-library-page .bt-toolbar .xp-field{min-width:0}.bt-library-page .bt-toolbar .xp-primary{width:100%}}
+
+/* Default Templates grid and card surfaces; each card retains its own natural height. */
+.bt-root .bt-template-collection{width:100%;min-width:0}
+.bt-root .bt-template-gallery{display:grid;width:100%;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;align-items:start}
+@media(max-width:1100px){.bt-root .bt-template-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.bt-root .bt-template-gallery{grid-template-columns:minmax(0,1fr)}}
+.bt-root .bt-library-tile{width:100%;height:auto;min-height:0;align-self:flex-start}
+.bt-root .bt-library-tile .bt-tile-art{width:100%;height:auto;min-height:0;max-height:none;aspect-ratio:auto;padding:0;background:var(--w0a-panel-2,#1a1d26)}
+.bt-root .bt-library-tile .bt-scene-preview{width:100%;height:auto;max-height:none}
+.bt-root .bt-library-tile .w0a-card-body{flex:none;gap:8px;min-height:0;padding:12px 14px 14px}
+.bt-root .bt-library-tile .w0a-card-body h3{line-height:1.4;overflow-wrap:anywhere}
+.bt-root .bt-library-tile .w0a-card-body>.w0a-btn{margin-top:2px;min-height:36px}
+.bt-root .bt-library-tile .bt-cleanup-placeholder{height:180px;min-height:0;width:100%}
+/* New template setup uses available width, without an empty side column. */
+.bt-root .bt-quick-creator{max-width:none;margin:0;width:100%;align-content:start}
+.bt-root .bt-quick-creator .bt-source-layout{grid-template-columns:minmax(0,1fr) minmax(260px,340px);gap:18px;align-items:start}
+.bt-root .bt-quick-creator .bt-product-slots{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));max-width:none;width:100%}
+.bt-root .bt-quick-creator .bt-model-settings{width:100%;max-width:none}
+@media(max-width:760px){.bt-root .bt-quick-creator .bt-source-layout{grid-template-columns:1fr}.bt-root .bt-quick-creator .bt-source-layout--single .bt-product-slots{max-width:none;grid-template-columns:1fr}}
+
+.bt-root .bt-library-tile .w0a-card-body{gap:12px}
+.bt-root .bt-library-tile .w0a-card-body>.w0a-btn{min-height:42px}

@@ -7,7 +7,7 @@ const props={name:'Brand template',graph,assetUrls:{},status:'Saved',kind:'AI ar
 test('saved tile uses the Default Templates card, body, meta, format and preview-button classes',()=>{
  const html=renderToStaticMarkup(<BrandTemplateTile {...props}/>);
  for(const name of ['w0a-card','w0a-brand-preview','w0a-card-body','w0a-meta','w0a-formats','w0a-chip','w0a-btn'])assert.match(html,new RegExp(name));
- assert.match(html,/Preview template/);assert.match(html,/aspect-ratio:1080 \/ 1350/);assert.match(html,/Format 4:5/);
+ assert.match(html,/Preview template/);assert.match(html,/width:260px;height:325px/);assert.match(html,/Format 4:5/);
  assert.doesNotMatch(html,/xp-card-copy|bt-card-art|Editable text, product/);
 });
 test('thumbnail fills its width at the real aspect without changing the graph or review preview',()=>{
@@ -17,7 +17,7 @@ test('thumbnail fills its width at the real aspect without changing the graph or
 test('actual stored shapes are retained for landscape and story drafts',()=>{
  for(const [width,height,label] of [[1920,1080,'16:9'],[1080,1920,'9:16']] as const){
  const html=renderToStaticMarkup(<BrandTemplateTile {...props} graph={{...graph,canvas:{width,height}}} status="Draft"/>);
- assert.match(html,new RegExp('Format '+label));assert.match(html,new RegExp('aspect-ratio:'+width+' \\/ '+height));
+ assert.match(html,new RegExp('Format '+label));assert.match(html,new RegExp('data-canvas-w="'+width+'" data-canvas-h="'+height+'"'));
  }
 });
 test('selection and per-template actions remain accessible icon controls',()=>{
@@ -35,3 +35,5 @@ test('both saved and draft rows use the same tile while all four-column breakpoi
  assert.equal((library.match(/<BrandTemplateTile /g)||[]).length,2);assert.doesNotMatch(library,/className="bt-card-art"|className="xp-card-copy"/);
  assert.match(css,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);assert.match(css,/@media\(max-width:1100px\)/);assert.match(css,/@media\(max-width:700px\)/);
 });
+
+test("library density is scoped away from creation and review screens",()=>{const source=readFileSync(process.cwd()+"/src/pages/BrandKits/templates/BrandTemplateLibrary.tsx","utf8"),css=readFileSync(process.cwd()+"/src/pages/BrandKits/templates/brandTemplates.css","utf8");assert.ok(source.includes('!selected&&!["ai","native"].includes'));assert.match(css,/bt-library-page \.xp-main\{gap:12px!important/);assert.match(css,/bt-library-page \.bt-toolbar\{padding:12px!important/);});

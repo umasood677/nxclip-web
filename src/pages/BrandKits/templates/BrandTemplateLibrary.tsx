@@ -1,7 +1,8 @@
+import {BrandTemplateGallery} from './BrandTemplateGallery';
 import {BrandTemplateTile} from './BrandTemplateTile';
 import './templateSources.css';
 import {TemplateBulkActions,TemplateDeleteDialog} from './TemplateBulkDelete';
-import {deletionEntries,deletionKey,deletionPayload,deletionSummary,type TemplateDeleteEntry,type TemplateDeleteResult,type DeletableTemplateDraft} from './templateDeletion';
+import {deletionEntries,deletionKey,deletionPayload,deletionFeedback,type TemplateDeleteEntry,type TemplateDeleteResult,type DeletableTemplateDraft} from './templateDeletion';
 import {templateResponseId,unlistedDrafts,templateError} from './templateLibraryWorkflow';
 import { useCreativeAssetUrls } from "../../AdStudio/canvas/useCreativeAssetUrls";
 import { BrandTemplateScenePreview } from "./BrandTemplateScenePreview";
@@ -363,11 +364,10 @@ export default function BrandTemplateLibrary() {
   const deleteTemplates=()=>void run(async()=>{
     if(!deleteRequest)return;
     const request=deletionPayload(deleteRequest,deleteRequest.map(deletionKey)),requestBrand=brandId;
-    const result=await brandTemplateApi.bulkDelete(requestBrand,request),summary=deletionSummary(result.items,request);
+    const result=await brandTemplateApi.bulkDelete(requestBrand,request),feedback=deletionFeedback(result.items,request);
     if(activeBrand.current!==requestBrand)return;
     setDeleteResults(result.items.map(r=>({...r,name:deleteRequest.find(d=>deletionKey(d)===deletionKey(r))?.name})));setDeleteRequest(null);setDeleteSelection([]);
-    if(summary.pending)toast.warning(summary.deleted+' deleted; '+summary.pending+' need attention.');
-    else toast.success(summary.deleted+' template'+(summary.deleted===1?'':'s')+' deleted.');
+    toast[feedback.tone](feedback.message);
     await load();
   });
   const reviewProject = (
@@ -427,7 +427,7 @@ export default function BrandTemplateLibrary() {
     </section>
   );
   return (
-    <div className="xp-root nxclip-production bp-guided-root bt-root ad-studio-w0a">
+    <div className={"xp-root nxclip-production bp-guided-root bt-root ad-studio-w0a"+(!selected&&!["ai","native"].includes(params.get("mode")||"")?" bt-library-page":"")}>
       <main className="xp-main">
         <TemplateDeleteDialog entries={deleteRequest} busy={busy} onCancel={()=>setDeleteRequest(null)} onConfirm={deleteTemplates}/>
         {!!deleteResults.length&&<div className="bt-delete-results" role="status"><strong>Deletion results</strong><ul>{deleteResults.map(r=><li key={deletionKey(r)}>{(r.name||'Template')+': '}{r.status==='deleted'?'Deleted':r.message}{r.retainedObjects>0?' · Shared or protected files retained':''}</li>)}</ul><button type="button" className="xp-text-button" onClick={()=>setDeleteResults([])}>Dismiss</button></div>}
@@ -769,7 +769,7 @@ export default function BrandTemplateLibrary() {
                 onAction={() => go("/brands/" + brandId + "/guided?step=ready")}
               />
             ) : (
-              <div className="bt-gallery" aria-label="My Brand Templates">
+              <BrandTemplateGallery label="My Brand Templates">
                 {unlistedDrafts(items,templateDrafts,search).map(d=><BrandTemplateTile key={'draft:'+d.id}
                   name={d.name} graph={d.sceneGraph} assetUrls={urls} status={d.deletionPending?'Cleanup pending':'Draft'}
                   kind={d.templateContext?.draftKind==='native'?'Editable layout':'AI proposal'}
@@ -786,7 +786,7 @@ export default function BrandTemplateLibrary() {
                   onReject={t.state==='suggested'?()=>reviewCard(t,'reject'):undefined}
                   onArchive={t.state!=='archived'?()=>reviewCard(t,'archive'):undefined}
                   onDelete={()=>setDeleteRequest(deletionEntries([t],[]))}/>)}
-              </div>
+              </BrandTemplateGallery>
             )}
           </>
         )}
