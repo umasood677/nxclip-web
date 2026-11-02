@@ -10,6 +10,7 @@ export type WorkspaceProject = {
 export type WorkspaceCreative = {
   id: string; projectId: string; name: string; updatedAt?: string;
   currentVersion?: number; sceneGraph?: AdSceneGraph | null;
+  parentCreativeId?:string|null; variationType?:string|null;
   selectedCharacterIds?: string[];
   imageRenderMode?: 'background' | 'template-proposal';
   proposalDirection?: string;

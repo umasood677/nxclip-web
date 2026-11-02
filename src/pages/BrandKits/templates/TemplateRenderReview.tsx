@@ -1,5 +1,5 @@
 import React from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles,Check,X,Palette,Copy,Archive } from "lucide-react";
 import type { WorkspaceCreative } from "../../AdStudio/lib/projectWorkspace";
 import { AD_FORMATS } from "../../AdStudio/types";
 import "./templateRenderReview.css";
@@ -28,7 +28,7 @@ export function TemplateRenderReview({
   return (
     <div className="xp-split bt-render-review bt-review" aria-busy={active}>
       <section
-        className="xp-panel bt-render-preview"
+        className="xp-panel bt-render-preview bt-preview-panel"
         aria-label="Template preview"
       >
         <div
@@ -50,6 +50,8 @@ export function TemplateRenderReview({
             {phase}
           </strong>
         </div>
+        <span className="xp-status">Rendering</span>
+        <div className="bt-preview-actions"><button type="button" disabled className="xp-secondary">Customize in Canvas →</button></div>
       </section>
       <section className="xp-panel bt-render-details bt-review-details">
         <h2>Template details</h2>
@@ -86,18 +88,12 @@ export function TemplateRenderReview({
               ))}
             </select>
           </label>
-          <div className="xp-actions">
-            <button className="xp-secondary" type="button">
-              Reject
-            </button>
-            <button className="xp-primary" type="button">
-              Approve
-            </button>
-            <button className="xp-secondary" type="button">
-              Save
-            </button>
-          </div>
+          <small>Edits require reapproval.</small><button type="button" className="xp-secondary">Save customization</button>
+
         </fieldset>
+        <label className="xp-check"><input type="checkbox" disabled/>I reviewed the product, packaging and brand copy.</label>
+        <div className="xp-actions bt-review-actions">{["Approve","Reject","Save","Duplicate","Archive"].map(label=><button type="button" disabled key={label} className={label==="Approve"?"xp-primary":"xp-secondary"}>{React.createElement(({Approve:Check,Reject:X,Save:Palette,Duplicate:Copy,Archive} as const)[label as "Approve"|"Reject"|"Save"|"Duplicate"|"Archive"],{size:14})}{label}</button>)}</div>
+        <div className="bt-review-use"><button type="button" disabled className="xp-primary">Use Template in Ad Studio →</button></div>
         {children}
       </section>
     </div>

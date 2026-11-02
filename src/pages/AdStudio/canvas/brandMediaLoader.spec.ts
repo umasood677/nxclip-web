@@ -29,7 +29,7 @@ test('failed responses and JSON bodies never become image previews',async()=>{
 });
 test('successful bytes expire and are retained in a bounded cache',async()=>{
  let count=0,time=0;const loader=createBrandMediaLoader((async()=>{count++;return image();}) as typeof fetch,()=>time);
- await loader.load('kit',path,'fixture',gateway);time=30_001;await loader.load('kit',path,'fixture',gateway);assert.equal(count,2);
+ await loader.load('kit',path,'fixture',gateway);time=120_001;await loader.load('kit',path,'fixture',gateway);assert.equal(count,2);
  for(let i=0;i<25;i++)await loader.load('kit','/brands/kit/assets/'+i+'/media','fixture',gateway);
  const previous=count;await loader.load('kit',path,'fixture',gateway);assert.equal(count,previous+1);
 });

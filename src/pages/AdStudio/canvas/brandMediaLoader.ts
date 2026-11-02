@@ -37,7 +37,7 @@ export function createBrandMediaLoader(fetcher: typeof fetch, now = Date.now) {
         }
         const blob = await response.blob();
         if (!isUsableBrandImage(blob)) throw new Error('Unsupported Brand Kit image.');
-        entry.bytes = blob.size; entry.expires = now() + 30_000;
+        entry.bytes = blob.size; entry.expires = now() + 120_000;
         if (entries.get(path) === entry) trim();
         return blob;
       } catch (error) {

@@ -1,3 +1,4 @@
+import {useTemplateAssetUrls,templateImageIds} from './useTemplateAssetUrls';
 import {templateEditTarget,saveCanvasTemplate} from './templateCanvasLink';
 import {TemplateRenderReview} from './TemplateRenderReview';
 import {TemplateProductSettings} from './TemplateProductSetup';
@@ -16,7 +17,6 @@ import { isTemplateSourceLoading } from "./brandTemplateModel";
 import { creativeEditorPath, type WorkspaceCreative } from "../../AdStudio/lib/projectWorkspace";
 import { TEMPLATE_CATALOG_V1 } from "../../AdStudio/canvas/templateCatalog";
 import { AD_FORMATS } from "../../AdStudio/types";
-import { useAuthenticatedBrandAssetUrls } from "../../AdStudio/canvas/useAuthenticatedBrandAssetUrls";
 import { useCreativeAssetUrls } from "../../AdStudio/canvas/useCreativeAssetUrls";
 import type { BrandKitSummary } from "../lib/brandKitTypes";
 
@@ -37,7 +37,7 @@ export function BrandTemplateAiWorkspace({kit:initialKit,initialFormat,onBack: _
 
   const sourceId=params.get("source"),kind=source?.templateContext?.draftKind || entryKind;
   const generated=!!source && hasGeneratedBackground(source),native=kind==="native";
-  const brandUrls=useAuthenticatedBrandAssetUrls(kit),generatedUrls=useCreativeAssetUrls(source?[source.id]:[]),urls={...brandUrls,...generatedUrls};
+  const imageIds=templateImageIds([source?.sceneGraph]),brandUrls=useTemplateAssetUrls(kit,imageIds),generatedUrls=useCreativeAssetUrls(source&&generated?[source.id]:[],imageIds),urls={...brandUrls,...generatedUrls};
   const remember=(value:WorkspaceCreative)=>{
     const draft=verifyTemplateSource(value,kit.id);setLoading(false);setSource(draft);
     const next=new URLSearchParams({tab:"brand",mode:draft.templateContext!.draftKind,source:draft.id});setParams(next,{replace:true});
@@ -77,7 +77,7 @@ export function BrandTemplateAiWorkspace({kit:initialKit,initialFormat,onBack: _
       if(target && value.templateContext?.draftKind!=='native'){
         record=await saveCanvasTemplate(brandTemplateApi,kit.id,value,target);
       }else record=await (value.templateContext?.draftKind==='native'?brandTemplateApi.fromDraft(kit.id,body):brandTemplateApi.fromCreative(kit.id,body));
-navigate("/brands/"+encodeURIComponent(kit.id)+"/templates/"+encodeURIComponent(templateResponseId(record,value.templateContext?.brandTemplateId || record?.id)));
+navigate("/brands/"+encodeURIComponent(kit.id)+"/templates/"+encodeURIComponent(templateResponseId(record,value.templateContext?.brandTemplateId || record?.id)),{state:{templateReview:{kit,record}}});
     }catch(e){setError(e instanceof Error?e.message:"Could not submit the template for review. Your draft is retained.");}
     finally{setBusy(false);pending.current=false;}
   }
@@ -87,11 +87,11 @@ navigate("/brands/"+encodeURIComponent(kit.id)+"/templates/"+encodeURIComponent(
   },[params,source,sourceId,native,generated,publish,busy]);
   return <section className="bt-ai-workspace">
 
-    <header><h2><Sparkles size={22}/>{source||sourceId?"Review template":native?"Choose your layout":"Create an AI template"}</h2></header>
+    {!sourceId&&<header><h2><Sparkles size={22}/>{busy&&!native?"Review template":native?"Choose your layout":"Create an AI template"}</h2></header>}
     {error && <p className="bt-blocker" role="alert">{error}</p>}
     {busy&&!source&&!native?<TemplateRenderReview name={kit.name+' · Brand Template'} format={format} phase="Preparing your template…"/>:isTemplateSourceLoading(loading,sourceId,source?.id)?<TemplateRenderReview format={format} phase="Loading template review…"/>:source && source.id===sourceId?<>
 
-      {(native || generated && source.imageRenderMode==='template-proposal')&&params.get('refine')!=='1'?<TemplateRenderReview source={source} format={format} active={!error} phase={error?"Review could not open":"Finishing your preview…"}>{error&&<button className="xp-secondary" disabled={busy} onClick={()=>void publish(source)}>Retry opening review</button>}</TemplateRenderReview>:generated && source.imageRenderMode!=="template-proposal"?<section className="xp-panel"><h3>Earlier background-only template draft</h3><BrandTemplateScenePreview graph={source.sceneGraph} assetUrls={urls} size="hero" maxHeight={560}/><button className="xp-primary" onClick={()=>{setSource(null);setLayout("product-hero");setParams({tab:"brand",mode:"ai"});}}>Start a finished template proposal</button></section>:<ProductionImageGeneration key={source.id} source={source} initialInstruction={source.proposalDirection || direction} initialOperation={params.get('refine')==='1'?'refine':'generate'} renderMode="template-proposal" compact executeRequested={generationRequested} autoPreflight={!generated && !generationRequested} onProviderUnavailable={nativeFallback} onReview={()=>void publish(source)} onCustomize={()=>navigate(creativeEditorPath(source.id))} brand={kit} assetUrls={urls} onSaved={async value=>{remember(value);await publish(value);}}/>}
+      {(native || generated && source.imageRenderMode==='template-proposal')&&params.get('refine')!=='1'?<TemplateRenderReview source={source} format={format} active={!error} phase={error?"Review could not open":"Finishing your preview…"}>{error&&<button className="xp-secondary" disabled={busy} onClick={()=>void publish(source)}>Retry opening review</button>}</TemplateRenderReview>:generated && source.imageRenderMode!=="template-proposal"?<section className="xp-panel"><h3>Earlier background-only template draft</h3><BrandTemplateScenePreview graph={source.sceneGraph} assetUrls={urls} size="hero" maxHeight={560}/><button className="xp-primary" onClick={()=>{setSource(null);setLayout("product-hero");setParams({tab:"brand",mode:"ai"});}}>Start a finished template proposal</button></section>:<ProductionImageGeneration key={source.id} source={source} initialInstruction={source.proposalDirection || direction} initialOperation={params.get('refine')==='1'?'refine':'generate'} renderMode="template-proposal" compact executeRequested={generationRequested} autoPreflight={!generated && !generationRequested} onProviderUnavailable={nativeFallback} onReview={()=>void publish(source)} onCustomize={()=>navigate(creativeEditorPath(source.id))} brand={kit} assetUrls={urls} onSaved={async value=>{await publish(verifyTemplateSource(value,kit.id));}}/>}
 
       {busy && <p role="status">Opening template review…</p>}
     </>:<div className="xp-panel bt-ai-setup bt-quick-creator">

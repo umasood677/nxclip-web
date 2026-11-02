@@ -1,59 +1,16 @@
-import { useEffect, useState } from "react";
-import { adImageApi, resolveBaseGatewayUrl } from "../../../services/apiClient";
-import { getAccessToken } from "../../../services/auth/authService";
-/** Private generated assets use owner-authenticated media routes, never public/signed URLs. */
-export function useCreativeAssetUrls(ids: readonly string[]) {
-  const key = [...new Set(ids)].sort().join(","),
-    [urls, setUrls] = useState<Record<string, string>>({});
-  useEffect(() => {
-    let cancelled = false;
-    const created: string[] = [];
-    setUrls({});
-    const token = getAccessToken();
-    if (!token || !key) return;
-    void (async () => {
-      const next: Record<string, string> = {};
-      await Promise.all(
-        key.split(",").map(async (id) => {
-          try {
-            const list = await adImageApi.assets(id);
-            for (const asset of list.items) {
-              if (cancelled) return;
-              if (
-                asset.status !== "ready" ||
-                asset.readUrl !== "/ad-studio/assets/" + asset.id + "/media"
-              )
-                continue;
-              const r = await fetch("/api/gateway-proxy" + asset.readUrl, {
-                headers: {
-                  Authorization: "Bearer " + token,
-                  "X-Target-Gateway-Url": resolveBaseGatewayUrl(),
-                },
-                redirect: "error",
-              });
-              if (!r.ok) continue;
-              const image = await r.blob();
-              if (cancelled) return;
-              if (
-                !image.type.startsWith("image/") ||
-                image.size > 10 * 1024 * 1024
-              )
-                continue;
-              const url = URL.createObjectURL(image);
-              created.push(url);
-              next[asset.id] = url;
-            }
-          } catch {
-            /* Unavailable assets stay unresolved; no public URL fallback or token exposure. */
-          }
-        }),
-      );
-      if (!cancelled) setUrls(next);
-    })();
-    return () => {
-      cancelled = true;
-      created.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [key]);
-  return urls;
+import {useEffect,useState} from 'react';
+import {adImageApi,resolveBaseGatewayUrl} from '../../../services/apiClient';
+import {useAuthToken} from '../../../services/auth/authService';
+import {createCreativeMediaLoader} from './creativeMediaLoader';
+const media=createCreativeMediaLoader((input,init)=>fetch(input,init),id=>adImageApi.assets(id));
+/** Share image bytes across preview/review; each consumer owns its disposable blob URLs. */
+export function useCreativeAssetUrls(ids:readonly string[],assetIds?:readonly string[]):Record<string,string>{
+ const token=useAuthToken(),gateway=typeof window==='undefined'?'':resolveBaseGatewayUrl(),key=[...new Set(ids)].sort().join(','),filter=assetIds===undefined?null:JSON.stringify([...new Set(assetIds)].sort()),scope=JSON.stringify([key,filter,token,gateway]);
+ const [state,setState]=useState<{scope:string;urls:Record<string,string>}>({scope:'',urls:{}});
+ useEffect(()=>{let cancelled=false;const created:string[]=[];if(!token){media.clear();return;}if(!key||filter==='[]')return;
+ const allowed=filter===null?null:new Set(JSON.parse(filter) as string[]);
+ void(async()=>{const next:Record<string,string>={};await Promise.all(key.split(',').map(async id=>{try{const list=await media.list(id,token,gateway);await Promise.all(list.items.filter(asset=>!allowed||allowed.has(asset.id)).map(async asset=>{try{const blob=await media.image(asset,token,gateway);if(cancelled)return;const url=URL.createObjectURL(blob);created.push(url);next[asset.id]=url;}catch{/* No automatic retries or public URL fallback. */}}));}catch{/* Missing owned media remains unresolved. */}}));if(!cancelled)setState({scope,urls:next});})();
+ return()=>{cancelled=true;created.forEach(url=>URL.revokeObjectURL(url));};
+ },[key,filter,token,gateway,scope]);
+ return state.scope===scope?state.urls:{};
 }

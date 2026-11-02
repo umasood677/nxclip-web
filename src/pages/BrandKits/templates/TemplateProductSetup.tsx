@@ -5,7 +5,7 @@ import {Popover,PopoverTrigger,PopoverContent} from '../../../components/ui/popo
 import {TemplateAssetPicker,templateModelChoices} from './TemplateAssetPicker';
 import type {TemplateProductConfiguration} from './templateProductSettings';
 import {brandKitProductChoices,chooseTemplateProduct,type TemplateProductChoice,type ProductSelectionMode} from './templateCreatorSetup';
-import {useAuthenticatedBrandAssetUrls} from '../../AdStudio/canvas/useAuthenticatedBrandAssetUrls';
+import {useTemplateAssetUrls} from './useTemplateAssetUrls';
 import type {BrandKitSummary} from '../lib/brandKitTypes';
 
 export function TemplateSourceThumbnail({url,label,hasAsset,model=false}:{url?:string;label:string;hasAsset:boolean;model?:boolean}){
@@ -27,7 +27,7 @@ export function TemplateProductChooser({label,choices,urls,disabled,onChoose,onP
 }
 export function TemplateProductSettings({value,onChange,kit,onKitUpdated,disabled=false,selectionMode='specific',onSelectionModeChange}:{value:TemplateProductConfiguration;onChange:(value:TemplateProductConfiguration)=>void;kit:BrandKitSummary;onKitUpdated:(kit:BrandKitSummary)=>void;disabled?:boolean;showCount?:boolean;selectionMode?:ProductSelectionMode;onSelectionModeChange?:(mode:ProductSelectionMode)=>void}){
  const [pick,setPick]=useState<number|'model'|null>(null),[manageProfiles,setManageProfiles]=useState(false);
- const urls=useAuthenticatedBrandAssetUrls(kit),models=templateModelChoices(kit),choices=brandKitProductChoices(kit),automatic=selectionMode==='automatic';
+ const urls=useTemplateAssetUrls(kit,(kit.assets||[]).filter(a=>a.role==="product_image"||a.role==="brand_model").map(a=>a.id)),models=templateModelChoices(kit),choices=brandKitProductChoices(kit),automatic=selectionMode==='automatic';
  const selectedModel=models.find(p=>p.id===value.modelProfileId),previewModel=selectedModel||models.find(p=>p.eligible)||models[0];
  const chooseModel=(review=false)=>{setManageProfiles(review);setPick('model');};
  const selectProduct=(index:number,choice:TemplateProductChoice)=>onChange(chooseTemplateProduct(value,index,choice));

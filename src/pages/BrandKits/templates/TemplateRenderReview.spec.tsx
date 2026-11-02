@@ -23,7 +23,7 @@ function load() {
       exports,
       require: (id: string) => {
         if (id === "react") return React;
-        if (id === "lucide-react") return { Sparkles: () => null };
+        if (id === "lucide-react") return { Sparkles: () => null,Check:()=>null,X:()=>null,Palette:()=>null,Copy:()=>null,Archive:()=>null };
         if (id.endsWith("/types"))
           return {
             AD_FORMATS: [{ id: "portrait_1080x1350", label: "Portrait 4:5" }],

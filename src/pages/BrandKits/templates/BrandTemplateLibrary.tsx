@@ -1,3 +1,6 @@
+import type {ReviewMediaPhase} from './reviewMediaLoading';
+import {templateReviewHandoff} from './templateReviewHandoff';
+import {useTemplateAssetUrls,templateImageIds} from './useTemplateAssetUrls';
 import {templateRecency} from './templateRecency';
 import {templateCanvasPath} from './templateCanvasLink';
 import {TemplateReviewMedia} from './TemplateReviewMedia';
@@ -18,12 +21,14 @@ import { useBrandTemplateDraftPreview } from "./useBrandTemplateDraftPreview";
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 import {
   Link,
+  useLocation,
   useNavigate,
   useParams,
   useSearchParams,
@@ -41,7 +46,6 @@ import {
   TEMPLATE_CATALOG_V1,
   type AdStudioTemplateId,
 } from "../../AdStudio/canvas/templateCatalog";
-import { useAuthenticatedBrandAssetUrls } from "../../AdStudio/canvas/useAuthenticatedBrandAssetUrls";
 import { AD_FORMATS } from "../../AdStudio/types";
 import {
   creativeEditorPath,
@@ -91,43 +95,56 @@ export default function BrandTemplateLibrary() {
   const { brandId = "", templateId } = useParams(),
     navigate = useNavigate(),
     [params, setParams] = useSearchParams();
+  const location=useLocation(),handoff=useMemo(()=>templateReviewHandoff(location.state,brandId,templateId),[location.state,brandId,templateId]),handoffPending=useRef<string|null>(handoff?location.key:null);
   const enabled = isBrandTemplatesEnabled(),
     tab = params.get("tab") === "default" ? "default" : "brand";
-  const [kit, setKit] = useState<BrandKitSummary | null>(null),
-    [items, setItems] = useState<BrandTemplate[]>([]),
+  const [kit, setKit] = useState<BrandKitSummary | null>(handoff?.kit||null),
+    [items, setItems] = useState<BrandTemplate[]>(handoff?[handoff.record]:[]),
     [projects, setProjects] = useState<WorkspaceProject[]>([]);
   const [templateDrafts,setTemplateDrafts]=useState<DeletableTemplateDraft[]>([]),[creatingCampaign,setCreatingCampaign]=useState(false);
   const running=useRef(false);
   const [deleteSelection,setDeleteSelection]=useState<string[]>([]),[deleteRequest,setDeleteRequest]=useState<TemplateDeleteEntry[]|null>(null),[deleteResults,setDeleteResults]=useState<Array<TemplateDeleteResult&{name?:string}>>([]);
   useEffect(()=>{setDeleteSelection([]);setDeleteRequest(null);setDeleteResults([]);},[brandId]);
-  const [loading, setLoading] = useState(true),
+  const [loading, setLoading] = useState(!handoff),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const setMessage = (message: string) => { if (message) toast.success(message); };
   const [depictionReviewed,setDepictionReviewed]=useState(false);
+  const [reviewMedia,setReviewMedia]=useState<{id:string;phase:ReviewMediaPhase}>({id:"",phase:"loading"});
   const [search, setSearch] = useState(""),
     [archived, setArchived] = useState(false),
     [format, setFormat] = useState("portrait_1080x1350"),
     [projectId, setProjectId] = useState("");
-  const [draft, setDraft] = useState<Draft | null>(null);
+  const [draftValue, setDraft] = useState<Draft | null>(handoff?draftFor(handoff.record):null);
+  const [draftIdentity,setDraftIdentity]=useState(handoff?.record.id||"");
+  useLayoutEffect(()=>{if(!handoff)return;handoffPending.current=location.key;setKit(handoff.kit);setItems(previous=>[handoff.record,...previous.filter(t=>t.id!==handoff.record.id)]);setDraft(draftFor(handoff.record));setDraftIdentity(handoff.record.id);setLoading(false);},[handoff,location.key]);
   useEffect(()=>setDeleteSelection([]),[search,archived]);
   const requestVersion = useRef(0),
     activeBrand = useRef(brandId);
   activeBrand.current = brandId;
-  const selected = items.find((t) => t.id === templateId),
+  const storedSelection=items.find((t)=>t.id===templateId);
+  const selected = handoff&&handoff.record.revision>=(storedSelection?.revision||0)?handoff.record:storedSelection,
+    draft=selected?(draftIdentity===selected.id&&draftValue?draftValue:draftFor(selected)):null,
     dirty =
       !!selected &&
       !!draft &&
       JSON.stringify(draft) !== JSON.stringify(draftFor(selected));
+  const reviewKey=selected?selected.id+":"+selected.revision:"",reviewPhase=reviewMedia.id===reviewKey?reviewMedia.phase:"loading";
+  const onReviewPhase=useCallback((phase:ReviewMediaPhase)=>setReviewMedia(previous=>previous.id===reviewKey&&previous.phase===phase?previous:{id:reviewKey,phase}),[reviewKey]);
   const assetKit = useMemo(() => {
     if (!kit || kit.id !== brandId) return null;
     return kit;
   }, [kit, brandId]);
-  const brandUrls = useAuthenticatedBrandAssetUrls(assetKit);
-  const generatedUrls = useCreativeAssetUrls([...items.filter(t=>!t.deletion).flatMap(t=>t.provenance.sourceCreativeId?[t.provenance.sourceCreativeId]:[]),...templateDrafts.filter(d=>!d.deletionPending).map(d=>d.id)]);
+  const currentLocation=useRef(location.key);currentLocation.current=location.key;
+  const authoring=["ai","native"].includes(params.get("mode")||"")&&!templateId;
+  const mediaGraphs=selected?[selected.sceneGraph]:authoring?[]:[...items.filter(t=>!t.deletion).map(t=>t.sceneGraph),...templateDrafts.filter(d=>!d.deletionPending).map(d=>d.sceneGraph)];
+  const imageIds=templateImageIds(mediaGraphs),brandUrls=useTemplateAssetUrls(assetKit,imageIds);
+  const mediaSources=selected?(selected.provenance.sourceCreativeId?[selected.provenance.sourceCreativeId]:[]):authoring?[]:[...items.filter(t=>!t.deletion).flatMap(t=>t.provenance.sourceCreativeId?[t.provenance.sourceCreativeId]:[]),...templateDrafts.filter(d=>!d.deletionPending).map(d=>d.id)];
+  const generatedUrls = useCreativeAssetUrls(mediaSources,imageIds);
   const urls = {...brandUrls,...generatedUrls};
   const {graph:draftPreview,loading:previewLoading,error:previewError,retry:retryPreview}=useBrandTemplateDraftPreview(brandId,selected,draft);
   const load = useCallback(async () => {
+    if(handoffPending.current===currentLocation.current){handoffPending.current=null;setLoading(false);return;}
     if (!enabled) {
       setLoading(false);
       return;
@@ -142,8 +159,8 @@ export default function BrandTemplateLibrary() {
     try {
       const [brand, result, drafts] = await Promise.all([
         brandApi.getKit(brandId),
-        brandTemplateApi.list(brandId),
-        brandTemplateApi.listDrafts(brandId).catch(()=>({items:[]})),
+        authoring?Promise.resolve({items:[]}):templateId?brandTemplateApi.get(brandId,templateId).then(record=>({items:[record]})):brandTemplateApi.list(brandId),
+        templateId||authoring?Promise.resolve({items:[]}):brandTemplateApi.listDrafts(brandId).catch(()=>({items:[]})),
       ]);
       if(templateId && !result.items.some(t=>t.id===templateId)) result.items.push(await brandTemplateApi.get(brandId,templateId));
       if (request !== requestVersion.current) return;
@@ -163,7 +180,7 @@ export default function BrandTemplateLibrary() {
     } finally {
       if (request === requestVersion.current) setLoading(false);
     }
-  }, [brandId, enabled, templateId]);
+  }, [brandId, enabled, templateId,authoring]);
   useEffect(() => {
     void load();
     return () => { requestVersion.current += 1; };
@@ -175,6 +192,7 @@ export default function BrandTemplateLibrary() {
   },[selected?.id,selected?.saved,selected?.revision]);
   useEffect(() => {
     setDraft(selected ? draftFor(selected) : null);
+    setDraftIdentity(selected?.id||"");
     setDepictionReviewed(false);
     setProjectId("");
     setMessage("");
@@ -198,7 +216,7 @@ export default function BrandTemplateLibrary() {
       navigate(to);
   };
   const patch = (value: Partial<Draft>) =>
-    setDraft((previous) => (previous ? { ...previous, ...value } : previous));
+    setDraft((previous) => draft?{...(draftIdentity===selected?.id&&previous?previous:draft),...value}:previous);
   const upsert = (record: BrandTemplate) =>
     setItems((previous) => [
       record,
@@ -334,7 +352,7 @@ export default function BrandTemplateLibrary() {
         </div>
       </main>
     );
-  if (loading && (templateId || params.get("source")))return <div className="xp-root nxclip-production bp-guided-root bt-root bt-review-page"><main className="xp-main"><h1>Review template</h1><TemplateRenderReview phase="Loading template review…"/></main></div>;
+  if (loading && (templateId || params.get("source")))return <div className="xp-root nxclip-production bp-guided-root bt-root bt-review-page ad-studio-w0a"><main className="xp-main"><nav className="xp-breadcrumb" aria-label="Breadcrumb"><Link to={"/brands/"+brandId+"/guided?step=ready"}><ArrowLeft size={14}/>Brand Kit</Link><Link to={"/brands/"+brandId+"/templates"}>Brand Templates</Link></nav><header className="xp-page-head"><h1><Palette size={26}/>Review template</h1><button type="button" disabled className="xp-primary"><Sparkles size={16}/>Generate Template</button></header><TemplateRenderReview phase="Loading template review…"/></main></div>;
   if (loading)
     return (
       <div className="grid gap-6 p-6" aria-label="Loading template library">
@@ -450,17 +468,17 @@ export default function BrandTemplateLibrary() {
           </Link>
           <Link to={base} onClick={e=>{if(dirty&&!window.confirm("Leave without saving template customization?"))e.preventDefault();}}>Brand Templates</Link>
         </nav>
-        {!["ai","native"].includes(params.get("mode") || "") && <header className="xp-page-head">
+        {(!["ai","native"].includes(params.get("mode") || "") || !!params.get("source")) && <header className="xp-page-head">
           <div>
 
             <h1><Palette size={26} aria-hidden="true" />
-              {selected
+              {selected || params.get("source")
                 ? "Review template"
                 : "Your brand. Every composition."}
             </h1>
 
           </div>
-          <button className="xp-primary" onClick={() => go(base + "?tab=brand&mode=ai")}><Sparkles size={16} aria-hidden="true" /> Generate Template</button>
+          <button className="xp-primary" disabled={authoring&&!!params.get("source")} onClick={() => go(base + "?tab=brand&mode=ai")}><Sparkles size={16} aria-hidden="true" /> Generate Template</button>
         </header>}
         {error && (
           <div className="xp-notice" role="alert">
@@ -487,7 +505,7 @@ export default function BrandTemplateLibrary() {
           <>
             <div className="xp-split bt-review">
               <section className="xp-panel bt-preview-panel">
-                <TemplateReviewMedia graph={draftPreview} urls={urls} busy={previewLoading} onRetry={()=>void load()}/>
+                <TemplateReviewMedia graph={draftPreview} urls={urls} busy={previewLoading} onPhase={onReviewPhase} onRetry={()=>void load()}/>
                 {previewError&&<p role="alert" className="bt-blocker">{previewError} <button className="xp-text-button" onClick={retryPreview}>Retry preview</button></p>}
                 <span className="xp-status">
                   {selected.saved ? "Saved" : selected.state === "approved" ? "Ready to save" : "Review needed"}
@@ -510,7 +528,7 @@ export default function BrandTemplateLibrary() {
                 <h2>Template details</h2>
 
                 <fieldset
-                  disabled={busy || selected.state === "archived"}
+                  disabled={busy || reviewPhase!=="ready" || selected.state === "archived"}
                   className="bp-fieldset bt-details-fields"
                 >
                   <label className="xp-field">
@@ -602,7 +620,7 @@ export default function BrandTemplateLibrary() {
                     Save customization
                   </button>
                 </fieldset>
-                {selected.provenance.renderMode==="template-proposal" && !selected.provenance.productDepictionReviewed && <label className="xp-check"><input type="checkbox" checked={depictionReviewed} onChange={e=>setDepictionReviewed(e.target.checked)}/>I reviewed the product, packaging and brand copy.</label>}
+                {selected.provenance.renderMode==="template-proposal" && !selected.provenance.productDepictionReviewed && <label className="xp-check"><input type="checkbox" disabled={reviewPhase!=="ready"} checked={depictionReviewed} onChange={e=>setDepictionReviewed(e.target.checked)}/>I reviewed the product, packaging and brand copy.</label>}
                 <div className="xp-actions bt-review-actions">
                   {(
                     [
@@ -625,10 +643,10 @@ export default function BrandTemplateLibrary() {
                           a === "approve" ? "xp-primary" : "xp-secondary"
                         }
                         disabled={
-                          busy ||
+                          busy || reviewPhase==="loading" ||
                           dirty ||
                           (a === "save" && selected.state !== "approved") ||
-                          (a === "approve" && (selected.blockers.length > 0 || (selected.provenance.renderMode === "template-proposal" && !selected.provenance.productDepictionReviewed && !depictionReviewed)))
+                          (a === "approve" && (reviewPhase!=="ready" || selected.blockers.length > 0 || (selected.provenance.renderMode === "template-proposal" && !selected.provenance.productDepictionReviewed && !depictionReviewed)))
                         }
                         key={a}
                         onClick={() => action(a)}
@@ -648,7 +666,7 @@ export default function BrandTemplateLibrary() {
                       </button>
                     ))}
                 </div>
-                <div className="bt-review-use"><button className="xp-primary" disabled={busy || dirty || !canReuseTemplate(selected)} onClick={()=>document.getElementById('template-project-selection')?.scrollIntoView({behavior:'smooth',block:'center'})}>Use Template in Ad Studio →</button></div>
+                <div className="bt-review-use"><button className="xp-primary" disabled={busy || reviewPhase!=="ready" || dirty || !canReuseTemplate(selected)} onClick={()=>document.getElementById('template-project-selection')?.scrollIntoView({behavior:'smooth',block:'center'})}>Use Template in Ad Studio →</button></div>
 
               </section>
             </div>

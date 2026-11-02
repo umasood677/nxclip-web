@@ -9,3 +9,11 @@ export function preloadReviewImages(urls:readonly string[],create:()=>PreviewIma
   const image=create();image.onload=()=>{const decoded=image.decode?.();if(decoded)void decoded.then(resolve,reject);else resolve();};image.onerror=()=>reject(Error('Preview image unavailable'));image.src=url;
  }))).then(()=>{});
 }
+
+export type ReviewMediaPhase='loading'|'ready'|'failed';
+/** Binding can include authenticated GETs; do not confuse it with image decode failure. */
+export function watchReviewMedia(sources:readonly string[]|null,waiting:boolean,onPhase:(phase:ReviewMediaPhase)=>void,decode=preloadReviewImages,clock:{set:(fn:()=>void,ms:number)=>unknown;clear:(id:unknown)=>void}={set:(fn,ms)=>setTimeout(fn,ms),clear:id=>clearTimeout(id as ReturnType<typeof setTimeout>)}){
+ let active=true;onPhase('loading');let timer:unknown;
+ if(!waiting){timer=clock.set(()=>{if(active)onPhase('failed');},sources===null?60000:30000);if(sources!==null)void decode(sources).then(()=>{if(active){clock.clear(timer);onPhase('ready');}},()=>{if(active){clock.clear(timer);onPhase('failed');}});}
+ return()=>{active=false;if(timer!==undefined)clock.clear(timer);};
+}

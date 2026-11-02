@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {reviewImageUrls,preloadReviewImages} from './reviewMediaLoading';
+import {reviewImageUrls,preloadReviewImages,watchReviewMedia} from './reviewMediaLoading';
 import type {AdSceneGraph} from '../../AdStudio/types';
 const graph:AdSceneGraph={schemaVersion:'1.0',canvas:{width:100,height:125},layers:[
  {id:'image',type:'image',assetId:'image',x:0,y:0,width:100,height:125,zIndex:1},
@@ -27,3 +27,6 @@ test('duplicate URLs are decoded once and missing images reject without automati
 test('empty image lists complete immediately for native text-only previews',async()=>{
  const h=images();await preloadReviewImages([],h.create);assert.equal(h.created.length,0);
 });
+
+test('binding waits for authenticated media and busy composition without premature twelve-second failure',()=>{const phases:string[]=[],timers:number[]=[];const clock={set:(_f:()=>void,ms:number)=>{timers.push(ms);return 1;},clear:()=>{}};const cancel=watchReviewMedia(null,false,p=>phases.push(p),async()=>{},clock);assert.deepEqual(phases,['loading']);assert.deepEqual(timers,[60000]);cancel();timers.length=0;watchReviewMedia(null,true,p=>phases.push(p),async()=>{},clock)();assert.equal(timers.length,0);});
+test('late image decoding completes without refresh while canceled transitions cannot update review',async()=>{let resolve!:()=>void;const phases:string[]=[];const done=new Promise<void>(r=>resolve=r);const cancel=watchReviewMedia(['blob:owned'],false,p=>phases.push(p),()=>done,{set:()=>1,clear:()=>{}});resolve();await new Promise(r=>setImmediate(r));assert.deepEqual(phases,['loading','ready']);cancel();let release!:()=>void;const next:string[]=[];const stop=watchReviewMedia(['blob:old'],false,p=>next.push(p),()=>new Promise<void>(r=>release=r),{set:()=>1,clear:()=>{}});stop();release();await new Promise(r=>setImmediate(r));assert.deepEqual(next,['loading']);});
