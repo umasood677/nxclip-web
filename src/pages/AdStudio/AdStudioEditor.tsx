@@ -184,17 +184,17 @@ export default function AdStudioEditor() {
   );
 
   const originalGraphRef = useRef<AdSceneGraph | null>(null);
-  const templateLoadedRef=useRef("");
+  const templateLoadedRef=useRef<{key:string;version:number}|null>(null);
 
   const reloadCreative = useCallback(async () => {
     if (!creativeId) return;
     const creative = await adStudioApi.getCreative(creativeId);
     const target=templateEditTarget(canvasSearch),loadKey=creativeId+canvasSearch;
     let canvasTemplate:Awaited<ReturnType<typeof brandTemplateApi.get>>|null=null;
-    if(target && isTemplateDraftCreative(creative) && creative.templateContext && templateLoadedRef.current!==loadKey){
+    if(target && isTemplateDraftCreative(creative) && creative.templateContext && (templateLoadedRef.current?.key!==loadKey || templateLoadedRef.current.version===(creative.currentVersion??1))){
       canvasTemplate=await brandTemplateApi.get(creative.templateContext.brandKitId,target.id);
       if(canvasTemplate.revision!==target.revision || canvasTemplate.provenance.sourceCreativeId!==creative.id)throw Error("Template changed. Reopen it from the library.");
-      templateLoadedRef.current=loadKey;
+      templateLoadedRef.current={key:loadKey,version:creative.currentVersion??1};
     }
     setName(canvasTemplate?.name||creative.name);
     setTemplateDocument(isTemplateDraftCreative(creative)?creative:null);
