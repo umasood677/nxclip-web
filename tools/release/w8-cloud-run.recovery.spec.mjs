@@ -65,16 +65,12 @@ class Harness {
         this.checkToken(repo, options.env.GH_TOKEN);
         const dir = args[args.indexOf('--dir') + 1]; mkdirSync(dir, { recursive: true }); writeFileSync(join(dir, 'release-manifest.json'), ref.bytes); return ok('');
       }
-      if (args[1].endsWith('/environments/development')) {
-        assert.equal(options.env.GH_TOKEN, 'synthetic-own-token');
-        return ok({ name: 'development', protection_rules: [{ type: 'required_reviewers', reviewers: [{}] }] });
-      }
       const match = args[1].match(/^repos\/(.+\/.+)\/actions\/runs\/(\d+)(\/artifacts\?per_page=100)?$/);
       assert(match, 'Unexpected GitHub request'); const [, repo, runId, list] = match;
       this.checkToken(repo, options.env.GH_TOKEN);
       const ref = this.artifacts.get(`${repo}:${runId}`); assert(ref, 'Unknown mock artifact');
       if (list) return ok({ artifacts: [{ name: `w8-recovery-${ref.manifest.operation}`, expired: ref.expired, workflow_run: { head_sha: workflowSha } }] });
-      return ok({ id: Number(runId), run_attempt: 1, head_sha: workflowSha, status: 'completed', conclusion: ref.conclusion, path: '.github/workflows/deploy-w8-selective.yml', event: 'workflow_dispatch', repository: { full_name: repo } });
+      return ok({ id: Number(runId), run_attempt: 1, head_sha: workflowSha, status: 'completed', conclusion: ref.conclusion, path: '.github/workflows/deploy-w8-selective.yml', event: 'workflow_dispatch', head_branch: 'master', repository: { full_name: repo } });
     }
     assert.equal(exe, 'gcloud', 'No real executable may escape the simulator');
     assert.equal(options.env.GH_TOKEN, 'synthetic-own-token', 'Peer credential leaked to a cloud subprocess');
@@ -115,7 +111,7 @@ class Harness {
     const input = inputs.own || (operation === 'stage' ? this.builds : this.stages).get(p.repository);
     const other = inputs.peer || this.stages.get(p.peerRepository);
     const output = join(this.dir, `receipt-${runId}`);
-    const env = { GITHUB_REPOSITORY: p.repository, GITHUB_SHA: workflowSha, GITHUB_RUN_ID: runId, GITHUB_RUN_ATTEMPT: '1', RELEASE_ID: 'w8-recovery', SOURCE_SHA: p.sourceSha, OPERATION: operation, SOURCE_ROOT: 'application', AUTOMATION_ROOT: 'automation', RECEIPT_DIR: output, MANIFEST_RUN_ID: input?.runId || '', MANIFEST_SHA256: input?.hash || '', PEER_RUN_ID: other?.runId || '', PEER_MANIFEST_SHA256: other?.hash || '', SMOKE_ACCEPTANCE: 'accepted', BACKGROUND_READINESS: 'retain-disabled-reviewed', ...inputs.env };
+    const env = { GITHUB_REPOSITORY: p.repository, GITHUB_SHA: workflowSha, GITHUB_RUN_ID: runId, GITHUB_RUN_ATTEMPT: '1', RELEASE_ID: 'w8-recovery', SOURCE_SHA: p.sourceSha, OPERATION: operation, GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/heads/master', GITHUB_WORKFLOW_REF: `${p.repository}/.github/workflows/deploy-w8-selective.yml@refs/heads/master`, GITHUB_ACTOR: p.repository.split('/')[0], GITHUB_TRIGGERING_ACTOR: p.repository.split('/')[0], W8_RELEASE_MAINTAINERS: '[]', SOURCE_ROOT: 'application', AUTOMATION_ROOT: 'automation', RECEIPT_DIR: output, MANIFEST_RUN_ID: input?.runId || '', MANIFEST_SHA256: input?.hash || '', PEER_RUN_ID: other?.runId || '', PEER_MANIFEST_SHA256: other?.hash || '', SMOKE_ACCEPTANCE: 'accepted', BACKGROUND_READINESS: 'retain-disabled-reviewed', ...inputs.env };
     const keys = ['RUNNER_TEMP', 'GH_TOKEN', 'W8_RELEASE_READ_TOKEN']; const previous = Object.fromEntries(keys.map(k => [k, process.env[k]]));
     const oldFetch = globalThis.fetch; this.activeRepository = p.repository;
     process.env.RUNNER_TEMP = this.dir; process.env.GH_TOKEN = 'synthetic-own-token';
@@ -262,3 +258,10 @@ test('workflow: peer token is step-scoped only to coordinated operations', () =>
   assert(step.includes("if: inputs.operation == 'promote' || inputs.operation == 'rollback'"));
   assert(step.includes('node automation/tools/release/w8-cloud-run.mjs'));
 });
+
+for (const patch of [{ GITHUB_ACTOR: 'outsider' }, { GITHUB_TRIGGERING_ACTOR: 'outsider' }, { GITHUB_REF: 'refs/heads/other' }, { GITHUB_EVENT_NAME: 'push' }]) {
+  test(`controller: unauthorized context ${Object.keys(patch)[0]} stops before external commands`, () => scenario(async h => {
+    const result = await h.dispatch(backend, 'stage', { env: patch });
+    assert(result.error); assert.equal(h.calls.length, 0); assert.equal(h.trafficCalls().length, 0);
+  }));
+}

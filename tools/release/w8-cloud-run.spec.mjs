@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { canonical, sha256, validateContext, validateReviewers, validateBuildValues, validateManifest, validateTraffic, traffic, templateConfig, serviceConfig, expectedTemplate, validatePreservation, deploymentArgs, promotionArgs, rollbackArgs, assertTagAbsent, validateArtifactRun, healthProbe, validatePeerTraffic, execute, withCommandExecutorForTest } from './w8-cloud-run.mjs';
+import { canonical, sha256, validateContext, validateManualAuthorization, validateBuildValues, validateManifest, validateTraffic, traffic, templateConfig, serviceConfig, expectedTemplate, validatePreservation, deploymentArgs, promotionArgs, rollbackArgs, assertTagAbsent, validateArtifactRun, healthProbe, validatePeerTraffic, execute, withCommandExecutorForTest } from './w8-cloud-run.mjs';
 
 const policy = JSON.parse(readFileSync(new URL('./w8-release-policy.json', import.meta.url)));
 const sha = 'a'.repeat(40), digest = 'b'.repeat(64);
 const service = policy.services[0];
 const image = `${policy.registry}/${service}@sha256:${digest}`;
-const env = { GITHUB_REPOSITORY: policy.repository, SOURCE_SHA: policy.sourceSha, GITHUB_SHA: sha, RELEASE_ID: 'w8-test-a', OPERATION: 'stage', GITHUB_RUN_ID: '100', GITHUB_RUN_ATTEMPT: '1' };
+const env = { GITHUB_REPOSITORY: policy.repository, SOURCE_SHA: policy.sourceSha, GITHUB_SHA: sha, RELEASE_ID: 'w8-test-a', OPERATION: 'stage', GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/heads/master', GITHUB_WORKFLOW_REF: `${policy.repository}/.github/workflows/deploy-w8-selective.yml@refs/heads/master`, GITHUB_ACTOR: policy.repository.split('/')[0], GITHUB_TRIGGERING_ACTOR: policy.repository.split('/')[0], GITHUB_RUN_ID: '100', GITHUB_RUN_ATTEMPT: '1' };
 const copy = x => JSON.parse(JSON.stringify(x));
 function baseline() {
   return {
@@ -33,9 +33,15 @@ test('exact repository and approved application source accepted independently of
 for (const [key, value] of Object.entries({ GITHUB_REPOSITORY: 'other/repo', SOURCE_SHA: sha, GITHUB_SHA: 'master', RELEASE_ID: 'w8-test;echo bad', OPERATION: 'deploy-all', GITHUB_RUN_ID: 'x' })) {
   test(`reject invalid context ${key}`, () => assert.throws(() => validateContext(policy, { ...env, [key]: value })));
 }
-test('development requires a real reviewer rule', () => {
-  assert.throws(() => validateReviewers({ name: 'development', protection_rules: [] }), /required-reviewer/);
-  validateReviewers({ name: 'development', protection_rules: [{ type: 'required_reviewers', reviewers: [{}] }] });
+test('owner manual master dispatch needs no environment metadata', () => validateManualAuthorization(policy.repository, env));
+for (const [key, value] of Object.entries({ GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/other', GITHUB_WORKFLOW_REF: `${policy.repository}/.github/workflows/other.yml@refs/heads/master`, GITHUB_ACTOR: 'outsider', GITHUB_TRIGGERING_ACTOR: 'outsider', W8_RELEASE_MAINTAINERS: 'not-json' })) {
+  test(`reject unauthorized release context ${key}`, () => assert.throws(() => validateContext(policy, { ...env, [key]: value })));
+}
+test('explicitly authorized maintainer can dispatch but cannot authorize an unrelated rerun actor', () => {
+  const maintained = { ...env, W8_RELEASE_MAINTAINERS: '["release-maintainer"]', GITHUB_ACTOR: 'release-maintainer', GITHUB_TRIGGERING_ACTOR: 'release-maintainer' };
+  validateContext(policy, maintained);
+  assert.throws(() => validateContext(policy, { ...maintained, GITHUB_TRIGGERING_ACTOR: 'outsider' }));
+  assert.throws(() => validateContext(policy, { ...maintained, W8_RELEASE_MAINTAINERS: '{}' }));
 });
 test('approved frontend feature and public build configuration exact', () => {
   validateBuildValues(policy, policy.publicBuildValues);
@@ -86,7 +92,6 @@ test('full build controller publishes only exact allowlist with no deployment co
   const runner = (exe, args, opts) => {
     calls.push([exe, ...args]);
     if (exe === 'git') return { status: 0, stdout: opts.cwd === 'app' ? policy.sourceSha : sha };
-    if (exe === 'gh') return { status: 0, stdout: JSON.stringify({ name: 'development', protection_rules: [{ type: 'required_reviewers', reviewers: [{}] }] }) };
     if (exe === 'docker') { pushed = args[0] === 'push'; return { status: 0, stdout: '' }; }
     if (exe === 'gcloud' && args.slice(0, 4).join(' ') === 'artifacts docker images describe') {
       if (pushed) { pushed = false; return { status: 0, stdout: JSON.stringify({ image_summary: { digest: 'sha256:' + digest } }) }; }
@@ -99,6 +104,7 @@ test('full build controller publishes only exact allowlist with no deployment co
     const result = JSON.parse(readFileSync(join(dir, 'release-manifest.json')));
     validateManifest(policy, result, { releaseId: env.RELEASE_ID, operation: 'build_publish' });
     assert.equal(calls.filter(c => c[0] === 'docker' && c[1] === 'push').length, policy.services.length);
+    assert.equal(calls.filter(c => c[0] === 'gh').length, 0, 'Build must not require environment or peer GitHub access');
     assert(!calls.some(c => c.includes('deploy') || c.includes('update-traffic') || c.some(a => String(a).endsWith(':latest'))));
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
@@ -120,9 +126,8 @@ test('full stage controller preserves traffic, probes exact tags and records ide
     if (exe === 'git') return ok(opts.cwd === 'app' ? policy.sourceSha : sha);
     if (exe === 'gh') {
       if (args[0] === 'run') { const dest = args[args.indexOf('--dir') + 1]; mkdirSync(dest, { recursive: true }); writeFileSync(join(dest, 'release-manifest.json'), bytes); return ok(''); }
-      if (args[1].endsWith('/environments/development')) return ok({ name: 'development', protection_rules: [{ type: 'required_reviewers', reviewers: [{}] }] });
       if (args[1].includes('/artifacts?')) return ok({ artifacts: [{ name: env.RELEASE_ID + '-build_publish', expired: false, workflow_run: { head_sha: sha } }] });
-      return ok({ id: 100, status: 'completed', conclusion: 'success', repository: { full_name: policy.repository }, path: '.github/workflows/deploy-w8-selective.yml', event: 'workflow_dispatch', head_sha: sha, run_attempt: 1 });
+      return ok({ id: 100, status: 'completed', conclusion: 'success', repository: { full_name: policy.repository }, path: '.github/workflows/deploy-w8-selective.yml', event: 'workflow_dispatch', head_branch: 'master', head_sha: sha, run_attempt: 1 });
     }
     if (exe === 'gcloud') {
       if (args[0] === 'auth') return ok('synthetic-token');
@@ -210,10 +215,10 @@ test('invalid traffic including symbolic latest is rejected', () => {
   for (const t of [[], [{ latestRevision: true, percent: 100 }], [{ revisionName: 'old', percent: 99 }], [{ revisionName: 'old', percent: 50 }, { revisionName: 'old', percent: 50 }]]) assert.throws(() => validateTraffic(t));
 });
 test('artifact must come from successful reviewed manual workflow run', () => {
-  const run = { id: 100, status: 'completed', conclusion: 'success', repository: { full_name: policy.repository }, path: '.github/workflows/deploy-w8-selective.yml', event: 'workflow_dispatch', head_sha: sha };
+  const run = { id: 100, status: 'completed', conclusion: 'success', repository: { full_name: policy.repository }, path: '.github/workflows/deploy-w8-selective.yml', event: 'workflow_dispatch', head_branch: 'master', head_sha: sha };
   const artifact = { name: 'w8-test-stage', expired: false, workflow_run: { head_sha: sha } };
   validateArtifactRun(run, policy.repository, '100', artifact);
-  for (const patch of [{ conclusion: 'failure' }, { event: 'push' }, { path: '.github/workflows/other.yml' }, { repository: { full_name: 'other/repo' } }]) assert.throws(() => validateArtifactRun({ ...run, ...patch }, policy.repository, '100', artifact));
+  for (const patch of [{ conclusion: 'failure' }, { event: 'push' }, { head_branch: 'other' }, { path: '.github/workflows/other.yml' }, { repository: { full_name: 'other/repo' } }]) assert.throws(() => validateArtifactRun({ ...run, ...patch }, policy.repository, '100', artifact));
 });
 test('smoke requests health only without retry or generation', async () => {
   const requests = [];
@@ -225,7 +230,7 @@ test('workflow remains manual, scoped, independently approved and artifact drive
   const yaml = readFileSync(new URL('../../.github/workflows/deploy-w8-selective.yml', import.meta.url), 'utf8');
   assert(yaml.includes('workflow_dispatch:')); assert(!/^\s+(push|pull_request|workflow_run):/m.test(yaml));
   for (const op of ['build_publish', 'stage', 'promote', 'rollback']) assert(yaml.includes(`- ${op}`));
-  assert(yaml.includes('environment: development')); assert(yaml.includes('cancel-in-progress: false'));
+  assert(!yaml.includes('environment: development')); assert(yaml.includes("github.ref == 'refs/heads/master'")); assert(yaml.includes('github.triggering_actor')); assert(yaml.includes('cancel-in-progress: false'));
   assert(yaml.includes('path: application')); assert(yaml.includes('path: automation'));
   assert(yaml.includes('if: always()')); assert(!yaml.includes('docker push') && !yaml.includes('gcloud run deploy'));
 });

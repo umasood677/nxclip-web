@@ -1,4 +1,4 @@
-# W8 selective GitHub release — Phase A review
+# W8 selective GitHub release — GitHub Free development
 
 Status: local automation implementation only. No commit, push, workflow execution,
 image publication, Cloud Run deployment, migration or traffic change is authorized
@@ -34,12 +34,18 @@ New and old CD share the same repository-level deployment concurrency group:
 There is no GitHub cross-repository concurrency lock. Use sequential dispatches
 and the peer-manifest/live-state checks below; do not run external deploy commands.
 
-## GitHub setup requirements (no settings changed in Phase A)
+## GitHub Free setup (repository-level configuration)
 
-- Existing `development` environment and `GCP_SA_KEY` deployment authentication.
-- A required-reviewer protection rule must actually exist. The controller reads
-  environment metadata and refuses execution if absent. Every operation is a new
-  manual dispatch/environment review, not a job automatically following CI.
+- Existing repository-level `GCP_SA_KEY` deployment authentication. No GitHub
+  environment, environment secrets/variables or Required reviewers are needed.
+- Every operation is manually dispatched from master. The job guard and controller
+  independently verify workflow_dispatch, refs/heads/master and the exact release
+  workflow path/ref. Both dispatcher and rerun actor must be authorized.
+- The repository owner (`umasood677`) is authorized by default. Optional repository
+  Variable `W8_RELEASE_MAINTAINERS` is a JSON array of additional GitHub logins,
+  for example `["trusted-maintainer"]`. Leave it absent for owner-only execution.
+  Those users also need GitHub permission to dispatch the workflow. Invalid
+  allowlist JSON fails closed. No new approval service or confirmation framework.
 - `W8_RELEASE_READ_TOKEN`: needed where the ordinary token cannot read the peer
   repository. For private peers, provide a fine-grained read-only token with Actions
   read access to the PEER repository (or an equivalently scoped GitHub App token).
@@ -49,23 +55,27 @@ and the peer-manifest/live-state checks below; do not run external deploy comman
   reads and stripped from cloud subprocess environments.
   Artifact transfer uses explicit repository + producing run ID, never a presumed
   shared artifact namespace. No cross-repository write permission is needed.
-- The ordinary job token needs Contents, Actions and Deployments read permissions.
+- The ordinary job token needs Contents and Actions read permissions.
   Existing Google deployment credentials must already have registry read/write,
   Cloud Run describe/deploy/update-traffic and runtime-service-account actAs access.
   The workflow grants no IAM rights and creates no registry repository.
 - Frontend public build inputs must resolve exactly to `publicBuildValues` in
-  `tools/release/w8-release-policy.json`. Existing GitHub Variables take precedence
-  over same-name Secrets. Values are compared before build, without printing them.
+  `tools/release/w8-release-policy.json`. Repository Variables take precedence over
+  same-name repository Secrets. Values are compared before build, without printing them.
   This includes both Gateway URL arguments, notification URL, Google OAuth client
   ID, TemplatesV1/Animated=true and all six new W8 flags=false. Missing variables
   fail closed; the workflow does not invent defaults or enable features.
 
-Read-only GitHub inspection on 2026-11-03 found:
-- Backend development: NO required-reviewer rule. Execution is BLOCKED until an
-  owner separately configures/reviews protection. No automatic settings change.
-- Frontend development: one reviewer, self-review not prevented, admin bypass on.
-  Backend also allows admin bypass; neither has a deployment branch policy.
-  Owner must avoid administrative bypass and dispatch reviewed automation only.
+Authorization is the deliberate owner/maintainer dispatch for the selected
+operation and exact manifest inputs, not an environment review. There is no
+automatic stage, promotion or rollback after a successful preceding operation.
+Normal CI and the legacy CD workflows remain unchanged.
+
+Security boundary: these are workflow/controller guards, not tamper-proof secret
+isolation against repository writers who can edit workflow code. Repository-level
+deployment credentials require trusted repository write access. Dispatch reviewed
+master only; protect the owner account and credentials. This development trust
+model does not provide independent two-person review. No GitHub settings changed.
 
 ## Operations and artifact chain
 
@@ -88,7 +98,8 @@ has nine inputs; operation, release ID and exact source SHA are always required.
    `smoke_acceptance=accepted`, and `background_readiness=retain-disabled-reviewed`.
    Backend requires the frontend still staged on its baseline traffic. Frontend
    requires all three backend revisions already promoted. Peer revision UID,
-   digest and configuration are checked live. Backend order is AI -> Content ->
+   digest and configuration are checked live. Artifact producers must also be
+   manual master release runs. Backend order is AI -> Content ->
    Gateway; then dispatch frontend promotion. No `--to-latest` or automatic chain.
 4. `rollback` (separate approval): supply own AND peer successful stage run/hash,
    not failed-operation artifacts or freshly generated manifests. Restore exact
@@ -224,6 +235,9 @@ cross-repository rollback ordering, mid-operation peer changes, uncertain CLI
 results, failed rollback followed by a new dispatch, hash/expiry/digest rejection
 and missing peer manifests. All cloud/HTTP actions are in-memory simulations.
 
-Approval order: Phase A local implementation -> Phase B owner review -> Phase C
-explicit commit/push approval -> Phase D explicit build/publish approval -> Phase E
-explicit stage approval -> smoke acceptance -> Phase F explicit promotion approval.
+Change-control order: local implementation -> owner review -> explicit commit/push
+approval. Once approved automation is on master, separately authorize and manually
+dispatch build_publish, stage, promote or rollback. These dispatches replace the
+unavailable environment-reviewer gate; they do not authorize another operation.
+Smoke acceptance/background readiness inputs and every existing recovery guard
+remain required. The separate background-restoration gate is unchanged.

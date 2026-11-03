@@ -56,15 +56,20 @@ concurrency:
 permissions:
   contents: read
   actions: read
-  deployments: read
-  id-token: write
 
 jobs:
   release:
+    # GitHub Free: manual master dispatch by owner or explicitly listed maintainers.
+    # These workflow guards assume trusted repository writers; they are not environment reviews.
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' &&
+      github.workflow_ref == format('{0}/.github/workflows/deploy-w8-selective.yml@refs/heads/master', github.repository) &&
+      (github.actor == github.repository_owner || contains(fromJSON(vars.W8_RELEASE_MAINTAINERS || '[]'), github.actor)) &&
+      (github.triggering_actor == github.repository_owner || contains(fromJSON(vars.W8_RELEASE_MAINTAINERS || '[]'), github.triggering_actor))
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    environment: development
     env:
+      W8_RELEASE_MAINTAINERS: ${{ vars.W8_RELEASE_MAINTAINERS || '[]' }}
       OPERATION: ${{ inputs.operation }}
       RELEASE_ID: ${{ inputs.release_id }}
       SOURCE_SHA: ${{ inputs.source_sha }}
@@ -110,7 +115,7 @@ jobs:
           node-version: 20
       - name: Test release guards (mocked; no cloud mutations)
         run: node --test automation/tools/release/w8-cloud-run.spec.mjs automation/tools/release/w8-cloud-run.recovery.spec.mjs
-      - name: Check source identity and enforced environment reviewers
+      - name: Check manual master authorization and source identity
         run: node automation/tools/release/w8-cloud-run.mjs --check
       - name: Verify approved frontend source clean build
         if: inputs.operation == 'build_publish'
@@ -119,7 +124,7 @@ jobs:
           set -euo pipefail
           npm ci
           npm run build
-      - name: Authenticate using existing development deployment identity
+      - name: Authenticate using existing repository deployment credential
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}

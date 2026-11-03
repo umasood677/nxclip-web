@@ -29,10 +29,20 @@ export function validateContext(policy, env) {
   assert(/^w8-[a-z0-9][a-z0-9-]{0,30}$/.test(env.RELEASE_ID || ''), 'Invalid release ID; use w8- plus lowercase letters/digits/hyphens (max 34 chars)');
   assert(['build_publish', 'stage', 'promote', 'rollback'].includes(env.OPERATION), 'Unsupported release operation');
   assert(/^\d+$/.test(env.GITHUB_RUN_ID || '') && /^\d+$/.test(env.GITHUB_RUN_ATTEMPT || ''), 'Missing GitHub run identity');
+  validateManualAuthorization(policy.repository, env);
 }
-export function validateReviewers(environment) {
-  assert(environment.name === 'development', 'Unexpected GitHub environment');
-  assert(environment.protection_rules?.some(rule => rule.type === 'required_reviewers' && rule.reviewers?.length > 0), 'development has no enforced required-reviewer rule; owner must configure it before execution');
+export function authorizedMaintainers(repository, value = '[]') {
+  let extra;
+  try { extra = JSON.parse(value); } catch { assert(false, 'W8_RELEASE_MAINTAINERS must be a JSON array of GitHub logins'); }
+  assert(Array.isArray(extra) && extra.every(login => typeof login === 'string' && /^[a-z0-9][a-z0-9-]{0,38}$/i.test(login)), 'Invalid W8_RELEASE_MAINTAINERS allowlist');
+  return new Set([repository.split('/')[0], ...extra].map(login => login.toLowerCase()));
+}
+export function validateManualAuthorization(repository, env) {
+  assert(env.GITHUB_EVENT_NAME === 'workflow_dispatch', 'Release operations require a separate manual workflow dispatch');
+  assert(env.GITHUB_REF === 'refs/heads/master', 'Release automation may run only from master');
+  assert(env.GITHUB_WORKFLOW_REF === `${repository}/.github/workflows/deploy-w8-selective.yml@refs/heads/master`, 'Unexpected release workflow/ref');
+  const allowed = authorizedMaintainers(repository, env.W8_RELEASE_MAINTAINERS || '[]');
+  assert(allowed.has(String(env.GITHUB_ACTOR || '').toLowerCase()) && allowed.has(String(env.GITHUB_TRIGGERING_ACTOR || '').toLowerCase()), 'Release dispatcher and rerun actor must be authorized maintainers');
 }
 export function validateBuildValues(policy, values) {
   for (const [key, expected] of Object.entries(policy.publicBuildValues)) {
@@ -140,6 +150,7 @@ function artifactName(releaseId, operation) { return `${releaseId}-${operation}`
 export function validateArtifactRun(run, repository, runId, artifact) {
   assert(run.id === Number(runId) && run.status === 'completed' && run.conclusion === 'success', 'Manifest run is not completed/successful');
   assert(run.repository?.full_name === repository && run.path === '.github/workflows/deploy-w8-selective.yml' && run.event === 'workflow_dispatch', 'Manifest producer is not the reviewed manual W8 workflow');
+  assert(run.head_branch === 'master', 'Manifest must be produced by the master release workflow');
   assert(!artifact.expired && artifact.name && artifact.workflow_run?.head_sha === run.head_sha, 'Artifact provenance/expiry mismatch');
 }
 export async function obtainManifest(repo, runId, expectedHash, releaseId, operation, policy, requesterRepository = process.env.GITHUB_REPOSITORY) {
@@ -188,8 +199,6 @@ function writeReceipt(manifest, output) {
 }
 export function precheck(policy, env) {
   validateContext(policy, env);
-  const environment = jsonCommand('gh', ['api', `repos/${policy.repository}/environments/development`]);
-  validateReviewers(environment);
   assert(command('git', ['rev-parse', 'HEAD'], { cwd: env.SOURCE_ROOT }).trim() === policy.sourceSha, 'Checked-out application source differs');
   assert(command('git', ['rev-parse', 'HEAD'], { cwd: env.AUTOMATION_ROOT }).trim() === env.GITHUB_SHA, 'Automation checkout differs from workflow revision');
   if (policy.services.includes('nxclip-web') && env.OPERATION === 'build_publish') validateBuildValues(policy, env);
