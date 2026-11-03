@@ -90,6 +90,14 @@ export function templateConfig(template) {
   for (const container of spec.containers) container.env = (container.env || []).sort((a, b) => a.name.localeCompare(b.name));
   return { metadata, spec };
 }
+// Cloud Run may materialize container.name on revisions when the service template omitted it.
+// Explicit names on both sides remain compared; only omitted-vs-generated is normalized.
+export function assertServiceRevisionSpecsAlign(serviceTemplate, revisionSpec) {
+  const serviceSpec = clone(templateConfig(serviceTemplate).spec);
+  const comparable = clone(templateConfig({ spec: revisionSpec }).spec);
+  if (!serviceSpec.containers[0].name && comparable.containers[0].name) delete comparable.containers[0].name;
+  assert(sha256(canonical(serviceSpec)) === sha256(canonical(comparable)), 'Service and revision specifications differ');
+}
 export function serviceConfig(service) {
   const spec = clone(service.spec || {}); delete spec.template; delete spec.traffic;
   return { annotations: annotations(service.metadata?.annotations), labels: service.metadata?.labels || {}, spec };
@@ -283,7 +291,7 @@ export async function execute(policy, env) {
       item.revisionUid = revision.metadata.uid;
       item.configHash = sha256(canonical(templateConfig(after.spec.template)));
       item.revisionSpecHash = sha256(canonical(templateConfig({ spec: revision.spec }).spec));
-      assert(item.revisionSpecHash === sha256(canonical(templateConfig(after.spec.template).spec)), 'Service and revision specifications differ');
+      assertServiceRevisionSpecsAlign(after.spec.template, revision.spec);
       checkRevision(policy, item);
       const tagged = after.status.traffic.find(t => t.tag === tag && t.revisionName === item.revision);
       assert(tagged?.url, 'Tagged revision route missing');

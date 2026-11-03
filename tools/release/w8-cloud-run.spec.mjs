@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { canonical, sha256, validateContext, validateManualAuthorization, validateBuildValues, validateManifest, validateTraffic, traffic, templateConfig, serviceConfig, expectedTemplate, validatePreservation, deploymentArgs, promotionArgs, rollbackArgs, assertTagAbsent, validateArtifactRun, healthProbe, validatePeerTraffic, execute, withCommandExecutorForTest } from './w8-cloud-run.mjs';
+import { canonical, sha256, validateContext, validateManualAuthorization, validateBuildValues, validateManifest, validateTraffic, traffic, templateConfig, serviceConfig, expectedTemplate, validatePreservation, assertServiceRevisionSpecsAlign, deploymentArgs, promotionArgs, rollbackArgs, assertTagAbsent, validateArtifactRun, healthProbe, validatePeerTraffic, execute, withCommandExecutorForTest } from './w8-cloud-run.mjs';
 
 const policy = JSON.parse(readFileSync(new URL('./w8-release-policy.json', import.meta.url)));
 const sha = 'a'.repeat(40), digest = 'b'.repeat(64);
@@ -192,6 +192,53 @@ test('normalizes environment ordering without hiding values', () => {
   const a = baseline(), b = baseline(); b.spec.template.spec.containers[0].env.reverse();
   assert.equal(canonical(templateConfig(a.spec.template)), canonical(templateConfig(b.spec.template)));
   assert.deepEqual(serviceConfig(a), serviceConfig(b));
+});
+test('service/revision specs align when Cloud Run generates a container name for an omitted service name', () => {
+  const { after } = staged();
+  assert.equal(after.spec.template.spec.containers[0].name, undefined);
+  const revisionSpec = copy(after.spec.template.spec);
+  revisionSpec.containers[0].name = `${service}-1`;
+  assertServiceRevisionSpecsAlign(after.spec.template, revisionSpec);
+});
+test('service/revision specs align when explicit container names match', () => {
+  const { after } = staged();
+  after.spec.template.spec.containers[0].name = 'app';
+  const revisionSpec = copy(after.spec.template.spec);
+  assertServiceRevisionSpecsAlign(after.spec.template, revisionSpec);
+});
+test('service/revision specs reject mismatched explicit container names', () => {
+  const { after } = staged();
+  after.spec.template.spec.containers[0].name = 'app';
+  const revisionSpec = copy(after.spec.template.spec);
+  revisionSpec.containers[0].name = 'other';
+  assert.throws(() => assertServiceRevisionSpecsAlign(after.spec.template, revisionSpec), /differ/);
+});
+test('service/revision specs reject image digest mismatch after generated-name normalization', () => {
+  const { after } = staged();
+  const revisionSpec = copy(after.spec.template.spec);
+  revisionSpec.containers[0].name = `${service}-1`;
+  revisionSpec.containers[0].image = `${policy.registry}/${service}@sha256:${'d'.repeat(64)}`;
+  assert.throws(() => assertServiceRevisionSpecsAlign(after.spec.template, revisionSpec), /differ/);
+});
+test('service/revision specs reject env and safety-override mismatch after generated-name normalization', () => {
+  const { after } = staged();
+  const revisionSpec = copy(after.spec.template.spec);
+  revisionSpec.containers[0].name = `${service}-1`;
+  const envName = Object.keys(policy.safetyOverrides[service] || {})[0] || 'EXISTING_FEATURE';
+  const entry = revisionSpec.containers[0].env.find(e => e.name === envName) || revisionSpec.containers[0].env.find(e => e.name === 'EXISTING_FEATURE');
+  entry.value = 'mutated';
+  assert.throws(() => assertServiceRevisionSpecsAlign(after.spec.template, revisionSpec), /differ/);
+});
+test('service/revision specs reject secret, resource and service-account drift after generated-name normalization', () => {
+  const { after } = staged();
+  for (const mutation of ['secret', 'resource', 'account']) {
+    const revisionSpec = copy(after.spec.template.spec);
+    revisionSpec.containers[0].name = `${service}-1`;
+    if (mutation === 'secret') revisionSpec.containers[0].env.find(e => e.name === 'DB_URL').valueFrom.secretKeyRef.key = 'latest';
+    if (mutation === 'resource') revisionSpec.containers[0].resources.limits.cpu = '2';
+    if (mutation === 'account') revisionSpec.serviceAccountName = 'other@example.invalid';
+    assert.throws(() => assertServiceRevisionSpecsAlign(after.spec.template, revisionSpec), /differ/);
+  }
 });
 test('promotes exact staged revision only', () => {
   const { after, item } = staged(); const args = promotionArgs(policy, item, after);
