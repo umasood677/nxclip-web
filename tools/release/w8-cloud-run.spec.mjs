@@ -62,12 +62,14 @@ for (const mutation of ['identity', 'latest', 'source', 'release', 'missing-buil
   });
 }
 test('manifest byte hash changes on tampering', () => assert.notEqual(sha256(canonical(manifest())), sha256(canonical({ ...manifest(), sourceSha: sha }))));
-test('tag collision and registry authentication failures stop publication', () => {
+test('tag vacancy detection accepts known missing-image signals and rejects unsafe outcomes', () => {
+  assertTagAbsent(policy, service, 'w8-tag', () => ({ status: 1, stderr: 'NOT_FOUND: Requested entity was not found.' }));
+  assertTagAbsent(policy, service, 'w8-tag', () => ({ status: 1, stderr: 'ERROR: (gcloud.artifacts.docker.images.describe) Image not found.\n' }));
   assert.throws(() => assertTagAbsent(policy, service, 'w8-tag', () => ({ status: 0, stdout: '{}' })), /already exists/);
-  assert.throws(() => assertTagAbsent(policy, service, 'w8-tag', () => ({ status: 1, stderr: 'PERMISSION_DENIED' })), /vacancy/);
-  assert.throws(() => assertTagAbsent(policy, service, 'w8-tag', () => ({ status: null, stderr: '' })), /vacancy/);
+  assert.throws(() => assertTagAbsent(policy, service, 'w8-tag', () => ({ status: 1, stderr: 'PERMISSION_DENIED: Permission denied' })), /vacancy/);
+  assert.throws(() => assertTagAbsent(policy, service, 'w8-tag', () => ({ status: 1, stderr: 'UNAUTHENTICATED: Request had invalid authentication credentials' })), /vacancy/);
   assert.throws(() => assertTagAbsent(policy, service, 'w8-tag', () => ({ status: 1, stderr: 'DNS hostname not found' })), /vacancy/);
-  assertTagAbsent(policy, service, 'w8-tag', () => ({ status: 1, stderr: 'NOT_FOUND: image not found' }));
+  assert.throws(() => assertTagAbsent(policy, service, 'w8-tag', () => ({ status: null, signal: 'SIGTERM', stderr: '' })), /vacancy/);
 });
 test('registry domain cannot be spoofed through regex punctuation', () => {
   const m = manifest(); m.services[0].image = m.services[0].image.replace('docker.pkg.dev', 'dockerXpkgXdev');

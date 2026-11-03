@@ -144,7 +144,10 @@ function jsonCommand(exe, args) { return JSON.parse(command(exe, args)); }
 export function assertTagAbsent(policy, service, tag, run = processExecutor) {
   const r = run('gcloud', ['artifacts', 'docker', 'images', 'describe', `${policy.registry}/${service}:${tag}`, '--project', policy.project, '--format=json'], { encoding: 'utf8' });
   assert(r.status !== 0, `Release tag already exists for ${service}; no overwrite allowed`);
-  assert(Number.isInteger(r.status) && r.status > 0 && /\bNOT_FOUND\b/.test(r.stderr || '') && !/PERMISSION_DENIED|UNAUTHENTICATED/i.test(r.stderr || ''), 'Cannot establish tag vacancy; registry inspection failed');
+  // Real gcloud CLI prints "Image not found."; some surfaces use NOT_FOUND. Ambiguous stderr is never vacancy.
+  const stderr = r.stderr || '';
+  const vacant = /\bNOT_FOUND\b/.test(stderr) || /\bImage not found\b/i.test(stderr);
+  assert(Number.isInteger(r.status) && r.status > 0 && vacant && !/PERMISSION_DENIED|UNAUTHENTICATED/i.test(stderr), 'Cannot establish tag vacancy; registry inspection failed');
 }
 function artifactName(releaseId, operation) { return `${releaseId}-${operation}`; }
 export function validateArtifactRun(run, repository, runId, artifact) {
