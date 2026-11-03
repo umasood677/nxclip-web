@@ -85,6 +85,12 @@ jobs:
           # Ad Studio FE flags — default OFF for code deploy; set GitHub Variable to enable after Gate B.
           VITE_AD_STUDIO_TEMPLATES_V1: ${{ vars.VITE_AD_STUDIO_TEMPLATES_V1 || 'false' }}
           VITE_AD_STUDIO_ANIMATED: ${{ vars.VITE_AD_STUDIO_ANIMATED || 'false' }}
+          VITE_AD_STUDIO_M2B_PRODUCTION_ENABLED: ${{ vars.VITE_AD_STUDIO_M2B_PRODUCTION_ENABLED || 'false' }}
+          VITE_AD_STUDIO_GUIDED_BRAND_ENABLED: ${{ vars.VITE_AD_STUDIO_GUIDED_BRAND_ENABLED || 'false' }}
+          VITE_AD_STUDIO_BRAND_TEMPLATES_ENABLED: ${{ vars.VITE_AD_STUDIO_BRAND_TEMPLATES_ENABLED || 'false' }}
+          VITE_AD_STUDIO_BRAND_ANALYSIS_ENABLED: ${{ vars.VITE_AD_STUDIO_BRAND_ANALYSIS_ENABLED || 'false' }}
+          VITE_AD_STUDIO_REAL_IMAGES_ENABLED: ${{ vars.VITE_AD_STUDIO_REAL_IMAGES_ENABLED || 'false' }}
+          VITE_AD_STUDIO_REAL_CONCEPTS_ENABLED: ${{ vars.VITE_AD_STUDIO_REAL_CONCEPTS_ENABLED || 'false' }}
         run: |
           set -euo pipefail
           SERVICE="${CLOUD_RUN_SERVICE:-nxclip-web}"
@@ -100,6 +106,12 @@ jobs:
             --build-arg "VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-}" \
             --build-arg "VITE_AD_STUDIO_TEMPLATES_V1=${VITE_AD_STUDIO_TEMPLATES_V1:-false}" \
             --build-arg "VITE_AD_STUDIO_ANIMATED=${VITE_AD_STUDIO_ANIMATED:-false}" \
+            --build-arg "VITE_AD_STUDIO_M2B_PRODUCTION_ENABLED=${VITE_AD_STUDIO_M2B_PRODUCTION_ENABLED:-false}" \
+            --build-arg "VITE_AD_STUDIO_GUIDED_BRAND_ENABLED=${VITE_AD_STUDIO_GUIDED_BRAND_ENABLED:-false}" \
+            --build-arg "VITE_AD_STUDIO_BRAND_TEMPLATES_ENABLED=${VITE_AD_STUDIO_BRAND_TEMPLATES_ENABLED:-false}" \
+            --build-arg "VITE_AD_STUDIO_BRAND_ANALYSIS_ENABLED=${VITE_AD_STUDIO_BRAND_ANALYSIS_ENABLED:-false}" \
+            --build-arg "VITE_AD_STUDIO_REAL_IMAGES_ENABLED=${VITE_AD_STUDIO_REAL_IMAGES_ENABLED:-false}" \
+            --build-arg "VITE_AD_STUDIO_REAL_CONCEPTS_ENABLED=${VITE_AD_STUDIO_REAL_CONCEPTS_ENABLED:-false}" \
             -t "${TAG}" -t "${LATEST}" \
             -f Dockerfile .
 

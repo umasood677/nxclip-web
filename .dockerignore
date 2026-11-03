@@ -15,3 +15,10 @@ Dockerfile
 .DS_Store
 bun.lock
 skills-lock.json
+
+# Local releases, receipts and private verification artifacts never enter build contexts.
+.tmp/
+tmp/
+*.bak
+*.dump
+*.sql.gz
