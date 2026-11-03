@@ -1,0 +1,146 @@
+name: W8 selective release (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Explicit approved operation
+        required: true
+        type: choice
+        options:
+          - build_publish
+          - stage
+          - promote
+          - rollback
+      release_id:
+        description: Same w8- identifier in both repositories
+        required: true
+        type: string
+      source_sha:
+        description: Approved APPLICATION source, separate from workflow revision
+        required: true
+        type: string
+        default: 746515f6d07c7240a4d47391d6c3c0a2d44623e0
+      manifest_run_id:
+        description: Own successful build_publish run for stage; own stage run for promote/rollback
+        type: string
+      manifest_sha256:
+        description: SHA-256 of that run's release-manifest.json
+        type: string
+      peer_run_id:
+        description: Backend successful stage run; required for promote and rollback
+        type: string
+      peer_manifest_sha256:
+        description: SHA-256 of backend stage manifest; required for promote and rollback
+        type: string
+      smoke_acceptance:
+        description: Owner accepts coordinated smoke results (health is not browser UAT)
+        type: choice
+        default: not-reviewed
+        options:
+          - not-reviewed
+          - accepted
+      background_readiness:
+        description: Promotion approval explicitly retains staged workers/pollers/outbox OFF
+        type: choice
+        default: not-reviewed
+        options:
+          - not-reviewed
+          - retain-disabled-reviewed
+
+# Matches the EXISTING frontend CD lock; do not rename independently.
+concurrency:
+  group: gcp-deploy-web-development
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+  deployments: read
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: development
+    env:
+      OPERATION: ${{ inputs.operation }}
+      RELEASE_ID: ${{ inputs.release_id }}
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      MANIFEST_RUN_ID: ${{ inputs.manifest_run_id }}
+      MANIFEST_SHA256: ${{ inputs.manifest_sha256 }}
+      PEER_RUN_ID: ${{ inputs.peer_run_id }}
+      PEER_MANIFEST_SHA256: ${{ inputs.peer_manifest_sha256 }}
+      SMOKE_ACCEPTANCE: ${{ inputs.smoke_acceptance }}
+      BACKGROUND_READINESS: ${{ inputs.background_readiness }}
+      AUTOMATION_ROOT: ${{ github.workspace }}/automation
+      SOURCE_ROOT: ${{ github.workspace }}/application
+      GH_TOKEN: ${{ github.token }}
+      # Resolve existing public build inputs; controller rejects any mismatch to approved values.
+      VITE_API_GATEWAY_URL: ${{ vars.VITE_API_GATEWAY_URL || secrets.VITE_API_GATEWAY_URL }}
+      VITE_API_GATEWAY_URL_PRODUCTION: ${{ vars.VITE_API_GATEWAY_URL_PRODUCTION || secrets.VITE_API_GATEWAY_URL_PRODUCTION }}
+      VITE_NOTIFICATION_WS_URL: ${{ vars.VITE_NOTIFICATION_WS_URL || secrets.VITE_NOTIFICATION_WS_URL }}
+      VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID || secrets.VITE_GOOGLE_CLIENT_ID }}
+      VITE_AD_STUDIO_TEMPLATES_V1: ${{ vars.VITE_AD_STUDIO_TEMPLATES_V1 || secrets.VITE_AD_STUDIO_TEMPLATES_V1 }}
+      VITE_AD_STUDIO_ANIMATED: ${{ vars.VITE_AD_STUDIO_ANIMATED || secrets.VITE_AD_STUDIO_ANIMATED }}
+      VITE_AD_STUDIO_M2B_PRODUCTION_ENABLED: ${{ vars.VITE_AD_STUDIO_M2B_PRODUCTION_ENABLED || secrets.VITE_AD_STUDIO_M2B_PRODUCTION_ENABLED }}
+      VITE_AD_STUDIO_GUIDED_BRAND_ENABLED: ${{ vars.VITE_AD_STUDIO_GUIDED_BRAND_ENABLED || secrets.VITE_AD_STUDIO_GUIDED_BRAND_ENABLED }}
+      VITE_AD_STUDIO_BRAND_TEMPLATES_ENABLED: ${{ vars.VITE_AD_STUDIO_BRAND_TEMPLATES_ENABLED || secrets.VITE_AD_STUDIO_BRAND_TEMPLATES_ENABLED }}
+      VITE_AD_STUDIO_BRAND_ANALYSIS_ENABLED: ${{ vars.VITE_AD_STUDIO_BRAND_ANALYSIS_ENABLED || secrets.VITE_AD_STUDIO_BRAND_ANALYSIS_ENABLED }}
+      VITE_AD_STUDIO_REAL_IMAGES_ENABLED: ${{ vars.VITE_AD_STUDIO_REAL_IMAGES_ENABLED || secrets.VITE_AD_STUDIO_REAL_IMAGES_ENABLED }}
+      VITE_AD_STUDIO_REAL_CONCEPTS_ENABLED: ${{ vars.VITE_AD_STUDIO_REAL_CONCEPTS_ENABLED || secrets.VITE_AD_STUDIO_REAL_CONCEPTS_ENABLED }}
+    steps:
+      - name: Initialize private receipt directory location
+        run: echo "RECEIPT_DIR=$RUNNER_TEMP/w8-receipts" >> "$GITHUB_ENV"
+      - name: Checkout release automation at workflow revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: automation
+          persist-credentials: false
+      - name: Checkout exact approved application source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+          path: application
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Test release guards (mocked; no cloud mutations)
+        run: node --test automation/tools/release/w8-cloud-run.spec.mjs automation/tools/release/w8-cloud-run.recovery.spec.mjs
+      - name: Check source identity and enforced environment reviewers
+        run: node automation/tools/release/w8-cloud-run.mjs --check
+      - name: Verify approved frontend source clean build
+        if: inputs.operation == 'build_publish'
+        working-directory: application
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
+      - name: Authenticate using existing development deployment identity
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Configure runner Docker authentication (no repository creation)
+        if: inputs.operation == 'build_publish'
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+      - name: Execute selected own-repository operation
+        if: inputs.operation == 'build_publish' || inputs.operation == 'stage'
+        run: node automation/tools/release/w8-cloud-run.mjs
+      - name: Execute explicitly approved coordinated traffic operation
+        if: inputs.operation == 'promote' || inputs.operation == 'rollback'
+        env:
+          # Exposed only during peer-manifest operations, never builds or tests.
+          W8_RELEASE_READ_TOKEN: ${{ secrets.W8_RELEASE_READ_TOKEN }}
+        run: node automation/tools/release/w8-cloud-run.mjs
+      - name: Preserve safe success or partial-failure receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.release_id }}-${{ inputs.operation }}
+          path: ${{ runner.temp }}/w8-receipts/release-manifest.*
+          if-no-files-found: ignore
+          retention-days: 90

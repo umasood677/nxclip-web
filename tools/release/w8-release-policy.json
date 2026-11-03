@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "repository": "umasood677/nxclip-web",
+  "sourceSha": "746515f6d07c7240a4d47391d6c3c0a2d44623e0",
+  "peerRepository": "umasood677/nxclip",
+  "peerSourceSha": "0001905c9ea579b76abe746d7bdf62498b64fc93",
+  "services": [
+    "nxclip-web"
+  ],
+  "peerServices": [
+    "ai-service",
+    "content-service",
+    "api-gateway"
+  ],
+  "project": "nxclip-500511",
+  "region": "us-central1",
+  "registry": "us-central1-docker.pkg.dev/nxclip-500511/nxclip-services",
+  "safetyOverrides": {
+    "nxclip-web": {}
+  },
+  "publicBuildValues": {
+    "VITE_API_GATEWAY_URL": "https://api-gateway-216098834386.us-central1.run.app",
+    "VITE_API_GATEWAY_URL_PRODUCTION": "https://api-gateway-216098834386.us-central1.run.app",
+    "VITE_NOTIFICATION_WS_URL": "https://notification-service-okab7lw4ha-uc.a.run.app",
+    "VITE_GOOGLE_CLIENT_ID": "1097902583002-9d2q34u6o26h5us5ou3o8hugadd1f093.apps.googleusercontent.com",
+    "VITE_AD_STUDIO_TEMPLATES_V1": "true",
+    "VITE_AD_STUDIO_ANIMATED": "true",
+    "VITE_AD_STUDIO_M2B_PRODUCTION_ENABLED": "false",
+    "VITE_AD_STUDIO_GUIDED_BRAND_ENABLED": "false",
+    "VITE_AD_STUDIO_BRAND_TEMPLATES_ENABLED": "false",
+    "VITE_AD_STUDIO_BRAND_ANALYSIS_ENABLED": "false",
+    "VITE_AD_STUDIO_REAL_IMAGES_ENABLED": "false",
+    "VITE_AD_STUDIO_REAL_CONCEPTS_ENABLED": "false"
+  }
+}
