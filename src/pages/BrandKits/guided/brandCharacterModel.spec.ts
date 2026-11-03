@@ -1,3 +1,4 @@
+import {characterProfilePatch} from './brandCharacterModel';
 import {
   attachCharacterReference,
   characterUnchangedAfterAssetUpdate,
@@ -146,4 +147,12 @@ test("asset upload rebases only an unchanged saved target profile", () => {
     ),
     false,
   );
+});
+
+
+test('legacy profile setup is explicit, preserves unrelated voice, and never infers approval',()=>{
+ const profile=newBrandCharacter('profile');profile.name='Owner model';const kit={id:'kit',version:1,name:'Brand',voice:{tone:'Existing'},assets:[]};
+ assert.throws(()=>characterProfilePatch(kit,profile,1),/Choose a category/);
+ const patch=characterProfilePatch(kit,profile,1,{categoryId:'Fashion',nicheId:'Beauty'});
+ assert.equal(patch.voice.studio.categoryId,'Fashion');assert.equal(patch.voice.studio.identityApproved,false);assert.equal(patch.voice.studio.guidelinesApproved,false);assert.equal(patch.voice.studio.characters[0].status,'draft');assert.equal(kit.voice.tone,'Existing');assert.equal('studio' in kit.voice,false);
 });

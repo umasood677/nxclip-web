@@ -85,3 +85,16 @@
 .bo-hero .bo-hero-card--model img{object-fit:cover;object-position:center 20%}
 @media(max-width:760px){.bo-hero--with-art{min-height:0}.bo-hero .bo-hero-media{position:relative;inset:auto;width:100%;height:224px;padding:14px 16px;gap:18px}.bo-hero .bo-hero-card--model{flex-basis:152px;height:190px}.bo-hero .bo-hero-card--product{flex-basis:128px;height:160px}}
 @media(max-width:400px){.bo-hero .bo-hero-media{gap:12px;padding-left:8px;padding-right:8px}.bo-hero .bo-hero-card--model{flex-basis:136px;height:170px}.bo-hero .bo-hero-card--product{flex-basis:112px;height:140px}}
+
+/* Overview owns its layout; Ad Studio's absolute hero-frame rules do not apply. */
+.bo-hero.bo-hero--with-art{display:grid;grid-template-columns:minmax(0,1fr) 290px auto;min-height:0;gap:16px 22px;padding:22px 24px 0}
+.bo-hero--with-art .bo-hero-brand{grid-column:1;grid-row:1;min-width:0}
+.bo-hero--with-art>.bo-button{grid-column:3;grid-row:1;align-self:start}
+.bo-hero--with-art .bo-hero-copy{max-width:none}
+.bo-hero.bo-hero--with-art .bo-hero-media{grid-column:2;grid-row:1;position:static;inset:auto;width:100%;height:180px;padding:0;display:flex;gap:14px;overflow:hidden}
+.bo-hero.bo-hero--with-art .bo-hero-card{position:relative;inset:auto;transform:none;flex:1 1 0;min-width:0;height:180px;max-height:180px;aspect-ratio:auto}
+.bo-hero--with-art .bo-section-nav{grid-column:1/-1;grid-row:2;margin-top:0}
+.bo-products .bo-photo-strip .bo-asset-image{height:160px;min-height:0;padding:6px;box-sizing:border-box}
+.bo-products .bo-photo-strip .bo-asset-image img{position:static;width:100%;height:100%;min-height:0;max-height:100%;object-fit:contain;object-position:center}
+@media(max-width:1000px){.bo-hero.bo-hero--with-art{grid-template-columns:minmax(0,1fr) 230px}.bo-hero--with-art>.bo-button{grid-column:1;grid-row:2;justify-self:start;margin:0}.bo-hero--with-art .bo-section-nav{grid-row:3}.bo-hero.bo-hero--with-art .bo-hero-media{height:160px}.bo-hero.bo-hero--with-art .bo-hero-card{height:160px;max-height:160px}}
+@media(max-width:600px){.bo-hero.bo-hero--with-art{grid-template-columns:minmax(0,1fr);padding:16px 14px 0;gap:14px}.bo-hero--with-art .bo-hero-brand{grid-column:1;grid-row:1}.bo-hero.bo-hero--with-art .bo-hero-media{grid-column:1;grid-row:2;max-width:300px;justify-self:center}.bo-hero--with-art>.bo-button{grid-column:1;grid-row:3}.bo-hero--with-art .bo-section-nav{grid-row:4}}

@@ -392,3 +392,5 @@
 .bp-model-profiles .bp-character-selection-count{margin:8px 0;font-size:11px}
 .bp-model-profiles .bp-character-optional{font-size:12px}.bp-model-profiles .bp-character-optional>div{display:grid;gap:10px;padding-top:10px}
 @media(max-width:1000px){.bp-model-profiles:has(.bp-characters--editing){position:static;max-height:none;overflow:visible}.bp-model-profiles .bp-character-editor-footer{bottom:0}}
+
+.bp-profile-taxonomy{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px}.bp-profile-taxonomy label{display:grid;gap:6px;font-size:12px}.bp-profile-taxonomy select{min-width:0;width:100%;background:#14151c;border:1px solid #ffffff25;border-radius:8px;padding:8px;color:inherit}

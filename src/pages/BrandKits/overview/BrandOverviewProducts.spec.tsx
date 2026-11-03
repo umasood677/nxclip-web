@@ -35,7 +35,7 @@ test('header chooses brand-owned product and eligible model references without a
 });
 
 
-test("Brand Kit header reuses Ad Studio framed image styling without changing prototype assets",()=>{const root=process.cwd()+"/src/pages/BrandKits/overview/",source=readFileSync(root+"BrandKitOverview.tsx","utf8"),css=readFileSync(root+"brandOverview.css","utf8");assert.match(source,/w0a-ads-hero__frame bo-hero-card bo-hero-card--model/);assert.match(source,/w0a-ads-hero__frame bo-hero-card bo-hero-card--product/);assert.match(css,/border-radius:10px/);assert.match(css,/bo-hero-card--product\{transform:translateY\(8px\) rotate\(6deg\)/);});
+test("Brand Kit header uses independent framed cards without absolute Ad Studio positioning",()=>{const root=process.cwd()+"/src/pages/BrandKits/overview/",source=readFileSync(root+"BrandKitOverview.tsx","utf8"),css=readFileSync(root+"brandOverview.css","utf8");assert.match(source,/bo-hero-card bo-hero-card--model/);assert.match(source,/bo-hero-card bo-hero-card--product/);assert.match(css,/border-radius:10px/);assert.match(css,/bo-hero-card--product\{transform:translateY\(8px\) rotate\(6deg\)/);});
 
 test('an uploaded model remains in the private header while its profile is a draft, without granting campaign permission',()=>{
  const model={id:'draft-photo',role:'brand_model',status:'ready',mimeType:'image/png'},profile={...newBrandCharacter('draft-profile'),name:'Draft model',referenceAssetIds:[model.id]},current:BrandKitSummary={...kit,assets:[model],voice:{studio:{schemaVersion:1,categoryId:'Beauty',nicheId:'Beauty',businessGoals:[],identityApproved:true,guidelinesApproved:true,approvedAssetIds:[],characters:[profile]}}},before=JSON.stringify(current);
@@ -47,4 +47,8 @@ test('header model fallback uses only ready model images owned by the current ki
 });
 test('model header frame remains mounted during URL loading and uses a larger responsive portrait',()=>{
  const source=readFileSync('src/pages/BrandKits/overview/BrandKitOverview.tsx','utf8'),css=readFileSync('src/pages/BrandKits/overview/brandOverview.css','utf8');assert.match(source,/headerAssets.model&&<div/);assert.doesNotMatch(source,/headerAssets.model&&urls\[headerAssets.model.id\]&&/);assert.match(source,/<AssetPreview asset=\{headerAssets.model\}/);assert.match(css,/bo-hero-card--model\{flex:0 1 164px;height:205px/);assert.match(css,/@media\(max-width:400px\)/);
+});
+
+test('overview cards use independent non-overlapping tracks and fit full product images',()=>{
+ const source=readFileSync('src/pages/BrandKits/overview/BrandKitOverview.tsx','utf8'),css=readFileSync('src/pages/BrandKits/overview/brandOverview.css','utf8');assert.doesNotMatch(source,/w0a-ads-hero__frame/);assert.match(css,/grid-template-columns:minmax\(0,1fr\) 290px auto/);assert.match(css,/bo-hero-card\{position:relative;inset:auto;transform:none/);assert.match(css,/bo-products \.bo-photo-strip \.bo-asset-image img\{[^}]*object-fit:contain/);
 });

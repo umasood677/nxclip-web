@@ -1,3 +1,4 @@
+import { BRAND_TAXONOMY } from './guidedBrandModel';
 import {productPhotoName} from '../components/productPhotoModel';
 import { toast } from "sonner";
 import { uploadBrandImage } from "../lib/uploadBrandImage";
@@ -45,6 +46,8 @@ export function BrandCharactersSection({
   const [discardRequested, setDiscardRequested] = useState(false);
   const [uploading, setUploading] = useState(false),
     [libraryOpen, setLibraryOpen] = useState(false);
+  const [profileCategory,setProfileCategory]=useState(kit.voice?.studio?.categoryId || "");
+  const [profileNiche,setProfileNiche]=useState(kit.voice?.studio?.nicheId || "");
   const editorRef=useRef<HTMLDivElement>(null);
   const activeProfileId=draft?.id;
   useEffect(()=>{if(!activeProfileId)return;editorRef.current?.scrollIntoView({behavior:"smooth",block:"nearest"});editorRef.current?.querySelector<HTMLInputElement>("input:not([type=checkbox])")?.focus({preventScroll:true});},[activeProfileId]);
@@ -93,7 +96,7 @@ export function BrandCharactersSection({
   const permission = (patch: Partial<BrandCharacterProfile["permissions"]>) =>
     draft && edit({ permissions: { ...draft.permissions, ...patch } });
   const save = async () => {
-    if (!draft || !kit.voice?.studio || disabled || operation.current) return;
+    if (!draft || disabled || operation.current) return;
     if (!dirty) { toast.info("No changes to save."); return; }
     const issues = characterReviewIssues(draft, kit.assets || []);
     if (issues.length) {
@@ -105,7 +108,7 @@ export function BrandCharactersSection({
     setError("");
     setMessage("");
     try {
-      const updated: BrandKitSummary = await brandApi.updateKit(kit.id, characterProfilePatch(kit,draft,draftVersion.current));
+      const updated: BrandKitSummary = await brandApi.updateKit(kit.id, characterProfilePatch(kit,draft,draftVersion.current,{categoryId:profileCategory,nicheId:profileNiche}));
       onKitUpdated(updated);
       baseline.current = JSON.stringify(draft);
       draftVersion.current = updated.version;
@@ -191,15 +194,6 @@ export function BrandCharactersSection({
       a.role === "brand_model" &&
       !profiles.some((p) => p.referenceAssetIds.includes(a.id)),
   );
-  if (!kit.voice?.studio)
-    return (
-      <EmptyState
-        title="Connect character guidance to your Brand Kit"
-        description="Complete the guided category and identity setup before adding models or mascots."
-        actionLabel="Open guided setup"
-        onAction={() => window.location.assign("/brands/" + kit.id + "/guided")}
-      />
-    );
   return (
     <section className={"space-y-5 bp-characters"+(draft?" bp-characters--editing":"")}>
       <header>
@@ -376,6 +370,11 @@ export function BrandCharactersSection({
         )}
         {draft && (
           <div ref={editorRef} className="bp-character-editor-shell" role="region" aria-label="Profile editor">
+            {!kit.voice?.studio && <div className="bp-profile-taxonomy">
+              <label>Brand category<select aria-label="Profile brand category" value={profileCategory} onChange={e=>{setProfileCategory(e.target.value);setProfileNiche("");}}><option value="">Choose category</option>{BRAND_TAXONOMY.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
+              <label>Niche<select aria-label="Profile brand niche" value={profileNiche} onChange={e=>setProfileNiche(e.target.value)}><option value="">Choose niche</option>{(BRAND_TAXONOMY.find(c=>c.id===profileCategory)?.niches||[]).map(n=><option key={n.id} value={n.id}>{n.label}</option>)}</select></label>
+            </div>}
+
             <div className="grid gap-6 xl:grid-cols-2 bp-character-editor">
               <section className="rounded-xl border border-white/10 bg-white/[0.02] p-5 space-y-4">
                 <label className="grid gap-2 text-sm">

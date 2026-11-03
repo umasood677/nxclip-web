@@ -154,9 +154,10 @@ export function modelPhotoPresentation(profiles:BrandCharacterProfile[],assets:B
 }
 
 /** Profile saves do not resubmit unrelated asset approvals or creative settings. */
-export function characterProfilePatch(kit:import('../lib/brandKitTypes').BrandKitSummary,profile:BrandCharacterProfile,expectedVersion:number|undefined){
- const studio=kit.voice?.studio;
- if(!studio||!Number.isSafeInteger(expectedVersion)||expectedVersion!==kit.version)throw Error('Brand Kit changed. Reopen the profile before saving; your draft is retained.');
+export function characterProfilePatch(kit:import('../lib/brandKitTypes').BrandKitSummary,profile:BrandCharacterProfile,expectedVersion:number|undefined,setup?:{categoryId:string;nicheId:string}){
+ const studio=kit.voice?.studio || (setup?.categoryId.trim()&&setup?.nicheId.trim()?{schemaVersion:1 as const,categoryId:setup.categoryId,nicheId:setup.nicheId,businessGoals:[],identityApproved:false,guidelinesApproved:false}:undefined);
+ if(!studio)throw Error('Choose a category and niche for this Brand Kit before saving the profile.');
+ if(!Number.isSafeInteger(expectedVersion)||expectedVersion!==kit.version)throw Error('Brand Kit changed. Reopen the profile before saving; your draft is retained.');
  const issues=characterReviewIssues(profile,kit.assets||[]);if(issues.length)throw Error(issues.join(' '));
  return {expectedVersion,voice:{studio:{schemaVersion:studio.schemaVersion,categoryId:studio.categoryId,nicheId:studio.nicheId,businessGoals:studio.businessGoals,identityApproved:studio.identityApproved,guidelinesApproved:studio.guidelinesApproved,characters:[...(studio.characters||[]).filter(p=>p.id!==profile.id),profile]}}};
 }

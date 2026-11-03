@@ -674,6 +674,12 @@ export function GuidedBrandKitWorkspace({
                   }
                   onKitUpdated={(updated) => {
                     setKit(updated);
+                    // Rebase only a clean draft; preserve any unsaved identity edits.
+                    if (JSON.stringify(draft) === saved.current) {
+                      const next = draftFromKit(updated);
+                      setDraft(next);
+                      saved.current = JSON.stringify(next);
+                    }
                     setMessage("Asset changes saved to this Brand Kit.");
                   }}
                 />
