@@ -113,10 +113,15 @@ export default function DashboardLayout() {
       });
     }
     if (isTemplateCanvas) return t("ad_studio.header.template_subtitle", {defaultValue:"Brief, concepts, and editable static templates"});
+    if (isBrandKit) {
+      return t("brand_kit.header.subtitle", {
+        defaultValue: "Manage your brand identity, products, and creative assets.",
+      }) || "Manage your brand identity, products, and creative assets.";
+    }
     if (isAdStudio) {
       return t("ad_studio.header.subtitle", {
-        defaultValue: "Brief, concepts, and editable static ads.",
-      });
+        defaultValue: "Create, edit, and manage your advertisements and campaigns.",
+      }) || "Create, edit, and manage your advertisements and campaigns.";
     }
     if (isCreateHub) {
       return t("create.header.subtitle", {
@@ -141,6 +146,7 @@ export default function DashboardLayout() {
     isAnalytics,
     isImageStudio,
     isAdStudio,
+    isBrandKit,
     isTemplateCanvas,
     isCreateHub,
     isClipEditor,
