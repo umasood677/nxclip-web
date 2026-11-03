@@ -46,21 +46,25 @@ export function BrandKitOverviewContent({kit}:{kit:BrandKitSummary}){
     <nav className="bo-section-nav" aria-label="Brand Kit sections"><a href="#brand-identity">Overview</a><a href="#brand-products">Products</a><a href="#brand-assets">Assets</a><a href="#brand-characters">Models & Characters</a><a href="#brand-guidelines">Guidelines</a><a href="#brand-templates">Templates</a></nav>
    </header>
    <div className="bo-grid">
+    <div className="bo-overview-top">
     <section className="bo-panel bo-identity" id="brand-identity"><header><h2><Palette size={18}/> Brand Identity</h2><Link to={paths.identity} aria-label="Edit brand identity"><Pencil size={14}/></Link></header>
      {inventory.logos.length?<div className="bo-logo-grid">{inventory.logos.slice(0,4).map(a=><figure key={a.id}><AssetPreview asset={a} url={urls[a.id]}/><figcaption>{ASSET_SLOTS.find(s=>s.role===a.role)?.label||a.label||'Logo'}</figcaption></figure>)}</div>:<p className="bo-muted">No logo attached.</p>}
      <h3>Brand colors</h3>{kit.colors?.length?<div className="bo-palette">{kit.colors.map((c,i)=><div key={c.role||i}><span style={{backgroundColor:c.hex}}/><strong>{c.hex}</strong><small>{c.name||c.role}</small></div>)}</div>:<p className="bo-muted">No colors saved.</p>}
      <h3><Type size={15}/> Typography</h3>{kit.typography?.length?<div className="bo-font-grid">{kit.typography.map((font,i)=>{const preview=fonts[brandFontKey(font)];return <div className="bo-font" key={font.role||i}><span style={preview?{fontFamily:preview.family,fontWeight:preview.weight,fontStyle:preview.style}:undefined}>Aa</span><strong>{font.family}</strong><small>{font.role||'Brand font'}{preview?.status==='unavailable'?' · Fallback preview':''}</small></div>;})}</div>:<p className="bo-muted">No typography saved.</p>}
     </section>
+    <div className="bo-top-panels">
     <BrandOverviewProducts kit={kit} urls={urls}/>
     <section className="bo-panel bo-details"><header><h2><ShieldCheck size={18}/> Brand Details</h2></header>{details.length?<dl>{details.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>:<EmptyState className="bo-empty" title="Add your brand details" description="Complete the identity fields in the existing Brand Kit editor."/>}<Link className="bo-text-link" to={paths.identity}>Edit identity <ArrowRight size={13}/></Link></section>
     <BrandOverviewModels kit={kit} urls={urls}/>
     <section className="bo-panel bo-assets" id="brand-assets"><header><h2><Image size={18}/> Assets ({inventory.assets.length})</h2><Link to={paths.assets}>View All <ArrowRight size={13}/></Link></header>
      {inventory.images.length?<div className="bo-asset-grid">{inventory.images.slice(0,6).map(a=><Link key={a.id} to={paths.assets} title={a.label||a.fileName}><AssetPreview asset={a} url={urls[a.id]}/><span>{a.label||ASSET_SLOTS.find(s=>s.role===a.role)?.label||a.fileName||'Brand asset'}</span></Link>)}</div>:<EmptyState className="bo-empty" title="No image assets" description="Your existing asset manager accepts uploads and Content Library selections."/>}
     </section>
+    </div>
+    </div>
     <section className="bo-panel bo-guidelines" id="brand-guidelines"><header><h2><BookOpen size={18}/> Brand Guidelines</h2><Link to={paths.guidelines}>Edit guidelines <ArrowRight size={13}/></Link></header>
      {guidelines.length?<div className="bo-guideline-grid">{guidelines.map(([key,value])=><article key={key}><h3>{guidelineLabel(key)}</h3><p>{value}</p></article>)}</div>:!kit.guidelines?<EmptyState className="bo-empty" title="No creative guidelines saved" description="Define the visual and messaging direction in the existing Guidelines editor."/>:null}
      {kit.guidelines&&<p className="bo-guidelines-text">{kit.guidelines}</p>}
-     {!!kit.voice?.doSay?.length&&<div className="bo-guideline-note"><h3>Preferred messaging</h3><p>{kit.voice.doSay.join(' · ')}</p></div>}{!!kit.voice?.dontSay?.length&&<div className="bo-guideline-note"><h3>Avoid</h3><p>{kit.voice.dontSay.join(' · ')}</p></div>}
+     <div className="bo-messaging-grid">{!!kit.voice?.doSay?.length&&<div className="bo-guideline-note"><h3>Preferred messaging</h3><p>{kit.voice.doSay.join(' · ')}</p></div>}{!!kit.voice?.dontSay?.length&&<div className="bo-guideline-note"><h3>Avoid</h3><p>{kit.voice.dontSay.join(' · ')}</p></div>}</div>
     </section>
     <section className="bo-panel bo-quick"><header><h2><Sparkles size={18}/> Quick Actions</h2></header><Link className="bo-button xp-primary" to={paths.generate}><Sparkles size={16}/> Generate Template</Link><Link className="bo-button" to={paths.createAd}><Megaphone size={16}/> Create Ad</Link><Link className="bo-button" to={paths.edit}><Pencil size={15}/> Edit Brand Kit</Link><Link className="bo-button" to={paths.assets}><Image size={15}/> Manage Assets</Link></section>
     <BrandOverviewTemplates key={kit.id} kit={kit}/>
