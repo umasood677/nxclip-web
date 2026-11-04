@@ -59,3 +59,8 @@
   font-family:
     var(--font-sans), "Geist Variable", ui-sans-serif, system-ui, sans-serif !important;
 }
+
+/* Shared compact content inset for the live Brand Kit and Ad Studio workspaces. */
+.nxclip-production.bt-root .xp-main,.nxclip-production.bp-guided-root .xp-main{padding:12px 16px;gap:16px}
+.nxclip-production.bk-library{padding:12px 16px}
+@media(max-width:600px){.nxclip-production.bt-root .xp-main,.nxclip-production.bp-guided-root .xp-main,.nxclip-production.bk-library{padding:12px}}

@@ -188,6 +188,7 @@ export default function DashboardLayout() {
     isAnalytics ||
     isImageStudio ||
     isAdStudio ||
+    isBrandKit ||
     isCreateHub ||
     isClipEditor ||
     isPostDetail ||

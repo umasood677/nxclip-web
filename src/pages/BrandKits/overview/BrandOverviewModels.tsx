@@ -1,15 +1,14 @@
-import React,{useState} from 'react';
+import React from 'react';
 import {Link} from 'react-router-dom';
 import {Users,ArrowRight} from 'lucide-react';
 import {EmptyState} from '../../../components/common/EmptyState';
 import {BrandAssetPhoto} from '../components/BrandAssetPhoto';
-import {photoAspectRatio} from '../components/productPhotoModel';
 import {overviewModelEntries,overviewCharacterState,brandOverviewPaths} from './brandOverviewModel';
 import type {BrandKitSummary} from '../lib/brandKitTypes';
 type Entry=ReturnType<typeof overviewModelEntries>['entries'][number];
 function ModelTile({entry,kit,urls}:{entry:Entry;kit:BrandKitSummary;urls:Record<string,string>}){
- const [ratio,setRatio]=useState(4/5),{asset,profile}=entry,state=profile?overviewCharacterState(profile,kit):{label:'Profile needed',usable:false};
- return <article>{asset?<div className="bo-model-media" style={{aspectRatio:ratio}}><BrandAssetPhoto asset={asset} brandId={kit.id} url={urls[asset.id]} onNaturalSize={(width,height)=>setRatio(photoAspectRatio(width,height))}/></div>:<div className="bo-no-photo"><Users size={26}/></div>}
+ const {asset,profile}=entry,state=profile?overviewCharacterState(profile,kit):{label:'Profile needed',usable:false};
+ return <article>{asset?<div className="bo-model-media" style={{aspectRatio:"4 / 5"}}><BrandAssetPhoto asset={asset} brandId={kit.id} url={urls[asset.id]}/></div>:<div className="bo-no-photo"><Users size={26}/></div>}
  <strong>{asset?.label||profile?.name||asset?.fileName||'Model reference'}</strong>
  {profile&&asset?.label!==profile.name&&<small>{profile.name}</small>}
  <span className="bo-auth-state" data-approved={state.usable}>{state.label}</span>

@@ -50,5 +50,5 @@ test('model header frame remains mounted during URL loading and uses a larger re
 });
 
 test('overview cards use independent non-overlapping tracks and fit full product images',()=>{
- const source=readFileSync('src/pages/BrandKits/overview/BrandKitOverview.tsx','utf8'),css=readFileSync('src/pages/BrandKits/overview/brandOverview.css','utf8');assert.doesNotMatch(source,/w0a-ads-hero__frame/);assert.match(css,/grid-template-columns:minmax\(0,1fr\) 290px auto/);assert.match(css,/bo-hero-card\{position:relative;inset:auto;transform:none/);assert.match(css,/bo-products \.bo-photo-strip \.bo-asset-image img\{[^}]*object-fit:contain/);
+ const source=readFileSync('src/pages/BrandKits/overview/BrandKitOverview.tsx','utf8'),css=readFileSync('src/pages/BrandKits/overview/brandOverview.css','utf8');assert.doesNotMatch(source,/w0a-ads-hero__frame/);assert.match(css,/grid-template-columns:minmax\(0,1fr\) 240px auto/);assert.match(css,/bo-hero-card\{position:relative;inset:auto;transform:none/);assert.match(css,/bo-products \.bo-photo-strip \.bo-asset-image img\{[^}]*object-fit:contain/);
 });
