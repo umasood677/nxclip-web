@@ -255,7 +255,7 @@ Stage backend configuration revisions and the enabled frontend at zero traffic, 
 ## Test A fidelity hotfix — 2026-11-04
 
 Owner authorized commit, push and deployment of the Test A correction. Application pins:
-backend `6452749f29ffa34dbf6c60b55d0ebf7d8643c416`; frontend `1a71b13f04572bcab3ad9980bc0a08de937616bb`.
+backend `6452749f29ffa34dbf6c60b55d0ebf7d8643c416`; frontend `73fd8e30b07960ac5dbb6225ce6c9ba581749f5b`.
 This release's backend exact allowlist is **AI and Content only**, with frontend peerServices matching.
 Gateway is excluded entirely rather than rebuilt or relabeled as the new application SHA.
 Its existing image, revision and traffic remain unchanged, as do Identity and Media Worker.
