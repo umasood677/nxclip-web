@@ -7,6 +7,9 @@ import { execute, sha256, canonical, traffic, withCommandExecutorForTest } from 
 
 const local = JSON.parse(readFileSync(new URL('./w8-release-policy.json', import.meta.url)));
 local.preserveServices = []; // Full-release scenarios exercise every mutation path.
+// Historical three-service recovery fixtures must not depend on a narrower hotfix policy.
+if(local.services.includes('ai-service'))local.services=['ai-service','content-service','api-gateway'];
+else local.peerServices=['ai-service','content-service','api-gateway'];
 const workflowSha = 'a'.repeat(40), digest = 'b'.repeat(64);
 const overrides = {
   'ai-service': { AI_DB_RUN_MIGRATIONS: 'false', AI_DB_SYNCHRONIZE: 'false', AI_QUEUE_WORKERS_ENABLED: 'false' },
@@ -290,4 +293,18 @@ test('controller: preserved Gateway image mismatch blocks staging before any ser
   h.policies.get(backend.repository).preserveServices=['api-gateway'];
   const result=await h.dispatch(backend,'stage');
   assert.match(result.error.message,/Preserved service image differs/);assert.equal(h.deployCalls().length,0);assert.equal(h.trafficCalls().length,0);
+}));
+
+
+test('controller: AI/Content-only hotfix stages, promotes and rolls back without Gateway access',()=>scenario(async h=>{
+ const p=h.policies.get(backend.repository),f=h.policies.get(frontend.repository);
+ p.services=['ai-service','content-service'];delete p.safetyOverrides['api-gateway'];f.peerServices=[...p.services];
+ const build=h.builds.get(backend.repository);const manifest=copy(build.manifest);manifest.services=manifest.services.filter(s=>s.service!=='api-gateway');
+ h.builds.set(backend.repository,h.record(p,manifest,'success'));
+ const before=canonical(h.states.get('api-gateway'));
+ await h.stageBoth();await h.promoteBoth();
+ assert.equal((await h.dispatch(frontend,'rollback')).error,undefined);
+ assert.equal((await h.dispatch(backend,'rollback')).error,undefined);
+ assert.equal(canonical(h.states.get('api-gateway')),before);
+ assert(!h.calls.some(c=>c.args.includes('api-gateway')));
 }));

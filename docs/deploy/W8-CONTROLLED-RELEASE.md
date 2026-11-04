@@ -250,3 +250,16 @@ This profile enables only native Brand Templates and real Ad Studio images: Cont
 Backend application source/images stay pinned to the existing approved W8 build receipt. `preserveServices: ["api-gateway"]` requires Gateway to already serve the exact approved immutable image at 100%, with the same ready/latest revision and unchanged configuration. Staging records its existing UID, digest, spec/config hashes and health without deploying, tagging or changing traffic. Promotion and rollback revalidate that receipt and perform no Gateway mutation. Only AI and Content receive new reviewed configuration revisions. Any mismatch stops before mutations during preflight; no fallback redeployment or automatic recovery is permitted.
 
 Stage backend configuration revisions and the enabled frontend at zero traffic, then promote backend followed by frontend using their new stage manifests. The frontend must still be at its recorded baseline during backend promotion. Preserve old stage/build artifacts for rollback. Configuration-only activation does not authorize background processing or a paid test request. Owner generation remains separate UAT.
+
+
+## Test A fidelity hotfix — 2026-11-04
+
+Owner authorized commit, push and deployment of the Test A correction. Application pins:
+backend `6452749f29ffa34dbf6c60b55d0ebf7d8643c416`; frontend `1a71b13f04572bcab3ad9980bc0a08de937616bb`.
+This release's backend exact allowlist is **AI and Content only**, with frontend peerServices matching.
+Gateway is excluded entirely rather than rebuilt or relabeled as the new application SHA.
+Its existing image, revision and traffic remain unchanged, as do Identity and Media Worker.
+Existing safety overrides, frontend flags, source/digest guards and coordinated ordering remain intact.
+Build, stage at zero traffic, then promote backend followed by frontend through the same selective controller.
+No migrations, background restoration or provider generation is included. Old manifests remain rollback evidence for their original releases; use this release's own successful stage manifests for its rollback.
+Full three-service recovery fixtures remain covered, plus an AI/Content-only stage/promotion/rollback fixture with no Gateway access.
