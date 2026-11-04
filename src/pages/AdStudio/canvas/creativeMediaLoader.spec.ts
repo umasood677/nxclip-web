@@ -5,3 +5,11 @@ test('authentication and gateway changes isolate cached bytes',async()=>{let cou
 test('missing credentials and unverified media routes do not fetch',async()=>{let gets=0;const loader=createCreativeMediaLoader((async()=>{gets++;return new Response();}) as typeof fetch,async()=>({items:[]}));assert.throws(()=>loader.image(asset,'',gateway));await assert.rejects(loader.image({...asset,readUrl:'https://untrusted.invalid/image'},'fixture',gateway));assert.equal(gets,0);});
 test('failed media requests remain failures and never automatically retry',async()=>{let count=0;const loader=createCreativeMediaLoader((async()=>{count++;return new Response('{}',{status:429});}) as typeof fetch,async()=>({items:[]}));await assert.rejects(loader.image(asset,'fixture',gateway));await assert.rejects(loader.image(asset,'fixture',gateway));assert.equal(count,1);});
 test('JSON responses cannot become images and successful cache entries expire',async()=>{let count=0,time=0;const loader=createCreativeMediaLoader((async()=>{count++;return new Response(new Uint8Array([1]),{headers:{'Content-Type':'image/png'}});}) as typeof fetch,async()=>({items:[]}),()=>time);await loader.image(asset,'fixture',gateway);time=119999;await loader.image(asset,'fixture',gateway);assert.equal(count,1);time=120001;await loader.image(asset,'fixture',gateway);assert.equal(count,2);const bad=createCreativeMediaLoader((async()=>new Response('{}',{headers:{'Content-Type':'application/json'}})) as typeof fetch,async()=>({items:[]}));await assert.rejects(bad.image(asset,'fixture',gateway),/Unsupported/);});
+
+test('explicit preview reload invalidates stale list and failed bytes without generation',async()=>{
+ let lists=0,gets=0;const loader=createCreativeMediaLoader((async()=>{gets++;return gets===1?new Response('',{status:429}):new Response(new Uint8Array([1]),{headers:{'Content-Type':'image/png'}});}) as typeof fetch,async()=>{lists++;return {items:[asset]};});
+ await loader.list('source','fixture',gateway);await assert.rejects(loader.image(asset,'fixture',gateway));
+ loader.invalidate(['source'],['image'],'fixture',gateway);
+ await loader.list('source','fixture',gateway);await loader.image(asset,'fixture',gateway);
+ assert.equal(lists,2);assert.equal(gets,2);
+});

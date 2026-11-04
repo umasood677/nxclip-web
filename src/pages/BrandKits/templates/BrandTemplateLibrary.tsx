@@ -138,9 +138,10 @@ export default function BrandTemplateLibrary() {
   const currentLocation=useRef(location.key);currentLocation.current=location.key;
   const authoring=["ai","native"].includes(params.get("mode")||"")&&!templateId;
   const mediaGraphs=selected?[selected.sceneGraph]:authoring?[]:[...items.filter(t=>!t.deletion).map(t=>t.sceneGraph),...templateDrafts.filter(d=>!d.deletionPending).map(d=>d.sceneGraph)];
-  const imageIds=templateImageIds(mediaGraphs),brandUrls=useTemplateAssetUrls(assetKit,imageIds);
+  const [mediaReload,setMediaReload]=useState(0);
+  const imageIds=templateImageIds(mediaGraphs),brandUrls=useTemplateAssetUrls(assetKit,imageIds,mediaReload);
   const mediaSources=selected?(selected.provenance.sourceCreativeId?[selected.provenance.sourceCreativeId]:[]):authoring?[]:[...items.filter(t=>!t.deletion).flatMap(t=>t.provenance.sourceCreativeId?[t.provenance.sourceCreativeId]:[]),...templateDrafts.filter(d=>!d.deletionPending).map(d=>d.id)];
-  const generatedUrls = useCreativeAssetUrls(mediaSources,imageIds);
+  const generatedUrls = useCreativeAssetUrls(mediaSources,imageIds,mediaReload);
   const urls = {...brandUrls,...generatedUrls};
   const {graph:draftPreview,loading:previewLoading,error:previewError,retry:retryPreview}=useBrandTemplateDraftPreview(brandId,selected,draft);
   const load = useCallback(async () => {
@@ -505,7 +506,7 @@ export default function BrandTemplateLibrary() {
           <>
             <div className="xp-split bt-review">
               <section className="xp-panel bt-preview-panel">
-                <TemplateReviewMedia graph={draftPreview} urls={urls} busy={previewLoading} onPhase={onReviewPhase} onRetry={()=>void load()}/>
+                <TemplateReviewMedia graph={draftPreview} urls={urls} busy={previewLoading} onPhase={onReviewPhase} onRetry={()=>{setMediaReload(n=>n+1);retryPreview();void brandApi.getKit(brandId).then(brand=>{if(brand.id===brandId&&activeBrand.current===brandId)setKit(brand);}).catch(()=>{/* The preview retains its retry action. */});}}/>
                 {previewError&&<p role="alert" className="bt-blocker">{previewError} <button className="xp-text-button" onClick={retryPreview}>Retry preview</button></p>}
                 <span className="xp-status">
                   {selected.saved ? "Saved" : selected.state === "approved" ? "Ready to save" : "Review needed"}

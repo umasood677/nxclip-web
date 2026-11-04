@@ -33,3 +33,9 @@ test('successful bytes expire and are retained in a bounded cache',async()=>{
  for(let i=0;i<25;i++)await loader.load('kit','/brands/kit/assets/'+i+'/media','fixture',gateway);
  const previous=count;await loader.load('kit',path,'fixture',gateway);assert.equal(count,previous+1);
 });
+
+test('explicit preview reload can recover a failed owned image without clearing unrelated bytes',async()=>{
+ let count=0;const loader=createBrandMediaLoader((async()=>++count===1?new Response('',{status:429}):image()) as typeof fetch);
+ await assert.rejects(loader.load('kit',path,'fixture',gateway));
+ loader.invalidate('kit',[path]);await loader.load('kit',path,'fixture',gateway);assert.equal(count,2);
+});

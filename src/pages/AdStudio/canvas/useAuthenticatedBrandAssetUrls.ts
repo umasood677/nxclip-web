@@ -7,17 +7,18 @@ import { protectedBrandMediaPath } from '../../BrandKits/lib/secureBrandMedia';
 import { brandMediaLoader } from './brandMediaLoader';
 
 /** Share authenticated bytes; each mounted consumer owns and revokes its own blob URLs. */
-export function useAuthenticatedBrandAssetUrls(brandKit: BrandKitSummary | null | undefined): BrandAssetUrlMap {
+export function useAuthenticatedBrandAssetUrls(brandKit: BrandKitSummary | null | undefined, reload=0): BrandAssetUrlMap {
   const token = useAuthToken(), gateway = typeof window === 'undefined' ? '' : resolveBaseGatewayUrl(), brandId = brandKit?.id || '';
   const signature = JSON.stringify(buildBrandAssetUrlMap(brandKit));
-  const base = useMemo(() => JSON.parse(signature) as BrandAssetUrlMap, [signature]);
+  const base: BrandAssetUrlMap = useMemo(() => JSON.parse(signature) as BrandAssetUrlMap, [signature]);
   const publicUrls = useMemo(() => Object.fromEntries(Object.entries(base).filter(([, url]) => !protectedBrandMediaPath(url, brandId))), [base, brandId]);
-  const scope = brandId + '\0' + signature + '\0' + gateway + '\0' + token;
+  const scope = brandId + '\0' + signature + '\0' + gateway + '\0' + token + '\0' + reload;
   const [hydrated, setHydrated] = useState<{scope: string; urls: BrandAssetUrlMap}>({scope: '', urls: {}});
   useEffect(() => {
     let cancelled = false;
     const created: string[] = [];
     if (!token) { brandMediaLoader.clear(); return; }
+    if(reload)brandMediaLoader.invalidate(brandId,Object.values(base));
     void (async () => {
       const next: Record<string, string> = {...publicUrls};
       await Promise.all(Object.entries(base).map(async ([id, url]) => {
@@ -32,6 +33,6 @@ export function useAuthenticatedBrandAssetUrls(brandKit: BrandKitSummary | null 
       if (!cancelled) setHydrated({scope, urls: next});
     })();
     return () => { cancelled = true; created.forEach(url => URL.revokeObjectURL(url)); };
-  }, [base, brandId, gateway, publicUrls, scope, token]);
+  }, [base, brandId, gateway, publicUrls, scope, token, reload]);
   return hydrated.scope === scope ? hydrated.urls : publicUrls;
 }

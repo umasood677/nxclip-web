@@ -47,6 +47,6 @@ export function createBrandMediaLoader(fetcher: typeof fetch, now = Date.now) {
     })();
     return entry.promise;
   }
-  return { load, clear };
+  return { load, clear, invalidate:(brandId:string,urls:readonly string[])=>{for(const url of urls){const path=protectedBrandMediaPath(url,brandId);if(path)entries.delete(path);}} };
 }
 export const brandMediaLoader = createBrandMediaLoader((input, init) => fetch(input, init));

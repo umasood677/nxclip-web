@@ -17,3 +17,13 @@ export function watchReviewMedia(sources:readonly string[]|null,waiting:boolean,
  if(!waiting){timer=clock.set(()=>{if(active)onPhase('failed');},sources===null?60000:30000);if(sources!==null)void decode(sources).then(()=>{if(active){clock.clear(timer);onPhase('ready');}},()=>{if(active){clock.clear(timer);onPhase('failed');}});}
  return()=>{active=false;if(timer!==undefined)clock.clear(timer);};
 }
+
+/** One read-only media recovery per review identity; never replay generation. */
+export function createReviewMediaRecovery(){
+ let identity='',used=false;
+ return (key:string,phase:ReviewMediaPhase,reload:()=>void)=>{
+  if(key!==identity){identity=key;used=false;}
+  if(phase!=='failed'||used||!key)return false;
+  used=true;reload();return true;
+ };
+}
