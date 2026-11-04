@@ -24,6 +24,7 @@ function load() {
       require: (id: string) => {
         if (id === "react") return React;
         if (id === "lucide-react") return { Sparkles: () => null,Check:()=>null,X:()=>null,Palette:()=>null,Copy:()=>null,Archive:()=>null };
+        if(id==='./TemplatePreviewLoading')return {TemplatePreviewLoading:({label='Loading preview'}:{label?:string})=><div className="bt-review-media-state" role="status">{label}</div>};
         if (id.endsWith("/types"))
           return {
             AD_FORMATS: [{ id: "portrait_1080x1350", label: "Portrait 4:5" }],
@@ -76,4 +77,15 @@ test("uncertain/error states stop animation while retaining the same disabled re
   assert.doesNotMatch(html, /class="bt-render-stage is-rendering"/);
   assert.match(html, /Your template needs attention/);
   assert.match(html, /fieldset disabled/);
+});
+
+test('record and media loading share one stage and stable final panel classes',()=>{
+ const Review=load(),html=renderToStaticMarkup(<Review/>);
+ assert.match(html,/class="xp-split bt-review"/);
+ assert.match(html,/class="bt-review-art"/);assert.match(html,/Loading preview/);
+ assert.doesNotMatch(html,/bt-render-stage|bt-render-details|Preparing composition|value="Brand Template"/);
+ const media=readFileSync('src/pages/BrandKits/templates/TemplateReviewMedia.tsx','utf8');
+ assert.match(media,/<TemplatePreviewLoading\/>/);
+ const shared=readFileSync('src/pages/BrandKits/templates/TemplatePreviewLoading.tsx','utf8');
+ assert.match(shared,/bt-review-media-state/);assert.match(shared,/<Skeleton/);
 });

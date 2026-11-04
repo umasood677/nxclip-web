@@ -1,4 +1,4 @@
-import React,{useEffect,useRef,useState} from 'react';import {LoaderCircle} from 'lucide-react';
+import React,{useEffect,useRef,useState} from 'react';import {TemplatePreviewLoading} from './TemplatePreviewLoading';
 import type {AdSceneGraph} from '../../AdStudio/types';import {BrandTemplateScenePreview} from './BrandTemplateScenePreview';
 import {createReviewMediaRecovery,reviewImageUrls,watchReviewMedia,type ReviewMediaPhase} from './reviewMediaLoading';
 export function TemplateReviewMedia({graph,urls,busy=false,onRetry,onPhase}:{graph:AdSceneGraph|null|undefined;urls:Readonly<Record<string,string>>;busy?:boolean;onRetry:()=>void;onPhase?:(phase:ReviewMediaPhase)=>void}){
@@ -9,6 +9,6 @@ export function TemplateReviewMedia({graph,urls,busy=false,onRetry,onPhase}:{gra
  useEffect(()=>{recover.current(identity,status,()=>{setAttempt(n=>n+1);onRetry();});},[identity,status,onRetry]);
  useEffect(()=>onPhase?.(status),[status,onPhase]);
  return <div className="bt-review-art" aria-busy={status==='loading'}>
- {status==='ready'&&graph?<BrandTemplateScenePreview graph={graph} assetUrls={urls} size="hero" fitHeight/>:status==='failed'?<div className="bt-review-media-state" role="alert"><p>Preview images could not load.</p><button type="button" className="xp-secondary" onClick={()=>{setAttempt(n=>n+1);onRetry();}}>Reload preview</button></div>:<div className="bt-review-media-state" role="status"><LoaderCircle size={25} aria-hidden="true"/><span>Loading your finished preview…</span></div>}
+ {status==='ready'&&graph?<BrandTemplateScenePreview graph={graph} assetUrls={urls} size="hero" fitHeight/>:status==='failed'?<div className="bt-review-media-state" role="alert"><p>Preview images could not load.</p><button type="button" className="xp-secondary" onClick={()=>{setAttempt(n=>n+1);onRetry();}}>Reload preview</button></div>:<TemplatePreviewLoading/>}
  </div>;
 }

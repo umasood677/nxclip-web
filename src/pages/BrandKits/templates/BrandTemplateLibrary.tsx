@@ -353,7 +353,7 @@ export default function BrandTemplateLibrary() {
         </div>
       </main>
     );
-  if (loading && (templateId || params.get("source")))return <div className="xp-root nxclip-production bp-guided-root bt-root bt-review-page ad-studio-w0a"><main className="xp-main"><nav className="xp-breadcrumb" aria-label="Breadcrumb"><Link to={"/brands/"+brandId+"/guided?step=ready"}><ArrowLeft size={14}/>Brand Kit</Link><Link to={"/brands/"+brandId+"/templates"}>Brand Templates</Link></nav><header className="xp-page-head"><h1><Palette size={26}/>Review template</h1><button type="button" disabled className="xp-primary"><Sparkles size={16}/>Generate Template</button></header><TemplateRenderReview phase="Loading template review…"/></main></div>;
+  if (loading && (templateId || params.get("source")))return <div className="xp-root nxclip-production bp-guided-root bt-root bt-review-page ad-studio-w0a"><main className="xp-main"><nav className="xp-breadcrumb" aria-label="Breadcrumb"><Link to={"/brands/"+brandId+"/guided?step=ready"}><ArrowLeft size={14}/>Brand Kit</Link><Link to={"/brands/"+brandId+"/templates"}>Brand Templates</Link></nav><header className="xp-page-head"><h1><Palette size={26}/>Review template</h1><button type="button" disabled className="xp-primary"><Sparkles size={16}/>Generate Template</button></header><TemplateRenderReview/></main></div>;
   if (loading)
     return (
       <div className="grid gap-6 p-6" aria-label="Loading template library">

@@ -1,15 +1,15 @@
 import React from "react";
-import { Sparkles,Check,X,Palette,Copy,Archive } from "lucide-react";
+import { Check,X,Palette,Copy,Archive } from "lucide-react";
 import type { WorkspaceCreative } from "../../AdStudio/lib/projectWorkspace";
 import { AD_FORMATS } from "../../AdStudio/types";
-import "./templateRenderReview.css";
+import {TemplatePreviewLoading} from "./TemplatePreviewLoading";
 /** One review-shaped loading surface; controls stay disabled until the saved render is available. */
 export function TemplateRenderReview({
   source,
   name,
   format,
   active = true,
-  phase = "Rendering your template…",
+  phase = "Loading preview",
   children,
 }: {
   source?: WorkspaceCreative | null;
@@ -26,39 +26,21 @@ export function TemplateRenderReview({
     return l && "text" in l ? l.text || "" : "";
   };
   return (
-    <div className="xp-split bt-render-review bt-review" aria-busy={active}>
+    <div className="xp-split bt-review" aria-busy={active}>
       <section
-        className="xp-panel bt-render-preview bt-preview-panel"
+        className="xp-panel bt-preview-panel"
         aria-label="Template preview"
       >
-        <div
-          className={"bt-render-stage" + (active ? " is-rendering" : "")}
-          style={{
-            aspectRatio:
-              format === "vertical_1080x1920"
-                ? "9 / 16"
-                : format === "square_1080"
-                  ? "1"
-                  : format === "landscape_1920x1080"
-                    ? "16 / 9"
-                    : "4 / 5",
-          }}
-        >
-          <div className="bt-render-light" aria-hidden="true" />
-          <Sparkles size={34} aria-hidden="true" />
-          <strong role="status" aria-live="polite">
-            {phase}
-          </strong>
-        </div>
-        <span className="xp-status">Rendering</span>
+        <div className="bt-review-art"><TemplatePreviewLoading label={phase} active={active}/></div>
+        <span className="xp-status">Loading</span>
         <div className="bt-preview-actions"><button type="button" disabled className="xp-secondary">Customize in Canvas →</button></div>
       </section>
-      <section className="xp-panel bt-render-details bt-review-details">
+      <section className="xp-panel bt-review-details">
         <h2>Template details</h2>
         <fieldset disabled className="bp-fieldset bt-details-fields">
           <label className="xp-field">
             Template name
-            <input readOnly value={source?.name || name || "Brand Template"} />
+            <input readOnly value={source?.name || name || ""} />
           </label>
           <label className="xp-field">
             Customize headline
@@ -75,12 +57,13 @@ export function TemplateRenderReview({
           <label className="xp-field">
             Composition
             <select value="pending" onChange={() => {}}>
-              <option value="pending">Preparing composition</option>
+              <option value="pending"> </option>
             </select>
           </label>
           <label className="xp-field">
             Format
-            <select value={format || "portrait_1080x1350"} onChange={() => {}}>
+            <select value={format || ""} onChange={() => {}}>
+              <option value=""> </option>
               {AD_FORMATS.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.label}
