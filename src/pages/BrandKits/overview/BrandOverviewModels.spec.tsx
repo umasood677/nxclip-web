@@ -14,13 +14,13 @@ const assets=Array.from({length:5},(_,i)=>({id:'model-'+i,label:'Uploaded model 
 const profile={...newBrandCharacter('profile'),name:'Saved identity',referenceAssetIds:['model-0'],appearance:'Actual saved appearance',style:'Editorial'};
 const kit:BrandKitSummary={id:'brand',name:'Brand',version:1,assets,voice:{studio:{schemaVersion:1,categoryId:'Beauty',nicheId:'Beauty',businessGoals:[],identityApproved:true,guidelinesApproved:true,approvedAssetIds:[],characters:[profile]}}};
 
-test('overview includes unlinked uploaded models and displays four real photos with a View All action',()=>{
+test('overview includes unlinked uploaded models and makes every real photo available in the scrollable panel with a View All action',()=>{
  const before=JSON.stringify(kit),gallery=overviewModelEntries(kit);
  assert.equal(gallery.entries.length,5);assert.equal(gallery.imageCount,5);assert.equal(gallery.profileCount,1);
  const html=renderToStaticMarkup(<MemoryRouter><BrandOverviewModels kit={kit} urls={{}}/></MemoryRouter>);
- for(let i=0;i<4;i++)assert.match(html,new RegExp('Uploaded model '+i));
- assert.doesNotMatch(html,/Uploaded model 4/);assert.match(html,/View all 5/);assert.match(html,/Profile needed/);
- assert.equal((html.match(/data-brand-photo="true"/g)||[]).length,4);assert.equal(JSON.stringify(kit),before);
+ for(let i=0;i<5;i++)assert.match(html,new RegExp('Uploaded model '+i));
+ assert.match(html,/View all 5/);assert.match(html,/Profile needed/);
+ assert.equal((html.match(/data-brand-photo="true"/g)||[]).length,5);assert.equal(JSON.stringify(kit),before);
 });
 test('linked legacy reference photos are included once and profiles without photographs remain visible',()=>{
  const empty={...newBrandCharacter('no-image'),name:'No photo identity'},legacy={id:'legacy',role:'other',status:'ready',mimeType:'image/jpeg',label:'Existing legacy reference'};
