@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path';
 import { execute, sha256, canonical, traffic, withCommandExecutorForTest } from './w8-cloud-run.mjs';
 
 const local = JSON.parse(readFileSync(new URL('./w8-release-policy.json', import.meta.url)));
+local.preserveServices = []; // Full-release scenarios exercise every mutation path.
 const workflowSha = 'a'.repeat(40), digest = 'b'.repeat(64);
 const overrides = {
   'ai-service': { AI_DB_RUN_MIGRATIONS: 'false', AI_DB_SYNCHRONIZE: 'false', AI_QUEUE_WORKERS_ENABLED: 'false' },
@@ -265,3 +266,28 @@ for (const patch of [{ GITHUB_ACTOR: 'outsider' }, { GITHUB_TRIGGERING_ACTOR: 'o
     assert(result.error); assert.equal(h.calls.length, 0); assert.equal(h.trafficCalls().length, 0);
   }));
 }
+
+test('controller: template activation changes only AI/Content; Gateway is verified without deploy or traffic calls', () => scenario(async h => {
+  const p=h.policies.get(backend.repository);p.preserveServices=['api-gateway'];
+  p.safetyOverrides['ai-service']={...p.safetyOverrides['ai-service'],AD_STUDIO_REAL_IMAGES_ENABLED:'true',AI_MODEL_ROUTER_ENABLED:'true'};
+  p.safetyOverrides['content-service']={...p.safetyOverrides['content-service'],AD_STUDIO_BRAND_TEMPLATES_ENABLED:'true',AD_STUDIO_REAL_IMAGES_ENABLED:'true'};
+  const gateway=h.states.get('api-gateway');gateway.spec.template.spec.containers[0].image=h.builds.get(backend.repository).manifest.services.find(s=>s.service==='api-gateway').image;
+  h.revisions.set('api-gateway-old',{metadata:{uid:'original-gateway-uid'},spec:copy(gateway.spec.template.spec),status:{imageDigest:gateway.spec.template.spec.containers[0].image,conditions:[{type:'Ready',status:'True'}]}});
+  const before=canonical(gateway);
+  await h.stageBoth();
+  assert.equal(h.stages.get(backend.repository).manifest.services.find(s=>s.service==='api-gateway').stagingMode,'existing-verified');
+  assert.deepEqual(h.deployCalls().map(c=>c.args[2]),['ai-service','content-service','nxclip-web']);
+  assert.equal(h.states.get('ai-service').spec.template.spec.containers[0].env.find(e=>e.name==='AD_STUDIO_REAL_IMAGES_ENABLED').value,'true');
+  assert.equal(h.states.get('ai-service').spec.template.spec.containers[0].env.find(e=>e.name==='AI_MODEL_ROUTER_ENABLED').value,'true');
+  assert.equal(h.states.get('content-service').spec.template.spec.containers[0].env.find(e=>e.name==='CONTENT_BACKGROUND_POLLERS_ENABLED').value,'false');
+  await h.promoteBoth();
+  assert.equal((await h.dispatch(frontend,'rollback')).error,undefined);
+  assert.equal((await h.dispatch(backend,'rollback')).error,undefined);
+  assert.equal(canonical(h.states.get('api-gateway')),before);
+  assert(!h.trafficCalls().some(c=>c.args[3]==='api-gateway'));
+}));
+test('controller: preserved Gateway image mismatch blocks staging before any service mutation', () => scenario(async h => {
+  h.policies.get(backend.repository).preserveServices=['api-gateway'];
+  const result=await h.dispatch(backend,'stage');
+  assert.match(result.error.message,/Preserved service image differs/);assert.equal(h.deployCalls().length,0);assert.equal(h.trafficCalls().length,0);
+}));

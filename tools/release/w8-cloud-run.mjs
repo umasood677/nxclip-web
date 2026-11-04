@@ -29,6 +29,7 @@ export function validateContext(policy, env) {
   assert(/^w8-[a-z0-9][a-z0-9-]{0,30}$/.test(env.RELEASE_ID || ''), 'Invalid release ID; use w8- plus lowercase letters/digits/hyphens (max 34 chars)');
   assert(['build_publish', 'stage', 'promote', 'rollback'].includes(env.OPERATION), 'Unsupported release operation');
   assert(/^\d+$/.test(env.GITHUB_RUN_ID || '') && /^\d+$/.test(env.GITHUB_RUN_ATTEMPT || ''), 'Missing GitHub run identity');
+  assert((policy.preserveServices || []).every(service => service === 'api-gateway' && policy.services.includes(service) && Object.keys(policy.safetyOverrides[service] || {}).length === 0), 'Only an unchanged Gateway may be preserved');
   validateManualAuthorization(policy.repository, env);
 }
 export function authorizedMaintainers(repository, value = '[]') {
@@ -66,6 +67,7 @@ export function validateManifest(policy, manifest, expected = {}) {
       assert(item.stagingStatus === 'verified' && item.smoke?.health === 'pass', 'Staged service is not health-verified');
       assert(item.revision?.startsWith(item.service + '-') && item.revisionUid && /^[a-f0-9]{64}$/.test(item.configHash || '') && /^[a-f0-9]{64}$/.test(item.revisionSpecHash || ''), 'Missing staged revision identity');
       validateTraffic(item.previousTraffic);
+      if (item.stagingMode) assert(item.stagingMode === 'existing-verified' && item.service === 'api-gateway' && item.previousRevision === item.revision && item.previousConfigHash === item.configHash && canonical(item.previousTraffic) === canonical([{ revisionName: item.revision, percent: 100 }]), 'Invalid preserved service receipt');
     }
   }
 }
@@ -118,6 +120,15 @@ export function validatePreservation(before, after, image, overrides) {
   const beforeTags = (before.status?.traffic || []).filter(t => t.tag).map(t => [t.tag, t.revisionName]);
   const afterTags = new Map((after.status?.traffic || []).filter(t => t.tag).map(t => [t.tag, t.revisionName]));
   assert(beforeTags.every(([tag, revision]) => afterTags.get(tag) === revision), 'Existing traffic tag changed');
+}
+export function assertPreservedService(policy, item, current) {
+  assert(item.service === 'api-gateway' && policy.preserveServices?.includes(item.service), 'Service is not approved for non-mutating preservation');
+  assert(Object.keys(policy.safetyOverrides[item.service] || {}).length === 0, 'Preserved service cannot change environment');
+  assert(current.spec.template.spec.containers[0].image === item.image, 'Preserved service image differs from approved immutable image');
+  const revision = current.status.latestReadyRevisionName;
+  assert(revision && current.status.latestCreatedRevisionName === revision, 'Preserved service has an intervening/unready revision');
+  assert(canonical(traffic(current)) === canonical([{ revisionName: revision, percent: 100 }]), 'Preserved service must be fully serving its verified revision');
+  if (item.stagingMode) assert(item.stagingMode === 'existing-verified' && item.revision === revision && item.previousRevision === revision && item.previousConfigHash === item.configHash && sha256(canonical(templateConfig(current.spec.template))) === item.configHash, 'Preserved service receipt/configuration changed');
 }
 export function deploymentArgs(policy, service, image, suffix, tag) {
   assert(policy.services.includes(service), 'Forbidden service');
@@ -265,7 +276,7 @@ export async function execute(policy, env) {
   for (const item of manifest.services) {
     const current = serviceDescribe(policy, item.service); baselines.set(item.service, current);
     assert(current.status?.latestCreatedRevisionName === current.status?.latestReadyRevisionName, 'Existing pending/unready revision; stop');
-    if (env.OPERATION === 'stage') { traffic(current); expectedTemplate(current, item.image, policy.safetyOverrides[item.service]); }
+    if (env.OPERATION === 'stage') { traffic(current); expectedTemplate(current, item.image, policy.safetyOverrides[item.service]); if (policy.preserveServices?.includes(item.service)) assertPreservedService(policy, item, current); }
     else { checkRevision(policy, item); (env.OPERATION === 'promote' ? promotionArgs : rollbackArgs)(policy, item, current); }
   }
   // Reverse dependency order for rollback; backend promotion order is policy order.
@@ -273,6 +284,32 @@ export async function execute(policy, env) {
   for (const item of items) {
     const current = serviceDescribe(policy, item.service);
     assert(canonical(current) === canonical(baselines.get(item.service)), 'Cloud Run changed since preflight; stop without overwriting');
+    if (policy.preserveServices?.includes(item.service)) {
+      assertPreservedService(policy, item, current);
+      if (env.OPERATION === 'stage') {
+        item.previousTraffic = traffic(current);
+        item.previousRevision = current.status.latestReadyRevisionName;
+        item.revision = item.previousRevision;
+        item.previousConfigHash = item.configHash = sha256(canonical(templateConfig(current.spec.template)));
+        const revision = revisionDescribe(policy, item.revision);
+        item.revisionUid = revision.metadata.uid;
+        item.revisionSpecHash = sha256(canonical(templateConfig({ spec: revision.spec }).spec));
+        item.stagingMode = 'existing-verified';
+        assertServiceRevisionSpecsAlign(current.spec.template, revision.spec);
+        checkRevision(policy, item);
+        await healthProbe(current.status.url, current.status.url);
+        assert(canonical(serviceDescribe(policy, item.service)) === canonical(current), 'Preserved service changed during verification');
+        item.smoke = { health: 'pass', paidGeneration: 'not-executed', integratedBrowserUat: 'not-executed' };
+        item.stagingStatus = 'verified';
+      } else {
+        checkRevision(policy, item);
+        (env.OPERATION === 'promote' ? promotionArgs : rollbackArgs)(policy, item, current);
+        verifyPeerState();
+        assert(canonical(serviceDescribe(policy, item.service)) === canonical(current), 'Preserved service changed before traffic verification');
+        item.promotionStatus = env.OPERATION === 'promote' ? 'promoted' : 'rolled-back';
+      }
+      save(); continue; // Verified receipt only: no deploy or traffic mutation for this service.
+    }
     if (env.OPERATION === 'stage') {
       const suffix = `w8-${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT}`;
       const tag = suffix;

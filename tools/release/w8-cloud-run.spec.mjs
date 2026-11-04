@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { canonical, sha256, validateContext, validateManualAuthorization, validateBuildValues, validateManifest, validateTraffic, traffic, templateConfig, serviceConfig, expectedTemplate, validatePreservation, assertServiceRevisionSpecsAlign, deploymentArgs, promotionArgs, rollbackArgs, assertTagAbsent, validateArtifactRun, healthProbe, validatePeerTraffic, execute, withCommandExecutorForTest } from './w8-cloud-run.mjs';
+import { assertPreservedService, canonical, sha256, validateContext, validateManualAuthorization, validateBuildValues, validateManifest, validateTraffic, traffic, templateConfig, serviceConfig, expectedTemplate, validatePreservation, assertServiceRevisionSpecsAlign, deploymentArgs, promotionArgs, rollbackArgs, assertTagAbsent, validateArtifactRun, healthProbe, validatePeerTraffic, execute, withCommandExecutorForTest } from './w8-cloud-run.mjs';
 
 const policy = JSON.parse(readFileSync(new URL('./w8-release-policy.json', import.meta.url)));
+policy.preserveServices = []; // Full-release scenarios exercise every mutation path.
 const sha = 'a'.repeat(40), digest = 'b'.repeat(64);
 const service = policy.services[0];
 const image = `${policy.registry}/${service}@sha256:${digest}`;
@@ -282,4 +283,19 @@ test('workflow remains manual, scoped, independently approved and artifact drive
   assert(!yaml.includes('environment: development')); assert(yaml.includes("github.ref == 'refs/heads/master'")); assert(yaml.includes('github.triggering_actor')); assert(yaml.includes('cancel-in-progress: false'));
   assert(yaml.includes('path: application')); assert(yaml.includes('path: automation'));
   assert(yaml.includes('if: always()')); assert(!yaml.includes('docker push') && !yaml.includes('gcloud run deploy'));
+});
+
+test('preservation profile accepts only an immutable, fully-serving Gateway and rejects drift', () => {
+  const p = { ...policy, services: ['api-gateway'], preserveServices: ['api-gateway'], safetyOverrides: { 'api-gateway': {} } };
+  const current = baseline(); const image = `${p.registry}/api-gateway@sha256:${digest}`;
+  current.spec.template.spec.containers[0].image = image;
+  current.status.latestCreatedRevisionName = current.status.latestReadyRevisionName = 'api-gateway-existing';
+  current.status.traffic = [{ revisionName: 'api-gateway-existing', percent: 100 }];
+  const item = { service: 'api-gateway', image };
+  assert.doesNotThrow(() => assertPreservedService(p, item, current));
+  for (const patch of [s => {s.spec.template.spec.containers[0].image='different';}, s => {s.status.latestCreatedRevisionName='intervening';}, s => {s.status.traffic=[{revisionName:'other',percent:100}];}]) {
+    const changed=copy(current);patch(changed);assert.throws(()=>assertPreservedService(p,item,changed));
+  }
+  assert.throws(()=>assertPreservedService({...p,safetyOverrides:{'api-gateway':{NEW_FLAG:'true'}}},item,current));
+  assert.throws(()=>validateContext({...policy,preserveServices:[policy.services[0]]},env),/Only an unchanged Gateway/);
 });

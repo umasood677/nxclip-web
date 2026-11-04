@@ -241,3 +241,12 @@ dispatch build_publish, stage, promote or rollback. These dispatches replace the
 unavailable environment-reviewer gate; they do not authorize another operation.
 Smoke acceptance/background readiness inputs and every existing recovery guard
 remain required. The separate background-restoration gate is unchanged.
+
+
+## Owner-approved Brand Template activation (2026-11-04)
+
+This profile enables only native Brand Templates and real Ad Studio images: Content AD_STUDIO_BRAND_TEMPLATES_ENABLED=true; Content/AI AD_STUDIO_REAL_IMAGES_ENABLED=true; matching frontend VITE flags=true. AI_MODEL_ROUTER_ENABLED=true is required for the existing Vertex image route; no model, provider or fallback configuration is changed. Real concepts and brand analysis remain disabled. Existing migrations, synchronization, workers and outbox opt-outs remain false. No provider generation is part of deployment verification.
+
+Backend application source/images stay pinned to the existing approved W8 build receipt. `preserveServices: ["api-gateway"]` requires Gateway to already serve the exact approved immutable image at 100%, with the same ready/latest revision and unchanged configuration. Staging records its existing UID, digest, spec/config hashes and health without deploying, tagging or changing traffic. Promotion and rollback revalidate that receipt and perform no Gateway mutation. Only AI and Content receive new reviewed configuration revisions. Any mismatch stops before mutations during preflight; no fallback redeployment or automatic recovery is permitted.
+
+Stage backend configuration revisions and the enabled frontend at zero traffic, then promote backend followed by frontend using their new stage manifests. The frontend must still be at its recorded baseline during backend promotion. Preserve old stage/build artifacts for rollback. Configuration-only activation does not authorize background processing or a paid test request. Owner generation remains separate UAT.
