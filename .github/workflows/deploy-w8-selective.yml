@@ -20,7 +20,7 @@ on:
         description: Approved APPLICATION source, separate from workflow revision
         required: true
         type: string
-        default: 1fcb6b5098b209c830ae7dc54bfb25b5b53b84ae
+        default: dd878a0b77b6a30af645b12d5a319e1c637f13e2
       manifest_run_id:
         description: Own successful build_publish run for stage; own stage run for promote/rollback
         type: string
