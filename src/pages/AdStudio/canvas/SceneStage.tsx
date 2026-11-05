@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { cn } from "../../../lib/utils";
 import { resolveAdFontFamily } from "../lib/adFonts";
+import {brandFontPlan,useBrandFontPreviews} from '../../BrandKits/lib/brandFontPreview';
 import { sortLayers } from "../lib/sceneGraph";
 import type { AdSceneGraph, AdSceneLayer } from "../types";
 import {
@@ -58,6 +59,9 @@ export function SceneStage({
     () => sanitizeSceneGraphForClient(rawGraph ?? null),
     [rawGraph],
   );
+  const sceneFonts = (graph?.layers || []).flatMap(layer => layer.visible !== false && layer.type === 'text'
+    ? [{family:resolveAdFontFamily(layer.fontId || layer.fontFamily).split(',')[0],weight:String(layer.fontWeight ?? 700),style:'normal'}] : []);
+  useBrandFontPreviews(sceneFonts, (graph?.layers || []).filter(layer=>layer.visible!==false&&layer.type==='text').map(layer=>'text' in layer?layer.text:'').join(' '));
 
   const budget = SIZE_BUDGET[size];
   const maxW = maxWidth ?? budget.maxW;
@@ -221,11 +225,13 @@ function StageLayerVisual({
 
   if (layer.type === "text") {
     const t = layer as Extract<AdSceneLayer, { type: "text" }>;
+    const family = resolveAdFontFamily(t.fontId || t.fontFamily);
+    const packaged = brandFontPlan({family:family.split(',')[0],weight:String(t.fontWeight ?? 700),style:'normal'});
     return (
       <div
         className="w-full h-full overflow-hidden"
         style={{
-          fontFamily: resolveAdFontFamily(t.fontId || t.fontFamily),
+          fontFamily: packaged ? `"${packaged.family}", ${family}` : family,
           fontSize: t.fontSize ?? 48,
           fontWeight: t.fontWeight ?? 700,
           color: t.color ?? "#fff",

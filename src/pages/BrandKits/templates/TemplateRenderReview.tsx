@@ -32,10 +32,10 @@ export function TemplateRenderReview({
         aria-label="Template preview"
       >
         <div className="bt-review-art"><TemplatePreviewLoading label={phase} active={active}/></div>
-        <span className="xp-status">Loading</span>
+        <span className="xp-status">{active ? 'Preparing preview' : 'Needs attention'}</span>
         <div className="bt-preview-actions"><button type="button" disabled className="xp-secondary">Customize in Canvas →</button></div>
       </section>
-      <section className="xp-panel bt-review-details bt-details-loading" aria-busy="true">
+      <section className="xp-panel bt-review-details bt-details-loading" aria-busy={active}>
         <h2>Template details</h2>
         <fieldset disabled className="bp-fieldset bt-details-fields">
           <label className="xp-field">

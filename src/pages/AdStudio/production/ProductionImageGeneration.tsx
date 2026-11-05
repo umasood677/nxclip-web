@@ -1,13 +1,15 @@
+import {templateReferenceInput} from '../../BrandKits/templates/templateReferenceInput';
 import {TemplateRenderReview} from "../../BrandKits/templates/TemplateRenderReview";
 import { Sparkles as SparklesIcon } from "lucide-react";
 import { characterReviewIssues } from "../../BrandKits/guided/brandCharacterModel";
 import type { BrandKitSummary } from "../../BrandKits/lib/brandKitTypes";
 import React, { useEffect, useRef, useState } from "react";
-import { adImageApi } from "../../../services/apiClient";
+import { adImageApi, adStudioApi } from "../../../services/apiClient";
 import { BrandTemplateScenePreview as ResponsiveScenePreview } from "../../BrandKits/templates/BrandTemplateScenePreview";
 import type { WorkspaceCreative } from "../lib/projectWorkspace";
 import {
   assertCharacterQuote,
+  assertReferenceTemplateQuote,
   assertImageRenderMode,
   assertSingleTemplateReview,
   savedCharacterSelection,
@@ -27,6 +29,9 @@ export function ProductionImageGeneration({
   initialOperation = "generate",
   initialInstruction = "",
   renderMode = source.imageRenderMode || "background",
+  compositionMode=source.imageCompositionMode,
+  initialStyleReferenceIds=[],
+  regeneration=false,
   autoPreflight = false,
   executeRequested = false,
   onProviderUnavailable,
@@ -41,6 +46,9 @@ export function ProductionImageGeneration({
   initialOperation?: AdImageOperation;
   initialInstruction?: string;
   renderMode?: "background" | "template-proposal";
+  compositionMode?:"source-preserving-v1"|"reference-guided-template-v1";
+  initialStyleReferenceIds?:string[];
+  regeneration?:boolean;
   autoPreflight?: boolean;
   executeRequested?: boolean;
   onProviderUnavailable?: () => Promise<void>;
@@ -49,9 +57,10 @@ export function ProductionImageGeneration({
   compact?: boolean;
   onSaved: (saved: WorkspaceCreative) => Promise<void>;
 }) {
-  const proposal = renderMode === "template-proposal";
-  const [refiningProposal,setRefiningProposal]=useState(initialOperation === "refine");
+  const proposal = renderMode === "template-proposal",referenceGuided=proposal&&compositionMode==='reference-guided-template-v1';
+  const [refiningProposal,setRefiningProposal]=useState(initialOperation === "refine"||regeneration);
   const autoAttempt=useRef(false),executing=useRef(false),explicitIntentConsumed=useRef(false);
+  const checkedRetainedRequest=useRef('');
   const canEdit = hasGeneratedBackground(source),
     enabled = realImagesEnabled(),
     key = "nxclip:ad-image-request:" + source.id;
@@ -106,16 +115,19 @@ export function ProductionImageGeneration({
     setQuote(null);
     setConsent(false);
   }, [source.currentVersion]);
+  const referenceSetup=referenceGuided?templateReferenceInput(source,brand,selectedCharacterIds,initialStyleReferenceIds,operation):{references:undefined,issue:null};
   const input = {
     operation,
     ...(proposal ? {renderMode: "template-proposal" as const} : {}),
+    ...(proposal&&compositionMode?{compositionMode}:{}),
+    ...(referenceGuided?{templateReferences:referenceSetup.references}:{}),
     instruction,
     expectedVersion: source.currentVersion ?? 1,
     selectedCharacterIds,
   };
   const sourceIssue = imageSourceIssue(source);
   const valid =
-    !sourceIssue &&
+    !sourceIssue && !referenceSetup.issue &&
     instruction.trim().length > 0 &&
     instruction.length <= 4000 &&
     selectionReady;
@@ -127,14 +139,14 @@ export function ProductionImageGeneration({
     try {
       const q = validateImageQuote(await adImageApi.quote(source.id, input));
       assertCharacterQuote(q, selectedCharacterIds);
-      assertImageRenderMode(q,renderMode);
+      assertImageRenderMode(q,renderMode);assertReferenceTemplateQuote(q,compositionMode);
       if(compact && proposal)assertSingleTemplateReview(q);
       if (mounted.current && n === epoch.current) {
         setQuote(q);
         setConsent(false);
       }
     } catch (e) {
-      if (proposal && onProviderUnavailable && [502,503].includes(Number((e as {statusCode?:number})?.statusCode))) { await onProviderUnavailable(); return; }
+      if (!referenceGuided && proposal && onProviderUnavailable && [502,503].includes(Number((e as {statusCode?:number})?.statusCode))) { await onProviderUnavailable(); return; }
       if (mounted.current && n === epoch.current)
         setError(
           e instanceof Error ? e.message : "Execution preflight unavailable",
@@ -152,8 +164,8 @@ export function ProductionImageGeneration({
     let executionQuote=quote;
     if (!executionQuote) {
       setActivity('readiness');setError('');
-      try { executionQuote=validateImageQuote(await adImageApi.quote(source.id,input));assertCharacterQuote(executionQuote,selectedCharacterIds);assertImageRenderMode(executionQuote,renderMode);if(compact && proposal)assertSingleTemplateReview(executionQuote); }
-      catch(e){executing.current=false;if(mounted.current){setActivity(null);if(proposal && onProviderUnavailable && [502,503].includes(Number((e as {statusCode?:number})?.statusCode))){await onProviderUnavailable();return;}setError(e instanceof Error?e.message:'Could not prepare this generation.');}return;}
+      try { executionQuote=validateImageQuote(await adImageApi.quote(source.id,input));assertCharacterQuote(executionQuote,selectedCharacterIds);assertImageRenderMode(executionQuote,renderMode);assertReferenceTemplateQuote(executionQuote,compositionMode);if(compact && proposal)assertSingleTemplateReview(executionQuote); }
+      catch(e){executing.current=false;if(mounted.current){setActivity(null);if(!referenceGuided && proposal && onProviderUnavailable && [502,503].includes(Number((e as {statusCode?:number})?.statusCode))){await onProviderUnavailable();return;}setError(e instanceof Error?e.message:'Could not prepare this generation.');}return;}
     }
     if (!mounted.current){executing.current=false;return;}
     const n = ++epoch.current,
@@ -186,8 +198,8 @@ export function ProductionImageGeneration({
     } catch (e) {
       if (mounted.current && n === epoch.current)
         setError(
-          e instanceof Error
-            ? e.message
+          e && typeof e === 'object' && 'message' in e && typeof e.message === 'string'
+            ? e.message + ' Check saved status before trying again.'
             : "Outcome uncertain. Check retained status; do not resubmit paid work.",
         );
     } finally {
@@ -210,6 +222,18 @@ export function ProductionImageGeneration({
     try {
       const s = await adImageApi.status(source.id, requestId);
       if (mounted.current && n === epoch.current) {
+        if (s.creativeId) {
+          const saved = verifyGeneratedCreative(await adStudioApi.getCreative(s.creativeId), source);
+          if (mounted.current && n === epoch.current) await onSaved(saved);
+          return;
+        }
+        if (proposal && compact && s.hasRetainedImage) {
+          // Finish persistence from retained bytes only. This endpoint never
+          // submits a provider request and uses the existing lifecycle lock.
+          const saved = verifyGeneratedCreative(await adImageApi.recover(source.id, requestId), source);
+          if (mounted.current && n === epoch.current) await onSaved(saved);
+          return;
+        }
         setRetained(s.hasRetainedImage);
         setMessage(
           "Actual request status: " +
@@ -221,11 +245,20 @@ export function ProductionImageGeneration({
       }
     } catch (e) {
       if (mounted.current && n === epoch.current)
-        setError(e instanceof Error ? e.message : "Status unavailable");
+        setError(e && typeof e === 'object' && 'message' in e && typeof e.message === 'string' ? e.message : "Saved generation status is unavailable. Try Check saved status; do not generate again.");
     } finally {
       if (mounted.current && n === epoch.current) setActivity(null);
     }
   };
+  // Refresh/reopen must resolve the retained request, not park indefinitely on
+  // a disabled review form. Compact template review can finish persistence from
+  // retained bytes; none of these paths submit a new provider request.
+  useEffect(() => {
+    const retainedKey = source.id + ':' + requestId;
+    if (!proposal || !requestId || canEdit || busy || checkedRetainedRequest.current === retainedKey) return;
+    checkedRetainedRequest.current = retainedKey;
+    void status();
+  }, [source.id, requestId, proposal, canEdit, busy]);
   const recover = async () => {
     if (!retained || busy || !requestId) return;
     const n = ++epoch.current;
@@ -252,17 +285,18 @@ export function ProductionImageGeneration({
     setQuote(null);
     setConsent(false);
   };
-  if(proposal && !canEdit && compact)return <TemplateRenderReview source={source} format={source.sceneGraph.canvas.width===source.sceneGraph.canvas.height?'square_1080':source.sceneGraph.canvas.width>source.sceneGraph.canvas.height?'landscape_1920x1080':source.sceneGraph.canvas.height/source.sceneGraph.canvas.width>1.5?'vertical_1080x1920':'portrait_1080x1350'} active={enabled&&(busy||executeRequested&&!error&&!requestId)} phase={error?'Your template needs attention':!enabled?'Generation is unavailable':requestId&&!busy?'Check your saved generation':activity==='readiness'?'Preparing your design…':'Rendering your template…'}>
+  const reopeningSaved = proposal && !!requestId && !canEdit && checkedRetainedRequest.current !== source.id + ':' + requestId;
+  if(proposal && !canEdit && compact)return <TemplateRenderReview source={source} format={source.sceneGraph.canvas.width===source.sceneGraph.canvas.height?'square_1080':source.sceneGraph.canvas.width>source.sceneGraph.canvas.height?'landscape_1920x1080':source.sceneGraph.canvas.height/source.sceneGraph.canvas.width>1.5?'vertical_1080x1920':'portrait_1080x1350'} active={enabled&&(busy||reopeningSaved||executeRequested&&!error&&!requestId)} phase={reopeningSaved||activity==='status'?'Opening your saved template…':error?'Your template needs attention':!enabled?'Generation is unavailable':requestId&&!busy?'Check your saved generation':activity==='readiness'?'Preparing your design…':'Creating your template…'}>
     {error&&<p className="xp-notice" role="alert">{error}</p>}
     {!enabled&&<p className="xp-notice">AI generation needs local activation.</p>}
     {!busy&&!requestId&&(!executeRequested||!!error)&&<button className="xp-primary" disabled={!enabled||!valid} onClick={()=>void generate()}>Generate Template</button>}
     {message&&<p role="status">{message}</p>}
-    {!busy&&requestId&&<div className="xp-actions"><button className="xp-secondary" onClick={()=>void status()}>Check saved status</button>{retained&&<button className="xp-secondary" onClick={()=>void recover()}>Open saved result</button>}</div>}
+    {!busy&&requestId&&!reopeningSaved&&<div className="xp-actions"><button className="xp-secondary" onClick={()=>void status()}>Retry loading preview</button></div>}
   </TemplateRenderReview>;
   if(proposal && canEdit && !refiningProposal)return (
     <section className="ai-proposal-result" aria-label="Finished template proposal">
       <div className="xp-panel ai-generation-preview"><ResponsiveScenePreview graph={source.sceneGraph} assetUrls={assetUrls} size="hero" maxHeight={680}/></div>
-      <aside className="xp-panel ai-generation-controls"><h2>Your template preview</h2>{onReview && <button className="xp-primary" onClick={onReview}>Review template →</button>}{onCustomize && <button className="xp-secondary" onClick={onCustomize}>Customize in Canvas →</button>}<button className="xp-text-button" onClick={()=>{setOperation("refine");change();setRefiningProposal(true);}}>Refine this design</button><details><summary>About this artwork</summary><p>AI artwork is one image layer. Product depiction is not verified product inventory; review it before approval. Original photos remain available in Canvas.</p></details></aside>
+      <aside className="xp-panel ai-generation-controls"><h2>Your template preview</h2>{onReview && <button className="xp-primary" onClick={onReview}>Review template →</button>}{onCustomize && <button className="xp-secondary" onClick={onCustomize}>Customize in Canvas →</button>}<button className="xp-text-button" onClick={()=>{setOperation("refine");change();setRefiningProposal(true);}}>Refine this design</button><details><summary>About this artwork</summary><p>The photographic scene is one image layer. Regenerate to change its model, product or environment; text and graphics remain editable.</p></details></aside>
     </section>
   );
   return (
@@ -288,7 +322,7 @@ export function ProductionImageGeneration({
               : proposal ? "Preview your finished template." : "Generate your AI advertisement."}
         </h2>
         {proposal && canEdit && <button className="xp-text-button" disabled={busy} onClick={()=>setRefiningProposal(false)}>← Back to proposal</button>}
-        {sourceIssue && <p className="xp-notice" role="alert">{sourceIssue}</p>}
+        {referenceSetup.issue&&<p role="alert">{referenceSetup.issue}</p>}{sourceIssue && <p className="xp-notice" role="alert">{sourceIssue}</p>}
         {!enabled && (
           <p className="xp-notice">
             AI generation needs local activation.

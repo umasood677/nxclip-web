@@ -1,4 +1,5 @@
 import {resolveAdFontFamily} from '../../AdStudio/lib/adFonts';
+import {loadBrandFontPreviews} from '../lib/brandFontPreview';
 import type {AdSceneGraph} from '../../AdStudio/types';
 export function reviewImageUrls(graph:AdSceneGraph,urls:Readonly<Record<string,string>>):string[]|null{
  const ids=[...new Set(graph.layers.filter(l=>l.visible!==false&&(l.type==='image'||l.type==='logo')).flatMap(l=>'assetId'in l&&l.assetId?[l.assetId]:[]))];
@@ -37,6 +38,20 @@ export function reviewFontRequests(graph:AdSceneGraph|null|undefined):Array<[str
  }
  return [...requests.values()];
 }
-export async function preloadReviewFonts(requests:readonly [string,string][],fonts:Pick<FontFaceSet,'load'>|undefined=typeof document==='undefined'?undefined:document.fonts):Promise<void>{
- if(fonts)await Promise.all(requests.map(([spec,text])=>fonts.load(spec,text)));
+export async function preloadReviewFonts(requests:readonly [string,string][],fonts:Pick<FontFaceSet,'load'>|undefined=typeof document==='undefined'?undefined:document.fonts,prepare=loadBrandFontPreviews):Promise<void>{
+ if(!fonts)return;
+ let registeredRequests=requests;
+ // document.fonts.load() succeeds with an empty array for an unregistered
+ // family. Register the existing checksum-verified bundled face first.
+ if(typeof document!=='undefined'&&fonts===document.fonts){
+   const entries=requests.map(([spec])=>{const match=spec.match(/^(\d+) 16px "(.+)"$/);if(!match)throw Error('Invalid scene font request.');return {family:match[2],weight:match[1],style:'normal'};});
+   const loaded=await prepare(entries,requests.map(([,text])=>text).join(' '));
+   if(Object.values(loaded).some(face=>face.status!=='loaded'))throw Error('The exact preview font could not load.');
+   registeredRequests=requests.map(([spec,text],index)=>{
+     const entry=entries[index],face=loaded[[entry.family,entry.weight,entry.style].join('/')];
+     if(!face)throw Error('The preview font was not registered.');
+     return [String(face.weight)+' 16px "'+face.family+'"',text] as [string,string];
+   });
+ }
+ await Promise.all(registeredRequests.map(([spec,text])=>fonts.load(spec,text)));
 }

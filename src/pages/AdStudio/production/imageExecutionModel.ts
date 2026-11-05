@@ -2,6 +2,7 @@ import { validPreflightCost } from "../../../lib/aiExecutionPreflight";
 import type { WorkspaceCreative } from "../lib/projectWorkspace";
 export type AdImageOperation = "generate" | "variation" | "refine";
 export type ImageQuote = {
+  compositionMode?:'source-preserving-v1'|'reference-guided-template-v1';
   templateReviewMode?: "approval-page-v1";
   characterSelectionSupported?: true;
   selectedCharacterIds?: string[];
@@ -24,6 +25,8 @@ export type ImageInput = {
   expectedVersion: number;
   operation: AdImageOperation;
   renderMode?: 'background' | 'template-proposal';
+  compositionMode?:'source-preserving-v1'|'reference-guided-template-v1';
+  templateReferences?:import('../../BrandKits/templates/templateReferenceInput').TemplateReferenceSelection[];
   instruction: string;
   maxEstimatedCostUsd?: number;
   selectedCharacterIds?: string[];
@@ -117,3 +120,5 @@ export function assertImageRenderMode(quote: ImageQuote, mode: 'background' | 't
 export function assertSingleTemplateReview(quote:ImageQuote){
   if(quote.templateReviewMode!=="approval-page-v1")throw Error("Activate the updated Content service before generating this template. No generation was started.");
 }
+
+export function assertReferenceTemplateQuote(quote:ImageQuote,mode?:string){if(mode==='reference-guided-template-v1'&&quote.compositionMode!==mode)throw Error('Activate the reference-guided Content and AI builds before generation.');}

@@ -12,6 +12,8 @@ export type WorkspaceCreative = {
   currentVersion?: number; sceneGraph?: AdSceneGraph | null;
   parentCreativeId?:string|null; variationType?:string|null;
   selectedCharacterIds?: string[];
+  imageCompositionMode?:'source-preserving-v1'|'reference-guided-template-v1';
+  templateReferenceManifest?:import('../../BrandKits/templates/templateReferenceInput').TemplateReferenceMetadata[];
   imageRenderMode?: 'background' | 'template-proposal';
   proposalDirection?: string;
   documentPurpose?: 'template-draft'|'campaign-ad';

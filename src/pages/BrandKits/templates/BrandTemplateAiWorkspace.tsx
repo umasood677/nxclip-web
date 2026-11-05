@@ -1,3 +1,4 @@
+import {templateRegenerationInstruction} from './templateReferenceInput';
 import {useTemplateAssetUrls,templateImageIds} from './useTemplateAssetUrls';
 import {templateEditTarget,saveCanvasTemplate} from './templateCanvasLink';
 import {TemplateRenderReview} from './TemplateRenderReview';
@@ -31,6 +32,8 @@ export function BrandTemplateAiWorkspace({kit:initialKit,initialFormat,onBack: _
   const navigate=useNavigate(),[params,setParams]=useSearchParams(),pending=useRef(false),reviewAttempt=useRef("");
   const [kit,setKit]=useState(initialKit);useEffect(()=>setKit(initialKit),[initialKit]);
   const [configuration,setConfiguration]=useState<TemplateProductConfiguration>(()=>automaticTemplateProducts(initialKit,'')),[selectionMode,setSelectionMode]=useState<ProductSelectionMode>('automatic');
+  const [styleIds,setStyleIds]=useState<string[]>([]);
+  const editingGeneration=params.get('refine')==='1'||params.get('regenerate')==='1';
   const [generationRequested,setGenerationRequested]=useState(false);
   const [format,setFormat]=useState(initialFormat),[layout,setLayout]=useState(entryKind==="native"?"product-hero":"auto"),[direction,setDirection]=useState("");
   const [source,setSource]=useState<WorkspaceCreative|null>(null),[busy,setBusy]=useState(false),[loading,setLoading]=useState(false),[error,setError]=useState("");
@@ -51,7 +54,8 @@ export function BrandTemplateAiWorkspace({kit:initialKit,initialFormat,onBack: _
   const layouts=TEMPLATE_CATALOG_V1.filter(t=>t.formats.some(f=>f===format));
   const effectiveConfiguration=selectionMode==='automatic'&&!source&&!sourceId?automaticTemplateProducts(kit,direction,configuration.modelProfileId):configuration;
   const layoutValid=layout==='auto'||layouts.some(t=>t.templateId===layout);
-  const issues=templateCreatorIssues(kit,effectiveConfiguration,direction,native,layoutValid),draftIssues=templateCreatorIssues(kit,effectiveConfiguration,direction,native,layoutValid,true);
+  const referenceCount=new Set(effectiveConfiguration.slots.flatMap(s=>s.assetId?[s.assetId]:[])).size+(effectiveConfiguration.modelProfileId?1:0)+styleIds.length;
+  const issues=[...templateCreatorIssues(kit,effectiveConfiguration,direction,native,layoutValid),...(!native&&referenceCount>4?['Choose at most four product, model and style references.']:[])],draftIssues=templateCreatorIssues(kit,effectiveConfiguration,direction,native,layoutValid,true);
   async function nativeFallback(){
     if(pending.current || !kit.version)return;
     pending.current=true;setBusy(true);setError('');
@@ -75,7 +79,7 @@ export function BrandTemplateAiWorkspace({kit:initialKit,initialFormat,onBack: _
       const target=templateEditTarget(params.toString());
       let record;
       if(target && value.templateContext?.draftKind!=='native'){
-        record=await saveCanvasTemplate(brandTemplateApi,kit.id,value,target);
+        record=value.parentCreativeId===sourceId?await brandTemplateApi.fromCreative(kit.id,{...body,replaceTemplateId:target.id,expectedTemplateRevision:target.revision}):await saveCanvasTemplate(brandTemplateApi,kit.id,value,target);
       }else record=await (value.templateContext?.draftKind==='native'?brandTemplateApi.fromDraft(kit.id,body):brandTemplateApi.fromCreative(kit.id,body));
 navigate("/brands/"+encodeURIComponent(kit.id)+"/templates/"+encodeURIComponent(templateResponseId(record,value.templateContext?.brandTemplateId || record?.id)),{state:{templateReview:{kit,record}}});
     }catch(e){setError(e instanceof Error?e.message:"Could not submit the template for review. Your draft is retained.");}
@@ -83,7 +87,7 @@ navigate("/brands/"+encodeURIComponent(kit.id)+"/templates/"+encodeURIComponent(
   }
   useEffect(()=>{
     const key=source?.id+':'+source?.currentVersion;
-    if(!busy && !pending.current && params.get('refine')!=='1' && source?.id===sourceId && (native || generated) && reviewAttempt.current!==key){reviewAttempt.current=key;void publish(source);}
+    if(!busy && !pending.current && !editingGeneration && source?.id===sourceId && (native || generated) && reviewAttempt.current!==key){reviewAttempt.current=key;void publish(source);}
   },[params,source,sourceId,native,generated,publish,busy]);
   return <section className="bt-ai-workspace">
 
@@ -91,7 +95,7 @@ navigate("/brands/"+encodeURIComponent(kit.id)+"/templates/"+encodeURIComponent(
     {error && <p className="bt-blocker" role="alert">{error}</p>}
     {busy&&!source&&!native?<TemplateRenderReview name={kit.name+' · Brand Template'} format={format} phase="Preparing your template…"/>:isTemplateSourceLoading(loading,sourceId,source?.id)?<TemplateRenderReview format={format} phase="Loading template review…"/>:source && source.id===sourceId?<>
 
-      {(native || generated && source.imageRenderMode==='template-proposal')&&params.get('refine')!=='1'?<TemplateRenderReview source={source} format={format} active={!error} phase={error?"Review could not open":"Finishing your preview…"}>{error&&<button className="xp-secondary" disabled={busy} onClick={()=>void publish(source)}>Retry opening review</button>}</TemplateRenderReview>:generated && source.imageRenderMode!=="template-proposal"?<section className="xp-panel"><h3>Earlier background-only template draft</h3><BrandTemplateScenePreview graph={source.sceneGraph} assetUrls={urls} size="hero" maxHeight={560}/><button className="xp-primary" onClick={()=>{setSource(null);setLayout("product-hero");setParams({tab:"brand",mode:"ai"});}}>Start a finished template proposal</button></section>:<ProductionImageGeneration key={source.id} source={source} initialInstruction={source.proposalDirection || direction} initialOperation={params.get('refine')==='1'?'refine':'generate'} renderMode="template-proposal" compact executeRequested={generationRequested} autoPreflight={!generated && !generationRequested} onProviderUnavailable={nativeFallback} onReview={()=>void publish(source)} onCustomize={()=>navigate(creativeEditorPath(source.id))} brand={kit} assetUrls={urls} onSaved={async value=>{await publish(verifyTemplateSource(value,kit.id));}}/>}
+      {(native || generated && source.imageRenderMode==='template-proposal')&&!editingGeneration?<TemplateRenderReview source={source} format={format} active={!error} phase={error?"Review could not open":"Finishing your preview…"}>{error&&<button className="xp-secondary" disabled={busy} onClick={()=>void publish(source)}>Retry opening review</button>}</TemplateRenderReview>:generated && source.imageRenderMode!=="template-proposal"?<section className="xp-panel"><h3>Earlier background-only template draft</h3><BrandTemplateScenePreview graph={source.sceneGraph} assetUrls={urls} size="hero" maxHeight={560}/><button className="xp-primary" onClick={()=>{setSource(null);setLayout("product-hero");setParams({tab:"brand",mode:"ai"});}}>Start a finished template proposal</button></section>:<ProductionImageGeneration key={source.id} source={source} initialInstruction={editingGeneration?templateRegenerationInstruction(source):source.proposalDirection || direction} initialOperation={params.get('refine')==='1'?'refine':'generate'} renderMode="template-proposal" regeneration={editingGeneration} compositionMode={source.imageCompositionMode||"reference-guided-template-v1"} initialStyleReferenceIds={styleIds} compact executeRequested={generationRequested} autoPreflight={!generated && !generationRequested} onProviderUnavailable={nativeFallback} onReview={()=>void publish(source)} onCustomize={()=>navigate(creativeEditorPath(source.id))} brand={kit} assetUrls={urls} onSaved={async value=>{await publish(verifyTemplateSource(value,kit.id));}}/>}
 
       {busy && <p role="status">Opening template review…</p>}
     </>:<div className="xp-panel bt-ai-setup bt-quick-creator">
@@ -100,7 +104,7 @@ navigate("/brands/"+encodeURIComponent(kit.id)+"/templates/"+encodeURIComponent(
       <div className="bt-format-field"><span>Format</span><div className="bt-format-options" role="group" aria-label="Format">{AD_FORMATS.map(f=><button type="button" key={f.id} disabled={busy} aria-pressed={format===f.id} onClick={()=>{setFormat(f.id);if(layout!=='auto'&&!TEMPLATE_CATALOG_V1.find(t=>t.templateId===layout)?.formats.some(v=>v===f.id))setLayout(native?'product-hero':'auto');}}><span className="bt-format-shape" data-format={f.id} aria-hidden="true"/>{f.label}</button>)}</div></div>
       <TemplateProductSettings value={effectiveConfiguration} selectionMode={selectionMode} onSelectionModeChange={mode=>{setConfiguration(effectiveConfiguration);setSelectionMode(mode);}} onChange={value=>{if(JSON.stringify(value.slots)!==JSON.stringify(effectiveConfiguration.slots))setSelectionMode('specific');setConfiguration(value);}} kit={kit} onKitUpdated={setKit} disabled={busy}/>
       {!!issues.length&&<ul id="template-setup-validation" className="bt-setup-validation" aria-live="polite">{[...new Set(issues)].map(issue=><li key={issue}>{issue}</li>)}</ul>}
-      <div className="bt-creator-footer"><details className="bt-advanced-options"><summary>Advanced Options</summary><fieldset disabled={busy} className="bp-fieldset"><label className="xp-field">{native?'Layout':'Composition guidance'}<select value={layout} onChange={e=>setLayout(e.target.value)}>{!native&&<option value="auto">Let AI compose from my brief</option>}{layouts.map(t=><option key={t.templateId} value={t.templateId}>{t.name}</option>)}</select></label></fieldset></details>
+      <div className="bt-creator-footer"><details className="bt-advanced-options"><summary>Advanced Options</summary>{!native&&<div className="bt-style-references"><span>Style references · optional</span>{(kit.assets||[]).filter(a=>['campaign_reference','other'].includes(a.role)&&a.status==='ready'&&kit.voice?.studio?.approvedAssetIds?.includes(a.id)&&!kit.voice?.studio?.characters?.some(p=>p.referenceAssetIds.includes(a.id))).map(a=><label key={a.id} className="xp-check"><input type="checkbox" disabled={busy} checked={styleIds.includes(a.id)} onChange={e=>setStyleIds(ids=>e.target.checked?[...ids,a.id]:ids.filter(id=>id!==a.id))}/>{a.label||a.fileName||'Style reference'}</label>)}</div>}<fieldset disabled={busy} className="bp-fieldset"><label className="xp-field">{native?'Layout':'Composition guidance'}<select value={layout} onChange={e=>setLayout(e.target.value)}>{!native&&<option value="auto">Let AI compose from my brief</option>}{layouts.map(t=><option key={t.templateId} value={t.templateId}>{t.name}</option>)}</select></label></fieldset></details>
       <div className="bt-setup-actions">
        {!native&&<button type="button" className="xp-secondary" disabled={busy||draftIssues.length>0} onClick={()=>void prepare(true)}>Draft Editable Layout</button>}
        <button type="button" className="xp-primary" disabled={busy||issues.length>0} aria-describedby={issues.length?'template-setup-validation':undefined} onClick={()=>void prepare()}><Sparkles size={16} aria-hidden="true"/>{busy?'Preparing…':native?'Preview template':'Generate Template'}</button>

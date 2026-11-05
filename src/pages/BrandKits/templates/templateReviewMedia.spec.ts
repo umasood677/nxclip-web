@@ -47,3 +47,22 @@ test('review waits for the actual typography before revealing the scene',async()
  let release!:()=>void,finished=false;const pending=preloadReviewFonts(requests,{load:()=>new Promise<FontFace[]>(resolve=>{release=()=>resolve([]);})}).then(()=>finished=true);
  await new Promise(r=>setImmediate(r));assert.equal(finished,false);release();await pending;assert.equal(finished,true);
 });
+
+
+test('review registers the packaged face before waiting for it, instead of accepting an unregistered family',async()=>{
+ const previous=globalThis.document,calls:string[]=[];
+ const fonts={load:async(spec:string)=>{calls.push(spec);return [] as FontFace[];}};
+ Object.defineProperty(globalThis,'document',{configurable:true,value:{fonts}});
+ try{
+  await preloadReviewFonts([['400 16px "Playfair Display"','YOUR SIGNATURE RED']],fonts,async entries=>{
+   assert.equal(calls.length,0);assert.equal(entries[0].weight,'400');
+   return {'Playfair Display/400/normal':{family:'NxClip T2 Playfair Display',weight:400,style:'normal' as const,status:'loaded' as const,note:'Fixture'}};
+  });
+  assert.deepEqual(calls,['400 16px "NxClip T2 Playfair Display"']);
+ }finally{if(previous===undefined)delete (globalThis as {document?:unknown}).document;else Object.defineProperty(globalThis,'document',{configurable:true,value:previous});}
+});
+test('review does not reveal text with fallback metrics when bundled font registration fails',async()=>{
+ const previous=globalThis.document,fonts={load:async()=>[] as FontFace[]};Object.defineProperty(globalThis,'document',{configurable:true,value:{fonts}});
+ try{await assert.rejects(preloadReviewFonts([['400 16px "Playfair Display"','Headline']],fonts,async()=>({'Playfair Display/400/normal':{family:'serif',weight:400,style:'normal' as const,status:'unavailable' as const,note:'Fixture failure'}})),/exact preview font/);}
+ finally{if(previous===undefined)delete (globalThis as {document?:unknown}).document;else Object.defineProperty(globalThis,'document',{configurable:true,value:previous});}
+});

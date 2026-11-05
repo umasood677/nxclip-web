@@ -311,3 +311,20 @@
  color:transparent!important;-webkit-text-fill-color:transparent;caret-color:transparent;
  background-image:linear-gradient(90deg,#ffffff04,#ffffff0a,#ffffff04);text-shadow:none;
 }
+
+.bt-fidelity-review{border:1px solid #ffffff18;border-radius:10px;padding:10px;margin:10px 0}.bt-fidelity-review legend{font-size:12px;padding:0 5px;color:#d2b47e}.bt-fidelity-review>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 10px}.bt-root .bt-fidelity-review .xp-check{font-size:12px;margin:3px 0}.bt-fidelity-review .xp-field{font-size:12px;margin-top:6px}.bt-root .bt-fidelity-review textarea{min-height:34px}.bt-reference-compare{display:flex;gap:8px;overflow-x:auto;margin:8px 0}.bt-reference-compare figure{margin:0;flex:0 0 72px}.bt-reference-compare img{width:72px;height:90px;object-fit:contain;border-radius:6px;background:#ffffff08}.bt-reference-compare figcaption,.bt-photo-treatment{font-size:11px;color:#a6a3b2}.bt-style-references{display:flex;flex-wrap:wrap;gap:6px 12px;padding:8px 0}
+.bt-baking-stage{position:absolute;inset:0;overflow:hidden;pointer-events:none;background:radial-gradient(ellipse at 35% 42%,#c7a66c18,transparent 62%),radial-gradient(ellipse at 70% 65%,#7769d818,transparent 60%)}
+.bt-baking-glow{position:absolute;inset:15%;filter:blur(65px);background:#c7a66c12!important;animation:bt-bake-breathe 4s ease-in-out infinite}
+.bt-baking-orbit{position:absolute;left:50%;top:44%;width:210px;height:210px;border:1px solid #d3b88020;border-radius:50%;transform:translate(-50%,-50%);animation:bt-bake-breathe 4s ease-in-out infinite}
+.bt-baking-card{position:absolute;left:50%;top:44%;width:110px;height:146px;border:1px solid #d3b88048;border-radius:12px;background:linear-gradient(145deg,#c7a66c12,#17171d);transform:translate(-50%,-50%) rotate(-5deg);box-shadow:0 16px 60px #0003;animation:bt-bake-float 5s ease-in-out infinite}
+.bt-baking-card i{display:block;height:3px;border-radius:4px;margin:14px 14px 0;background:#dfcba75c;width:65%}.bt-baking-card i:nth-child(2){width:45%;margin-top:6px}.bt-baking-card i:nth-child(3){width:30%;margin-top:6px}.bt-baking-card span{display:block;width:35px;height:46px;background:linear-gradient(135deg,#dec79e33,#77708d33);border-radius:18px 18px 5px 5px;margin:13px auto}.bt-baking-card b{display:block;width:45px;height:6px;border:1px solid #dfcba74a;border-radius:8px;margin:auto}
+.bt-baking-sweep{position:absolute;inset:-100%;background:linear-gradient(115deg,transparent 44%,#ebd7ad0b 49%,#ebd7ad22 50%,#ebd7ad0b 51%,transparent 56%);animation:bt-bake-sweep 4s ease-in-out infinite}
+.bt-review-media-state:has(.bt-baking-stage){justify-content:center;padding-top:175px;gap:12px}.bt-baking-icon{position:relative;color:#d2b47e;animation:bt-bake-breathe 3s ease-in-out infinite}
+@keyframes bt-bake-float{0%,100%{transform:translate(-50%,-50%) rotate(-5deg)}50%{transform:translate(-50%,calc(-50% - 8px)) rotate(3deg)}}
+@keyframes bt-bake-breathe{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes bt-bake-sweep{0%{transform:translateX(-30%)}100%{transform:translateX(30%)}}
+@media(prefers-reduced-motion:reduce){.bt-baking-stage *,.bt-baking-icon{animation:none!important}}
+
+.bt-root .bt-review-media-state[aria-busy=false] svg{animation:none!important}
+.bt-root .bt-review-media-state[role=status] .bt-baking-icon{animation:bt-bake-breathe 3s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){.bt-root .bt-review-media-state[role=status] .bt-baking-icon{animation:none}}

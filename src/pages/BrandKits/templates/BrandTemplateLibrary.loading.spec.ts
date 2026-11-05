@@ -9,7 +9,7 @@ function deferred(){let resolve!:(v:unknown)=>void,reject!:(v:unknown)=>void;con
 function harness(){
  const requests=[deferred(),deferred()],version={current:0};let index=0;
  const state:{loading:boolean;kit:unknown;error:string}={loading:false,kit:null,error:''};
- const load=vm.runInNewContext(code,{enabled:true,brandId:'brand',templateId:undefined,requestVersion:version,
+ const load=vm.runInNewContext(code,{enabled:true,brandId:'brand',templateId:undefined,authoring:false,handoffPending:{current:null},currentLocation:{current:'fixture-location'},requestVersion:version,
  brandApi:{getKit:()=>requests[index++].promise},brandTemplateApi:{list:async()=>({items:[]}),listDrafts:async()=>({items:[]})},
  setLoading:(v:boolean)=>{state.loading=v;},setKit:(v:unknown)=>{state.kit=v;},setError:(v:string)=>{state.error=v;},setItems:()=>{},setProjects:()=>{},setBusy:()=>{},setTemplateDrafts:()=>{}}) as ()=>Promise<void>;
  return {requests,version,state,load};

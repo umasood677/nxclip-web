@@ -29,7 +29,7 @@ export interface BrandTemplate {
   blockers: string[];
   warnings: string[];
   reuseIssues?: string[];
-  provenance: { method: "native-template-engine" | "provider-ai-creative"; catalogVersion: string; sourceCreativeId?:string; sourceProjectId?:string; generatedAssetId?:string; provider?:string; modelId?:string; renderMode?:"template-proposal"; productDepictionReviewed?:true };
+  provenance: { compositionMode?:'source-preserving-v1'|'reference-guided-template-v1';referenceManifest?:import('./templateReferenceInput').TemplateReferenceMetadata[];fidelityReview?:import('./TemplateFidelityReview').FidelityReview; method: "native-template-engine" | "provider-ai-creative"; catalogVersion: string; sourceCreativeId?:string; sourceProjectId?:string; generatedAssetId?:string; provider?:string; modelId?:string; renderMode?:"template-proposal"; productDepictionReviewed?:true };
 }
 export function isBrandTemplatesEnabled(
   env: Record<string, unknown> | undefined = import.meta.env,

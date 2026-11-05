@@ -902,7 +902,7 @@ export default function AdStudioEditor() {
 
       {/* Desktop / laptop workspace — L layers+composition / C stage / R tools */}
       <div className={"hidden lg:grid w0a-canvas-layout flex-1 min-h-0 overflow-hidden" + (templateDocument ? " template-canvas-layout" : "")}>
-        <aside className="w0a-pane h-full min-w-0">
+        <aside className={"w0a-pane h-full min-w-0" + (templateDocument ? " template-layers-pane" : "")}>
           <div className="w0a-pane-scroll space-y-2">
             {templateDocument ? <LayerList {...layerListProps} presentation="advanced" readOnly={previewMode}/> : (            <CollapsiblePanel
               title="Layers"

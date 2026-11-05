@@ -142,7 +142,7 @@ export default function BrandTemplateLibrary() {
   const authoring=["ai","native"].includes(params.get("mode")||"")&&!templateId;
   const mediaGraphs=selected?[selected.sceneGraph]:authoring?[]:[...items.filter(t=>!t.deletion).map(t=>t.sceneGraph),...templateDrafts.filter(d=>!d.deletionPending).map(d=>d.sceneGraph)];
   const [mediaReload,setMediaReload]=useState(0);
-  const imageIds=templateImageIds(mediaGraphs),brandUrls=useTemplateAssetUrls(assetKit,imageIds,mediaReload);
+  const imageIds=[...new Set([...templateImageIds(mediaGraphs),...(selected?.provenance.referenceManifest?.map(r=>r.assetId)||[])])],brandUrls=useTemplateAssetUrls(assetKit,imageIds,mediaReload);
   const mediaSources=selected?(selected.provenance.sourceCreativeId?[selected.provenance.sourceCreativeId]:[]):authoring?[]:[...items.filter(t=>!t.deletion).flatMap(t=>t.provenance.sourceCreativeId?[t.provenance.sourceCreativeId]:[]),...templateDrafts.filter(d=>!d.deletionPending).map(d=>d.id)];
   const generatedUrls = useCreativeAssetUrls(mediaSources,imageIds,mediaReload);
   const urls = {...brandUrls,...generatedUrls};
@@ -283,7 +283,7 @@ export default function BrandTemplateLibrary() {
         selected.id,
         selected.revision,
         value,
-        value === "approve" && depictionReviewed,
+        value === "approve" && (selected.provenance.compositionMode==='reference-guided-template-v1' || depictionReviewed),
       );
       templateResponseId(result,selected.id,value === "duplicate");
       const fresh = result;
@@ -517,6 +517,7 @@ export default function BrandTemplateLibrary() {
                     {text}
                   </p>
                 ))}
+                {selected.provenance.compositionMode==='reference-guided-template-v1'&&<><p className="bt-photo-treatment">Photographic scene · Regenerate to change subjects, pose or environment.</p><div className="bt-reference-compare" aria-label="Original identity references">{selected.provenance.referenceManifest?.map(r=><figure key={r.assetId}>{urls[r.assetId]&&<img src={urls[r.assetId]} alt={r.purpose==='MODEL_IDENTITY'?'Original model reference':r.purpose==='PRODUCT_IDENTITY'?'Original product reference':'Style reference'}/>}<figcaption>{r.purpose==='MODEL_IDENTITY'?'Model':r.purpose==='PRODUCT_IDENTITY'?'Product':'Style'}</figcaption></figure>)}</div><button className="xp-secondary" disabled={busy||dirty} onClick={()=>go(base+'?tab=brand&mode=ai&source='+encodeURIComponent(selected.provenance.sourceCreativeId!)+'&regenerate=1&template='+encodeURIComponent(selected.id)+'&revision='+selected.revision)}>Regenerate template</button></>}
                 <div className="bt-preview-actions">{selected.provenance.method==='native-template-engine' ? <button className="xp-secondary" disabled={busy || dirty} onClick={editNativeInCanvas}>Customize in Canvas →</button> : selected.provenance.sourceCreativeId && <button className="xp-secondary" onClick={()=>go(templateCanvasPath(selected.provenance.sourceCreativeId!,selected.id,selected.revision))}>Customize in Canvas →</button>}</div>
               </section>
               <section className={"xp-panel bt-review-details"+(reviewPhase!=="ready"?" bt-details-loading":"")} aria-busy={reviewPhase!=="ready"}>
@@ -615,7 +616,7 @@ export default function BrandTemplateLibrary() {
                     Save customization
                   </button>
                 </fieldset>
-                {selected.provenance.renderMode==="template-proposal" && !selected.provenance.productDepictionReviewed && <label className="xp-check"><input type="checkbox" disabled={reviewPhase!=="ready"} checked={depictionReviewed} onChange={e=>setDepictionReviewed(e.target.checked)}/>I reviewed the product, packaging and brand copy.</label>}
+                {selected.provenance.compositionMode!=='reference-guided-template-v1'&&selected.provenance.renderMode==="template-proposal" && !selected.provenance.productDepictionReviewed && <label className="xp-check"><input type="checkbox" disabled={reviewPhase!=="ready"} checked={depictionReviewed} onChange={e=>setDepictionReviewed(e.target.checked)}/>I reviewed the product, packaging and brand copy.</label>}
                 <div className="xp-actions bt-review-actions">
                   {(
                     [
@@ -641,7 +642,7 @@ export default function BrandTemplateLibrary() {
                           busy || reviewPhase==="loading" ||
                           dirty ||
                           (a === "save" && selected.state !== "approved") ||
-                          (a === "approve" && (reviewPhase!=="ready" || selected.blockers.length > 0 || (selected.provenance.renderMode === "template-proposal" && !selected.provenance.productDepictionReviewed && !depictionReviewed)))
+                          (a === "approve" && (reviewPhase!=="ready" || selected.blockers.length > 0 || (selected.provenance.compositionMode==='reference-guided-template-v1'?false:selected.provenance.renderMode === "template-proposal" && !selected.provenance.productDepictionReviewed && !depictionReviewed)))
                         }
                         key={a}
                         onClick={() => action(a)}

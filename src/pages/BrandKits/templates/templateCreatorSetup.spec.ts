@@ -67,7 +67,7 @@ test('a native draft from a different Brand Kit cannot open in Canvas',async()=>
 test('automatic review does not consume its one attempt while another operation is pending',()=>{
  let callback:ts.Expression|undefined;function find(n:ts.Node){if(ts.isCallExpression(n)&&n.expression.getText(tree)==='useEffect'&&n.arguments[0]?.getText(tree).includes('reviewAttempt.current!==key'))callback=n.arguments[0];ts.forEachChild(n,find);}find(tree);assert.ok(callback);
  const pending={current:true},reviewAttempt={current:''};let calls=0;
- const context={pending,reviewAttempt,busy:true,params:{get:()=>null},source:{id:'draft',currentVersion:1},sourceId:'draft',native:true,generated:false,publish:()=>{calls++;}};
+ const context={pending,reviewAttempt,busy:true,editingGeneration:false,params:{get:()=>null},source:{id:'draft',currentVersion:1},sourceId:'draft',native:true,generated:false,publish:()=>{calls++;}};
  const run=vm.runInNewContext(ts.transpileModule('const run='+callback!.getText(tree)+';run;',{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText,context) as ()=>void;
  run();assert.equal(calls,0);assert.equal(reviewAttempt.current,'');pending.current=false;context.busy=false;run();assert.equal(calls,1);assert.equal(reviewAttempt.current,'draft:1');run();assert.equal(calls,1);
 });

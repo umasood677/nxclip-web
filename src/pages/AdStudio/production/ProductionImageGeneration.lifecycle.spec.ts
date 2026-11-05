@@ -11,27 +11,29 @@ type Node = {type: unknown; props: Record<string, unknown>; children: unknown[]}
 const source={id:'fixture-source',name:'Fixture',projectId:'fixture-scope',currentVersion:1,sceneGraph:{schemaVersion:'1.0',canvas:{width:1080,height:1350},layers:[]}};
 const validQuote=()=>({schemaVersion:'1.0',sourceHash:'a'.repeat(64),quoteHash:'b'.repeat(64),catalogId:'fixture',provider:'vertex',modelId:'fixture-model',estimatedCostUsd:null,pricingVersion:'usage-only',imageCount:1,inputScope:'editable-template-proposal',sourceTreatment:'reference-guided-proposal',referenceCount:1,costBasis:'usage-only',characterSelectionSupported:true,selectedCharacterIds:[]});
 function deferred<T>(){let resolve!:(v:T)=>void,reject!:(e:Error)=>void;const promise=new Promise<T>((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};}
-function harness(retained=false,onProviderUnavailable?:()=>Promise<void>,executeRequested=false){
+function harness(retained=false,onProviderUnavailable?:()=>Promise<void>,executeRequested=false,statusOutcome="completed",compact=false){
  const text=readFileSync(process.cwd()+'/src/pages/AdStudio/production/ProductionImageGeneration.tsx','utf8');
  const tree=ts.createSourceFile('component.tsx',text,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  const declaration=tree.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='ProductionImageGeneration');assert.ok(declaration);
  const code=ts.transpileModule(declaration.getText(tree).replace(/^export /,'')+';ProductionImageGeneration;', {compilerOptions:{target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.React}}).outputText;
- const slots:unknown[]=[],effects=new Map<number,{setup:()=>unknown;deps:unknown[];cleanup?:()=>void}>();let index=0,pending:number[]=[],writes=0,quotes=0,executions=0;
+ const slots:unknown[]=[],effects=new Map<number,{setup:()=>unknown;deps:unknown[];cleanup?:()=>void}>();let index=0,pending:number[]=[],writes=0,quotes=0,executions=0,statusReads=0,creativeReads=0,savedCallbacks=0,recoveries=0;
+ const savedCreative=()=>({...source,id:'saved-child',sceneGraph:{...source.sceneGraph,layers:[{id:'ai-background-saved',type:'image',assetId:'saved-asset',x:0,y:0,width:1080,height:1350,zIndex:0}]}});
  const quote=deferred<ReturnType<typeof validQuote>>(),generation=deferred<unknown>();
  const component=vm.runInNewContext(code,{
   ...model,Error,realImagesEnabled:()=>true,characterReviewIssues:()=>[],
   React:{createElement:(type:unknown,props:Record<string,unknown>,...children:unknown[])=>({type,props:props||{},children})},
-  SparklesIcon:'icon',ResponsiveScenePreview:'preview',Skeleton:'skeleton',
+  SparklesIcon:'icon',ResponsiveScenePreview:'preview',Skeleton:'skeleton',TemplateRenderReview:'review',
   useRef:(value:unknown)=>{const i=index++;if(!(i in slots))slots[i]={current:value};return slots[i];},
   useState:(initial:unknown)=>{const i=index++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;return [slots[i],(next:unknown)=>{writes++;slots[i]=typeof next==='function'?next(slots[i]):next;}];},
   useEffect:(setup:()=>unknown,deps:unknown[])=>{const i=index++,old=effects.get(i);if(!old || old.deps.length!==deps.length || deps.some((d,k)=>d!==old.deps[k])){effects.set(i,{setup,deps,cleanup:old?.cleanup});pending.push(i);}},
-  adImageApi:{quote:()=>{quotes++;return quote.promise;},execute:()=>{executions++;return generation.promise;}},
+  adImageApi:{recover:async()=>{recoveries++;if(statusOutcome==='recovery-error')throw Error('Retained output could not be loaded');return savedCreative();},quote:()=>{quotes++;return quote.promise;},execute:()=>{executions++;return generation.promise;},status:async()=>{statusReads++;if(statusOutcome==="error")throw {statusCode:502,message:"Status service unavailable"};if(statusOutcome==="retained-only"||statusOutcome==="recovery-error")return {status:"completed",creativeId:null,hasRetainedImage:true};return {status:'completed',creativeId:'saved-child',hasRetainedImage:true};}},
+  adStudioApi:{getCreative:async()=>{creativeReads++;return savedCreative();}},
   crypto:{randomUUID:()=> 'fixture-request'},sessionStorage:{getItem:()=>retained?'retained-request':null,setItem:()=>{},removeItem:()=>{}},
  });
- const render=()=>{index=0;return component({source,assetUrls:{},renderMode:'template-proposal',initialInstruction:'Cinematic fixture',autoPreflight:!executeRequested,executeRequested,onProviderUnavailable,onSaved:async()=>{}}) as Node;};
+ const render=()=>{index=0;return component({source,compact,assetUrls:{},renderMode:'template-proposal',initialInstruction:'Cinematic fixture',autoPreflight:!executeRequested,executeRequested,onProviderUnavailable,onSaved:async()=>{savedCallbacks++;}}) as Node;};
  const flush=()=>{const work=pending;pending=[];for(const i of work){const e=effects.get(i)!;e.cleanup?.();const result=e.setup();e.cleanup=typeof result==='function'?result as ()=>void:undefined;}};
  const replay=()=>{const entries=[...effects.values()];for(const e of entries)e.cleanup?.();for(const e of entries){const result=e.setup();e.cleanup=typeof result==='function'?result as ()=>void:undefined;}};
- return {render,flush,replay,unmount:()=>{for(const e of effects.values())e.cleanup?.();},quote,generation,get writes(){return writes;},get quotes(){return quotes;},get executions(){return executions;}};
+ return {render,flush,replay,unmount:()=>{for(const e of effects.values())e.cleanup?.();},quote,generation,get writes(){return writes;},get quotes(){return quotes;},get executions(){return executions;},get statusReads(){return statusReads;},get creativeReads(){return creativeReads;},get savedCallbacks(){return savedCallbacks;},get recoveries(){return recoveries;}};
 }
 const flatten=(value:unknown):Node[]=>Array.isArray(value)?value.flatMap(flatten):value&&typeof value==='object'&&'children'in value?[value as Node,...flatten((value as Node).children)]:[];
 const content=(value:unknown):string=>Array.isArray(value)?value.map(content).join(''):value&&typeof value==='object'&&'children'in value?content((value as Node).children):typeof value==='string'?value:'';
@@ -76,4 +78,52 @@ test('setup Generate intent completes one request without an intermediate confir
 });
 test('refresh with retained request cannot repeat the setup generation intent',()=>{
  const h=harness(true,undefined,true);h.render();h.flush();h.replay();assert.equal(h.quotes,0);assert.equal(h.executions,0);
+});
+
+
+test('refresh automatically opens a completed retained creative without generating or recovering',async()=>{
+ const h=harness(true);h.render();h.flush();h.replay();await settle();
+ assert.equal(h.statusReads,1);assert.equal(h.creativeReads,1);assert.equal(h.savedCallbacks,1);assert.equal(h.executions,0);assert.equal(h.quotes,0);
+ h.render();h.flush();h.replay();await settle();assert.equal(h.statusReads,1);
+});
+
+test('plain API error bodies retain their explanation instead of becoming an unknown outcome',async()=>{
+ const h=harness(false,undefined,true);h.render();h.flush();h.quote.resolve(validQuote());await settle();
+ h.generation.reject({statusCode:502,message:'Upstream service unavailable'} as unknown as Error);await settle();
+ assert.match(content(h.render()),/Upstream service unavailable/);assert.equal(h.executions,1);assert.equal(h.statusReads,0);
+});
+
+
+test('automatic status failure is visible and does not loop, regenerate or invoke recovery',async()=>{
+ const h=harness(true,undefined,false,'error');h.render();h.flush();h.replay();await settle();
+ const view=h.render();h.flush();h.replay();await settle();
+ assert.match(content(view),/Status service unavailable/);assert.equal(h.statusReads,1);assert.equal(h.executions,0);assert.equal(h.creativeReads,0);
+ const check=flatten(view).find(n=>n.type==='button'&&content(n)==='Check retained status');assert.ok(check);await (check.props.onClick as ()=>Promise<void>)();await settle();assert.equal(h.statusReads,2);
+});
+test('retained provider output without a saved creative offers explicit recovery instead of another paid call',async()=>{
+ const h=harness(true,undefined,false,'retained-only');h.render();h.flush();await settle();const view=h.render();
+ assert.equal(h.statusReads,1);assert.equal(h.creativeReads,0);assert.equal(h.executions,0);assert.equal(h.savedCallbacks,0);
+ const recover=flatten(view).find(n=>n.type==='button'&&content(n)==='Recover saved output without generation');assert.ok(recover);assert.equal(recover.props.disabled,false);
+});
+test('unmount during automatic status does not open or publish a late result',async()=>{
+ const h=harness(true);h.render();h.flush();h.unmount();const before=h.writes;await settle();assert.equal(h.savedCallbacks,0);assert.equal(h.writes,before);assert.equal(h.executions,0);
+});
+
+
+test('compact review opens a saved preview directly without recovery or provider work',async()=>{
+ const h=harness(true,undefined,false,'completed',true);const initial=h.render();h.flush();h.replay();
+ assert.doesNotMatch(content(initial),/Check saved status|Open saved result|Retry loading preview/);
+ await settle();assert.equal(h.savedCallbacks,1);assert.equal(h.creativeReads,1);assert.equal(h.recoveries,0);assert.equal(h.quotes,0);assert.equal(h.executions,0);
+});
+test('compact review finishes retained output once and opens preview without another generation',async()=>{
+ const h=harness(true,undefined,false,'retained-only',true);h.render();h.flush();h.replay();await settle();
+ assert.equal(h.statusReads,1);assert.equal(h.recoveries,1);assert.equal(h.savedCallbacks,1);assert.equal(h.quotes,0);assert.equal(h.executions,0);
+ h.render();h.flush();h.replay();await settle();assert.equal(h.recoveries,1);
+});
+test('compact recovery failure offers loading retry and never loops or regenerates',async()=>{
+ const h=harness(true,undefined,false,'recovery-error',true);h.render();h.flush();h.replay();await settle();const view=h.render();h.flush();await settle();
+ assert.match(content(view),/Retained output could not be loaded/);assert.doesNotMatch(content(view),/Check saved status|Recover saved output/);
+ const retry=flatten(view).find(n=>n.type==='button'&&content(n)==='Retry loading preview');assert.ok(retry);
+ assert.equal(h.recoveries,1);assert.equal(h.executions,0);assert.equal(h.quotes,0);
+ (retry.props.onClick as ()=>void)();await settle();assert.equal(h.recoveries,2);assert.equal(h.executions,0);
 });
