@@ -263,3 +263,8 @@ Existing safety overrides, frontend flags, source/digest guards and coordinated 
 Build, stage at zero traffic, then promote backend followed by frontend through the same selective controller.
 No migrations, background restoration or provider generation is included. Old manifests remain rollback evidence for their original releases; use this release's own successful stage manifests for its rollback.
 Full three-service recovery fixtures remain covered, plus an AI/Content-only stage/promotion/rollback fixture with no Gateway access.
+
+
+## Editorial/model correction — 2026-11-05
+
+Owner authorized direct fix deployment. Backend application `98abfd49dc020d7dac5546b6508ea1038804a08a`; frontend application `2e0d992ee3269dc3f0916b52ea9bdd9fc4e6f5a4`. Release `w8-editorial-20261105` uses the existing build, zero-traffic stage and coordinated promotion guards. Only AI, Content and Web change. Safety overrides, flags and unrelated services remain unchanged. No paid provider generation, migrations or background restoration. Use this release's own receipts for rollback.
