@@ -1,3 +1,4 @@
+import {resolveAdFontFamily} from '../../AdStudio/lib/adFonts';
 import type {AdSceneGraph} from '../../AdStudio/types';
 export function reviewImageUrls(graph:AdSceneGraph,urls:Readonly<Record<string,string>>):string[]|null{
  const ids=[...new Set(graph.layers.filter(l=>l.visible!==false&&(l.type==='image'||l.type==='logo')).flatMap(l=>'assetId'in l&&l.assetId?[l.assetId]:[]))];
@@ -26,4 +27,16 @@ export function createReviewMediaRecovery(){
   if(phase!=='failed'||used||!key)return false;
   used=true;reload();return true;
  };
+}
+
+export function reviewFontRequests(graph:AdSceneGraph|null|undefined):Array<[string,string]>{
+ const requests=new Map<string,[string,string]>();
+ for(const layer of graph?.layers||[]){if(layer.visible===false||layer.type!=='text'||!('text' in layer)||!layer.text?.trim())continue;
+  const family=resolveAdFontFamily(layer.fontId||layer.fontFamily).split(',')[0].replace(/["\\]/g,'');
+  const spec=String(layer.fontWeight||400)+' 16px "'+family+'"';requests.set(spec,[spec,layer.text]);
+ }
+ return [...requests.values()];
+}
+export async function preloadReviewFonts(requests:readonly [string,string][],fonts:Pick<FontFaceSet,'load'>|undefined=typeof document==='undefined'?undefined:document.fonts):Promise<void>{
+ if(fonts)await Promise.all(requests.map(([spec,text])=>fonts.load(spec,text)));
 }

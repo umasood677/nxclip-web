@@ -1,9 +1,9 @@
 import React,{useEffect,useRef,useState} from 'react';import {TemplatePreviewLoading} from './TemplatePreviewLoading';
 import type {AdSceneGraph} from '../../AdStudio/types';import {BrandTemplateScenePreview} from './BrandTemplateScenePreview';
-import {createReviewMediaRecovery,reviewImageUrls,watchReviewMedia,type ReviewMediaPhase} from './reviewMediaLoading';
+import {createReviewMediaRecovery,reviewFontRequests,preloadReviewFonts,preloadReviewImages,reviewImageUrls,watchReviewMedia,type ReviewMediaPhase} from './reviewMediaLoading';
 export function TemplateReviewMedia({graph,urls,busy=false,onRetry,onPhase}:{graph:AdSceneGraph|null|undefined;urls:Readonly<Record<string,string>>;busy?:boolean;onRetry:()=>void;onPhase?:(phase:ReviewMediaPhase)=>void}){
- const sources=graph?reviewImageUrls(graph,urls):null,key=JSON.stringify([sources,!!graph,busy]),[state,setState]=useState<{key:string;status:ReviewMediaPhase}|null>(null),[attempt,setAttempt]=useState(0);
- useEffect(()=>{const [currentSources,,waiting]=JSON.parse(key) as [string[]|null,boolean,boolean];return watchReviewMedia(currentSources,waiting,status=>setState({key,status}));},[key,attempt]);
+ const sources=graph?reviewImageUrls(graph,urls):null,key=JSON.stringify([sources,!!graph,busy,reviewFontRequests(graph).map(([spec])=>[spec,'Aa0'])]),[state,setState]=useState<{key:string;status:ReviewMediaPhase}|null>(null),[attempt,setAttempt]=useState(0);
+ useEffect(()=>{const [currentSources,,waiting,fonts]=JSON.parse(key) as [string[]|null,boolean,boolean,Array<[string,string]>];return watchReviewMedia(currentSources,waiting,status=>setState({key,status}),async urls=>{await Promise.all([preloadReviewImages(urls),preloadReviewFonts(fonts)]);});},[key,attempt]);
  const recover=useRef(createReviewMediaRecovery()),identity=graph?JSON.stringify(graph.layers.filter(l=>l.visible!==false&&(l.type==='image'||l.type==='logo')).map(l=>l.id)):'';
  const status=state?.key===key?state.status:'loading';
  useEffect(()=>{recover.current(identity,status,()=>{setAttempt(n=>n+1);onRetry();});},[identity,status,onRetry]);

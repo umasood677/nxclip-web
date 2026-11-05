@@ -22,6 +22,7 @@ export default function DashboardLayout() {
   const isAnalytics = location.pathname === "/analytics";
   const isImageStudio =
     location.pathname.startsWith("/create/image") || location.pathname === "/image-studio";
+  const isTemplateReview = /^\/brands\/[^/]+\/templates\/[^/]+\/?$/.test(location.pathname);
   const isBrandKit = location.pathname === "/brands" || location.pathname.startsWith("/brands/");
   const isAdStudio = location.pathname.startsWith("/create/ad");
   const isClipEditor = location.pathname.startsWith("/create/clip");
@@ -196,7 +197,7 @@ export default function DashboardLayout() {
     isNotifications;
 
   return (
-    <AppShell title={isTemplateCanvas ? t("nav.ad_studio_template_canvas",{defaultValue:"Ad Studio · Template Canvas"}) : title} subtitle={subtitle} titleIcon={titleIcon} dense={dense}>
+    <AppShell title={isTemplateCanvas ? t("nav.ad_studio_template_canvas",{defaultValue:"Ad Studio · Template Canvas"}) : title} subtitle={subtitle} titleIcon={titleIcon} dense={dense} contentClassName={isTemplateReview?"pt-1 md:pt-1":undefined} animateContent={!isTemplateReview}>
       <Outlet context={{setCanvasHeader} satisfies StudioCanvasHeaderContext} />
     </AppShell>
   );

@@ -1,3 +1,5 @@
+import {TemplateLeaveDialog} from './TemplateLeaveDialog';
+import {templateLeaveDecision} from './templateLeaveDecision';
 import type {ReviewMediaPhase} from './reviewMediaLoading';
 import {templateReviewHandoff} from './templateReviewHandoff';
 import {useTemplateAssetUrls,templateImageIds} from './useTemplateAssetUrls';
@@ -103,6 +105,7 @@ export default function BrandTemplateLibrary() {
     [projects, setProjects] = useState<WorkspaceProject[]>([]);
   const [templateDrafts,setTemplateDrafts]=useState<DeletableTemplateDraft[]>([]),[creatingCampaign,setCreatingCampaign]=useState(false);
   const running=useRef(false);
+  const [leaveTarget,setLeaveTarget]=useState<string|null>(null);
   const [deleteSelection,setDeleteSelection]=useState<string[]>([]),[deleteRequest,setDeleteRequest]=useState<TemplateDeleteEntry[]|null>(null),[deleteResults,setDeleteResults]=useState<Array<TemplateDeleteResult&{name?:string}>>([]);
   useEffect(()=>{setDeleteSelection([]);setDeleteRequest(null);setDeleteResults([]);},[brandId]);
   const [loading, setLoading] = useState(!handoff),
@@ -210,11 +213,13 @@ export default function BrandTemplateLibrary() {
   }, [dirty]);
   const base = "/brands/" + encodeURIComponent(brandId) + "/templates";
   const go = (to: string) => {
-    if (
-      !dirty ||
-      window.confirm("Leave without saving template customization?")
-    )
-      navigate(to);
+    const decision=templateLeaveDecision(dirty,location.pathname+location.search+location.hash,to);
+    if(decision==='confirm')setLeaveTarget(to);
+    else if(decision==='navigate')navigate(to);
+  };
+  const follow=(e:React.MouseEvent<HTMLAnchorElement>,to:string)=>{
+    if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+    e.preventDefault();go(to);
   };
   const patch = (value: Partial<Draft>) =>
     setDraft((previous) => draft?{...(draftIdentity===selected?.id&&previous?previous:draft),...value}:previous);
@@ -437,13 +442,7 @@ export default function BrandTemplateLibrary() {
       <Link
         className="xp-text-button"
         to="/create/ad"
-        onClick={(e) => {
-          if (
-            dirty &&
-            !window.confirm("Leave without saving template customization?")
-          )
-            e.preventDefault();
-        }}
+        onClick={e=>follow(e,"/create/ad")}
       >
         Open existing projects / Create Project →
       </Link>
@@ -452,22 +451,17 @@ export default function BrandTemplateLibrary() {
   return (
     <div className={"xp-root nxclip-production bp-guided-root bt-root ad-studio-w0a"+(selected||templateId||params.get("source")?" bt-review-page":!["ai","native"].includes(params.get("mode")||"")?" bt-library-page":" bt-creator-page")}>
       <main className="xp-main">
+        <TemplateLeaveDialog open={leaveTarget!==null} onStay={()=>setLeaveTarget(null)} onDiscard={()=>{const target=leaveTarget;setLeaveTarget(null);if(target)navigate(target);}}/>
         <TemplateDeleteDialog entries={deleteRequest} busy={busy} onCancel={()=>setDeleteRequest(null)} onConfirm={deleteTemplates}/>
         {!!deleteResults.length&&<div className="bt-delete-results" role="status"><strong>Deletion results</strong><ul>{deleteResults.map(r=><li key={deletionKey(r)}>{(r.name||'Template')+': '}{r.status==='deleted'?'Deleted':r.message}{r.retainedObjects>0?' · Shared or protected files retained':''}</li>)}</ul><button type="button" className="xp-text-button" onClick={()=>setDeleteResults([])}>Dismiss</button></div>}
         <nav className="xp-breadcrumb" aria-label="Breadcrumb">
           <Link
             to={"/brands/" + brandId + "/guided?step=ready"}
-            onClick={(e) => {
-              if (
-                dirty &&
-                !window.confirm("Leave without saving template customization?")
-              )
-                e.preventDefault();
-            }}
+            onClick={e=>follow(e,"/brands/"+brandId+"/guided?step=ready")}
           >
             <ArrowLeft size={14} /> {kit.name}
           </Link>
-          <Link to={base} onClick={e=>{if(dirty&&!window.confirm("Leave without saving template customization?"))e.preventDefault();}}>Brand Templates</Link>
+          <Link to={base} onClick={e=>follow(e,base)}>Brand Templates</Link>
         </nav>
         {(!["ai","native"].includes(params.get("mode") || "") || !!params.get("source")) && <header className="xp-page-head">
           <div>
@@ -525,7 +519,7 @@ export default function BrandTemplateLibrary() {
                 ))}
                 <div className="bt-preview-actions">{selected.provenance.method==='native-template-engine' ? <button className="xp-secondary" disabled={busy || dirty} onClick={editNativeInCanvas}>Customize in Canvas →</button> : selected.provenance.sourceCreativeId && <button className="xp-secondary" onClick={()=>go(templateCanvasPath(selected.provenance.sourceCreativeId!,selected.id,selected.revision))}>Customize in Canvas →</button>}</div>
               </section>
-              <section className="xp-panel bt-review-details">
+              <section className={"xp-panel bt-review-details"+(reviewPhase!=="ready"?" bt-details-loading":"")} aria-busy={reviewPhase!=="ready"}>
                 <h2>Template details</h2>
 
                 <fieldset

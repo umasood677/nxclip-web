@@ -89,3 +89,12 @@ test('record and media loading share one stage and stable final panel classes',(
  const shared=readFileSync('src/pages/BrandKits/templates/TemplatePreviewLoading.tsx','utf8');
  assert.match(shared,/bt-review-media-state/);assert.match(shared,/<Skeleton/);
 });
+
+test('temporary draft values stay masked until final review media is ready',()=>{
+ const Review=load(),html=renderToStaticMarkup(<Review/>);
+ assert.match(html,/bt-review-details bt-details-loading/);
+ const source=readFileSync('src/pages/BrandKits/templates/BrandTemplateLibrary.tsx','utf8');
+ assert.match(source,/reviewPhase!=="ready"\?" bt-details-loading"/);
+ const css=readFileSync('src/pages/BrandKits/templates/brandTemplates.css','utf8');
+ assert.match(css,/-webkit-text-fill-color:transparent/);
+});

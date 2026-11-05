@@ -75,7 +75,7 @@
 @media(max-width:700px){.bt-root .bt-setup-fields{grid-template-columns:1fr}.bt-root .bt-ai-setup,.bt-root .bt-review .xp-panel{padding:18px}.bt-root .bt-ai-setup .xp-primary{width:100%}}
 
 /* One compact page header and one collection for all review states. */
-.bt-root .xp-main{gap:20px!important;padding-top:22px!important}
+.bt-root .xp-main{gap:20px;padding-top:22px}
 .bt-root .xp-breadcrumb{margin:0!important;letter-spacing:.04em!important;display:flex;align-items:center;gap:10px;font-size:12px}
 .bt-root .xp-page-head{margin:0!important;padding:0!important;min-height:0!important;align-items:center}
 .bt-root .xp-page-head h1{font-size:28px!important;margin:0!important;line-height:1.25}
@@ -285,3 +285,29 @@
 .bt-root .bt-render-stage{height:clamp(300px,calc(100dvh - 315px),520px);min-height:300px;max-width:none;max-height:none;flex:1}
 .bt-root .bt-render-details .xp-field{margin-bottom:0}.bt-root .bt-render-details h2{margin-bottom:12px}
 @media(max-width:800px){.bt-root .bt-render-stage{height:420px;flex:none}}
+
+.bt-leave-dialog{max-width:420px}.bt-leave-dialog .xp-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}.bt-leave-dialog button:focus-visible{outline:2px solid #d2b47e;outline-offset:3px}
+
+/* Keep review chrome compact; do not force a one-screen layout on narrow/short devices. */
+.nxclip-production.bt-root.bt-review-page>.xp-main{padding:8px 14px;gap:8px}
+.bt-root.bt-review-page .xp-page-head{margin:0;min-height:36px}
+.bt-root.bt-review-page .bt-review{gap:14px}
+.bt-root.bt-review-page .bt-review>.xp-panel{padding:14px}
+.bt-root.bt-review-page .bt-review-art{height:clamp(280px,calc(100dvh - 320px),500px);min-height:280px}
+@media(max-width:800px){.bt-root.bt-review-page .xp-main{padding:10px 12px}.bt-root.bt-review-page .bt-review-art{height:380px;flex:none}}
+
+.bt-root.bt-review-page .xp-page-head>.xp-primary{min-height:36px;padding:8px 12px}
+@media(min-width:1000px) and (min-height:650px) and (max-height:820px){
+ .bt-root.bt-review-page .bt-review-details h2{margin-bottom:8px}
+ .bt-root.bt-review-page .bt-details-fields{gap:8px 12px}
+ .bt-root.bt-review-page .bt-review .xp-check{margin:8px 0}
+ .bt-root.bt-review-page .bt-review-actions,.bt-root.bt-review-page .bt-review-use{margin-top:8px}
+}
+
+/* Never expose temporary source-copy or partially hydrated selections while media loads. */
+.bt-root .bt-details-loading .bt-details-fields input,
+.bt-root .bt-details-loading .bt-details-fields textarea,
+.bt-root .bt-details-loading .bt-details-fields select{
+ color:transparent!important;-webkit-text-fill-color:transparent;caret-color:transparent;
+ background-image:linear-gradient(90deg,#ffffff04,#ffffff0a,#ffffff04);text-shadow:none;
+}

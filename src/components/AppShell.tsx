@@ -12,9 +12,11 @@ interface AppShellProps {
   titleIcon?: ReactNode;
   /** Tighten main padding for content-dense pages like the library */
   dense?: boolean;
+  contentClassName?: string;
+  animateContent?: boolean;
 }
 
-export default function AppShell({ children, title, subtitle, titleIcon, dense }: AppShellProps) {
+export default function AppShell({ children, title, subtitle, titleIcon, dense, contentClassName, animateContent=true }: AppShellProps) {
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   return (
@@ -41,11 +43,12 @@ export default function AppShell({ children, title, subtitle, titleIcon, dense }
           className={cn(
             "flex-grow w-full outline-none",
             dense ? "p-3 md:p-4" : "p-4 md:p-8",
+            contentClassName,
           )}
           tabIndex={-1}
         >
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={animateContent ? { opacity: 0, y: 20 } : false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >

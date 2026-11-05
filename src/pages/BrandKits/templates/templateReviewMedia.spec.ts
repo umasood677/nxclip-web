@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createReviewMediaRecovery,reviewImageUrls,preloadReviewImages,watchReviewMedia} from './reviewMediaLoading';
+import {reviewFontRequests,preloadReviewFonts,createReviewMediaRecovery,reviewImageUrls,preloadReviewImages,watchReviewMedia} from './reviewMediaLoading';
 import type {AdSceneGraph} from '../../AdStudio/types';
 const graph:AdSceneGraph={schemaVersion:'1.0',canvas:{width:100,height:125},layers:[
  {id:'image',type:'image',assetId:'image',x:0,y:0,width:100,height:125,zIndex:1},
@@ -39,4 +39,11 @@ test('a failed initial review recovers owned media once without a page refresh o
  recover('template-1','loading',()=>reads++);recover('template-1','failed',()=>reads++);
  assert.equal(reads,1);
  assert.equal(recover('template-2','failed',()=>reads++),true);assert.equal(reads,2);
+});
+
+test('review waits for the actual typography before revealing the scene',async()=>{
+ const textGraph={...graph,layers:[...graph.layers,{id:'headline',type:'text' as const,name:'Headline',text:'Matte Red',fontFamily:'Playfair Display',fontWeight:700,x:0,y:0,width:100,height:30,zIndex:4}]};
+ const requests=reviewFontRequests(textGraph);assert.equal(requests.length,1);assert.match(requests[0][0],/700 16px "Playfair Display"/);
+ let release!:()=>void,finished=false;const pending=preloadReviewFonts(requests,{load:()=>new Promise<FontFace[]>(resolve=>{release=()=>resolve([]);})}).then(()=>finished=true);
+ await new Promise(r=>setImmediate(r));assert.equal(finished,false);release();await pending;assert.equal(finished,true);
 });

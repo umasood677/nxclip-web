@@ -35,7 +35,7 @@ export function TemplateRenderReview({
         <span className="xp-status">Loading</span>
         <div className="bt-preview-actions"><button type="button" disabled className="xp-secondary">Customize in Canvas →</button></div>
       </section>
-      <section className="xp-panel bt-review-details">
+      <section className="xp-panel bt-review-details bt-details-loading" aria-busy="true">
         <h2>Template details</h2>
         <fieldset disabled className="bp-fieldset bt-details-fields">
           <label className="xp-field">
