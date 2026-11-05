@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { execute, sha256, canonical, traffic, withCommandExecutorForTest } from './w8-cloud-run.mjs';
+import { execute, sha256, canonical, traffic, templateConfig, FAILED_WEB_RECOVERY, withCommandExecutorForTest } from './w8-cloud-run.mjs';
 
 const local = JSON.parse(readFileSync(new URL('./w8-release-policy.json', import.meta.url)));
 local.preserveServices = []; // Full-release scenarios exercise every mutation path.
@@ -63,23 +63,33 @@ class Harness {
     const ok = value => ({ status: 0, stdout: typeof value === 'string' ? value : JSON.stringify(value) });
     const fail = () => ({ status: 1, stderr: 'simulated command failure' });
     if (exe === 'git') return ok(options.cwd === 'application' ? this.policies.get(this.activeRepository).sourceSha : workflowSha);
+    if (exe === 'unzip') {
+      assert.deepEqual(args.slice(0, 2), ['-j', '-o']);
+      assert.equal(args[3], 'release-manifest.json');
+      const dir = args[args.indexOf('-d') + 1]; mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, 'release-manifest.json'), readFileSync(args[2])); return ok('');
+    }
     if (exe === 'gh') {
+      if (args[1]?.endsWith('/actions/artifacts/' + FAILED_WEB_RECOVERY.artifactId + '/zip')) {
+        const ref = this.artifacts.get(FAILED_WEB_RECOVERY.repository + ':' + FAILED_WEB_RECOVERY.runId);
+        return { status: 0, stdout: Buffer.from(ref.bytes) };
+      }
       if (args[0] === 'run') {
         const repo = args[args.indexOf('--repo') + 1], ref = this.artifacts.get(`${repo}:${args[2]}`);
         this.checkToken(repo, options.env.GH_TOKEN);
         const dir = args[args.indexOf('--dir') + 1]; mkdirSync(dir, { recursive: true }); writeFileSync(join(dir, 'release-manifest.json'), ref.bytes); return ok('');
       }
-      const match = args[1].match(/^repos\/(.+\/.+)\/actions\/runs\/(\d+)(\/artifacts\?per_page=100)?$/);
-      assert(match, 'Unexpected GitHub request'); const [, repo, runId, list] = match;
+      const match = args[1].match(/^repos\/(.+\/.+)\/actions\/runs\/(\d+)(?:\/attempts\/(\d+))?(\/artifacts\?per_page=100)?$/);
+      assert(match, 'Unexpected GitHub request'); const [, repo, runId, attempt, list] = match;
       this.checkToken(repo, options.env.GH_TOKEN);
       const ref = this.artifacts.get(`${repo}:${runId}`); assert(ref, 'Unknown mock artifact');
-      if (list) return ok({ artifacts: [{ name: `w8-recovery-${ref.manifest.operation}`, expired: ref.expired, workflow_run: { head_sha: workflowSha } }] });
-      return ok({ id: Number(runId), run_attempt: 1, head_sha: workflowSha, status: 'completed', conclusion: ref.conclusion, path: '.github/workflows/deploy-w8-selective.yml', event: 'workflow_dispatch', head_branch: 'master', repository: { full_name: repo } });
+      if (list) return ok({ artifacts: this.options.missingFailedArtifact && runId === FAILED_WEB_RECOVERY.runId ? [] : [{ id: runId === FAILED_WEB_RECOVERY.runId ? Number(FAILED_WEB_RECOVERY.artifactId) : 123, name: `${ref.manifest.releaseId}-${ref.manifest.operation}`, expired: ref.expired, workflow_run: { head_sha: ref.manifest.workflowSha } }, ...(this.options.rerunArtifact && runId === FAILED_WEB_RECOVERY.runId ? [{ id: 999, name: `${ref.manifest.releaseId}-stage`, expired: false, workflow_run: { head_sha: ref.manifest.workflowSha } }] : [])] });
+      return ok({ id: Number(runId), run_attempt: Number(ref.manifest.runAttempt), head_sha: ref.manifest.workflowSha, status: 'completed', conclusion: ref.conclusion, path: '.github/workflows/deploy-w8-selective.yml', event: 'workflow_dispatch', head_branch: 'master', repository: { full_name: repo } });
     }
     assert.equal(exe, 'gcloud', 'No real executable may escape the simulator');
     assert.equal(options.env.GH_TOKEN, 'synthetic-own-token', 'Peer credential leaked to a cloud subprocess');
     if (args[0] === 'auth') return ok('synthetic-iam-token');
-    if (args[1] === 'revisions') return ok(this.revisions.get(args[3]));
+    if (args[1] === 'revisions') { this.options.onRevision?.(args[3], this); return ok(this.revisions.get(args[3])); }
     if (args[1] === 'services' && args[2] === 'describe') {
       this.options.onDescribe?.(args[3], this); return ok(this.states.get(args[3]));
     }
@@ -307,4 +317,113 @@ test('controller: AI/Content-only hotfix stages, promotes and rolls back without
  assert.equal((await h.dispatch(backend,'rollback')).error,undefined);
  assert.equal(canonical(h.states.get('api-gateway')),before);
  assert(!h.calls.some(c=>c.args.includes('api-gateway')));
+}));
+
+// This fixture models a Cloud Run terminal failure, unlike the earlier HTTP-only health failure.
+function terminalWebFailure(h) {
+  const pin = FAILED_WEB_RECOVERY, p = h.policies.get(frontend.repository), current = h.states.get(pin.service);
+  current.metadata.name = pin.service; current.metadata.generation = 118; current.status.observedGeneration = 118; current.status.conditions = [{ type: 'Ready', status: 'False' }];
+  current.status.latestCreatedRevisionName = current.status.latestReadyRevisionName = pin.healthyRevision;
+  current.status.traffic = [{ revisionName: pin.healthyRevision, percent: 100 }];
+  const previousConfigHash = sha256(canonical(templateConfig(current.spec.template)));
+  h.revisions.set(pin.healthyRevision, { metadata: { name: pin.healthyRevision, uid: 'healthy-uid', annotations: copy(current.spec.template.metadata.annotations) }, spec: copy(current.spec.template.spec), status: { imageDigest: current.spec.template.spec.containers[0].image, conditions: [{ type: 'Ready', status: 'True' }] } });
+  const build = copy(h.builds.get(p.repository).manifest);
+  build.releaseId = pin.releaseId; build.services[0].image = pin.image;
+  const built = h.record(p, build, 'success'); h.builds.set(p.repository, built);
+  current.spec.template.spec.containers[0].image = pin.image; current.status.latestCreatedRevisionName = pin.revision;
+  const failure = { status: 'False', reason: 'HealthCheckContainerError', message: 'Quota exceeded for total allowable CPU per project per region.\nLogs URL: synthetic', lastTransitionTime: '2026-11-05T05:07:00Z' };
+  h.revisions.set(pin.revision, { metadata: { name: pin.revision, uid: 'failed-uid', creationTimestamp: '2026-11-05T05:06:22Z', annotations: copy(current.spec.template.metadata.annotations) }, spec: copy(current.spec.template.spec), status: { imageDigest: pin.image, conditions: [{ type: 'Ready', ...failure }, { type: 'ContainerHealthy', ...failure }, { type: 'ContainerReady', status: 'True' }, { type: 'Active', status: 'False' }] } });
+  const receipt = { ...copy(build), operation: 'stage', runId: pin.runId, runAttempt: pin.runAttempt, workflowSha: pin.workflowSha, inputManifestSha256: built.hash, services: [{ ...copy(build.services[0]), revision: pin.revision, previousRevision: pin.healthyRevision, previousTraffic: copy(current.status.traffic), previousConfigHash, stagingStatus: 'attempting', promotionStatus: 'not-promoted' }] };
+  const env = { RELEASE_ID: pin.releaseId };
+  const updateReceipt = mutate => { if (mutate) mutate(receipt); const ref = h.record(p, receipt, 'failure'); env.FAILED_REVISION_RECOVERY = pin.revision + '@sha256:' + ref.hash; return ref; };
+  updateReceipt();
+  return { pin, p, current, receipt, env, updateReceipt, failed: h.revisions.get(pin.revision), healthy: h.revisions.get(pin.healthyRevision) };
+}
+test('terminal recovery: owner-authorized stage uses same digest, preserves failed revision/config/100% traffic and emits evidence', () => scenario(async h => {
+  const f = terminalWebFailure(h), beforeFailed = canonical(f.failed), beforeHealthy = canonical(f.healthy), beforeTraffic = canonical(traffic(f.current));
+  const r = await h.dispatch(frontend, 'stage', { env: f.env });
+  assert.equal(r.error, undefined); assert.equal(h.deployCalls().length, 1); assert.equal(h.trafficCalls().length, 0);
+  const args = h.deployCalls()[0].args; assert(args.includes('--no-traffic')); assert(args.includes(f.pin.image));
+  for (const flag of ['--cpu', '--memory', '--min-instances', '--max-instances', '--cpu-boost', '--no-cpu-boost', '--update-env-vars']) assert(!args.includes(flag));
+  assert.equal(canonical(h.revisions.get(f.pin.revision)), beforeFailed); assert.equal(canonical(h.revisions.get(f.pin.healthyRevision)), beforeHealthy); assert.equal(canonical(traffic(f.current)), beforeTraffic);
+  assert.equal(r.manifest.failedRevisionRecovery.failedRunAttempt, '1'); assert.equal(r.manifest.failedRevisionRecovery.failedRevisionUid, 'failed-uid');
+  assert(h.calls.some(c => c.exe === 'gh' && c.args[1]?.endsWith('/attempts/1')));
+  assert(!h.calls.some(c => c.args.includes('delete')));
+  const second = await h.dispatch(frontend, 'stage', { env: f.env }); assert.match(second.error.message, /superseded/); assert.equal(h.deployCalls().length, 1);
+}));
+const recoveryRejections = {
+  'missing authorization': f => { delete f.env.FAILED_REVISION_RECOVERY; },
+  'incorrect authorization': f => { f.env.FAILED_REVISION_RECOVERY = 'true'; },
+  'wrong service': f => { f.p.services = ['other-web']; },
+  'wrong project': f => { f.p.project = 'other-project'; },
+  'wrong region': f => { f.p.region = 'europe-west1'; },
+  'wrong revision': f => { f.current.status.latestCreatedRevisionName = 'nxclip-web-unreviewed'; },
+  'unobserved service generation': f => { f.current.status.observedGeneration = 117; },
+  'missing service generation': f => { delete f.current.metadata.generation; },
+  'pending service': f => { f.current.status.conditions[0].status = 'Unknown'; },
+  'pending revision': f => { f.failed.status.conditions[0].status = 'Unknown'; },
+  'unknown revision': f => { f.failed.status.conditions = []; },
+  'non-quota terminal failure': f => { f.failed.status.conditions[0].message = 'Container failed to start'; },
+  'ambiguous terminal conditions': f => { f.failed.status.conditions.push(copy(f.failed.status.conditions[0])); },
+  'missing terminal timestamp': f => { delete f.failed.status.conditions[0].lastTransitionTime; },
+  'reconciling revision': f => { f.failed.status.conditions.push({ type: 'Reconciling', status: 'True' }); },
+  'receipt hash mismatch': f => { f.env.FAILED_REVISION_RECOVERY = f.pin.revision + '@sha256:' + '0'.repeat(64); },
+  'receipt targets another revision': f => { f.updateReceipt(r => { r.services[0].revision = 'nxclip-web-other'; }); },
+  'receipt from rerun rather than original attempt': f => { f.updateReceipt(r => { r.runAttempt = '2'; }); },
+  'receipt from unrelated workflow': f => { f.updateReceipt(r => { r.workflowSha = 'f'.repeat(40); }); },
+  'mismatched build receipt': f => { f.updateReceipt(r => { r.services[0].buildReceipt.runId = 'unrelated'; }); },
+  'mismatched successful build hash': f => { f.updateReceipt(r => { r.inputManifestSha256 = 'e'.repeat(64); }); },
+  'mismatched receipt digest': f => { f.updateReceipt(r => { r.services[0].image = 'wrong'; }); },
+  'mismatched live digest': f => { f.failed.status.imageDigest = 'wrong'; },
+  'configuration drift': f => { f.current.spec.template.spec.containers[0].resources.limits.memory = '2Gi'; },
+  'source configuration hash mismatch': f => { f.updateReceipt(r => { r.services[0].previousConfigHash = 'e'.repeat(64); }); },
+  'startup/scaling annotation drift': f => { f.current.spec.template.metadata.annotations['run.googleapis.com/startup-cpu-boost'] = 'false'; },
+  'healthy revision unready': f => { f.healthy.status.conditions[0].status = 'False'; },
+  'healthy traffic changed': f => { f.current.status.traffic = [{ revisionName: f.pin.healthyRevision, percent: 90 }, { revisionName: 'nxclip-web-other', percent: 10 }]; },
+  'failed revision has tag': f => { f.current.status.traffic.push({ revisionName: f.pin.revision, tag: 'unexpected' }); },
+  'maintainer instead of owner': f => { Object.assign(f.env, { GITHUB_ACTOR: 'maintainer', GITHUB_TRIGGERING_ACTOR: 'maintainer', W8_RELEASE_MAINTAINERS: '["maintainer"]' }); },
+  'rerun authorization': f => { f.env.GITHUB_RUN_ATTEMPT = '2'; },
+  'recovery used for promotion': f => { f.env.OPERATION = 'promote'; },
+};
+for (const [name, mutate] of Object.entries(recoveryRejections)) test('terminal recovery rejects ' + name + ' without cloud mutation', () => scenario(async h => {
+  const f = terminalWebFailure(h); mutate(f);
+  const r = await h.dispatch(frontend, 'stage', { env: f.env }); assert(r.error, name + ' must fail'); assert.equal(h.deployCalls().length, 0); assert.equal(h.trafficCalls().length, 0);
+}));
+test('terminal recovery rejects missing failed-run artifact without deployment', () => scenario(async h => {
+  const f = terminalWebFailure(h); h.options.missingFailedArtifact = true;
+  const r = await h.dispatch(frontend, 'stage', { env: f.env }); assert.match(r.error.message, /Missing or ambiguous/); assert.equal(h.deployCalls().length, 0);
+}));
+test('terminal recovery rechecks identity between preflight and mutation', () => scenario(async h => {
+  const f = terminalWebFailure(h); let reads = 0;
+  h.options.onRevision = name => { if (name === f.pin.revision && ++reads === 2) f.failed.metadata.uid = 'replacement-uid'; };
+  const r = await h.dispatch(frontend, 'stage', { env: f.env }); assert.match(r.error.message, /identity changed/); assert.equal(h.deployCalls().length, 0);
+}));
+test('terminal recovery CLI failure after creating a revision is never automatically retried or replayed', () => scenario(async h => {
+  const f = terminalWebFailure(h), delegate = h.runner;
+  h.runner = (exe, args, options) => { const result = delegate(exe, args, options); return exe === 'gcloud' && args[1] === 'deploy' ? { status: 1, stderr: 'uncertain CLI result' } : result; };
+  const first = await h.dispatch(frontend, 'stage', { env: f.env }); assert.match(first.error.message, /no automatic retry/); assert.equal(h.deployCalls().length, 1);
+  const replay = await h.dispatch(frontend, 'stage', { env: f.env }); assert.match(replay.error.message, /superseded/); assert.equal(h.deployCalls().length, 1); assert.equal(h.trafficCalls().length, 0);
+}));
+
+test('terminal recovery rejects absent original failed-run receipt without deployment', () => scenario(async h => {
+  const f = terminalWebFailure(h); h.artifacts.delete(f.pin.repository + ':' + f.pin.runId);
+  const r = await h.dispatch(frontend, 'stage', { env: f.env }); assert(r.error); assert.equal(h.deployCalls().length, 0);
+}));
+test('terminal recovery rejects expired original failed-run artifact', () => scenario(async h => {
+  const f = terminalWebFailure(h); h.artifacts.get(f.pin.repository + ':' + f.pin.runId).expired = true;
+  const r = await h.dispatch(frontend, 'stage', { env: f.env }); assert.match(r.error.message, /Missing or ambiguous/); assert.equal(h.deployCalls().length, 0);
+}));
+test('terminal recovery cannot change the approved build image even if the failed receipt is changed too', () => scenario(async h => {
+  const f = terminalWebFailure(h), built = copy(h.builds.get(f.p.repository).manifest);
+  built.services[0].image = built.services[0].image.replace(/sha256:.*/, 'sha256:' + 'e'.repeat(64));
+  const replacement = h.record(f.p, built, 'success'); h.builds.set(f.p.repository, replacement);
+  f.updateReceipt(r => { r.inputManifestSha256 = replacement.hash; r.services[0].image = built.services[0].image; });
+  const r = await h.dispatch(frontend, 'stage', { env: f.env }); assert.match(r.error.message, /service identity changed/); assert.equal(h.deployCalls().length, 0);
+}));
+
+test('terminal recovery selects the pinned original artifact when reruns retain identical artifact names', () => scenario(async h => {
+  const f = terminalWebFailure(h); h.options.rerunArtifact = true;
+  const r = await h.dispatch(frontend, 'stage', { env: f.env }); assert.equal(r.error, undefined); assert.equal(h.deployCalls().length, 1);
+  assert.equal(r.manifest.failedRevisionRecovery.failedArtifactId, FAILED_WEB_RECOVERY.artifactId);
+  assert(h.calls.some(c => c.exe === 'gh' && c.args[1]?.endsWith('/actions/artifacts/' + FAILED_WEB_RECOVERY.artifactId + '/zip')));
 }));

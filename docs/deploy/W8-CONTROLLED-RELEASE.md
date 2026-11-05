@@ -268,3 +268,72 @@ Full three-service recovery fixtures remain covered, plus an AI/Content-only sta
 ## Editorial/model correction — 2026-11-05
 
 Owner authorized direct fix deployment. Backend application `98abfd49dc020d7dac5546b6508ea1038804a08a`; frontend application `2e0d992ee3269dc3f0916b52ea9bdd9fc4e6f5a4`. Release `w8-editorial-20261105` uses the existing build, zero-traffic stage and coordinated promotion guards. Only AI, Content and Web change. Safety overrides, flags and unrelated services remain unchanged. No paid provider generation, migrations or background restoration. Use this release's own receipts for rollback.
+
+
+## Terminal web revision recovery - local implementation, not activated
+
+Default staging still requires latest-created == latest-ready. The older restage test
+covers HTTP smoke failure after Ready=True, not Cloud Run Ready=False.
+
+Optional manual input `failed_revision_recovery`:
+`nxclip-web-w8-41971814159-1@sha256:<original-attempt-1-stage-receipt-hash>`.
+Leave blank for normal releases. This is the workflow's tenth input. No new secret or
+repository setting is required. Only a fresh owner dispatch can use it: maintainer-only
+calls and reruns are rejected. Scope is stage, nxclip-web, nxclip-500511/us-central1,
+release w8-editorial-20261105. It cannot authorize promotion, rollback or backend changes.
+
+Evidence required:
+- GitHub run 41971814159, attempt 1, completed failure, manual master workflow,
+  workflow SHA 3d58c4d53e992738ae140f011df55ae68cc4f3b8.
+- Exactly one unexpired original stage artifact, supplied SHA-256 matching its bytes,
+  original receipt attempt/source/build provenance and successful build manifest hash.
+- Pinned image digest 835d230bbc495b6d6dbe6170855f05b840755d2bd5a6f4b97ae874d40c62c677.
+- Exact failed revision with terminal quota-failure Ready=False/ContainerHealthy=False,
+  imported container, inactive status, consistent timestamps and no Unknown/reconciling
+  condition. Service generation must be fully observed, not pending.
+- Healthy revision nxclip-web-w8-41887932856-1 remains Ready at 100% ordinary traffic.
+- Current/failed/healthy specs and relevant annotations match, allowing the reviewed
+  image difference. Original previousConfigHash must match. No resource, startup CPU
+  boost, scaling or environment overrides are allowed by recovery.
+
+The controller rechecks service state and both revision UIDs immediately before the
+existing single --no-traffic deploy. It records recovery provenance in the stage receipt.
+Neither old revision is modified/deleted. Existing traffic/tags and configuration are
+checked after staging, together with candidate digest/readiness and tagged /health.
+
+Attempt 2's preflight-only receipt is NOT a substitute for attempt 1. If the original
+artifact was replaced, expired or is unavailable, stop. Do not clear state, fabricate
+receipts or substitute a new hash. Artifact availability was not rechecked against
+GitHub in this mock-only implementation.
+
+Successful staging supersedes the pinned failed latest revision, so another use of the
+same recovery input fails without deployment. Uncertain CLI results never retry
+implicitly. A new owner dispatch after failure before any revision was created is a new
+explicit authorization, not a durable single-use token. Existing workflow concurrency
+remains; there is no atomic lock against external/manual Cloud Run changes.
+
+### Proposed command - DO NOT EXECUTE until separately approved and committed/pushed
+
+The failed receipt hash is the previously recorded attempt-1 value; runtime retrieval
+must still verify the actual artifact bytes. This command neither rebuilds nor promotes.
+
+```powershell
+gh workflow run deploy-w8-selective.yml --repo umasood677/nxclip-web --ref master `
+  -f operation=stage -f release_id=w8-editorial-20261105 `
+  -f source_sha=2e0d992ee3269dc3f0916b52ea9bdd9fc4e6f5a4 `
+  -f manifest_run_id=41970874993 `
+  -f manifest_sha256=c0b1189810deddd3fd4e4074386d260352ed14ccd53b3860fe657908e46c4465 `
+  -f failed_revision_recovery=nxclip-web-w8-41971814159-1@sha256:e26fd29599bf442b41bc4170b01942a82c6b9b480a37b7433672f60765e611b7 `
+  -f smoke_acceptance=not-reviewed -f background_readiness=not-reviewed
+```
+
+After success: download the new stage manifest and verify recovery evidence, candidate
+UID/digest, Ready=True, exact tagged /health and unchanged resource configuration.
+Confirm 100% ordinary traffic still points to nxclip-web-w8-41887932856-1; compare both
+old revision UIDs/configuration. Do not promote as part of recovery.
+Background-processing restoration remains a separate backend approval gate.
+
+Receipt retrieval clarification: recovery pins original artifact ID 13390515769 and
+downloads it by ID, never by an ambiguous artifact name. Same-name rerun artifacts
+are ignored; the original ID, workflow identity, attempt and manifest hash remain mandatory.
+The Ubuntu workflow uses its existing unzip utility to extract only release-manifest.json.

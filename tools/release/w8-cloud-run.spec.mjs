@@ -281,6 +281,8 @@ test('workflow remains manual, scoped, independently approved and artifact drive
   assert(yaml.includes('workflow_dispatch:')); assert(!/^\s+(push|pull_request|workflow_run):/m.test(yaml));
   for (const op of ['build_publish', 'stage', 'promote', 'rollback']) assert(yaml.includes(`- ${op}`));
   assert(!yaml.includes('environment: development')); assert(yaml.includes("github.ref == 'refs/heads/master'")); assert(yaml.includes('github.triggering_actor')); assert(yaml.includes('cancel-in-progress: false'));
+  assert(yaml.includes('failed_revision_recovery:'));
+  assert(yaml.includes('FAILED_REVISION_RECOVERY: ${{ inputs.failed_revision_recovery }}'));
   assert(yaml.includes('path: application')); assert(yaml.includes('path: automation'));
   assert(yaml.includes('if: always()')); assert(!yaml.includes('docker push') && !yaml.includes('gcloud run deploy'));
 });

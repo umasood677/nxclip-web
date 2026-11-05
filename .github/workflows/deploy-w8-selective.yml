@@ -27,6 +27,9 @@ on:
       manifest_sha256:
         description: SHA-256 of that run's release-manifest.json
         type: string
+      failed_revision_recovery:
+        description: Optional owner-only recovery REVISION@sha256:ORIGINAL_FAILED_RECEIPT_HASH (blank normally)
+        type: string
       peer_run_id:
         description: Backend successful stage run; required for promote and rollback
         type: string
@@ -75,6 +78,7 @@ jobs:
       SOURCE_SHA: ${{ inputs.source_sha }}
       MANIFEST_RUN_ID: ${{ inputs.manifest_run_id }}
       MANIFEST_SHA256: ${{ inputs.manifest_sha256 }}
+      FAILED_REVISION_RECOVERY: ${{ inputs.failed_revision_recovery }}
       PEER_RUN_ID: ${{ inputs.peer_run_id }}
       PEER_MANIFEST_SHA256: ${{ inputs.peer_manifest_sha256 }}
       SMOKE_ACCEPTANCE: ${{ inputs.smoke_acceptance }}

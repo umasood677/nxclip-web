@@ -197,6 +197,73 @@ export async function obtainManifest(repo, runId, expectedHash, releaseId, opera
   validateManifest(policy, manifest, { releaseId, operation });
   return manifest;
 }
+// Deliberately scoped to the one owner-reviewed terminal quota failure. Never a generic bypass.
+export const FAILED_WEB_RECOVERY = Object.freeze({
+  repository: 'umasood677/nxclip-web', project: 'nxclip-500511', region: 'us-central1', service: 'nxclip-web',
+  revision: 'nxclip-web-w8-41971814159-1', healthyRevision: 'nxclip-web-w8-41887932856-1',
+  runId: '41971814159', runAttempt: '1', artifactId: '13390515769', workflowSha: '3d58c4d53e992738ae140f011df55ae68cc4f3b8',
+  releaseId: 'w8-editorial-20261105',
+  image: 'us-central1-docker.pkg.dev/nxclip-500511/nxclip-services/nxclip-web@sha256:835d230bbc495b6d6dbe6170855f05b840755d2bd5a6f4b97ae874d40c62c677',
+});
+export function failedRecoveryAuthorization(policy, env) {
+  const raw = env.FAILED_REVISION_RECOVERY || '';
+  if (!raw) return null;
+  const pin = FAILED_WEB_RECOVERY;
+  assert(raw.startsWith(pin.revision + '@sha256:') && /^[a-f0-9]{64}$/.test(raw.slice((pin.revision + '@sha256:').length)), 'Invalid explicit failed-revision recovery authorization');
+  assert(policy.repository === pin.repository && policy.project === pin.project && policy.region === pin.region && canonical(policy.services) === canonical([pin.service]) && env.RELEASE_ID === pin.releaseId && env.OPERATION === 'stage', 'Recovery target/operation is outside the reviewed scope');
+  const owner = pin.repository.split('/')[0];
+  assert(env.GITHUB_ACTOR === owner && env.GITHUB_TRIGGERING_ACTOR === owner && env.GITHUB_RUN_ATTEMPT === '1' && env.GITHUB_RUN_ID !== pin.runId, 'Recovery requires a fresh repository-owner dispatch, not a rerun');
+  return { revision: pin.revision, receiptSha256: raw.slice((pin.revision + '@sha256:').length) };
+}
+async function obtainFailedRevisionReceipt(policy, env, authorization) {
+  const pin = FAILED_WEB_RECOVERY;
+  const { W8_RELEASE_READ_TOKEN: _peer, ...ordinaryEnv } = process.env;
+  const gh = args => command('gh', args, { env: ordinaryEnv });
+  // Inspect the original attempt, not the latest rerun (attempt 2 stopped before deployment).
+  const run = JSON.parse(gh(['api', `repos/${pin.repository}/actions/runs/${pin.runId}/attempts/${pin.runAttempt}`]));
+  assert(run.id === Number(pin.runId) && String(run.run_attempt) === pin.runAttempt && run.status === 'completed' && run.conclusion === 'failure' && run.head_sha === pin.workflowSha && run.repository?.full_name === pin.repository && run.path === '.github/workflows/deploy-w8-selective.yml' && run.event === 'workflow_dispatch' && run.head_branch === 'master', 'Original failed-run provenance mismatch');
+  const list = JSON.parse(gh(['api', `repos/${pin.repository}/actions/runs/${pin.runId}/artifacts?per_page=100`]));
+  const artifacts = list.artifacts?.filter(a => String(a.id) === pin.artifactId && a.name === artifactName(pin.releaseId, 'stage')) || [];
+  assert(artifacts.length === 1 && !artifacts[0].expired && artifacts[0].workflow_run?.head_sha === pin.workflowSha, 'Missing or ambiguous original failed-stage artifact');
+  const dest = resolve(process.env.RUNNER_TEMP, `w8-failed-${pin.runId}-attempt-${pin.runAttempt}`);
+  mkdirSync(dest, { recursive: true });
+  // Reruns retain same-name artifacts. Download only the verified original artifact ID.
+  const archive = resolve(dest, 'original-receipt.zip');
+  writeFileSync(archive, command('gh', ['api', `repos/${pin.repository}/actions/artifacts/${pin.artifactId}/zip`], { env: ordinaryEnv, encoding: null }));
+  command('unzip', ['-j', '-o', archive, 'release-manifest.json', '-d', dest], { env: ordinaryEnv });
+  const bytes = readFileSync(resolve(dest, 'release-manifest.json'));
+  assert(sha256(bytes) === authorization.receiptSha256, 'Original failed receipt SHA-256 mismatch');
+  const receipt = JSON.parse(bytes);
+  assert(receipt.schemaVersion === 1 && receipt.repository === policy.repository && receipt.project === pin.project && receipt.region === pin.region && receipt.releaseId === pin.releaseId && receipt.operation === 'stage' && receipt.sourceSha === policy.sourceSha && receipt.workflowSha === pin.workflowSha && receipt.runId === pin.runId && receipt.runAttempt === pin.runAttempt && receipt.services?.length === 1, 'Original failed receipt identity mismatch');
+  return receipt;
+}
+function onlyCondition(revision, type, status) {
+  const matches = revision.status?.conditions?.filter(c => c.type === type) || [];
+  return matches.length === 1 && matches[0].status === status ? matches[0] : null;
+}
+export function validateFailedRevisionRecovery(policy, env, current, item, receipt, failed, healthy) {
+  assert(failedRecoveryAuthorization(policy, env), 'Explicit failed-revision recovery authorization is required');
+  const pin = FAILED_WEB_RECOVERY, prior = receipt.services?.[0];
+  assert(item.service === pin.service && item.image === pin.image && current.metadata?.name === pin.service && current.status?.latestCreatedRevisionName === pin.revision && current.status?.latestReadyRevisionName === pin.healthyRevision, 'Recovery revision already superseded or service identity changed');
+  assert(prior?.service === pin.service && prior.revision === pin.revision && prior.image === item.image && prior.stagingStatus === 'attempting' && prior.promotionStatus === 'not-promoted' && prior.previousRevision === pin.healthyRevision && receipt.inputManifestSha256 === env.MANIFEST_SHA256 && canonical(prior.buildReceipt) === canonical(item.buildReceipt), 'Failed receipt does not bind this image/build/baseline');
+  assert(failed.metadata?.name === pin.revision && failed.metadata.uid && failed.status?.imageDigest === item.image && failed.spec?.containers?.[0]?.image === item.image, 'Failed revision image/identity mismatch');
+  assert(Number.isInteger(Number(current.metadata?.generation)) && Number(current.metadata.generation) > 0 && String(current.status?.observedGeneration) === String(current.metadata.generation) && onlyCondition(current, 'Ready', 'False') && !current.status.conditions.some(c => c.status === 'Unknown' || (c.type === 'Reconciling' && c.status === 'True')), 'Service is still pending/reconciling or its generation is unobserved');
+  const ready = onlyCondition(failed, 'Ready', 'False'), health = onlyCondition(failed, 'ContainerHealthy', 'False');
+  const quotaFailure = c => c?.reason === 'HealthCheckContainerError' && c.message?.split('\n')[0].trim() === 'Quota exceeded for total allowable CPU per project per region.';
+  assert(quotaFailure(ready) && quotaFailure(health) && onlyCondition(failed, 'ContainerReady', 'True') && onlyCondition(failed, 'Active', 'False') && !failed.status.conditions.some(c => c.status === 'Unknown' || (c.type === 'Reconciling' && c.status === 'True')), 'Failed revision is not the verified terminal quota failure');
+  assert(Number.isFinite(Date.parse(ready.lastTransitionTime)) && Number.isFinite(Date.parse(failed.metadata.creationTimestamp)) && Date.parse(ready.lastTransitionTime) >= Date.parse(failed.metadata.creationTimestamp), 'Terminal failure timestamps are missing or inconsistent');
+  assert(healthy.metadata?.name === pin.healthyRevision && healthy.metadata.uid && onlyCondition(healthy, 'Ready', 'True') && healthy.status?.imageDigest === healthy.spec?.containers?.[0]?.image, 'Healthy baseline revision is no longer Ready/consistent');
+  assert(canonical(traffic(current)) === canonical([{ revisionName: pin.healthyRevision, percent: 100 }]) && canonical(prior.previousTraffic) === canonical(traffic(current)), 'Healthy baseline traffic changed');
+  assert(!(current.status.traffic || []).some(t => t.revisionName === pin.revision), 'Failed revision unexpectedly has a traffic route/tag');
+  assert(Object.keys(policy.safetyOverrides[pin.service] || {}).length === 0, 'Recovery must not change configuration overrides');
+  assertServiceRevisionSpecsAlign(current.spec.template, failed.spec);
+  for (const [key, value] of Object.entries(annotations(current.spec.template.metadata?.annotations))) assert(failed.metadata.annotations?.[key] === value && healthy.metadata.annotations?.[key] === value, 'Recovery revision annotations changed');
+  const previousTemplate = clone(current.spec.template);
+  previousTemplate.spec.containers[0].image = healthy.status.imageDigest;
+  assertServiceRevisionSpecsAlign(previousTemplate, healthy.spec);
+  assert(/^[a-f0-9]{64}$/.test(prior.previousConfigHash || '') && sha256(canonical(templateConfig(previousTemplate))) === prior.previousConfigHash && canonical(expectedTemplate(current, item.image, {})) === canonical(templateConfig(current.spec.template)), 'Recovery deployment configuration changed');
+  return { revision: pin.revision, failedRevisionUid: failed.metadata.uid, healthyRevision: pin.healthyRevision, healthyRevisionUid: healthy.metadata.uid, failedRunId: pin.runId, failedRunAttempt: pin.runAttempt, failedArtifactId: pin.artifactId };
+}
 function serviceDescribe(policy, service) { return jsonCommand('gcloud', ['run', 'services', 'describe', service, '--project', policy.project, '--region', policy.region, '--format=json']); }
 function revisionDescribe(policy, revision) { return jsonCommand('gcloud', ['run', 'revisions', 'describe', revision, '--project', policy.project, '--region', policy.region, '--format=json']); }
 function checkRevision(policy, item) {
@@ -221,6 +288,7 @@ function writeReceipt(manifest, output) {
 }
 export function precheck(policy, env) {
   validateContext(policy, env);
+  failedRecoveryAuthorization(policy, env);
   assert(command('git', ['rev-parse', 'HEAD'], { cwd: env.SOURCE_ROOT }).trim() === policy.sourceSha, 'Checked-out application source differs');
   assert(command('git', ['rev-parse', 'HEAD'], { cwd: env.AUTOMATION_ROOT }).trim() === env.GITHUB_SHA, 'Automation checkout differs from workflow revision');
   if (policy.services.includes('nxclip-web') && env.OPERATION === 'build_publish') validateBuildValues(policy, env);
@@ -250,6 +318,8 @@ export async function execute(policy, env) {
     }
     return;
   }
+  const recovery = failedRecoveryAuthorization(policy, env);
+  const failedReceipt = recovery ? await obtainFailedRevisionReceipt(policy, env, recovery) : null;
   const inputOperation = env.OPERATION === 'stage' ? 'build_publish' : 'stage';
   const input = await obtainManifest(policy.repository, env.MANIFEST_RUN_ID, env.MANIFEST_SHA256, env.RELEASE_ID, inputOperation, policy, policy.repository);
   manifest.inputManifestSha256 = env.MANIFEST_SHA256;
@@ -275,7 +345,10 @@ export async function execute(policy, env) {
   const baselines = new Map();
   for (const item of manifest.services) {
     const current = serviceDescribe(policy, item.service); baselines.set(item.service, current);
-    assert(current.status?.latestCreatedRevisionName === current.status?.latestReadyRevisionName, 'Existing pending/unready revision; stop');
+    if (recovery) {
+      manifest.failedRevisionRecovery = { ...validateFailedRevisionRecovery(policy, env, current, item, failedReceipt, revisionDescribe(policy, recovery.revision), revisionDescribe(policy, FAILED_WEB_RECOVERY.healthyRevision)), receiptSha256: recovery.receiptSha256 };
+      save();
+    } else assert(current.status?.latestCreatedRevisionName === current.status?.latestReadyRevisionName, 'Existing pending/unready revision; stop');
     if (env.OPERATION === 'stage') { traffic(current); expectedTemplate(current, item.image, policy.safetyOverrides[item.service]); if (policy.preserveServices?.includes(item.service)) assertPreservedService(policy, item, current); }
     else { checkRevision(policy, item); (env.OPERATION === 'promote' ? promotionArgs : rollbackArgs)(policy, item, current); }
   }
@@ -311,6 +384,10 @@ export async function execute(policy, env) {
       save(); continue; // Verified receipt only: no deploy or traffic mutation for this service.
     }
     if (env.OPERATION === 'stage') {
+      if (recovery) {
+        const proof = validateFailedRevisionRecovery(policy, env, current, item, failedReceipt, revisionDescribe(policy, recovery.revision), revisionDescribe(policy, FAILED_WEB_RECOVERY.healthyRevision));
+        assert(canonical({ ...proof, receiptSha256: recovery.receiptSha256 }) === canonical(manifest.failedRevisionRecovery), 'Recovery revision identity changed since preflight');
+      }
       const suffix = `w8-${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT}`;
       const tag = suffix;
       assert(!(current.status?.traffic || []).some(t => t.tag === tag), 'Staging tag already exists');
