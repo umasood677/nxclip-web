@@ -41,60 +41,19 @@ function load() {
     format?: string;
   }>;
 }
-test("rendering uses the final review structure and disables all template details/actions", () => {
-  const Review = load(),
-    html = renderToStaticMarkup(
-      <Review name="Saved Brand" format="portrait_1080x1350" />,
-    );
-  assert.match(html, /Template preview/);
-  assert.match(html, /Template details/);
-  assert.match(html, /fieldset disabled/);
-  for (const label of [
-    "Template name",
-    "Customize headline",
-    "Supporting copy",
-    "CTA",
-    "Composition",
-    "Format",
-    "Approve",
-    "Reject",
-    "Save",
-  ])
-    assert.ok(html.includes(label), label);
-  assert.match(html, /role="status"/);
-  assert.match(html, /aria-busy="true"/);
-  assert.doesNotMatch(
-    html,
-    /Review template →|Check AI generation readiness|I approve/,
-  );
-});
-test("uncertain/error states stop animation while retaining the same disabled review controls", () => {
-  const Review = load(),
-    html = renderToStaticMarkup(
-      <Review active={false} phase="Your template needs attention" />,
-    );
-  assert.match(html, /aria-busy="false"/);
-  assert.doesNotMatch(html, /class="bt-render-stage is-rendering"/);
-  assert.match(html, /Your template needs attention/);
-  assert.match(html, /fieldset disabled/);
+test("baking shows animation only, without empty details or approval controls",()=>{
+ const Review=load(),html=renderToStaticMarkup(<Review name="Saved Brand" format="portrait_1080x1350"/>);
+ assert.match(html,/Template generation/);assert.match(html,/role="status"/);assert.match(html,/aria-busy="true"/);
+ assert.doesNotMatch(html,/Template details|Customize headline|Supporting copy|<input|<textarea|<select|Approve|Customize in Canvas/);
 });
 
-test('record and media loading share one stage and stable final panel classes',()=>{
- const Review=load(),html=renderToStaticMarkup(<Review/>);
- assert.match(html,/class="xp-split bt-review"/);
- assert.match(html,/class="bt-review-art"/);assert.match(html,/Loading preview/);
- assert.doesNotMatch(html,/bt-render-stage|bt-render-details|Preparing composition|value="Brand Template"/);
- const media=readFileSync('src/pages/BrandKits/templates/TemplateReviewMedia.tsx','utf8');
- assert.match(media,/<TemplatePreviewLoading\/>/);
- const shared=readFileSync('src/pages/BrandKits/templates/TemplatePreviewLoading.tsx','utf8');
- assert.match(shared,/bt-review-media-state/);assert.match(shared,/<Skeleton/);
+test("uncertain state does not pretend a blank review is ready",()=>{
+ const Review=load(),html=renderToStaticMarkup(<Review active={false} phase="Check your saved generation"/>);
+ assert.match(html,/aria-busy="false"/);assert.match(html,/Check your saved generation/);assert.doesNotMatch(html,/fieldset|Template details/);
 });
 
-test('temporary draft values stay masked until final review media is ready',()=>{
- const Review=load(),html=renderToStaticMarkup(<Review/>);
- assert.match(html,/bt-review-details bt-details-loading/);
+test('record and media loading share animation while review waits for ready media',()=>{
  const source=readFileSync('src/pages/BrandKits/templates/BrandTemplateLibrary.tsx','utf8');
- assert.match(source,/reviewPhase!=="ready"\?" bt-details-loading"/);
- const css=readFileSync('src/pages/BrandKits/templates/brandTemplates.css','utf8');
- assert.match(css,/-webkit-text-fill-color:transparent/);
+ assert.ok(source.includes('display:reviewPhase==="ready"?undefined:"none"'));
+ const media=readFileSync('src/pages/BrandKits/templates/TemplateReviewMedia.tsx','utf8');assert.ok(media.includes('<TemplatePreviewLoading/>'));
 });

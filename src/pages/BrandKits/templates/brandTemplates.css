@@ -328,3 +328,46 @@
 .bt-root .bt-review-media-state[aria-busy=false] svg{animation:none!important}
 .bt-root .bt-review-media-state[role=status] .bt-baking-icon{animation:bt-bake-breathe 3s ease-in-out infinite}
 @media(prefers-reduced-motion:reduce){.bt-root .bt-review-media-state[role=status] .bt-baking-icon{animation:none}}
+
+/* Compact template metadata; the artwork keeps its natural aspect ratio. */
+.bt-root .bt-library-tile .w0a-card-body{gap:6px;padding:10px 12px}
+.bt-root .bt-library-tile .w0a-card-body h3{font-size:14px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.bt-root .bt-library-tile .bt-tile-meta{font-size:11px}
+.bt-root .bt-library-tile .w0a-card-body>.w0a-btn{min-height:34px;margin-top:0;padding:7px 10px}
+.bt-root .bt-tile-controls>.w0a-chip{display:none}
+.bt-root #ad-studio-catalog .w0a-brand-preview__layout{object-fit:contain}
+.bt-campaign-dialog{max-width:640px;max-height:85dvh;overflow-y:auto}
+.bt-campaign-dialog #template-project-selection{padding:0;border:0;background:transparent;display:grid;gap:12px}
+.bt-campaign-dialog .xp-field{display:grid;gap:6px}.bt-campaign-dialog select{width:100%;min-height:40px}
+.bt-campaign-empty{font-size:13px;color:#aaa6b3;margin:0}
+.bt-root .ai-operation-help{font-size:12px;color:var(--xp-muted);margin:6px 0 0}
+
+/* Show the baking surface alone until the complete review is ready. */
+.bt-root .bt-generation-stage{min-height:min(66dvh,620px);padding:16px;display:grid;align-content:center;gap:14px}
+.bt-root .bt-generation-stage>.bt-review-media-state{min-height:min(57dvh,540px);width:100%}
+.bt-root .bt-generation-recovery{display:grid;justify-items:center;gap:10px}
+
+/* Equal review panels; artwork fits above a compact source/action footer. */
+@media(min-width:801px){
+ .bt-root.bt-review-page .bt-review{height:clamp(540px,calc(100dvh - 155px),740px);align-items:stretch}
+ .bt-root.bt-review-page .bt-review>.xp-panel{min-height:0;overflow-y:auto}
+ .bt-root.bt-review-page .bt-preview-panel .bt-review-art{height:auto;min-height:0;flex:1 1 0}
+}
+.bt-root .bt-preview-footer{flex:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding-top:10px;border-top:1px solid #ffffff12;margin-top:10px}
+.bt-root .bt-preview-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bt-root .bt-preview-sources{display:flex;gap:5px;align-items:center}
+.bt-root .bt-preview-sources figure{margin:0;width:28px;height:36px;overflow:hidden;border:1px solid #ffffff18;border-radius:5px;background:#ffffff05}
+.bt-root .bt-preview-sources img{width:100%;height:100%;object-fit:contain}
+.bt-root .bt-preview-footer .bt-preview-actions{padding:0;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.bt-root .bt-preview-footer .bt-preview-actions button{min-height:34px;padding:7px 10px;font-size:12px}
+@media(max-width:800px){.bt-root .bt-preview-footer .bt-preview-actions{justify-content:flex-start}}
+
+.bt-root .bt-source-references{margin-top:12px;padding-top:10px;border-top:1px solid #ffffff12}
+.bt-root .bt-source-references h3{font-size:12px;font-weight:600;color:var(--xp-muted);margin:0 0 8px}
+.bt-root .bt-source-reference-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}
+.bt-root .bt-source-reference-card{display:flex;align-items:center;gap:10px;padding:7px;margin:0;border:1px solid #ffffff12;border-radius:8px;background:#ffffff03;min-width:0}
+.bt-root .bt-source-reference-image{width:44px;height:56px;flex:none;display:grid;place-items:center;border-radius:5px;overflow:hidden;background:#0002;color:var(--xp-muted)}
+.bt-root .bt-source-reference-image img{width:100%;height:100%;object-fit:contain}
+.bt-root .bt-source-reference-card figcaption{display:grid;gap:3px;min-width:0}
+.bt-root .bt-source-reference-card figcaption span{font-size:10px;color:var(--xp-muted)}
+.bt-root .bt-source-reference-card strong{font-size:12px;line-height:1.35;font-weight:500;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}

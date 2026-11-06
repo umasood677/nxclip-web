@@ -26,5 +26,11 @@ for(const decision of ['approve','reject'] as const)test('normal '+decision+' wo
   templateResponseId,upsert:()=>{},setMessage:()=>{},navigate:()=>{},base:'/brands/brand/templates',
  }) as (value:string)=>void;
  handler(decision);await work;
- assert.deepEqual(calls,[['brand','template',3,decision,decision==='approve']]);
+ assert.deepEqual(calls,decision==='approve'?[['brand','template',3,'approve',true],['brand','template',4,'save']]:[['brand','template',3,'reject',false]]);
+});
+
+test('failed save retains approved state and exposes a specific retry without a second approval',async()=>{
+ const selected={id:'template',revision:3,provenance:{compositionMode:'reference-guided-template-v1'}},updates:unknown[]=[];let work:Promise<unknown>|undefined;
+ const handler=vm.runInNewContext(code,{selected,dirty:false,brandId:'brand',depictionReviewed:false,activeBrand:{current:'brand'},run:(fn:()=>Promise<unknown>)=>{work=fn();},brandTemplateApi:{action:async(_b:string,_id:string,_rev:number,action:string)=>{if(action==='save')throw Error('Unavailable');return {...selected,revision:4,state:'approved'};}},templateResponseId,upsert:(v:unknown)=>updates.push(v),setMessage:()=>{},navigate:()=>{},base:'/brands/brand/templates'}) as (v:string)=>void;
+ handler('approve');await assert.rejects(work!,/approved, but saving failed/);assert.equal(updates.length,1);
 });

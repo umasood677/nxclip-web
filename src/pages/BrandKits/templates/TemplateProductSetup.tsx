@@ -1,10 +1,11 @@
+import {resolveProductShade} from './templateProductShade';
 import React,{useState,type CSSProperties} from 'react';
 import {Plus,ImagePlus,X,UserRound,ArrowRight,ChevronDown,Package} from 'lucide-react';
 import {Skeleton} from '../../../components/ui/skeleton';
 import {Popover,PopoverTrigger,PopoverContent} from '../../../components/ui/popover';
 import {TemplateAssetPicker,templateModelChoices} from './TemplateAssetPicker';
 import type {TemplateProductConfiguration} from './templateProductSettings';
-import {brandKitProductChoices,chooseTemplateProduct,type TemplateProductChoice,type ProductSelectionMode} from './templateCreatorSetup';
+import {brandKitProductChoices,chooseTemplateProduct,productShadeColor,type TemplateProductChoice,type ProductSelectionMode} from './templateCreatorSetup';
 import {useTemplateAssetUrls} from './useTemplateAssetUrls';
 import type {BrandKitSummary} from '../lib/brandKitTypes';
 
@@ -25,7 +26,7 @@ export function TemplateProductChooser({label,choices,urls,disabled,onChoose,onP
   <button type="button" className="bt-product-menu-upload" onClick={()=>{setOpen(false);onPhoto();}}><ImagePlus size={14}/> Upload or choose a photo</button>
  </PopoverContent></Popover>;
 }
-export function TemplateProductSettings({value,onChange,kit,onKitUpdated,disabled=false,selectionMode='specific',onSelectionModeChange}:{value:TemplateProductConfiguration;onChange:(value:TemplateProductConfiguration)=>void;kit:BrandKitSummary;onKitUpdated:(kit:BrandKitSummary)=>void;disabled?:boolean;showCount?:boolean;selectionMode?:ProductSelectionMode;onSelectionModeChange?:(mode:ProductSelectionMode)=>void}){
+export function TemplateProductSettings({value,onChange,kit,onKitUpdated,disabled=false,modelRequired=false,creativeIdea='',onShadeChange,selectionMode='specific',onSelectionModeChange}:{value:TemplateProductConfiguration;onChange:(value:TemplateProductConfiguration)=>void;kit:BrandKitSummary;onKitUpdated:(kit:BrandKitSummary)=>void;disabled?:boolean;modelRequired?:boolean;creativeIdea?:string;onShadeChange?:(index:number,color:string)=>void;showCount?:boolean;selectionMode?:ProductSelectionMode;onSelectionModeChange?:(mode:ProductSelectionMode)=>void}){
  const [pick,setPick]=useState<number|'model'|null>(null),[manageProfiles,setManageProfiles]=useState(false);
  const urls=useTemplateAssetUrls(kit,(kit.assets||[]).filter(a=>a.role==="product_image"||a.role==="brand_model").map(a=>a.id)),models=templateModelChoices(kit),choices=brandKitProductChoices(kit),automatic=selectionMode==='automatic';
  const selectedModel=models.find(p=>p.id===value.modelProfileId),previewModel=selectedModel||models.find(p=>p.eligible)||models[0];
@@ -43,7 +44,7 @@ export function TemplateProductSettings({value,onChange,kit,onKitUpdated,disable
       <div className="bt-product-card-fields">
        <TemplateProductChooser label={slot.label} choices={choices} urls={urls} disabled={disabled} onChoose={choice=>selectProduct(index,choice)} onPhoto={()=>setPick(index)}/>
        {slot.assetId&&<span className="bt-product-asset-name" title={assetLabel}>{assetLabel}</span>}
-       <div className="bt-product-card-actions"><label className="bt-shade-chip" title="Shade direction"><input aria-label={'Shade direction for product '+(index+1)} type="color" value={slot.color||'#9e2440'} disabled={disabled} onChange={e=>onChange({...value,slots:value.slots.map((v,j)=>j===index?{...v,color:e.target.value}:v)})}/></label>
+       <div className="bt-product-card-actions"><label className="bt-shade-chip" title={resolveProductShade(kit,slot.label,creativeIdea,value.slots.length===1).source}><input aria-label={'Shade direction for product '+(index+1)} type="color" value={slot.color||'#808080'} disabled={disabled} onChange={e=>{onShadeChange?.(index,e.target.value);onChange({...value,slots:value.slots.map((v,j)=>j===index?{...v,color:e.target.value}:v)});}}/></label>
         <button type="button" className="bt-product-change" disabled={disabled} onClick={()=>setPick(index)}>{slot.assetId?(approved?'Change photo':'Review photo'):'Add photograph'}</button>
         {value.slots.length>1&&<button type="button" className="bt-product-clear" title="Remove product" aria-label={'Remove '+slot.label} disabled={disabled} onClick={()=>onChange({...value,slots:value.slots.filter((_,j)=>j!==index)})}><X size={14}/></button>}
        </div>
@@ -52,12 +53,12 @@ export function TemplateProductSettings({value,onChange,kit,onKitUpdated,disable
     })}
    </div>
    <aside className="bt-model-settings">
-    <div className="bt-model-controls"><label className="xp-field"><span>Brand Model <span className="bt-field-optional">Optional</span></span><select aria-label="Brand Model" disabled={disabled} value={value.modelProfileId||''} onChange={e=>{const id=e.target.value;if(!id||models.some(p=>p.id===id&&p.eligible))onChange({...value,modelProfileId:id||undefined});}}><option value="">No model</option>{models.filter(p=>p.eligible||p.id===value.modelProfileId).map(p=><option key={p.id} value={p.id} disabled={!p.eligible}>{p.name}{p.eligible?'':' — '+p.status}</option>)}</select></label><button type="button" className="xp-secondary" disabled={disabled} onClick={()=>chooseModel(!models.some(p=>p.eligible))}><Plus size={14}/> Add or choose model</button></div>
+    <div className="bt-model-controls"><label className="xp-field"><span>Brand Model <span className="bt-field-optional">{modelRequired?"Required for this idea":"Optional"}</span></span><select aria-label="Brand Model" aria-required={modelRequired} disabled={disabled} value={value.modelProfileId||''} onChange={e=>{const id=e.target.value;if(!id||models.some(p=>p.id===id&&p.eligible))onChange({...value,modelProfileId:id||undefined});}}><option value="">No model</option>{models.filter(p=>p.eligible||p.id===value.modelProfileId).map(p=><option key={p.id} value={p.id} disabled={!p.eligible}>{p.name}{p.eligible?'':' — '+p.status}</option>)}</select></label><button type="button" className="xp-secondary" disabled={disabled} onClick={()=>chooseModel(!models.some(p=>p.eligible))}><Plus size={14}/> Add or choose model</button></div>
     {previewModel&&<div className="bt-model-reference"><div className="bt-model-reference-thumb"><TemplateSourceThumbnail key={previewModel.assetId?previewModel.assetId+':'+(urls[previewModel.assetId]||''):'model'} url={previewModel.assetId?urls[previewModel.assetId]:undefined} hasAsset={!!previewModel.assetId} label={previewModel.name} model/></div><div className="bt-model-reference-copy"><strong>{previewModel.name}</strong><span>{selectedModel&&previewModel.eligible?'Selected':previewModel.status}</span></div>{previewModel.eligible?<button type="button" className="bt-product-change" disabled={disabled||previewModel.id===value.modelProfileId} onClick={()=>onChange({...value,modelProfileId:previewModel.id})}>{value.modelProfileId===previewModel.id?'Selected':'Select'}</button>:<button type="button" className="bt-product-change" disabled={disabled} onClick={()=>chooseModel(true)}>Review <ArrowRight size={12}/></button>}</div>}
    </aside>
   </div>
   {!automatic&&value.slots.length<4&&<div className="bt-product-add-row"><TemplateProductChooser add label="Add product" choices={choices} urls={urls} disabled={disabled} onChoose={choice=>selectProduct(addIndex,choice)} onPhoto={()=>setPick(addIndex)}/><span>{value.slots.filter(s=>s.assetId||s.label!=='Choose a product').length} selected · Up to 4</span></div>}
   {automatic&&<span className="bt-auto-reference-caption">{value.slots.filter(s=>s.assetId).length} approved reference{value.slots.filter(s=>s.assetId).length===1?'':'s'} supplied from your Brand Kit</span>}
-  {pick!==null&&<TemplateAssetPicker kit={kit} kind={pick==='model'?'model':'product'} initialManageProfiles={pick==='model'&&manageProfiles} onKitUpdated={onKitUpdated} onClose={()=>setPick(null)} onSelect={(assetId,profileId)=>{if(pick==='model')onChange({...value,modelProfileId:profileId});else{const asset=kit.assets?.find(a=>a.id===assetId);selectProduct(pick,{key:'photo:'+assetId,label:value.slots[pick]?.label&&value.slots[pick].label!=='Choose a product'?value.slots[pick].label:(asset?.label||asset?.fileName||'Product photograph').slice(0,80),assetId,kind:'photograph',approved:true});}setPick(null);}}/>}
+  {pick!==null&&<TemplateAssetPicker kit={kit} kind={pick==='model'?'model':'product'} initialManageProfiles={pick==='model'&&manageProfiles} onKitUpdated={onKitUpdated} onClose={()=>setPick(null)} onSelect={(assetId,profileId)=>{if(pick==='model')onChange({...value,modelProfileId:profileId});else{const asset=kit.assets?.find(a=>a.id===assetId);selectProduct(pick,{key:'photo:'+assetId,label:(asset?.label||asset?.fileName||'Product photograph').slice(0,80),color:productShadeColor(kit,asset?.label||asset?.fileName||''),assetId,kind:'photograph',approved:true});}setPick(null);}}/>}
  </section>;
 }

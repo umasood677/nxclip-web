@@ -7,17 +7,17 @@ const props={name:'Brand template',graph,assetUrls:{},status:'Saved',kind:'AI ar
 test('saved tile uses the Default Templates card, body, meta, format and preview-button classes',()=>{
  const html=renderToStaticMarkup(<BrandTemplateTile {...props}/>);
  for(const name of ['w0a-card','w0a-brand-preview','w0a-card-body','w0a-meta','w0a-formats','w0a-chip','w0a-btn'])assert.match(html,new RegExp(name));
- assert.match(html,/Preview template/);assert.match(html,/width:260px;height:325px/);assert.match(html,/Format 4:5/);
+ assert.match(html,/Preview template/);assert.match(html,/aspect-ratio:1080\/1350/);assert.match(html,/Format 4:5/);
  assert.doesNotMatch(html,/xp-card-copy|bt-card-art|Editable text, product/);
 });
-test('thumbnail fills its width at the real aspect without changing the graph or review preview',()=>{
+test('thumbnail reserves the real aspect before client measurement without drawing a fallback-size scene',()=>{
  const before=JSON.stringify(graph),full=renderToStaticMarkup(<BrandTemplateScenePreview graph={graph} assetUrls={{}} size="card" fillCard/>),review=renderToStaticMarkup(<BrandTemplateScenePreview graph={graph} assetUrls={{}} size="card" maxHeight={256}/>);
- assert.match(full,/width:260px;height:325px/);assert.match(review,/height:256px/);assert.equal(JSON.stringify(graph),before);
+ assert.match(full,/aspect-ratio:1080\/1350/);assert.match(review,/aspect-ratio:1080\/1350/);assert.doesNotMatch(full,/width:260px|data-scene-stage/);assert.equal(JSON.stringify(graph),before);
 });
 test('actual stored shapes are retained for landscape and story drafts',()=>{
  for(const [width,height,label] of [[1920,1080,'16:9'],[1080,1920,'9:16']] as const){
  const html=renderToStaticMarkup(<BrandTemplateTile {...props} graph={{...graph,canvas:{width,height}}} status="Draft"/>);
- assert.match(html,new RegExp('Format '+label));assert.match(html,new RegExp('data-canvas-w="'+width+'" data-canvas-h="'+height+'"'));
+ assert.match(html,new RegExp('Format '+label));assert.match(html,new RegExp('aspect-ratio:'+width+'/'+height));
  }
 });
 test('selection and per-template actions remain accessible icon controls',()=>{

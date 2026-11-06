@@ -1,3 +1,4 @@
+import {retainedStatusDelay,isProcessingStatus} from './retainedStatusPolling';
 import {templateReferenceInput} from '../../BrandKits/templates/templateReferenceInput';
 import {TemplateRenderReview} from "../../BrandKits/templates/TemplateRenderReview";
 import { Sparkles as SparklesIcon } from "lucide-react";
@@ -60,7 +61,9 @@ export function ProductionImageGeneration({
   const proposal = renderMode === "template-proposal",referenceGuided=proposal&&compositionMode==='reference-guided-template-v1';
   const [refiningProposal,setRefiningProposal]=useState(initialOperation === "refine"||regeneration);
   const autoAttempt=useRef(false),executing=useRef(false),explicitIntentConsumed=useRef(false);
-  const checkedRetainedRequest=useRef('');
+  const checkedRetainedRequest=useRef(''),submittedHere=useRef(false);
+  const statusPollStart=useRef<{key:string;at:number}|null>(null);
+  const [retainedPhase,setRetainedPhase]=useState(''),[pollExpired,setPollExpired]=useState(false),[statusRead,setStatusRead]=useState(0);
   const canEdit = hasGeneratedBackground(source),
     enabled = realImagesEnabled(),
     key = "nxclip:ad-image-request:" + source.id;
@@ -173,6 +176,7 @@ export function ProductionImageGeneration({
     setActivity("generation");
     setError("");
     setRequestId(id);
+    submittedHere.current=true;
     try {
       sessionStorage.setItem(key, id);
     } catch {
@@ -222,6 +226,7 @@ export function ProductionImageGeneration({
     try {
       const s = await adImageApi.status(source.id, requestId);
       if (mounted.current && n === epoch.current) {
+        setRetainedPhase(s.status);
         if (s.creativeId) {
           const saved = verifyGeneratedCreative(await adStudioApi.getCreative(s.creativeId), source);
           if (mounted.current && n === epoch.current) await onSaved(saved);
@@ -244,10 +249,12 @@ export function ProductionImageGeneration({
         );
       }
     } catch (e) {
-      if (mounted.current && n === epoch.current)
+      if (mounted.current && n === epoch.current){
+        setRetainedPhase('');
         setError(e && typeof e === 'object' && 'message' in e && typeof e.message === 'string' ? e.message : "Saved generation status is unavailable. Try Check saved status; do not generate again.");
+      }
     } finally {
-      if (mounted.current && n === epoch.current) setActivity(null);
+      if (mounted.current && n === epoch.current){setActivity(null);setStatusRead(value=>value+1);}
     }
   };
   // Refresh/reopen must resolve the retained request, not park indefinitely on
@@ -255,10 +262,22 @@ export function ProductionImageGeneration({
   // retained bytes; none of these paths submit a new provider request.
   useEffect(() => {
     const retainedKey = source.id + ':' + requestId;
-    if (!proposal || !requestId || canEdit || busy || checkedRetainedRequest.current === retainedKey) return;
+    if (!proposal || !requestId || (canEdit&&!submittedHere.current) || busy || checkedRetainedRequest.current === retainedKey) return;
     checkedRetainedRequest.current = retainedKey;
     void status();
   }, [source.id, requestId, proposal, canEdit, busy]);
+  // Poll only status/retained output. Never replay quote or execute.
+  useEffect(()=>{
+    if(!proposal||!requestId||busy||!isProcessingStatus(retainedPhase))return;
+    const identity=source.id+':'+requestId;
+    if(statusPollStart.current?.key!==identity)statusPollStart.current={key:identity,at:Date.now()};
+    const delay=retainedStatusDelay(retainedPhase,statusPollStart.current.at,Date.now());
+    if(delay===null){setPollExpired(true);return;}
+    const timer=setTimeout(()=>void status(),delay);
+    return()=>clearTimeout(timer);
+  },[source.id,requestId,proposal,busy,retainedPhase,statusRead]);
+  const waitingForResult=!!requestId&&isProcessingStatus(retainedPhase)&&!pollExpired;
+  const retrySavedStatus=()=>{statusPollStart.current=null;setPollExpired(false);void status();};
   const recover = async () => {
     if (!retained || busy || !requestId) return;
     const n = ++epoch.current;
@@ -286,12 +305,12 @@ export function ProductionImageGeneration({
     setConsent(false);
   };
   const reopeningSaved = proposal && !!requestId && !canEdit && checkedRetainedRequest.current !== source.id + ':' + requestId;
-  if(proposal && !canEdit && compact)return <TemplateRenderReview source={source} format={source.sceneGraph.canvas.width===source.sceneGraph.canvas.height?'square_1080':source.sceneGraph.canvas.width>source.sceneGraph.canvas.height?'landscape_1920x1080':source.sceneGraph.canvas.height/source.sceneGraph.canvas.width>1.5?'vertical_1080x1920':'portrait_1080x1350'} active={enabled&&(busy||reopeningSaved||executeRequested&&!error&&!requestId)} phase={reopeningSaved||activity==='status'?'Opening your saved template…':error?'Your template needs attention':!enabled?'Generation is unavailable':requestId&&!busy?'Check your saved generation':activity==='readiness'?'Preparing your design…':'Creating your template…'}>
+  if(proposal && !canEdit && compact)return <TemplateRenderReview source={source} format={source.sceneGraph.canvas.width===source.sceneGraph.canvas.height?'square_1080':source.sceneGraph.canvas.width>source.sceneGraph.canvas.height?'landscape_1920x1080':source.sceneGraph.canvas.height/source.sceneGraph.canvas.width>1.5?'vertical_1080x1920':'portrait_1080x1350'} active={enabled&&(busy||waitingForResult||reopeningSaved||executeRequested&&!error&&!requestId)} phase={pollExpired?'Your generation is taking longer. Check its saved status.':waitingForResult&&!busy?'Creating your template preview…':reopeningSaved||activity==='status'?'Opening your saved template…':error?'Your template needs attention':!enabled?'Generation is unavailable':requestId&&!busy?'Check your saved generation':activity==='readiness'?'Preparing your design…':'Creating your template…'}>
     {error&&<p className="xp-notice" role="alert">{error}</p>}
     {!enabled&&<p className="xp-notice">AI generation needs local activation.</p>}
     {!busy&&!requestId&&(!executeRequested||!!error)&&<button className="xp-primary" disabled={!enabled||!valid} onClick={()=>void generate()}>Generate Template</button>}
-    {message&&<p role="status">{message}</p>}
-    {!busy&&requestId&&!reopeningSaved&&<div className="xp-actions"><button className="xp-secondary" onClick={()=>void status()}>Retry loading preview</button></div>}
+    {message&&!waitingForResult&&<p role="status">{message}</p>}
+    {!busy&&!waitingForResult&&requestId&&!reopeningSaved&&<div className="xp-actions"><button className="xp-secondary" onClick={retrySavedStatus}>Retry loading preview</button></div>}
   </TemplateRenderReview>;
   if(proposal && canEdit && !refiningProposal)return (
     <section className="ai-proposal-result" aria-label="Finished template proposal">
@@ -338,7 +357,7 @@ export function ProductionImageGeneration({
               change();
             }}
           >
-            <option value="generate">{proposal ? "New template proposal" : "Generate AI background"}</option>
+            <option value="generate">{proposal ? "Regenerate composition" : "Generate AI background"}</option>
             <option value="variation" disabled={!canEdit}>
               AI visual variation
             </option>
@@ -347,6 +366,7 @@ export function ProductionImageGeneration({
             </option>
           </select>
         </label> : <div className="ai-operation-label"><strong>{proposal ? "Finished template design" : "New AI background"}</strong>{!compact && <p>Variations and refinement become available after generation.</p>}</div>}
+        {canEdit&&proposal&&<p className="ai-operation-help">{operation==='generate'?'New composition using the same authorized product and model references.':operation==='variation'?'A visual variation using this image and the same references.':'Apply your creative-direction changes to this image using the same references.'}</p>}
         {!!requestId && <p role="status">A previous request is retained. Check its status below before starting another.</p>}
         {!canEdit && !proposal && (
           <p>

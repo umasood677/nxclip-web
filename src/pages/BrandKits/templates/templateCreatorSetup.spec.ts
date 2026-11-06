@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {brandKitProductChoices,automaticTemplateProducts,chooseTemplateProduct,templateCreatorIssues,TEMPLATE_IDEA_SUGGESTIONS} from './templateCreatorSetup';
+import {brandKitProductChoices,automaticTemplateProducts,chooseTemplateProduct,templateCreatorIssues,TEMPLATE_IDEA_SUGGESTIONS,productShadeColor,templateIdeaNeedsModel} from './templateCreatorSetup';
 import type {BrandKitSummary} from '../lib/brandKitTypes';
 const kit:BrandKitSummary={id:'brand',name:'Synthetic brand',version:9,products:[{id:'sku-red',name:'Signature Red',status:'active',sku:'RED'},{id:'retired',name:'Retired',status:'archived'}],assets:[{id:'a',label:'Original red photograph',role:'product_image',status:'ready'},{id:'b',label:'Original plum photograph',role:'product_image',status:'ready'},{id:'c',label:'Unreviewed photograph',role:'product_image',status:'ready'},{id:'pending',role:'product_image',status:'pending'},{id:'logo',role:'logo_primary',status:'ready'}],voice:{studio:{schemaVersion:1,categoryId:'beauty',nicheId:'lipstick',businessGoals:[],identityApproved:true,guidelinesApproved:true,approvedAssetIds:['a','b','logo']}}};
 test('product records and photographs remain distinct; no product/photo association is invented',()=>{
@@ -14,9 +14,9 @@ test('collection mode derives count from available approved references, capped a
  assert.equal(automaticTemplateProducts({...kit,assets:[]},'A product collection').slots.length,1);
  assert.equal(automaticTemplateProducts(kit,'A cinematic hero').slots.length,1);
 });
-test('manual selection preserves color/model and appends explicit product references without mutating inputs',()=>{
+test('manual selection resets stale shade, preserves model and appends explicit product references without mutating inputs',()=>{
  const initial={schemaVersion:1 as const,slots:[{label:'Existing',assetId:'a',color:'#123456'}],modelProfileId:'model'},before=JSON.stringify(initial);
- let c=chooseTemplateProduct(initial,0,brandKitProductChoices(kit)[0]);assert.equal(c.slots[0].assetId,undefined);assert.equal(c.slots[0].label,'Signature Red');assert.equal(c.slots[0].color,'#123456');
+ let c=chooseTemplateProduct(initial,0,brandKitProductChoices(kit)[0]);assert.equal(c.slots[0].assetId,undefined);assert.equal(c.slots[0].label,'Signature Red');assert.equal(c.slots[0].color,'#b32032');
  c=chooseTemplateProduct(c,0,brandKitProductChoices(kit)[1]);c=chooseTemplateProduct(c,1,brandKitProductChoices(kit)[2]);c=chooseTemplateProduct(c,2,{key:'photo:third',label:'Third actual photo',assetId:'third',kind:'photograph',approved:true});
  assert.deepEqual(c.slots.map(s=>s.assetId),['a','b','third']);assert.equal(c.modelProfileId,'model');assert.equal(JSON.stringify(initial),before);
  assert.throws(()=>chooseTemplateProduct(c,4,brandKitProductChoices(kit)[1]),/four products/);
@@ -70,4 +70,21 @@ test('automatic review does not consume its one attempt while another operation 
  const context={pending,reviewAttempt,busy:true,editingGeneration:false,params:{get:()=>null},source:{id:'draft',currentVersion:1},sourceId:'draft',native:true,generated:false,publish:()=>{calls++;}};
  const run=vm.runInNewContext(ts.transpileModule('const run='+callback!.getText(tree)+';run;',{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText,context) as ()=>void;
  run();assert.equal(calls,0);assert.equal(reviewAttempt.current,'');pending.current=false;context.busy=false;run();assert.equal(calls,1);assert.equal(reviewAttempt.current,'draft:1');run();assert.equal(calls,1);
+});
+
+
+test('product choice supplies its named Brand Kit shade and never retains another shade',()=>{
+ const palette={...kit,colors:[{name:'Signature Red',hex:'#b31028'},{name:'Matte Maroon',hex:'#641322'},{name:'Chocolate Brown',hex:'#542e24'}]};
+ assert.equal(productShadeColor(palette,'Matte Maroon lipstick'),'#641322');
+ const selected=chooseTemplateProduct({schemaVersion:1,slots:[{label:'Red',color:'#b31028'}]},0,{key:'m',label:'Matte Maroon',assetId:'b',color:productShadeColor(palette,'Matte Maroon'),kind:'photograph',approved:true});
+ assert.equal(selected.slots[0].color,'#641322');assert.equal(productShadeColor(palette,'Unknown shade'),undefined);
+});
+test('automatic references match named products in the idea instead of always choosing the first',()=>{
+ assert.equal(automaticTemplateProducts(kit,'Original plum lipstick hero').slots[0].assetId,'b');
+});
+test('a requested model must be selected explicitly; product-only and optional models stay optional',()=>{
+ assert.equal(templateIdeaNeedsModel('Use the approved female model alongside the product'),true);
+ assert.equal(templateIdeaNeedsModel('Product-only, no brand model'),false);
+ assert.equal(templateIdeaNeedsModel('Use products and optional approved Brand Model'),false);
+ assert.ok(templateCreatorIssues(kit,automaticTemplateProducts(kit,''),'Use the brand model with lipstick',false,true).some(x=>x.includes('Select an approved Brand Model')));
 });

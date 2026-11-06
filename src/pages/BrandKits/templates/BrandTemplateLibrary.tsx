@@ -1,3 +1,5 @@
+import {TemplateSourceReferences} from './TemplateSourceReferences';
+import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription} from '../../../components/ui/dialog';
 import {TemplateLeaveDialog} from './TemplateLeaveDialog';
 import {templateLeaveDecision} from './templateLeaveDecision';
 import type {ReviewMediaPhase} from './reviewMediaLoading';
@@ -105,6 +107,7 @@ export default function BrandTemplateLibrary() {
     [projects, setProjects] = useState<WorkspaceProject[]>([]);
   const [templateDrafts,setTemplateDrafts]=useState<DeletableTemplateDraft[]>([]),[creatingCampaign,setCreatingCampaign]=useState(false);
   const running=useRef(false);
+  const [reuseOpen,setReuseOpen]=useState(false);
   const [leaveTarget,setLeaveTarget]=useState<string|null>(null);
   const [deleteSelection,setDeleteSelection]=useState<string[]>([]),[deleteRequest,setDeleteRequest]=useState<TemplateDeleteEntry[]|null>(null),[deleteResults,setDeleteResults]=useState<Array<TemplateDeleteResult&{name?:string}>>([]);
   useEffect(()=>{setDeleteSelection([]);setDeleteRequest(null);setDeleteResults([]);},[brandId]);
@@ -190,10 +193,10 @@ export default function BrandTemplateLibrary() {
     return () => { requestVersion.current += 1; };
   }, [load]);
   useEffect(()=>{
-    if(!selected?.saved || !canReuseTemplate(selected))return;let active=true;
+    if(!reuseOpen || !selected?.saved || !canReuseTemplate(selected))return;let active=true;
     void adStudioApi.listProjects().then(result=>{if(active)setProjects(result.items as WorkspaceProject[]);}).catch(()=>{if(active)setError('Campaigns could not be loaded. Your saved template is unchanged.');});
     return()=>{active=false;};
-  },[selected?.id,selected?.saved,selected?.revision]);
+  },[selected?.id,selected?.saved,selected?.revision,reuseOpen]);
   useEffect(() => {
     setDraft(selected ? draftFor(selected) : null);
     setDraftIdentity(selected?.id||"");
@@ -286,14 +289,20 @@ export default function BrandTemplateLibrary() {
         value === "approve" && (selected.provenance.compositionMode==='reference-guided-template-v1' || depictionReviewed),
       );
       templateResponseId(result,selected.id,value === "duplicate");
-      const fresh = result;
+      let fresh = result;
       upsert(fresh);
+      if(value === "approve"){
+        try{
+          fresh=await brandTemplateApi.action(brandId,fresh.id,fresh.revision,"save");
+          templateResponseId(fresh,selected.id);upsert(fresh);
+        }catch{throw new Error("Template approved, but saving failed. Choose Save template to finish.");}
+      }
       if (activeBrand.current !== brandId) return;
       if (value === "duplicate")
         navigate(base + "/" + encodeURIComponent(fresh.id));
       setMessage(
         value === "approve"
-          ? "Approved. Save this reviewed recipe before reuse."
+          ? "Template approved and saved to your Brand Library."
           : `Template ${value} completed.`,
       );
     });
@@ -400,10 +409,7 @@ export default function BrandTemplateLibrary() {
   });
   const reviewProject = (
     <section className="xp-panel" id="template-project-selection">
-      <h3>Choose a campaign</h3>
-      <p>
-        Choose a campaign or create one to make an advertisement from this saved template.
-      </p>
+
       <button className="xp-secondary" onClick={()=>setCreatingCampaign(v=>!v)}><Plus size={14}/> Create campaign</button>
       {creatingCampaign && <AdProjectCreateForm brands={[kit]} brandLocked initialBrandId={brandId} format={selected?.format || format} onCancel={()=>setCreatingCampaign(false)} onCreated={p=>{setProjects(old=>[p,...old.filter(x=>x.id!==p.id)]);setProjectId(p.id);setCreatingCampaign(false);}}/>}
       {matching.length ? (
@@ -422,10 +428,7 @@ export default function BrandTemplateLibrary() {
           </select>
         </label>
       ) : (
-        <EmptyState
-          title="No matching projects"
-          description="Create a project using this Brand Kit and the selected output format, then return to reuse the template."
-        />
+        <p className="bt-campaign-empty">No campaigns for this Brand Kit yet. Create one to continue.</p>
       )}
       <button
         className="xp-primary"
@@ -437,7 +440,7 @@ export default function BrandTemplateLibrary() {
         }
         onClick={reuse}
       >
-        Create ad from saved template →
+        Create ad →
       </button>
       <Link
         className="xp-text-button"
@@ -498,13 +501,12 @@ export default function BrandTemplateLibrary() {
           />
         ) : selected && draft ? (
           <>
-            <div className="xp-split bt-review">
+            {reviewPhase!=="ready"&&<TemplateRenderReview active={reviewPhase!=="failed"} phase={reviewPhase==="failed"?"Preview could not load":"Preparing your preview…"}>{reviewPhase==="failed"&&<button type="button" className="xp-secondary" onClick={()=>{setMediaReload(n=>n+1);retryPreview();}}>Retry loading preview</button>}</TemplateRenderReview>}
+            <div className="xp-split bt-review" style={{display:reviewPhase==="ready"?undefined:"none"}} aria-hidden={reviewPhase!=="ready"}>
               <section className="xp-panel bt-preview-panel">
                 <TemplateReviewMedia graph={draftPreview} urls={urls} busy={previewLoading} onPhase={onReviewPhase} onRetry={()=>{setMediaReload(n=>n+1);retryPreview();void brandApi.getKit(brandId).then(brand=>{if(brand.id===brandId&&activeBrand.current===brandId)setKit(brand);}).catch(()=>{/* The preview retains its retry action. */});}}/>
                 {previewError&&<p role="alert" className="bt-blocker">{previewError} <button className="xp-text-button" onClick={retryPreview}>Retry preview</button></p>}
-                <span className="xp-status">
-                  {selected.saved ? "Saved" : selected.state === "approved" ? "Ready to save" : "Review needed"}
-                </span>
+
 
                 {[
                   ...new Set([
@@ -517,8 +519,17 @@ export default function BrandTemplateLibrary() {
                     {text}
                   </p>
                 ))}
-                {selected.provenance.compositionMode==='reference-guided-template-v1'&&<><p className="bt-photo-treatment">Photographic scene · Regenerate to change subjects, pose or environment.</p><div className="bt-reference-compare" aria-label="Original identity references">{selected.provenance.referenceManifest?.map(r=><figure key={r.assetId}>{urls[r.assetId]&&<img src={urls[r.assetId]} alt={r.purpose==='MODEL_IDENTITY'?'Original model reference':r.purpose==='PRODUCT_IDENTITY'?'Original product reference':'Style reference'}/>}<figcaption>{r.purpose==='MODEL_IDENTITY'?'Model':r.purpose==='PRODUCT_IDENTITY'?'Product':'Style'}</figcaption></figure>)}</div><button className="xp-secondary" disabled={busy||dirty} onClick={()=>go(base+'?tab=brand&mode=ai&source='+encodeURIComponent(selected.provenance.sourceCreativeId!)+'&regenerate=1&template='+encodeURIComponent(selected.id)+'&revision='+selected.revision)}>Regenerate template</button></>}
-                <div className="bt-preview-actions">{selected.provenance.method==='native-template-engine' ? <button className="xp-secondary" disabled={busy || dirty} onClick={editNativeInCanvas}>Customize in Canvas →</button> : selected.provenance.sourceCreativeId && <button className="xp-secondary" onClick={()=>go(templateCanvasPath(selected.provenance.sourceCreativeId!,selected.id,selected.revision))}>Customize in Canvas →</button>}</div>
+                <footer className="bt-preview-footer">
+                  <div className="bt-preview-meta"><span className="xp-status">
+                  {selected.saved ? "Saved to Brand Library" : selected.state === "approved" ? "Approved · Save pending" : "Review needed"}
+                </span>
+
+                  </div>
+                  <div className="bt-preview-actions">
+                    {selected.provenance.compositionMode==='reference-guided-template-v1'&&<button className="xp-secondary" disabled={busy||dirty} onClick={()=>go(base+'?tab=brand&mode=ai&source='+encodeURIComponent(selected.provenance.sourceCreativeId!)+'&regenerate=1&template='+encodeURIComponent(selected.id)+'&revision='+selected.revision)}>Regenerate template</button>}
+                    {selected.provenance.method==='native-template-engine'?<button className="xp-primary" disabled={busy||dirty} onClick={editNativeInCanvas}>Customize in Canvas →</button>:selected.provenance.sourceCreativeId&&<button className="xp-primary" onClick={()=>go(templateCanvasPath(selected.provenance.sourceCreativeId!,selected.id,selected.revision))}>Customize in Canvas →</button>}
+                  </div>
+                </footer>
               </section>
               <section className={"xp-panel bt-review-details"+(reviewPhase!=="ready"?" bt-details-loading":"")} aria-busy={reviewPhase!=="ready"}>
                 <h2>Template details</h2>
@@ -616,6 +627,7 @@ export default function BrandTemplateLibrary() {
                     Save customization
                   </button>
                 </fieldset>
+                <TemplateSourceReferences references={selected.provenance.referenceManifest} sourceAssetIds={selected.sourceAssetIds} kit={kit} urls={urls}/>
                 {selected.provenance.compositionMode!=='reference-guided-template-v1'&&selected.provenance.renderMode==="template-proposal" && !selected.provenance.productDepictionReviewed && <label className="xp-check"><input type="checkbox" disabled={reviewPhase!=="ready"} checked={depictionReviewed} onChange={e=>setDepictionReviewed(e.target.checked)}/>I reviewed the product, packaging and brand copy.</label>}
                 <div className="xp-actions bt-review-actions">
                   {(
@@ -631,12 +643,12 @@ export default function BrandTemplateLibrary() {
                     .filter((a) =>
                       selected.state === "archived"
                         ? a === "restore"
-                        : a !== "restore",
+                        : a !== "restore" && (a !== "approve" || selected.state !== "approved") && (a !== "save" || selected.state === "approved" && !selected.saved),
                     )
                     .map((a) => (
                       <button
                         className={
-                          a === "approve" ? "xp-primary" : "xp-secondary"
+                          a === "approve" || a === "save" ? "xp-primary" : "xp-secondary"
                         }
                         disabled={
                           busy || reviewPhase==="loading" ||
@@ -658,15 +670,15 @@ export default function BrandTemplateLibrary() {
                         ) : (
                           <Palette size={14} />
                         )}{" "}
-                        {a[0].toUpperCase() + a.slice(1)}
+                        {a === "approve" ? "Approve & Save Template" : a === "save" ? "Save template" : a[0].toUpperCase() + a.slice(1)}
                       </button>
                     ))}
                 </div>
-                <div className="bt-review-use"><button className="xp-primary" disabled={busy || reviewPhase!=="ready" || dirty || !canReuseTemplate(selected)} onClick={()=>document.getElementById('template-project-selection')?.scrollIntoView({behavior:'smooth',block:'center'})}>Use Template in Ad Studio →</button></div>
+                <div className="bt-review-use"><button className="xp-primary" disabled={busy || reviewPhase!=="ready" || dirty || !canReuseTemplate(selected)} onClick={()=>setReuseOpen(true)}>Create ad from this template →</button></div>
 
               </section>
             </div>
-            {canReuseTemplate(selected) && reviewProject}
+            {canReuseTemplate(selected) && <Dialog open={reuseOpen} onOpenChange={setReuseOpen}><DialogContent className="bt-campaign-dialog bt-root nxclip-production"><DialogHeader><DialogTitle>Create ad from this template</DialogTitle><DialogDescription>Choose a campaign. Your saved Brand Template stays unchanged.</DialogDescription></DialogHeader>{reviewProject}</DialogContent></Dialog>}
           </>
         ) : (
           <>

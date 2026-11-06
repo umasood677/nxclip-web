@@ -1,3 +1,5 @@
+import {applyTemplateProductShades,productShadeKey} from './templateProductShade';
+import {templateIdeaNeedsModel} from './templateCreatorSetup';
 import {templateRegenerationInstruction} from './templateReferenceInput';
 import {useTemplateAssetUrls,templateImageIds} from './useTemplateAssetUrls';
 import {templateEditTarget,saveCanvasTemplate} from './templateCanvasLink';
@@ -33,6 +35,7 @@ export function BrandTemplateAiWorkspace({kit:initialKit,initialFormat,onBack: _
   const [kit,setKit]=useState(initialKit);useEffect(()=>setKit(initialKit),[initialKit]);
   const [configuration,setConfiguration]=useState<TemplateProductConfiguration>(()=>automaticTemplateProducts(initialKit,'')),[selectionMode,setSelectionMode]=useState<ProductSelectionMode>('automatic');
   const [styleIds,setStyleIds]=useState<string[]>([]);
+  const [shadeOverrides,setShadeOverrides]=useState<Record<string,string>>({});
   const editingGeneration=params.get('refine')==='1'||params.get('regenerate')==='1';
   const [generationRequested,setGenerationRequested]=useState(false);
   const [format,setFormat]=useState(initialFormat),[layout,setLayout]=useState(entryKind==="native"?"product-hero":"auto"),[direction,setDirection]=useState("");
@@ -52,7 +55,8 @@ export function BrandTemplateAiWorkspace({kit:initialKit,initialFormat,onBack: _
     return()=>{active=false;};
   },[sourceId,source?.id,kit.id]);
   const layouts=TEMPLATE_CATALOG_V1.filter(t=>t.formats.some(f=>f===format));
-  const effectiveConfiguration=selectionMode==='automatic'&&!source&&!sourceId?automaticTemplateProducts(kit,direction,configuration.modelProfileId):configuration;
+  const selectedConfiguration=selectionMode==='automatic'&&!source&&!sourceId?automaticTemplateProducts(kit,direction,configuration.modelProfileId):configuration;
+  const effectiveConfiguration=applyTemplateProductShades(kit,selectedConfiguration,direction,shadeOverrides);
   const layoutValid=layout==='auto'||layouts.some(t=>t.templateId===layout);
   const referenceCount=new Set(effectiveConfiguration.slots.flatMap(s=>s.assetId?[s.assetId]:[])).size+(effectiveConfiguration.modelProfileId?1:0)+styleIds.length;
   const issues=[...templateCreatorIssues(kit,effectiveConfiguration,direction,native,layoutValid),...(!native&&referenceCount>4?['Choose at most four product, model and style references.']:[])],draftIssues=templateCreatorIssues(kit,effectiveConfiguration,direction,native,layoutValid,true);
@@ -102,7 +106,7 @@ navigate("/brands/"+encodeURIComponent(kit.id)+"/templates/"+encodeURIComponent(
       {!native&&<div className="bt-idea-section"><label className="xp-field bt-description-field">Describe your creative idea<textarea rows={3} disabled={busy} value={direction} maxLength={4000} onChange={e=>setDirection(e.target.value)} placeholder="A cinematic product hero, an editorial story, or a collection launch…"/></label>
        <div className="bt-idea-suggestions" role="group" aria-label="Creative idea suggestions">{TEMPLATE_IDEA_SUGGESTIONS.map(s=><button type="button" key={s.name} disabled={busy} onClick={()=>setDirection(s.idea)}>{s.name}</button>)}</div></div>}
       <div className="bt-format-field"><span>Format</span><div className="bt-format-options" role="group" aria-label="Format">{AD_FORMATS.map(f=><button type="button" key={f.id} disabled={busy} aria-pressed={format===f.id} onClick={()=>{setFormat(f.id);if(layout!=='auto'&&!TEMPLATE_CATALOG_V1.find(t=>t.templateId===layout)?.formats.some(v=>v===f.id))setLayout(native?'product-hero':'auto');}}><span className="bt-format-shape" data-format={f.id} aria-hidden="true"/>{f.label}</button>)}</div></div>
-      <TemplateProductSettings value={effectiveConfiguration} selectionMode={selectionMode} onSelectionModeChange={mode=>{setConfiguration(effectiveConfiguration);setSelectionMode(mode);}} onChange={value=>{if(JSON.stringify(value.slots)!==JSON.stringify(effectiveConfiguration.slots))setSelectionMode('specific');setConfiguration(value);}} kit={kit} onKitUpdated={setKit} disabled={busy}/>
+      <TemplateProductSettings creativeIdea={direction} onShadeChange={(index,color)=>setShadeOverrides(previous=>({...previous,[productShadeKey(index,effectiveConfiguration.slots[index])]:color}))} modelRequired={!native&&templateIdeaNeedsModel(direction)} value={effectiveConfiguration} selectionMode={selectionMode} onSelectionModeChange={mode=>{setConfiguration(effectiveConfiguration);setSelectionMode(mode);}} onChange={value=>{if(JSON.stringify(value.slots)!==JSON.stringify(effectiveConfiguration.slots))setSelectionMode('specific');setConfiguration(value);}} kit={kit} onKitUpdated={setKit} disabled={busy}/>
       {!!issues.length&&<ul id="template-setup-validation" className="bt-setup-validation" aria-live="polite">{[...new Set(issues)].map(issue=><li key={issue}>{issue}</li>)}</ul>}
       <div className="bt-creator-footer"><details className="bt-advanced-options"><summary>Advanced Options</summary>{!native&&<div className="bt-style-references"><span>Style references · optional</span>{(kit.assets||[]).filter(a=>['campaign_reference','other'].includes(a.role)&&a.status==='ready'&&kit.voice?.studio?.approvedAssetIds?.includes(a.id)&&!kit.voice?.studio?.characters?.some(p=>p.referenceAssetIds.includes(a.id))).map(a=><label key={a.id} className="xp-check"><input type="checkbox" disabled={busy} checked={styleIds.includes(a.id)} onChange={e=>setStyleIds(ids=>e.target.checked?[...ids,a.id]:ids.filter(id=>id!==a.id))}/>{a.label||a.fileName||'Style reference'}</label>)}</div>}<fieldset disabled={busy} className="bp-fieldset"><label className="xp-field">{native?'Layout':'Composition guidance'}<select value={layout} onChange={e=>setLayout(e.target.value)}>{!native&&<option value="auto">Let AI compose from my brief</option>}{layouts.map(t=><option key={t.templateId} value={t.templateId}>{t.name}</option>)}</select></label></fieldset></details>
       <div className="bt-setup-actions">
