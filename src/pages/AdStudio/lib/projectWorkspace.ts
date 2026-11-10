@@ -69,16 +69,26 @@ export function campaignCta(brief: WorkspaceBrief | AdBriefFormState): string {
 
 export function projectBriefForm(project: WorkspaceProject): AdBriefFormState {
   const merged = { ...DEFAULT_AD_BRIEF, ...project.brief };
+  // Prefer explicitly saved concise campaign copy.  The merged form includes
+  // defaults, so reading it first can incorrectly replace a saved field with
+  // an older labelled line in the original idea on reopen.
+  const savedHeadline = conciseCampaignCopy(project.brief?.headline, 120);
+  const hasSavedSupportingCopy = Object.prototype.hasOwnProperty.call(project.brief ?? {}, "supportingCopy");
+  const savedSupportingCopy = conciseCampaignCopy(project.brief?.supportingCopy, 240);
+  const savedCta = conciseCampaignCopy(project.brief?.cta, 64);
   return { ...merged,
-    headline: (project.brief?.planningApproved === true ? merged.headline : campaignHeadline(merged)),
-    supportingCopy: (project.brief?.planningApproved === true ? merged.supportingCopy : campaignSupportingCopy(merged)),
-    cta: (project.brief?.planningApproved === true ? merged.cta : campaignCta(merged)) || DEFAULT_AD_BRIEF.cta,
+    // Copy is campaign data, not a planning-authorization side effect.  Keep
+    // explicit concise fields on every reopen; only discard legacy narrative
+    // blobs that cannot be rendered as editable copy.
+    headline: savedHeadline || campaignHeadline(merged),
+    supportingCopy: hasSavedSupportingCopy ? savedSupportingCopy : campaignSupportingCopy(merged),
+    cta: savedCta || campaignCta(merged) || DEFAULT_AD_BRIEF.cta,
     name: project.name,
     brandKitId: project.brandKitId ?? "", brandPreview: null,
     outputFormat: project.outputFormat || project.brief?.outputFormat || DEFAULT_AD_BRIEF.outputFormat };
 }
 export function workspaceBrief(project: WorkspaceProject, form: AdBriefFormState, options: Pick<BriefSaveOptions,"allowCampaignIdeaEdit" | "approvePlanning"> = {}) {
-  return { ...project.brief, planningApproved: options.approvePlanning, planningAssumptions: form.planningAssumptions, headline:form.headline,supportingCopy:form.supportingCopy, productOrService: form.productOrService,
+  return { ...project.brief, planningApproved: options.approvePlanning ?? project.brief?.planningApproved, planningAssumptions: form.planningAssumptions, headline:form.headline,supportingCopy:form.supportingCopy, productOrService: form.productOrService,
     advertisingObjective: form.advertisingObjective, targetAudience: form.targetAudience,
     coreMessage: form.coreMessage, desiredTone: form.desiredTone, platform: form.platform,
     outputFormat: form.outputFormat, cta: form.cta,

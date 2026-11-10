@@ -15,7 +15,17 @@ export type ConceptQuote = {
   inputScope: "saved-campaign-text-only";
   costBasis: "configured-estimate" | "usage-only";
 };
-export type PlanningInput = { planningAction: "brief" | "directions"; planningFeedback?: string; conceptCount: 3; maxEstimatedCostUsd: number };
+/**
+ * Campaign planning is an application capability.  Unlike artwork generation,
+ * it does not expose a customer quote, budget, or authorization token in the
+ * normal campaign journey.  Durable request ids still protect against
+ * duplicate provider calls.
+ */
+export type PlanningInput = {
+  planningAction: "brief" | "directions";
+  planningFeedback?: string;
+  conceptCount: 3;
+};
 export type QuotedConceptResult = {
   campaignStrategy?: {
     productOrService: string; targetAudience: string; coreMessage: string;

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Megaphone, Sparkles } from "lucide-react";
+import { ClipboardCheck, Compass, Megaphone, ShieldCheck, Sparkles } from "lucide-react";
 import { adStudioApi, brandApi, brandTemplateApi } from "../../../services/apiClient";
 import { SEO } from "../../../components/SEO";
 import { Skeleton } from "../../../components/ui/skeleton";
@@ -221,10 +221,10 @@ export default function AdProjectStart() {
               <h2 id="campaign-guide-title">Your campaign starts here</h2>
             </div>
             <p>Save the idea first. Planning and artwork generation happen only when you choose them.</p>
-            <ol>
-              <li>Review campaign brief</li>
-              <li>Explore creative directions</li>
-              <li>Review production readiness</li>
+            <ol aria-label="Campaign workflow">
+              <li><ClipboardCheck size={16} aria-hidden="true" /><span>Review campaign brief</span></li>
+              <li><Compass size={16} aria-hidden="true" /><span>Explore creative directions</span></li>
+              <li><ShieldCheck size={16} aria-hidden="true" /><span>Review production readiness</span></li>
             </ol>
           </aside>
         </div>

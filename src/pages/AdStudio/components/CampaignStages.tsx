@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { adStudioApi, quotedConceptApi } from "../../../services/apiClient";
-import { applyCampaignStrategy, requireAiConceptResult, validateConceptQuote, type ConceptQuote, type PlanningInput, type QuotedConceptResult } from "../production/conceptExecutionModel";
+import { applyCampaignStrategy, requireAiConceptResult, type PlanningInput, type QuotedConceptResult } from "../production/conceptExecutionModel";
 import { Button } from "../../../components/ui/button";
 import { EmptyState } from "../../../components/common/EmptyState";
 import { BrandTemplateScenePreview } from "../../BrandKits/templates/BrandTemplateScenePreview";
@@ -43,22 +43,6 @@ function storeReceipt(projectId: string, receipt?: PlanningReceipt) {
   } catch { /* Current-page recovery is still available. */ }
 }
 
-type PlanningSession = { id: string; budgetUsd: number; expiresAt: number };
-const sessionKey = (projectId: string) => "nxclip.planning-session." + projectId;
-function loadSession(projectId?: string): PlanningSession | undefined {
-  if (!projectId) return;
-  try {
-    const value = JSON.parse(sessionStorage.getItem(sessionKey(projectId)) ?? "null");
-    if (value && typeof value.id === "string" && typeof value.budgetUsd === "number" &&
-      value.expiresAt > Date.now()) return value;
-  } catch { /* Storage can be unavailable in private browsing. */ }
-}
-function storeSession(projectId: string, session?: PlanningSession) {
-  try {
-    if (session) sessionStorage.setItem(sessionKey(projectId), JSON.stringify(session));
-    else sessionStorage.removeItem(sessionKey(projectId));
-  } catch { /* Current-page authorization still works. */ }
-}
 function apiErrorMessage(error: unknown, fallback: string) {
   return error && typeof error === "object" && "message" in error && typeof error.message === "string"
     ? error.message : fallback;
@@ -83,14 +67,9 @@ export function CampaignStages({ controller, stage, query }: {
   const { project, form, setForm, saveBrief, creatives, assetUrls, concepts, brand } = controller;
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const [session, setSession] = useState(() => loadSession(project?.id));
-  const [budget, setBudget] = useState("");
   const [feedback, setFeedback] = useState("");
   const [directionFeedback, setDirectionFeedback] = useState("");
-  const [pending, setPending] = useState<{ projectId: string; input: PlanningInput; quote: ConceptQuote; form: typeof form }>();
   const [retained, setRetained] = useState<PlanningReceipt | undefined>(() => storedReceipt(project?.id));
-  const [confirmAssumptions, setConfirmAssumptions] = useState(false);
-  const [needsApproval, setNeedsApproval] = useState(false);
   const [editing, setEditing] = useState<import("../types").AdConcept>();
   const [productionCopy, setProductionCopy] = useState<Record<string, Partial<typeof form>>>({});
   const operation = useRef(false);
@@ -113,17 +92,14 @@ export function CampaignStages({ controller, stage, query }: {
     ids.forEach((id) => next.append("direction", id));
     return base + "?" + next;
   };
-  const assumptionsReviewed = confirmAssumptions || (project.brief?.planningApproved === true && !needsApproval);
   async function save() {
-    if (operation.current || !form.campaignIdea?.trim() || (form.planningAssumptions?.length && !assumptionsReviewed)) return;
+    if (operation.current || !form.campaignIdea?.trim()) return;
     operation.current = true;
-    setPending(undefined);
     setSaving(true);
     setMessage("");
     try {
-      await saveBrief({ allowCampaignIdeaEdit: true, approvePlanning: true });
-      setNeedsApproval(false);
-      setMessage("Campaign brief approved.");
+      await saveBrief({ allowCampaignIdeaEdit: true });
+      setMessage("Campaign brief saved.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not save the brief.");
     } finally {
@@ -132,24 +108,28 @@ export function CampaignStages({ controller, stage, query }: {
     }
   }
 
-  async function estimate(action: PlanningInput["planningAction"]) {
+  async function plan(action: PlanningInput["planningAction"]) {
     if (!project || operation.current || retained) return;
     operation.current = true;
     setSaving(true);
     setMessage("");
-    setPending(undefined);
     try {
       if (action === "brief") await saveBrief({ allowCampaignIdeaEdit: true });
       const refinement = (action === "brief" ? feedback : directionFeedback).trim();
-      const input: PlanningInput = { planningAction: action, conceptCount: 3, maxEstimatedCostUsd: 1,
+      const input: PlanningInput = { planningAction: action, conceptCount: 3,
         ...(refinement ? { planningFeedback: refinement } : {}) };
-      const quote = validateConceptQuote(await quotedConceptApi.planningQuote(project.id, input), input.maxEstimatedCostUsd);
-      if (quote.conceptCount !== 3 || quote.estimatedCostUsd === null) throw Error("Planning estimate is unavailable.");
-      const minimumBudget = Math.max(1, Math.ceil(quote.estimatedCostUsd * 1_000_000));
-      setBudget((Math.min(1_000_000, minimumBudget * 3) / 1_000_000).toFixed(6));
-      setPending({ projectId: project.id, input, quote, form });
+      const request = { projectId: project.id, requestId: crypto.randomUUID(), action };
+      setRetained(request);
+      storeReceipt(project.id, request);
+      const result = await quotedConceptApi.planningExecute(project.id, { ...input, requestId: request.requestId });
+      applyPlan(action, result);
+      storeReceipt(project.id);
+      setRetained(undefined);
     } catch (error) {
-      setMessage(apiErrorMessage(error, "Could not estimate planning."));
+      const detail = apiErrorMessage(error, "Planning could not complete.");
+      setMessage(detail.includes("Concept generation could not complete") || detail.includes("temporarily unavailable")
+        ? detail
+        : `Planning could not complete: ${detail}`);
     } finally {
       operation.current = false;
       setSaving(false);
@@ -161,62 +141,12 @@ export function CampaignStages({ controller, stage, query }: {
       if (!result.campaignStrategy) throw Error("The saved request has no campaign brief.");
       const strategy = result.campaignStrategy;
       setForm((current: typeof form) => applyCampaignStrategy(current, strategy));
-      setConfirmAssumptions(false);
-      setNeedsApproval(true);
       setFeedback("");
-      setMessage("Review and approve the suggested brief.");
+      setMessage("Campaign brief is ready to review.");
     } else {
       controller.setConcepts(requireAiConceptResult(result).concepts);
       setDirectionFeedback("");
       setMessage("Three directions are ready to review.");
-    }
-  }
-
-  async function authorize() {
-    if (!pending || operation.current || pending.projectId !== project?.id || pending.form !== form) return;
-    if (!activeSession && !validBudget) return;
-    operation.current = true;
-    setSaving(true);
-    const request = { projectId: pending.projectId, requestId: crypto.randomUUID(), action: pending.input.planningAction };
-    const authorization = activeSession ?? { id: request.requestId, budgetUsd: Number(budget), expiresAt: Date.now() + 3_600_000 };
-    if (!activeSession) {
-      setSession(authorization);
-      storeSession(request.projectId, authorization);
-    }
-    setRetained(request);
-    storeReceipt(request.projectId, request);
-    setPending(undefined);
-    try {
-      const result = await quotedConceptApi.planningExecute(request.projectId, {
-        ...pending.input, requestId: request.requestId, approvedQuoteHash: pending.quote.quoteHash,
-        planningSessionId: authorization.id, allowPaidProvider: !activeSession,
-        ...(!activeSession ? { planningBudgetUsd: authorization.budgetUsd } : {}),
-      });
-      applyPlan(request.action, result);
-      storeReceipt(request.projectId);
-      setRetained(undefined);
-    } catch (error) {
-      const detail = apiErrorMessage(error, "");
-      if (detail.startsWith("Planning authorization is missing or expired") ||
-        detail.startsWith("Planning estimate exceeds the remaining session budget") ||
-        detail.startsWith("Campaign context or routing changed")) {
-        if (!detail.startsWith("Campaign context or routing changed") || !activeSession) {
-          setSession(undefined);
-          storeSession(request.projectId);
-        }
-        setRetained(undefined);
-        storeReceipt(request.projectId);
-        setMessage(detail);
-      } else {
-        const retainedFailure = detail.startsWith("Concept generation could not complete.") ||
-          detail.startsWith("Concept generation is temporarily unavailable.");
-        setMessage(retainedFailure
-          ? detail
-          : "Planning outcome could not be confirmed. Check the saved request before trying again.");
-      }
-    } finally {
-      operation.current = false;
-      setSaving(false);
     }
   }
 
@@ -241,7 +171,7 @@ export function CampaignStages({ controller, stage, query }: {
         storeReceipt(retained.projectId);
         setRetained(undefined);
       } else if (status.status === "failed") {
-        setMessage("Planning failed. A new request requires a fresh estimate and approval.");
+        setMessage("Planning failed. Review the campaign brief, then start a new planning request when ready.");
         storeReceipt(retained.projectId);
         setRetained(undefined);
       } else setMessage("The saved request is still processing.");
@@ -253,28 +183,9 @@ export function CampaignStages({ controller, stage, query }: {
     }
   }
 
-  const activeQuote = pending?.projectId === project.id && pending.form === form &&
-    pending.input.planningAction === (stage === "strategy" ? "brief" : "directions") ? pending : undefined;
-  const activeSession = session && session.expiresAt > Date.now() ? session : undefined;
-  const validBudget = /^\d+(\.\d{1,6})?$/.test(budget) && Number(budget) <= 1 && Number(budget) > 0 &&
-    Number(budget) >= (activeQuote?.quote.estimatedCostUsd ?? Infinity);
   const planningStatus = <div className="campaign-planning-status" aria-live="polite">
-    {!activeQuote && !activeSession && !retained && !saving && !message &&
-      <p className="campaign-planning-status__hint">Optional. Estimate planning when you are ready; no request is sent until you explicitly authorize it.</p>}
-    {activeQuote && <div className="campaign-planning-status__quote">
-      <div><span className="campaign-director__eyebrow">Planning estimate</span><strong>${activeQuote.quote.estimatedCostUsd} USD for this request</strong></div>
-      {!activeSession && <label>Session allowance (USD)
-        <input className="rounded-md border border-input bg-background px-3 py-2" inputMode="decimal"
-          value={budget} onChange={event => setBudget(event.target.value)} />
-      </label>}
-      <div className="campaign-planning-status__actions"><button className="w0a-create-project" disabled={saving || (!activeSession && !validBudget)} type="button" onClick={() => void authorize()}>
-        {activeSession ? "Continue planning" : "Authorize planning"}
-      </button><Button variant="ghost" type="button" onClick={() => setPending(undefined)}>Cancel</Button></div>
-    </div>}
-    {activeQuote && !activeSession && <p>Estimates guide this planning session; provider charges may differ.</p>}
-    {activeSession && <p>Session allowance: ${activeSession.budgetUsd} USD. Image and video generation are authorized separately.</p>}
     {retained && !saving && <Button variant="outline" type="button" onClick={() => void checkPlanning()}>Check saved request</Button>}
-    {(saving || message) && <p role="status" className="text-sm text-muted-foreground">{saving ? "Working…" : message}</p>}
+    {(saving || message) && <p role="status" className="text-sm text-muted-foreground">{saving ? "Creative Director is working…" : message}</p>}
   </div>;
 
   return (
@@ -378,16 +289,16 @@ export function CampaignStages({ controller, stage, query }: {
               <span className="campaign-brief__label">Campaign idea</span>
               <textarea className="min-w-0 rounded-md border border-input bg-background px-3 py-2" placeholder="Describe the campaign you want to create."
                 rows={4} maxLength={4000} value={form.campaignIdea ?? ""} disabled={saving}
-                onChange={(event) => { setNeedsApproval(true); setForm((current) => ({ ...current, campaignIdea: event.target.value })); }} />
+                onChange={(event) => setForm((current) => ({ ...current, campaignIdea: event.target.value }))} />
             </label>
             <section className="campaign-director" aria-label="Creative Director">
               <div><span className="campaign-director__eyebrow">Creative Director</span><h2>Refine the direction</h2></div>
               <label className="grid gap-1.5 text-sm"><span className="sr-only">Feedback for the Creative Director</span>
                 <input className="min-w-0 rounded-md border border-input bg-background px-3 py-2" maxLength={1000}
                   placeholder="Add a goal, audience, or visual constraint" value={feedback} disabled={saving}
-                  onChange={event => { setFeedback(event.target.value); setPending(undefined); }} />
+                  onChange={event => setFeedback(event.target.value)} />
               </label>
-              <Button type="button" variant="outline" disabled={saving || !!retained || !form.campaignIdea?.trim()} onClick={() => void estimate("brief")}>{feedback.trim() ? "Estimate refinement" : "Estimate planning"}</Button>
+              <Button type="button" variant="outline" disabled={saving || !!retained || !form.campaignIdea?.trim()} onClick={() => void plan("brief")}>{feedback.trim() ? "Refine brief" : "Develop campaign brief"}</Button>
               <div className="campaign-director__planning">{planningStatus}</div>
             </section>
           </div>
@@ -399,7 +310,7 @@ export function CampaignStages({ controller, stage, query }: {
                 {label}
                 <input className="min-w-0 rounded-md border border-input bg-background px-3 py-2"
                   value={form[key] ?? ""} disabled={saving}
-                  onChange={(event) => { setNeedsApproval(true); setForm((current) => ({ ...current, [key]: event.target.value })); }} />
+                  onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} />
               </label>
             ))}
             </div>
@@ -412,19 +323,17 @@ export function CampaignStages({ controller, stage, query }: {
                 {label}
                 <input className="min-w-0 rounded-md border border-input bg-background px-3 py-2"
                   value={form[key] ?? ""} disabled={saving}
-                  onChange={(event) => { setNeedsApproval(true); setForm((current) => ({ ...current, [key]: event.target.value })); }} />
+                  onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} />
               </label>
             ))}
             </div>
           </section>
           {!!form.planningAssumptions?.length && <section className="space-y-2">
-            <h2 className="font-semibold">Assumptions to confirm</h2>
+            <h2 className="font-semibold">Planning notes</h2>
             <ul className="list-disc pl-5 text-sm">{form.planningAssumptions.map((item, index) => <li key={index}>{item}</li>)}</ul>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={assumptionsReviewed} onChange={event => { setConfirmAssumptions(event.target.checked); setNeedsApproval(true); }} />I reviewed these assumptions</label>
           </section>}
-          <div className="campaign-brief__footer"><button type="submit" className="w0a-create-project" disabled={saving || !form.campaignIdea?.trim() || (!!form.planningAssumptions?.length && !assumptionsReviewed)}>Approve and save brief</button>
-          {project.brief?.planningApproved === true && !needsApproval &&
-            <Button asChild variant="outline"><Link to={href("directions")}>Explore directions <ArrowRight size={16} aria-hidden="true" /></Link></Button>}</div>
+          <div className="campaign-brief__footer"><button type="submit" className="w0a-create-project" disabled={saving || !form.campaignIdea?.trim()}>Save campaign brief</button>
+            <Button asChild variant="outline"><Link to={href("directions")}>Explore directions <ArrowRight size={16} aria-hidden="true" /></Link></Button></div>
         </form>
       )}
       {stage === "directions" && <>
@@ -432,11 +341,10 @@ export function CampaignStages({ controller, stage, query }: {
           {concepts.length > 0 && <label className="grid gap-1 text-sm">Refine the set
             <input className="rounded-md border border-input bg-background px-3 py-2"
               maxLength={1000} value={directionFeedback} disabled={saving}
-              onChange={event => { setDirectionFeedback(event.target.value); setPending(undefined); }}
+              onChange={event => setDirectionFeedback(event.target.value)}
               placeholder="What should change?" />
           </label>}
-          <Button variant="outline" disabled={saving || !!retained || project.brief?.planningApproved !== true || needsApproval} onClick={() => void estimate("directions")}>{directionFeedback.trim() ? "Estimate refinement" : "Estimate three AI directions"}</Button>
-          {(project.brief?.planningApproved !== true || needsApproval) && <Link to={href("strategy")} className="underline text-sm">Approve the campaign brief first</Link>}
+          <Button variant="outline" disabled={saving || !!retained || !form.campaignIdea?.trim()} onClick={() => void plan("directions")}>{directionFeedback.trim() ? "Refine three directions" : "Generate three creative directions"}</Button>
         </div>
         {planningStatus}
         {concepts.length ? (
@@ -494,7 +402,7 @@ export function CampaignStages({ controller, stage, query }: {
             ))}
           </div>
           </>
-        ) : <EmptyState title="No saved creative directions" description="Approve your brief to plan three directions." />}
+        ) : <EmptyState title="No saved creative directions" description="Generate three directions when the campaign idea is ready." />}
       </>}
       {stage === "production-review" && (
         directions.length ? (
@@ -523,9 +431,9 @@ export function CampaignStages({ controller, stage, query }: {
                     </span>
                   )}
                 </p>
+                {production.selectedModelName && <p className="text-sm"><strong>Model:</strong> {production.selectedModelName}</p>}
                 {typeof production.restrictions === "string" && <p className="text-sm"><strong>Restrictions:</strong> {production.restrictions}</p>}
-                {project.brief?.planningApproved === true && !needsApproval &&
-                  <OriginalCampaignAd project={project} brand={brand} production={production}
+                <OriginalCampaignAd project={project} brand={brand} production={production}
                     form={{ ...form, headline: production.headline, supportingCopy: production.supportingCopy, cta: production.cta, ...productionCopy[concept.conceptId] }}
                     onChange={patch => setProductionCopy(current => ({
                       ...current, [concept.conceptId]: { ...current[concept.conceptId], ...patch },
@@ -534,7 +442,7 @@ export function CampaignStages({ controller, stage, query }: {
                     onSaved={creative => {
                       controller.setCreatives(items => [creative, ...items.filter(item => item.id !== creative.id)]);
                       controller.navigate(href("compare"));
-                    }} />}
+                    }} />
                 {production.claimWarnings.length > 0 && <ul className="list-disc pl-5 text-sm">{production.claimWarnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul>}
               </article>;
             })}

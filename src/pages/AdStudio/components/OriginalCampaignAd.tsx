@@ -109,7 +109,10 @@ export function OriginalCampaignAd({
       .filter((value): value is string => typeof value === "string" && !!value.trim())
       .join("\n\n"),
     [productIds, setProducts] = useState<string[]>(() => production?.verifiedAssets.filter(asset => asset.role === "product_image").map(asset => asset.id) ?? []),
-    [profileId, setProfile] = useState(""),
+    // A production candidate carries the deliberately selected Brand Kit model.
+    // Do not make every approved model a reference: only the brief's selection
+    // is allowed to become an identity input for campaign photography.
+    [profileId, setProfile] = useState(() => String(project.brief?.preferredModelProfile ?? "")),
     [instruction, setInstruction] = useState(
       initialSource
         ? [
