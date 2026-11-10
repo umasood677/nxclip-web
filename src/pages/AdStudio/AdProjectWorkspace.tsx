@@ -191,7 +191,8 @@ export default function AdProjectWorkspace() {
     setStart(null);
     controller.navigate(projectWorkspacePath(saved.id) + "?view=strategy");
   }
-  const stage = query.get("view");
+  const requestedStage = query.get("view");
+  const stage = requestedStage ?? "workspace";
   if (isCampaignStage(stage)) {
     const stageProps = { controller, stage, query } satisfies Parameters<typeof CampaignStages>[0];
     return React.createElement(CampaignStages, { ...stageProps, key: project.id });
@@ -219,7 +220,7 @@ export default function AdProjectWorkspace() {
       </div>
     </main>
   );
-  if (isM2BProductionEnabled() && stage !== "legacy" && !query.has("sourceUnavailable"))
+  if (isM2BProductionEnabled() && requestedStage !== "legacy" && !query.has("sourceUnavailable"))
     return <ProductionProjectWorkspace controller={controller} />;
   return (
     <main className="ad-project-workspace ad-studio-w0a space-y-3">

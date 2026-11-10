@@ -15,6 +15,7 @@ import { creativeEditorPath, projectWorkspacePath } from "../lib/projectWorkspac
 import "../../BrandKits/overview/brandOverview.css";
 
 const stages = [
+  ["workspace", "Workspace"],
   ["strategy", "Campaign Brief"],
   ["directions", "Creative Directions"],
   ["production-review", "Production Review"],
@@ -302,6 +303,67 @@ export function CampaignStages({ controller, stage, query }: {
             {defaultTemplate && <p className="text-sm text-muted-foreground">Default Template</p>}
           </div>
         </section>
+      )}
+      {stage === "workspace" && (
+        <>
+          <section className="campaign-workspace-overview">
+            <article className="ad-project-workspace__panel campaign-workspace-idea">
+              <div className="campaign-workspace-idea__heading">
+                <div>
+                  <span className="campaign-director__eyebrow">Campaign</span>
+                  <h2>{project.name}</h2>
+                </div>
+                <span className="campaign-workspace-status">{project.status ?? "Draft"}</span>
+              </div>
+              <p>{form.campaignIdea?.trim() || "Add a campaign idea to begin shaping the creative direction."}</p>
+              <div className="campaign-workspace-meta">
+                {brand?.name && <span>{brand.name}</span>}
+                {project.brief?.outputFormat && <span>{project.brief.outputFormat.replace(/_/g, " ")}</span>}
+                <span>{creatives.length} saved {creatives.length === 1 ? "creative" : "creatives"}</span>
+              </div>
+            </article>
+            <article className="ad-project-workspace__panel campaign-workspace-director">
+              <div>
+                <span className="campaign-director__eyebrow">Creative Director</span>
+                <h2>Shape the campaign direction</h2>
+                <p>Review the brief, then select the strongest creative approach.</p>
+              </div>
+              <div className="campaign-workspace-director__actions">
+                <Link className="w0a-create-project" to={href("strategy")}>Review campaign brief <ArrowRight size={16} /></Link>
+                <Button asChild variant="outline"><Link to={href("directions")}>Creative directions</Link></Button>
+              </div>
+            </article>
+          </section>
+          <section className="campaign-workspace-creatives" aria-labelledby="campaign-workspace-creatives-title">
+            <div className="campaign-workspace-creatives__heading">
+              <div>
+                <span className="campaign-director__eyebrow">Campaign output</span>
+                <h2 id="campaign-workspace-creatives-title">Project creatives</h2>
+              </div>
+              {creatives.length > 0 && <Button asChild variant="ghost"><Link to={href("compare")}>Compare creatives</Link></Button>}
+            </div>
+            {creatives.length ? (
+              <div className="campaign-workspace-creative-grid">
+                {creatives.slice(0, 3).map((creative) => (
+                  <article key={creative.id} className="ad-project-workspace__panel campaign-workspace-creative">
+                    {creative.sceneGraph && <BrandTemplateScenePreview graph={creative.sceneGraph} assetUrls={assetUrls} label={creative.name} fillCard readablePlaceholder />}
+                    <div className="campaign-workspace-creative__body">
+                      <h3>{creative.name}</h3>
+                      <p>{creative.sceneGraph?.canvas ? `${creative.sceneGraph.canvas.width} × ${creative.sceneGraph.canvas.height}` : "Campaign creative"}</p>
+                      <Button asChild variant="outline"><Link to={creativeEditorPath(creative.id)}>Open Canvas</Link></Button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <article className="ad-project-workspace__panel campaign-workspace-empty">
+                <h3>No creatives yet</h3>
+                <p>Start with the campaign brief to prepare a direction before creating artwork.</p>
+                <Link className="w0a-create-project" to={href("strategy")}>Start with the brief <ArrowRight size={16} /></Link>
+              </article>
+            )}
+          </section>
+        </>
       )}
       {stage === "strategy" && (
         <form className="ad-project-workspace__panel campaign-brief space-y-4" onSubmit={(event) => { event.preventDefault(); void save(); }}>
