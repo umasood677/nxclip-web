@@ -20,21 +20,74 @@ export type WorkspaceCreative = {
   templateContext?: {brandKitId:string;draftKind:'ai'|'native';brandTemplateId?:string};
   conceptSnapshot?: Record<string,unknown>|null;
   brandSnapshot?: Record<string,unknown>|null;
+  metadata?: Record<string,unknown>|null;
 };
 export const projectWorkspacePath = (id: string) => "/create/ad/projects/" + encodeURIComponent(id);
 export const creativeEditorPath = (id: string) => "/create/ad/" + encodeURIComponent(id);
 
+/**
+ * Campaign narrative is context for a creative, not automatically its display
+ * headline.  Only an explicit headline (or a labelled HEADLINE line) may be
+ * copied into an editable text layer.
+ */
+function labelledCampaignValue(brief: WorkspaceBrief | AdBriefFormState, label: string) {
+  const matcher = new RegExp(
+    `^\\s*${label.replace(/\s+/g, "\\s+")}\\s*:\\s*["“]?(.+?)["”]?\\s*$`,
+    "im",
+  );
+  for (const value of [brief.campaignIdea, brief.creativeDirection, brief.coreMessage]) {
+    if (typeof value !== "string") continue;
+    const labelled = value.match(matcher)?.[1]?.trim();
+    if (labelled) return labelled;
+  }
+  return "";
+}
+
+function conciseCampaignCopy(value: unknown, maxLength: number) {
+  if (typeof value !== "string") return "";
+  const copy = value.trim();
+  // A campaign narrative was historically persisted in `headline`. Never
+  // render a multi-section brief as one text layer.
+  if (!copy || copy.length > maxLength || /\n\s*\n|\b(?:campaign|creative)\s+(?:name|objective|idea|direction)\s*:/i.test(copy)) return "";
+  return copy;
+}
+
+export function campaignHeadline(brief: WorkspaceBrief | AdBriefFormState): string {
+  return labelledCampaignValue(brief, "headline") || conciseCampaignCopy(brief.headline, 120);
+}
+
+export function campaignSupportingCopy(brief: WorkspaceBrief | AdBriefFormState): string {
+  return labelledCampaignValue(brief, "supporting copy") || conciseCampaignCopy(brief.supportingCopy, 240);
+}
+
+export function campaignCta(brief: WorkspaceBrief | AdBriefFormState): string {
+  const labelled = labelledCampaignValue(brief, "cta");
+  const explicit = conciseCampaignCopy(brief.cta, 64);
+  // Prefer the campaign's labelled CTA over a form default such as Learn more.
+  return labelled || explicit;
+}
+
 export function projectBriefForm(project: WorkspaceProject): AdBriefFormState {
-  return { ...DEFAULT_AD_BRIEF, ...project.brief, name: project.name,
+  const merged = { ...DEFAULT_AD_BRIEF, ...project.brief };
+  return { ...merged,
+    headline: (project.brief?.planningApproved === true ? merged.headline : campaignHeadline(merged)),
+    supportingCopy: (project.brief?.planningApproved === true ? merged.supportingCopy : campaignSupportingCopy(merged)),
+    cta: (project.brief?.planningApproved === true ? merged.cta : campaignCta(merged)) || DEFAULT_AD_BRIEF.cta,
+    name: project.name,
     brandKitId: project.brandKitId ?? "", brandPreview: null,
     outputFormat: project.outputFormat || project.brief?.outputFormat || DEFAULT_AD_BRIEF.outputFormat };
 }
-export function workspaceBrief(project: WorkspaceProject, form: AdBriefFormState, options: Pick<BriefSaveOptions,"allowCampaignIdeaEdit"> = {}) {
-  return { ...project.brief, productOrService: form.productOrService,
+export function workspaceBrief(project: WorkspaceProject, form: AdBriefFormState, options: Pick<BriefSaveOptions,"allowCampaignIdeaEdit" | "approvePlanning"> = {}) {
+  return { ...project.brief, planningApproved: options.approvePlanning, planningAssumptions: form.planningAssumptions, headline:form.headline,supportingCopy:form.supportingCopy, productOrService: form.productOrService,
     advertisingObjective: form.advertisingObjective, targetAudience: form.targetAudience,
     coreMessage: form.coreMessage, desiredTone: form.desiredTone, platform: form.platform,
     outputFormat: form.outputFormat, cta: form.cta,
     campaignIdea: options.allowCampaignIdeaEdit && form.campaignIdea !== undefined ? form.campaignIdea : project.brief?.campaignIdea ?? project.brief?.coreMessage,
+    exampleVisualDirection: form.exampleVisualDirection,
+    exampleImage: form.exampleImage,
+    exampleVersion: form.exampleVersion,
+    defaultTemplateId: form.defaultTemplateId,
+    startingCreativeId: form.startingCreativeId,
     exampleBriefId: form.exampleBriefId,
     exampleBriefTitle: form.exampleBriefTitle,
     exampleObjective: form.exampleObjective,
@@ -71,11 +124,45 @@ export interface WorkspaceCreator {
 }
 export async function createProjectTemplate(api: WorkspaceCreator, project: WorkspaceProject, templateId: string, format: string) {
   const creative = await api.createFromTemplate(project.id, {
-    templateId, format, primaryHeadline: project.brief?.coreMessage,
-    supportingCopy: project.brief?.productOrService, cta: project.brief?.cta,
+    templateId, format, primaryHeadline: campaignHeadline(project.brief ?? {}),
+    supportingCopy: campaignSupportingCopy(project.brief ?? {}) || project.brief?.productOrService,
+    cta: campaignCta(project.brief ?? {}),
   });
   if (!creative.id || creative.projectId !== project.id) throw Error("The creative's project could not be verified.");
   return creative;
+}
+/**
+ * A saved template is a starting point for one campaign creative. Reopening the
+ * same template and format must not silently create another campaign creative.
+ */
+export function existingProjectTemplateCreative(items: WorkspaceCreative[], templateId: string, format: string) {
+  return items
+    .filter((creative) => {
+      if (isTemplateDraftCreative(creative)) return false;
+      const snapshot = creative.conceptSnapshot ?? {};
+      const storedTemplateId = typeof snapshot.templateId === 'string'
+        ? snapshot.templateId
+        : typeof snapshot.brandTemplateId === 'string' ? snapshot.brandTemplateId : undefined;
+      const storedFormat = typeof creative.metadata?.format === 'string'
+        ? creative.metadata.format
+        : typeof snapshot.format === 'string' ? snapshot.format : undefined;
+      // A template can originate from the default catalog, the saved Brand
+      // Template library, or a migrated source.  Its provenance must not make
+      // opening the same template create another campaign creative.
+      return storedTemplateId === templateId && storedFormat === format;
+    })
+    .sort((left, right) => (Date.parse(right.updatedAt ?? '') || 0) - (Date.parse(left.updatedAt ?? '') || 0))[0] ?? null;
+}
+
+export async function openProjectTemplate(
+  api: WorkspaceReader & WorkspaceCreator,
+  project: WorkspaceProject,
+  templateId: string,
+  format: string,
+) {
+  const existing = existingProjectTemplateCreative((await api.listCreatives(project.id)).items, templateId, format);
+  if (existing) return { creative: existing, existing: true };
+  return { creative: await createProjectTemplate(api, project, templateId, format), existing: false };
 }
 export async function createProjectConcept(api: WorkspaceCreator, project: WorkspaceProject, conceptId: string, concepts: AdConcept[]) {
   if (!concepts.some(c => c.conceptId === conceptId)) throw Error("Choose a saved concept from this project.");
@@ -85,6 +172,13 @@ export async function createProjectConcept(api: WorkspaceCreator, project: Works
 }
 
 export function exampleBriefContext(example: FeaturedExample) {
+  if (example.catalogVersion) return {
+    exampleBriefId: example.id, exampleBriefTitle: example.title,
+    exampleVersion: example.catalogVersion, exampleImage: example.previewImage,
+    exampleVisualDirection: example.creativeDirection,
+    exampleObjective: "", productCategory: "", productFocus: "",
+    defaultTemplateId: "", startingCreativeId: null,
+  };
   return { exampleBriefId: example.id, exampleBriefTitle: example.title,
     exampleObjective: example.exampleObjective ?? example.briefDefaults.coreMessage ?? example.headline,
     productCategory: example.productCategory ?? example.category,
@@ -92,12 +186,28 @@ export function exampleBriefContext(example: FeaturedExample) {
     productFocus: example.productFocus ?? "product" };
 }
 export function exampleBriefForm(project: WorkspaceProject, example: FeaturedExample): AdBriefFormState {
-  return { ...projectBriefForm(project), ...example.briefDefaults, ...exampleBriefContext(example),
+  if (example.catalogVersion) return { ...projectBriefForm(project), ...exampleBriefContext(example) };
+  return { ...projectBriefForm(project), ...example.briefDefaults, ...exampleBriefContext(example),headline:example.headline,supportingCopy:example.supporting,cta:example.cta,
     name: project.name, brandKitId: project.brandKitId ?? "", brandPreview: null,
     campaignIdea: project.brief?.campaignIdea ?? project.brief?.coreMessage };
 }
+export function selectTemplateSource(
+  api: WorkspaceBriefWriter, project: WorkspaceProject,
+  selection: { defaultTemplateId?: string; startingCreativeId?: string; format: string },
+) {
+  const form = {
+    ...projectBriefForm(project), outputFormat: selection.format,
+    exampleBriefId: "", exampleBriefTitle: "", exampleImage: "", exampleVersion: "", exampleVisualDirection: "",
+    exampleObjective: "", productCategory: "", productFocus: "",
+    defaultTemplateId: selection.defaultTemplateId ?? "", startingCreativeId: selection.startingCreativeId ?? null,
+  };
+  return saveWorkspaceBrief(api, project, form, {
+    approvePlanning: project.brief?.planningApproved && form.outputFormat === project.brief.outputFormat ? true : undefined,
+  });
+}
+
 export interface WorkspaceBriefWriter { updateProject:(id:string, body:Record<string,unknown>)=>Promise<WorkspaceProject>; }
-export type BriefSaveOptions = { allowBrandChange?: boolean; allowCampaignIdeaEdit?: boolean };
+export type BriefSaveOptions = { allowBrandChange?: boolean; allowCampaignIdeaEdit?: boolean; approvePlanning?: boolean };
 function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, canonical(item)]));
@@ -110,19 +220,22 @@ export async function saveWorkspaceBrief(api: WorkspaceBriefWriter, project: Wor
   const brief = workspaceBrief(project, form, options);
   // Existing metadata may contain legacy keys rejected by the public DTO.
   // Preserve those on the server; never resubmit them as new writable properties.
-  const writable = new Set(['campaignIdea','exampleBriefId','exampleBriefTitle','exampleObjective','productCategory','creativeDirection','productFocus','productOrService','advertisingObjective','targetAudience','coreMessage','desiredTone','platform','outputFormat','offerDetails','promotionalPrice','cta','landingPageUrl','negativeInstructions','productImageAssetId','referenceImageAssetId','preferredColors','preferredModelProfile']);
+  const writable = new Set(['exampleVisualDirection','exampleImage','exampleVersion','defaultTemplateId','startingCreativeId','planningApproved','planningAssumptions','headline','supportingCopy','campaignIdea','exampleBriefId','exampleBriefTitle','exampleObjective','productCategory','creativeDirection','productFocus','productOrService','advertisingObjective','targetAudience','coreMessage','desiredTone','platform','outputFormat','offerDetails','promotionalPrice','cta','landingPageUrl','negativeInstructions','productImageAssetId','referenceImageAssetId','preferredColors','preferredModelProfile']);
   const body: Record<string, unknown> = { brief: Object.fromEntries(Object.entries(brief).filter(([key]) => writable.has(key))), ...(name !== project.name ? { name } : {}) };
   const brand = options.allowBrandChange ? form.brandKitId : project.brandKitId;
   if (options.allowBrandChange && (brand ?? '') !== (project.brandKitId ?? '')) Object.assign(body, brand ? { brandKitId: brand } : { clearBrandKit: true });
   const saved = await api.updateProject(project.id, body);
   if (saved.id !== project.id || (saved.brandKitId ?? '') !== (brand ?? '')) throw Error('Project context changed. Reload before continuing.');
   if (saved.name !== name) throw Error('The project name was not saved. Keep your draft and retry.');
-  const trimmed = new Set(['productOrService','targetAudience','coreMessage','desiredTone','offerDetails','promotionalPrice','cta','landingPageUrl','negativeInstructions']);
+  const trimAndKeepEmpty = new Set(['supportingCopy','productOrService','targetAudience','coreMessage','desiredTone']);
+  const trimAndOmitEmpty = new Set(['headline','offerDetails','promotionalPrice','cta','landingPageUrl','negativeInstructions']);
   for (const [key, value] of Object.entries(brief)) {
     if (value === undefined) continue;
-    const expected = typeof value === 'string' && trimmed.has(key) ? (value.trim() || (['productOrService','targetAudience','coreMessage','desiredTone'].includes(key) ? '' : undefined)) : value;
+    let expected = value;
+    if (typeof value === 'string' && trimAndKeepEmpty.has(key)) expected = value.trim();
+    if (typeof value === 'string' && trimAndOmitEmpty.has(key)) expected = value.trim() || undefined;
     if (JSON.stringify(canonical(saved.brief?.[key])) !== JSON.stringify(canonical(expected)))
-      throw Error('The running service could not retain this working brief. Keep your draft and activate the compatible Content build before generating.');
+      throw Error(`The service could not retain the working brief field ${key}. Your draft is still open. Reload the saved project to check it before continuing.`);
   }
   return saved;
 }
@@ -133,7 +246,8 @@ export async function generateProjectConcepts<T>(api: WorkspaceBriefWriter & { g
 }
 export async function selectProjectExample(api: WorkspaceBriefWriter, project: WorkspaceProject, example: FeaturedExample) {
   const form = exampleBriefForm(project, example);
-  return { project: await saveWorkspaceBrief(api, project, form), form };
+  const saved = await saveWorkspaceBrief(api, project, form, { approvePlanning: example.catalogVersion && project.brief?.planningApproved ? true : undefined });
+  return { project: saved, form: projectBriefForm(saved) };
 }
 
 

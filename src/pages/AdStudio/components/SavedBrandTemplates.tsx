@@ -2,11 +2,15 @@ import { useCreativeAssetUrls } from "../canvas/useCreativeAssetUrls";
 import { EmptyState } from "../../../components/common/EmptyState";
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { brandTemplateApi } from "../../../services/apiClient";
+import { adStudioApi, brandTemplateApi } from "../../../services/apiClient";
 import { Skeleton } from "../../../components/ui/skeleton";
-import { SceneThumb } from "./SceneThumb";
+import { BrandTemplateScenePreview } from "../../BrandKits/templates/BrandTemplateScenePreview";
+import {alignProjectToTemplateFormat,openBrandTemplateAd,existingBrandTemplateAd} from '../lib/brandTemplateAd';
+import { homeEntryPath } from "../lib/homeEntryFlow";
+import { selectTemplateSource } from "../lib/projectWorkspace";
+import type {WorkspaceCreative,WorkspaceProject} from '../lib/projectWorkspace';
+import {formatChip} from './TemplateGallery';
 import {
-  canReuseTemplate,
   isBrandTemplatesEnabled,
   type BrandTemplate,
 } from "../../BrandKits/templates/brandTemplateModel";
@@ -66,16 +70,16 @@ export function SavedBrandTemplates({
   assetUrls,
   project,
   limit,
+  creatives=[],
+  onPlanningProject,
 }: {
+  creatives?:WorkspaceCreative[];
+  onPlanningProject?: (project: WorkspaceProject, creative: WorkspaceCreative) => void;
   limit?: number;
   brandId: string;
   data: ReturnType<typeof useSavedBrandTemplates>;
   assetUrls: BrandAssetUrlMap;
-  project?: {
-    id: string;
-    brandKitId?: string | null;
-    outputFormat?: string | null;
-  };
+  project?: WorkspaceProject;
 }) {
   const navigate = useNavigate(),
     pending = useRef(false),
@@ -91,22 +95,21 @@ export function SavedBrandTemplates({
     setBusy(true);
     setError("");
     try {
-      const fresh = await brandTemplateApi.get(brandId, template.id);
-      if (
-        fresh.brandKitId !== brandId ||
-        !canReuseTemplate(fresh) ||
-        project.brandKitId !== brandId ||
-        project.outputFormat !== fresh.format
-      )
-        throw Error(
-          "Choose a current approved template with this project's Brand Kit and format.",
-        );
-      const creative = await brandTemplateApi.reuse(
-        brandId,
-        fresh.id,
-        project.id,
+      const compatibleProject=await alignProjectToTemplateFormat(adStudioApi,project,template.format);
+      const creative = await openBrandTemplateAd(brandTemplateApi,adStudioApi,compatibleProject,template);
+      if (onPlanningProject) {
+        const selected = await selectTemplateSource(adStudioApi, compatibleProject, {
+          startingCreativeId: creative.id, format: template.format,
+        });
+        const items = await adStudioApi.listCreatives(project.id);
+        const draft = items.items.find((item: WorkspaceCreative) => item.id === creative.id);
+        if (!draft) throw Error("The campaign template draft could not be loaded.");
+        onPlanningProject(selected, draft);
+        return;
+      }
+      navigate(
+        `/create/ad/projects/${encodeURIComponent(project.id)}?review=${encodeURIComponent(creative.id)}&reviewTab=review`,
       );
-      navigate(`/create/ad/${encodeURIComponent(creative.id)}`);
     } catch (e) {
       setError(
         e instanceof Error
@@ -189,11 +192,11 @@ export function SavedBrandTemplates({
         <div className="w0a-grid w0a-grid-3">
           {items.slice(0, limit).map((template) => (
             <article key={template.id} className="w0a-card">
-              <div className="flex justify-center items-center min-h-56 bg-black/20">
-                <SceneThumb
+              <div className="w0a-brand-preview saved-template-art" style={{aspectRatio:`${template.sceneGraph.canvas.width}/${template.sceneGraph.canvas.height}`}}>
+                <BrandTemplateScenePreview
                   graph={template.sceneGraph}
-                  maxWidth={250}
-                  maxHeight={280}
+                  fillCard
+                  readablePlaceholder
                   assetUrls={previewUrls}
                   label={`${template.name} saved template`}
                 />
@@ -201,7 +204,7 @@ export function SavedBrandTemplates({
               <div className="w0a-card-body">
                 <h3>{template.name}</h3>
                 <p className="w0a-meta">
-                  Saved Brand Template · {template.format} · {template.provenance.method === "provider-ai-creative" ? "AI artwork" : "Editable layout"}
+                  {formatChip(template.format)} · {template.provenance.method === "provider-ai-creative" ? "AI artwork" : "Editable layout"}
                 </p>
                 {data.enabled ? (
                   <Link
@@ -215,6 +218,9 @@ export function SavedBrandTemplates({
                     Read-only · reuse is disabled
                   </span>
                 )}
+                {!project && data.enabled && <Link className="w0a-btn" to={homeEntryPath({
+                  brandId, brandTemplateId: template.id, revision: String(template.revision), format: template.format,
+                })}>Start campaign</Link>}
                 {project && (
                   <>
                     <button
@@ -222,17 +228,21 @@ export function SavedBrandTemplates({
                       disabled={
                         !data.enabled ||
                         busy ||
-                        project.brandKitId !== brandId ||
-                        project.outputFormat !== template.format
+                        project.brandKitId !== brandId
                       }
                       onClick={() => void useInProject(template)}
                     >
-                      Use in this project
+                      {onPlanningProject ? 'Plan with this template' : existingBrandTemplateAd(creatives,template)
+                        ? 'Open existing ad'
+                        : project.outputFormat !== template.format
+                          ? `Use ${formatChip(template.format)} format`
+                          : 'Create ad draft'}
                     </button>
                     {project.outputFormat !== template.format && (
                       <p className="w0a-meta">
-                        Choose a compatible project/format in the template
-                        library.
+                        This template uses {formatChip(template.format)}.
+                        Selecting it updates this campaign format before the ad
+                        draft opens.
                       </p>
                     )}
                   </>

@@ -18,7 +18,7 @@ import {
   projectBriefForm,
   saveWorkspaceBrief,
   generateProjectConcepts,
-  createProjectTemplate,
+  openProjectTemplate,
   createProjectConcept,
   creativeEditorPath,
   type WorkspaceProject,
@@ -226,13 +226,17 @@ export function useAdProjectWorkspace() {
     if (!project) return;
     void run(async () => {
       const currentProject = compose ? await saveBrief() : project;
-      const creative = await createProjectTemplate(
+      const opened = await openProjectTemplate(
         adStudioApi,
         currentProject,
         id,
         format,
       );
-      navigate(creativeEditorPath(creative.id));
+      setCreatives((current) => current.some((creative) => creative.id === opened.creative.id)
+        ? current.map((creative) => creative.id === opened.creative.id ? opened.creative : creative)
+        : [opened.creative, ...current]);
+      toast.success(opened.existing ? "Reopened the existing campaign ad" : "Campaign ad created");
+      navigate(creativeEditorPath(opened.creative.id));
     });
   };
   const openConcept = (id: string, destination: "canvas" | "ai" = "canvas") => {
@@ -247,6 +251,14 @@ export function useAdProjectWorkspace() {
       navigate(destination === "ai" ? projectExperiencePath(project.id,"visual-lab",{creativeId:creative.id,conceptId:id}) : creativeEditorPath(creative.id));
     });
   };
+  const discardCreative = async (creative: WorkspaceCreative) => {
+    if (!project || creative.projectId !== project.id)
+      throw Error("This campaign ad no longer belongs to the open project.");
+    await adStudioApi.deleteCreative(creative.id);
+    setCreatives((current) => current.filter((item) => item.id !== creative.id));
+    setExportCreative((current) => current?.id === creative.id ? null : current);
+    toast.success("Campaign ad discarded");
+  };
   const saveIdea = async () => {
     if (!project || busy) return;
     if (!idea.trim() || idea.length > 4000) {
@@ -255,14 +267,17 @@ export function useAdProjectWorkspace() {
     }
     setIdeaError(null);
     await run(async () => {
-      const updated = await adStudioApi.updateProject(project.id, {
-        brief: { ...project.brief, campaignIdea: idea },
+      const nextForm = { ...form, campaignIdea: idea };
+      const updated = await saveWorkspaceBrief(adStudioApi, project, nextForm, {
+        allowCampaignIdeaEdit: true,
       });
       if (updated.brief?.campaignIdea !== idea)
         throw Error(
           "The running project service does not yet support Campaign Idea. Your text is retained here; service activation is required.",
         );
       setProject(updated);
+      setForm(nextForm);
+      setSavedForm(JSON.stringify(nextForm));
       setEditingIdea(false);
       toast.success("Campaign Idea saved");
     });
@@ -318,6 +333,7 @@ export function useAdProjectWorkspace() {
     project,
     setProject,
     creatives,
+    setCreatives,
     templateDraftCount,
     brand,
     selectedConceptId,
@@ -355,6 +371,7 @@ export function useAdProjectWorkspace() {
     run,
     openTemplate,
     openConcept,
+    discardCreative,
     saveIdea,
     saveBrief,
     generateConcepts,

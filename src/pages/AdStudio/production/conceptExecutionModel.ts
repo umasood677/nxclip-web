@@ -1,3 +1,4 @@
+import type { AdBriefFormState } from "../lib/adStudioLabels";
 import { validPreflightCost } from "../../../lib/aiExecutionPreflight";
 import type { AdConcept } from "../types";
 export type ConceptQuote = {
@@ -14,7 +15,12 @@ export type ConceptQuote = {
   inputScope: "saved-campaign-text-only";
   costBasis: "configured-estimate" | "usage-only";
 };
+export type PlanningInput = { planningAction: "brief" | "directions"; planningFeedback?: string; conceptCount: 3; maxEstimatedCostUsd: number };
 export type QuotedConceptResult = {
+  campaignStrategy?: {
+    productOrService: string; targetAudience: string; coreMessage: string;
+    desiredTone: string; creativeDirection: string; assumptions: string[];
+  };
   concepts: AdConcept[];
   generationSource: "ai";
   provider: string;
@@ -23,6 +29,22 @@ export type QuotedConceptResult = {
   executionCreatedAt?: string;
   warnings?: string[];
 };
+/** Only strategy fields may replace the existing draft. */
+export function applyCampaignStrategy(
+  draft: AdBriefFormState,
+  strategy: NonNullable<QuotedConceptResult["campaignStrategy"]>,
+): AdBriefFormState {
+  return {
+    ...draft,
+    productOrService: strategy.productOrService,
+    targetAudience: strategy.targetAudience,
+    coreMessage: strategy.coreMessage,
+    desiredTone: strategy.desiredTone,
+    creativeDirection: strategy.creativeDirection,
+    planningAssumptions: strategy.assumptions,
+  };
+}
+
 export function realConceptsEnabled(
   env: Record<string, unknown> | undefined = import.meta.env,
 ) {

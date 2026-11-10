@@ -170,7 +170,7 @@ export const ZOE_ARTISAN_HOME_CATALOG: BrandHomeCatalog = {
         accent: "#D6B48A",
         text: "#F7F0E8",
       },
-      previewImage: "/ad-studio/sample-assets/w0a-texture.jpg",
+      previewImage: "/ad-studio/sample-assets/w0a-texture-showcase.jpg",
       briefDefaults: {
         name: "ZoeArtisan · Texture",
         productOrService: "ZoeArtisan Signature Red Matte Lipstick",

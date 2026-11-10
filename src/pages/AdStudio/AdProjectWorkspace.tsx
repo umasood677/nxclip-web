@@ -2,7 +2,9 @@ import { useAdProjectWorkspace } from "./production/useAdProjectWorkspace";
 import { isM2BProductionEnabled } from "./production/experienceRoutes";
 import ProductionProjectWorkspace from "./production/ProductionProjectWorkspace";
 import React from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { publishedExampleBriefs } from "./lib/publishedExampleBriefs";
+import { CampaignStages, isCampaignStage } from "./components/CampaignStages";
 import {
   ArrowLeft,
   Plus,
@@ -31,13 +33,18 @@ import { normalizeBrandContext } from "../BrandKits/lib/brandContext";
 import { DEFAULT_AD_BRIEF } from "./lib/adStudioLabels";
 
 import {
-  projectBriefForm,
-  exampleBriefForm,
   selectProjectExample,
+  selectTemplateSource,
+  projectBriefForm,
+  projectWorkspacePath,
   creativeEditorPath,
 } from "./lib/projectWorkspace";
 import { ProjectCreativeGallery } from "./components/ProjectCreativeGallery";
 import { TemplateGallery } from "./components/TemplateGallery";
+import {SavedBrandTemplates,useSavedBrandTemplates} from './components/SavedBrandTemplates';
+import {CampaignIdeaSummary} from './components/CampaignIdeaSummary';
+import {OriginalCampaignAd} from './components/OriginalCampaignAd';
+import {CampaignAdReview,type CampaignReviewTab} from './components/CampaignAdReview';
 import { GuidedBriefComposer } from "./components/GuidedBriefComposer";
 import { ExportPanel } from "./components/ExportPanel";
 import "./styles/ad-studio-w0a.css";
@@ -45,12 +52,17 @@ import "./styles/project-workspace.css";
 
 export default function AdProjectWorkspace() {
   const controller = useAdProjectWorkspace();
-  const [query] = useSearchParams();
+  const [query,setQuery] = useSearchParams();
+  const [reviewTab,setReviewTab]=React.useState<CampaignReviewTab>('review');
+  const [templateTab,setTemplateTab]=React.useState<'brand'|'default'>('brand');
+  const savedTemplates=useSavedBrandTemplates(controller.project?.brandKitId||'');
+  React.useEffect(()=>{const id=query.get('review');if(id&&!controller.loading){const item=controller.creatives.find(c=>c.id===id);if(item){const tab=query.get('reviewTab');setReviewTab(tab==='refine'||tab==='formats'||tab==='export'?tab:'review');controller.setExportCreative(item);}}},[query,controller.loading,controller.creatives]);
   const {
     navigate,
     project,
     setProject,
     creatives,
+    setCreatives,
     brand,
     selectedConceptId,
     setSelectedConceptId,
@@ -84,14 +96,14 @@ export default function AdProjectWorkspace() {
     run,
     openTemplate,
     openConcept,
+    discardCreative,
     saveIdea,
     saveBrief,
     generateConcepts,
     catalog,
     back,
   } = controller;
-  if (isM2BProductionEnabled() && query.get("view") !== "legacy")
-    return <ProductionProjectWorkspace controller={controller} />;
+  React.useEffect(()=>{if(query.get("view")==="brief"&&!loading&&project)setCompose(true);},[query,loading,project?.id,setCompose]);
   if (loading)
     return (
       <main
@@ -122,28 +134,116 @@ export default function AdProjectWorkspace() {
         />
       </main>
     );
+  const closeCampaignReview = () => {
+    setExportCreative(null);
+    if (query.has("review") || query.has("reviewTab")) {
+      const next = new URLSearchParams(query);
+      next.delete("review");
+      next.delete("reviewTab");
+      setQuery(next, { replace: true });
+    }
+  };
+  const openCampaignReview = (creative: typeof creatives[number], tab: CampaignReviewTab = "review") => {
+    setReviewTab(tab);
+    setExportCreative(creative);
+    const next = new URLSearchParams(query);
+    next.set("review", creative.id);
+    next.set("reviewTab", tab);
+    setQuery(next, { replace: true });
+  };
+  if (exportCreative)
+    return (
+      <main className="ad-project-workspace ad-studio-w0a ad-project-review-screen space-y-4">
+        <nav aria-label="Campaign ad navigation">
+          <Button variant="ghost" onClick={closeCampaignReview}>
+            <ArrowLeft size={16} className="mr-2" />
+            Back to {project.name}
+          </Button>
+        </nav>
+        <header className="ad-project-workspace__header">
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">Ad Studio · Campaign creative</p>
+            <h1 className="text-2xl font-semibold mt-2">Review campaign ad</h1>
+            <p className="text-sm text-muted-foreground mt-1">{project.name} · Customize, create a variation, adapt formats, then export.</p>
+          </div>
+        </header>
+        <CampaignAdReview
+          project={project}
+          brand={brand}
+          creative={exportCreative}
+          assetUrls={assetUrls}
+          initialTab={reviewTab}
+          onEdit={(id)=>{if(confirmLeave())navigate(creativeEditorPath(id));}}
+          onSaved={(saved)=>{
+            setCreatives(current=>current.some(creative=>creative.id===saved.id)?current.map(creative=>creative.id===saved.id?saved:creative):[saved,...current]);
+            openCampaignReview(saved);
+          }}
+        />
+      </main>
+    );
+  function openPlanningSource(saved: import("./lib/projectWorkspace").WorkspaceProject) {
+    setProject(saved);
+    const next = projectBriefForm(saved);
+    setForm(next);
+    setSavedForm(JSON.stringify(next));
+    if (["exampleBriefId", "exampleVersion", "defaultTemplateId", "startingCreativeId"].some(key =>
+      project?.brief?.[key] !== saved.brief?.[key])) controller.setConcepts([]);
+    setStart(null);
+    controller.navigate(projectWorkspacePath(saved.id) + "?view=strategy");
+  }
+  const stage = query.get("view");
+  if (isCampaignStage(stage)) {
+    const stageProps = { controller, stage, query } satisfies Parameters<typeof CampaignStages>[0];
+    return React.createElement(CampaignStages, { ...stageProps, key: project.id });
+  }
+  if (stage === "example-source") return (
+    <main className="ad-project-workspace ad-studio-w0a space-y-4">
+      <nav aria-label="Breadcrumb" className="bo-breadcrumb">
+        <Link to={projectWorkspacePath(project.id)}><ArrowLeft size={15} aria-hidden="true" /> {project.name}</Link>
+        <span aria-hidden="true">/</span><span aria-current="page">Example Briefs</span>
+      </nav>
+      <h1 className="text-2xl font-semibold">Choose an Example Brief</h1>
+      {error && <p role="alert">{error}</p>}
+      <div className="w0a-grid w0a-grid-3">
+        {publishedExampleBriefs.map(example => <article key={example.id} className="w0a-card">
+          <img className="aspect-[4/5] w-full object-contain" src={example.previewImage} alt={example.title + " reference"} />
+          <div className="w0a-card-body">
+            <h2>{example.title}</h2>
+            <p className="w0a-meta">{example.creativeDirection}</p>
+            <button className="w0a-btn" disabled={busy} onClick={() => void run(async () => {
+              const selected = await selectProjectExample(adStudioApi, project, example);
+              openPlanningSource(selected.project);
+            })}>Use as inspiration</button>
+          </div>
+        </article>)}
+      </div>
+    </main>
+  );
+  if (isM2BProductionEnabled() && stage !== "legacy" && !query.has("sourceUnavailable"))
+    return <ProductionProjectWorkspace controller={controller} />;
   return (
-    <main className="ad-project-workspace space-y-6">
-      <nav aria-label="Project navigation">
+    <main className="ad-project-workspace ad-studio-w0a space-y-3">
+      {query.has("sourceUnavailable") && <p role="alert">Campaign saved. The template could not be attached. Choose it again from this campaign.</p>}
+      <nav aria-label="Breadcrumb" className="bo-breadcrumb flex-wrap">
         <Button
           variant="ghost"
+          size="sm"
           onClick={() => {
             if (confirmLeave()) navigate("/create/ad");
           }}
         >
-          <ArrowLeft size={16} className="mr-2" />
+          <ArrowLeft aria-hidden="true" />
           My Projects
         </Button>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">Workspace</span>
       </nav>
       <header className="ad-project-workspace__header">
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">
-            Ad Studio · Project workspace
-          </p>
-          <h1 className="text-2xl font-semibold break-words mt-2">
+          <h1 className="text-2xl font-semibold break-words">
             {project.name}
           </h1>
-          <div className="flex flex-wrap items-center gap-2 mt-3 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-muted-foreground">
             <span className="rounded-full border border-border px-3 py-1">
               {project.brandKitId
                 ? project.brandKitName || brand?.name || "Selected Brand Kit"
@@ -160,21 +260,24 @@ export default function AdProjectWorkspace() {
             </span>
           </div>
         </div>
-        <Button
+        <button
+          type="button"
+          className="w0a-create-project"
           onClick={() => {
             if (confirmLeave()) {
               setCompose(false);
+              setTemplateTab(project.brandKitId?'brand':'default');
               setStart("choose");
             }
           }}
           disabled={busy}
         >
-          <Plus size={16} className="mr-2" />
+          <Plus size={16} aria-hidden="true" />
           Create Ad
-        </Button>
+        </button>
       </header>
       <section
-        className="ad-project-workspace__panel"
+        className="ad-project-workspace__panel ad-project-workspace__panel--compact"
         aria-labelledby="workspace-idea-heading"
       >
         <div className="flex items-center justify-between gap-3">
@@ -190,8 +293,8 @@ export default function AdProjectWorkspace() {
                 setEditingIdea(true);
               }}
             >
-              <Pencil size={14} className="mr-2" />
-              Edit Campaign Idea
+              <Pencil aria-hidden="true" />
+              Edit idea
             </Button>
           ) : null}
         </div>
@@ -211,9 +314,9 @@ export default function AdProjectWorkspace() {
               </p>
             ) : null}
             <div className="flex gap-2">
-              <Button onClick={() => void saveIdea()} disabled={busy}>
+              <button type="button" className="w0a-create-project" onClick={() => void saveIdea()} disabled={busy}>
                 {busy ? "Saving…" : "Save Campaign Idea"}
-              </Button>
+              </button>
               <Button
                 variant="outline"
                 disabled={busy}
@@ -236,11 +339,9 @@ export default function AdProjectWorkspace() {
             </div>
           </div>
         ) : (
-          <p className="mt-3 text-sm leading-7 whitespace-pre-wrap break-words text-muted-foreground">
-            {project.brief?.campaignIdea ??
+          <CampaignIdeaSummary text={project.brief?.campaignIdea ??
               project.brief?.coreMessage ??
-              "Add a Campaign Idea to guide your advertisements."}
-          </p>
+              "Add a Campaign Idea to guide your advertisements."}/>
         )}
       </section>
       {error ? (
@@ -273,28 +374,14 @@ export default function AdProjectWorkspace() {
           Saving your creative work…
         </p>
       ) : null}
-      {!compose && project.brief?.exampleBriefId ? (
-        <section className="ad-project-workspace__panel">
-          <h2 className="font-semibold">
-            Working brief · {project.brief.exampleBriefTitle || "Example Brief"}
-          </h2>
-          <p className="text-sm text-muted-foreground mt-2">
-            {project.brief.exampleObjective}
-          </p>
-          <Button
-            className="mt-3"
-            variant="outline"
-            onClick={() => {
-              if (confirmLeave()) {
-                const restored = projectBriefForm(project);
-                setForm(restored);
-                setSavedForm(JSON.stringify(restored));
-                setCompose(true);
-              }
-            }}
-          >
-            Review or edit brief
-          </Button>
+      {!compose ? (
+        <section className="ad-project-workspace__panel ad-project-workspace__panel--compact flex flex-wrap items-center gap-x-5 gap-y-2">
+          <h2 className="font-semibold">Creative Director</h2>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline"><Link to="?view=strategy">Campaign Brief</Link></Button>
+            <Button asChild variant="outline"><Link to="?view=directions">Creative Directions</Link></Button>
+            <Button asChild variant="outline"><Link to="?view=compare">Compare Creatives</Link></Button>
+          </div>
         </section>
       ) : null}
       {compose ? (
@@ -304,6 +391,7 @@ export default function AdProjectWorkspace() {
             Back to Project
           </Button>
           <GuidedBriefComposer
+            creationSlot={<><OriginalCampaignAd project={project} brand={brand} form={form} onChange={patch=>setForm(old=>({...old,...patch}))} onSaveBrief={saveBrief} onSaved={(item)=>{setCreatives(current=>current.some(creative=>creative.id===item.id)?current.map(creative=>creative.id===item.id?item:creative):[item,...current]);setCompose(false);setStart(null);openCampaignReview(item);}}/>{templatesEnabled&&<div className="ad-project-template-tabs mt-3"><button type="button" onClick={()=>{setTemplateTab('brand');setStart('templates');}}>Use a saved Brand Template</button><button type="button" onClick={()=>{setTemplateTab('default');setStart('templates');}}>Use a Default Template</button></div>}</>}
             form={form}
             onChange={(patch) =>
               setForm((p) => ({
@@ -356,7 +444,16 @@ export default function AdProjectWorkspace() {
           onOpen={(id) => {
             if (confirmLeave()) navigate(creativeEditorPath(id));
           }}
-          onExport={setExportCreative}
+          onPreview={id=>{const creative=creatives.find(c=>c.id===id);if(creative)openCampaignReview(creative);}}
+          onExport={item=>openCampaignReview(item,'export')}
+          onDiscard={async (creative) => {
+            await discardCreative(creative);
+            if (query.get("review") === creative.id) {
+              const next = new URLSearchParams(query);
+              next.delete("review");
+              setQuery(next, { replace: true });
+            }
+          }}
           onCreate={() => setStart("choose")}
         />
       )}
@@ -366,27 +463,17 @@ export default function AdProjectWorkspace() {
           if (!busy && !open) setStart(null);
         }}
       >
-        <DialogContent className="sm:max-w-4xl max-h-[88dvh] overflow-y-auto">
+        <DialogContent className="ad-studio-w0a ad-project-create-dialog sm:max-w-5xl max-h-[88dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create an ad</DialogTitle>
             <DialogDescription>
-              Start something new in {project.name}. Your existing creatives
-              stay unchanged.
+              {project.name} · Choose a starting point, then customize and export in Canvas.
             </DialogDescription>
           </DialogHeader>
-          {start !== "choose" ? (
-            <Button
-              variant="ghost"
-              className="justify-self-start"
-              disabled={busy}
-              onClick={() => setStart("choose")}
-            >
-              <ArrowLeft size={14} className="mr-2" />
-              Starting points
-            </Button>
-          ) : null}
+          {start !== "choose" ? <nav className="ad-project-create-breadcrumb" aria-label="Ad creation breadcrumb"><button type="button" disabled={busy} onClick={()=>setStart('choose')}><ArrowLeft size={14}/>Back to Create ad</button><span>/</span><span>{start==='templates'?'Templates':start==='examples'?'Example Briefs':'Campaign concepts'}</span></nav> : null}
           {start === "choose" ? (
             <div className="grid gap-3 sm:grid-cols-2">
+              <button className="ad-project-workspace__choice" onClick={()=>{setCompose(true);setStart(null);}}><Lightbulb size={22}/><strong>Generate Original AI Ad</strong><span>Create campaign photography directly from your working brief.</span></button>
               {templatesEnabled ? (
                 <button
                   className="ad-project-workspace__choice"
@@ -404,7 +491,7 @@ export default function AdProjectWorkspace() {
               )}
               <button
                 className="ad-project-workspace__choice"
-                onClick={() => setStart("examples")}
+                onClick={() => { setStart(null); controller.navigate(projectWorkspacePath(project.id) + "?view=example-source"); }}
               >
                 <FileText size={22} />
                 <strong>Start from Example Brief</strong>
@@ -423,43 +510,27 @@ export default function AdProjectWorkspace() {
             </div>
           ) : null}
           {start === "templates" ? (
-            <TemplateGallery
+            <div className="ad-project-template-picker">
+            {project.brandKitId&&<div role="group" aria-label="Template collection" className="ad-project-template-tabs">
+              <button type="button" aria-pressed={templateTab==='brand'} onClick={()=>setTemplateTab('brand')}>Brand Templates</button>
+              <button type="button" aria-pressed={templateTab==='default'} onClick={()=>setTemplateTab('default')}>Default Templates</button>
+            </div>}
+            {project.brandKitId&&templateTab==='brand'?<SavedBrandTemplates brandId={project.brandKitId} data={savedTemplates} assetUrls={assetUrls} project={project} creatives={creatives} onPlanningProject={(saved, draft) => {
+              setCreatives(items => items.some(item => item.id === draft.id) ? items : [draft, ...items]);
+              openPlanningSource(saved);
+            }}/>:<TemplateGallery
               selectedFormat={
                 project.outputFormat ?? DEFAULT_AD_BRIEF.outputFormat
               }
               busy={busy}
-              brandContext={normalizeBrandContext(brand)}
+              brandContext={normalizeBrandContext(brand?{...brand,assets:brand.assets?.map(asset=>({...asset,readUrl:assetUrls[asset.id]||null}))}:null)}
               brandTemplates={catalog.templates}
               catalogLabel={catalog.label}
-              onUseTemplate={openTemplate}
-            />
-          ) : null}
-          {start === "examples" ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {catalog.examples.map((example) => (
-                <button
-                  key={example.id}
-                  className="ad-project-workspace__choice"
-                  onClick={() =>
-                    void run(async () => {
-                      setForm(exampleBriefForm(project, example));
-                      setCompose(true);
-                      setStart(null);
-                      const selected = await selectProjectExample(
-                        adStudioApi,
-                        project,
-                        example,
-                      );
-                      setProject(selected.project);
-                      setForm(selected.form);
-                      setSavedForm(JSON.stringify(selected.form));
-                    })
-                  }
-                >
-                  <strong>{example.title}</strong>
-                  <span>{example.headline}</span>
-                </button>
-              ))}
+              hideNote
+              onUseTemplate={(id, format) => void run(async () => {
+                openPlanningSource(await selectTemplateSource(adStudioApi, project, { defaultTemplateId: id, format }));
+              })}
+            />}
             </div>
           ) : null}
           {start === "concepts" ? (
@@ -486,27 +557,6 @@ export default function AdProjectWorkspace() {
             <p role="alert" className="text-sm text-destructive">
               {error} You can retry your selection.
             </p>
-          ) : null}
-        </DialogContent>
-      </Dialog>
-      <Dialog
-        open={exportCreative !== null}
-        onOpenChange={(open) => {
-          if (!open) setExportCreative(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-lg max-h-[88dvh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Export {exportCreative?.name}</DialogTitle>
-            <DialogDescription>
-              Download the saved creative as PNG or JPEG.
-            </DialogDescription>
-          </DialogHeader>
-          {exportCreative ? (
-            <ExportPanel
-              creativeId={exportCreative.id}
-              graph={exportCreative.sceneGraph ?? null}
-            />
           ) : null}
         </DialogContent>
       </Dialog>

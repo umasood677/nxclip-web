@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { brandApi } from "../../../services/apiClient";
+import { Megaphone, Sparkles } from "lucide-react";
+import { adStudioApi, brandApi, brandTemplateApi } from "../../../services/apiClient";
 import { SEO } from "../../../components/SEO";
 import { Skeleton } from "../../../components/ui/skeleton";
 import { AdProjectCreateForm } from "../components/CreateAdProjectDialog";
-import { resolveBrandHomeCatalog } from "../lib/brandHomeCatalog";
-import { projectWorkspacePath } from "../lib/projectWorkspace";
+import { exampleForPlanning } from "../lib/publishedExampleBriefs";
+import { openBrandTemplateAd } from "../lib/brandTemplateAd";
+import { canReuseTemplate, type BrandTemplate } from "../../BrandKits/templates/brandTemplateModel";
+import { selectTemplateSource, projectWorkspacePath } from "../lib/projectWorkspace";
 import type { BrandKitSummary } from "../../BrandKits/lib/brandKitTypes";
 import {
   isAdStudioTemplateId,
@@ -14,6 +17,7 @@ import {
 import { selectedBrandAssetReadiness } from "../lib/homeEntryFlow";
 import "../uxPreview/preview.css";
 import "../styles/production-theme.css";
+import "../styles/ad-studio-w0a.css";
 import "../../BrandKits/guided/guidedBrand.css";
 export default function AdProjectStart() {
   const [query] = useSearchParams(),
@@ -21,9 +25,21 @@ export default function AdProjectStart() {
     brandId = query.get("brandId") || "",
     exampleId = query.get("exampleId") || "",
     templateId = query.get("templateId") || "",
-    format = query.get("format") || "";
+    format = query.get("format") || "",
+    brandTemplateId = query.get("brandTemplateId") || "",
+    revision = Number(query.get("revision"));
+  const [savedTemplate, setSavedTemplate] = useState<BrandTemplate>();
+  useEffect(() => {
+    let active = true;
+    setSavedTemplate(undefined);
+    if (brandId && brandTemplateId) void brandTemplateApi.get(brandId, brandTemplateId).then(template => {
+      if (active && template.brandKitId === brandId && template.id === brandTemplateId &&
+        template.revision === revision && template.format === format && canReuseTemplate(template))
+        setSavedTemplate(template);
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [brandId, brandTemplateId, revision, format]);
   const [brands, setBrands] = useState<BrandKitSummary[]>([]),
-    [kit, setKit] = useState<BrandKitSummary | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
   const [selectedBrandId, setSelectedBrandId] = useState(brandId),
@@ -42,10 +58,8 @@ export default function AdProjectStart() {
           throw Error(
             "This Brand Kit is not available to the signed-in account.",
           );
-        const detail = brandId ? await brandApi.getKit(brandId) : null;
         if (active) {
           setBrands(owned);
-          setKit(detail);
         }
       } catch (e) {
         if (active)
@@ -96,15 +110,12 @@ export default function AdProjectStart() {
       active = false;
     };
   }, [selectedBrandId, loading, brands]);
-  const example = exampleId
-    ? resolveBrandHomeCatalog(kit).examples.find(
-        (item) => item.id === exampleId,
-      )
-    : undefined;
+  const example = exampleForPlanning(exampleId);
   const template = isAdStudioTemplateId(templateId)
     ? getTemplateDef(templateId)
     : null;
   const blockers = [
+    ...(brandTemplateId && !savedTemplate ? ["A saved, approved Brand Template at this revision is required."] : []),
     ...(kitError ? [kitError] : []),
     ...(selectedBrandId && selectedKit?.id !== selectedBrandId
       ? ["Wait for the selected Brand Kit to finish loading."]
@@ -112,7 +123,7 @@ export default function AdProjectStart() {
     ...(kitLoading ? ["Checking selected Brand Kit sources..."] : []),
     ...(exampleId && !example
       ? [
-          "This Example Brief is not available for the selected Brand Kit. Return Home and select it again.",
+          "This Example Brief is unavailable. Return to Ad Studio to choose another.",
         ]
       : []),
     ...(templateId && !template
@@ -140,56 +151,82 @@ export default function AdProjectStart() {
         )
       : []),
   ];
+  const sourceLabel = savedTemplate
+    ? `Brand Template · ${savedTemplate.name}`
+    : template
+      ? `Default Template · ${template.name}`
+      : example
+        ? `Example Brief · ${example.title}`
+        : "Original idea";
   return (
-    <main className="xp-root nxclip-production bp-guided-root">
+    <main className="xp-root nxclip-production bp-guided-root ad-campaign-start-root">
       <SEO title="New Ad Project | NxClip" />
-      <div className="xp-main">
+      <div className="xp-main ad-campaign-start">
         <Link className="xp-breadcrumb" to="/create/ad">
-          ← Ad Studio
+          ← Back to Ad Studio
         </Link>
-        <div className="xp-page-heading">
-          <h1>
-            {example
-              ? "Make this brief your own."
-              : template
-                ? "A considered campaign starting point."
-                : "Start a campaign with a clear idea."}
-          </h1>
+        <div className="xp-page-heading ad-campaign-start__heading">
+          <h1>Create Campaign</h1>
         </div>
-        <div className="xp-panel" style={{ maxWidth: 760 }}>
-          <p>
-            {example
-              ? `Starting brief: ${example.title}. Your strategy will open in the current project workspace.`
-              : template
-                ? `Standard layout: ${template.name}. Save a project explicitly, then review and create the creative inside that project.`
-                : "Create a project, then develop its brief, concepts and editable creatives in one workspace."}
-          </p>
-          {loading ? (
-            <Skeleton className="h-80" aria-label="Loading project setup" />
-          ) : error ? (
-            <p role="alert">{error}</p>
-          ) : (
-            <AdProjectCreateForm
-              brands={brands}
-              initialBrandId={brandId}
-              onBrandChange={setSelectedBrandId}
-              brandsLoading={kitLoading}
-              example={example}
-              format={format || undefined}
-              blockers={blockers}
-              onCancel={() => navigate("/create/ad")}
-              onCreated={(project) =>
-                navigate(
-                  projectWorkspacePath(project.id) +
-                    (template
-                      ? `?view=template&template=${encodeURIComponent(template.templateId)}`
-                      : example
-                        ? "?view=brief"
-                        : "?view=workspace"),
-                )
-              }
-            />
-          )}
+        <div className="ad-campaign-start__grid ad-studio-w0a">
+          <section className="xp-panel ad-campaign-start__form-panel" aria-labelledby="campaign-details-title">
+            <div className="ad-campaign-start__panel-heading">
+              <span className="ad-campaign-start__icon" aria-hidden="true"><Megaphone size={20} /></span>
+              <div>
+                <h2 id="campaign-details-title">Campaign details</h2>
+                <p>{sourceLabel}</p>
+              </div>
+            </div>
+            {loading ? (
+              <Skeleton className="h-80" aria-label="Loading campaign setup" />
+            ) : error ? (
+              <p role="alert" className="ad-campaign-start__error">{error}</p>
+            ) : (
+              <AdProjectCreateForm
+                ideaFirst
+                brands={brands}
+                initialBrandId={brandId}
+                brandLocked={!!brandTemplateId}
+                onBrandChange={setSelectedBrandId}
+                brandsLoading={kitLoading}
+                example={example}
+                format={format || example?.briefDefaults.outputFormat || undefined}
+                defaultTemplateId={template?.templateId}
+                blockers={blockers}
+                onCancel={() => navigate("/create/ad")}
+                onCreated={async (project) => {
+                  if (savedTemplate) {
+                    try {
+                      const source = await openBrandTemplateAd(brandTemplateApi, adStudioApi, {
+                        ...project, outputFormat: savedTemplate.format,
+                      }, savedTemplate);
+                      await selectTemplateSource(adStudioApi, project, { startingCreativeId: source.id, format: savedTemplate.format });
+                    } catch {
+                      navigate(projectWorkspacePath(project.id) + "?sourceUnavailable=1");
+                      return;
+                    }
+                  }
+                  navigate(projectWorkspacePath(project.id) + "?view=strategy");
+                }}
+              />
+            )}
+          </section>
+          <aside className="xp-panel ad-campaign-start__guide" aria-labelledby="campaign-guide-title">
+            <div className="ad-campaign-start__guide-art" aria-hidden="true">
+              <Megaphone size={78} strokeWidth={1.4} />
+              <span /><span /><span />
+            </div>
+            <div className="ad-campaign-start__guide-heading">
+              <span className="ad-campaign-start__icon" aria-hidden="true"><Sparkles size={18} /></span>
+              <h2 id="campaign-guide-title">Your campaign starts here</h2>
+            </div>
+            <p>Save the idea first. Planning and artwork generation happen only when you choose them.</p>
+            <ol>
+              <li>Review campaign brief</li>
+              <li>Explore creative directions</li>
+              <li>Review production readiness</li>
+            </ol>
+          </aside>
         </div>
       </div>
     </main>

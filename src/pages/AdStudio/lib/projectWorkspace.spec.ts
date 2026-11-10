@@ -1,7 +1,7 @@
 import {retainTemplateTarget} from "../../BrandKits/templates/templateCanvasLink";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { editorReturnPath, isTemplateDraftCreative, newWorkspaceProject, projectBriefForm, workspaceBrief, loadWorkspace, createProjectTemplate, createProjectConcept, projectWorkspacePath, creativeEditorPath, type WorkspaceProject, type WorkspaceCreative } from "./projectWorkspace";
+import { editorReturnPath, isTemplateDraftCreative, newWorkspaceProject, projectBriefForm, workspaceBrief, loadWorkspace, createProjectTemplate, createProjectConcept, projectWorkspacePath, creativeEditorPath, existingProjectTemplateCreative, openProjectTemplate, type WorkspaceProject, type WorkspaceCreative } from "./projectWorkspace";
 const project: WorkspaceProject = { id: "project-a", name: "Collection", brandKitId: "kit-b", brief: { campaignIdea: "  My idea\nexactly.  ", coreMessage: "Copy" } };
 test("project creation preserves Campaign Idea wording and keeps Brand Kit optional", () => {
   const body = newWorkspaceProject(" New project ", "  My words.  ");
@@ -48,6 +48,29 @@ test("two template creatives use one existing project, without project creation 
 test("a template result must belong to the selected project", async () => {
   const api={createFromTemplate:async()=>({id:"new",name:"Ad",projectId:"other"}),createFromConcept:async()=>{throw Error("Unexpected");}};
   await assert.rejects(createProjectTemplate(api,project,"product-hero","square_1080"),/verified/);
+});
+test("reopening the same saved template and format reuses its campaign creative", async () => {
+  const existing: WorkspaceCreative = {id:"existing",name:"Saved template ad",projectId:project.id,updatedAt:"2026-11-07T12:00:00.000Z",metadata:{format:"portrait_1080x1350"},conceptSnapshot:{source:"template_gallery",templateId:"brand-template"}};
+  assert.equal(existingProjectTemplateCreative([existing],"brand-template","portrait_1080x1350")?.id,"existing");
+  let created = 0;
+  const api = {listCreatives:async()=>({items:[existing]}),createFromTemplate:async()=>{created++;return {id:"unexpected",name:"Unexpected",projectId:project.id};},createFromConcept:async()=>{throw Error("Unexpected");}};
+  const result = await openProjectTemplate(api,project,"brand-template","portrait_1080x1350");
+  assert.equal(result.existing,true);assert.equal(result.creative.id,"existing");assert.equal(created,0);
+});
+test("reopening a saved Brand Template reuses its campaign creative regardless of source label", async () => {
+  const existing: WorkspaceCreative = {id:"brand-existing",name:"Saved Brand Template ad",projectId:project.id,updatedAt:"2026-11-07T12:00:00.000Z",metadata:{format:"portrait_1080x1350"},conceptSnapshot:{source:"saved_brand_template",brandTemplateId:"brand-template"}};
+  assert.equal(existingProjectTemplateCreative([existing],"brand-template","portrait_1080x1350")?.id,"brand-existing");
+  let created = 0;
+  const api = {listCreatives:async()=>({items:[existing]}),createFromTemplate:async()=>{created++;return {id:"unexpected",name:"Unexpected",projectId:project.id};},createFromConcept:async()=>{throw Error("Unexpected");}};
+  const result = await openProjectTemplate(api,project,"brand-template","portrait_1080x1350");
+  assert.equal(result.existing,true);assert.equal(result.creative.id,"brand-existing");assert.equal(created,0);
+});
+test("a different output format creates one separate campaign creative", async () => {
+  const existing: WorkspaceCreative = {id:"existing",name:"Saved template ad",projectId:project.id,metadata:{format:"portrait_1080x1350"},conceptSnapshot:{source:"template_gallery",templateId:"brand-template"}};
+  let created = 0;
+  const api = {listCreatives:async()=>({items:[existing]}),createFromTemplate:async(id:string)=>{created++;return {id:"landscape",name:"Landscape",projectId:id};},createFromConcept:async()=>{throw Error("Unexpected");}};
+  const result = await openProjectTemplate(api,project,"brand-template","landscape_1920x1080");
+  assert.equal(result.existing,false);assert.equal(result.creative.id,"landscape");assert.equal(created,1);
 });
 test("saved concept selection must come from the same loaded project", async () => {
   let called=false;
@@ -130,11 +153,19 @@ test("different examples retain different objective and example identity", () =>
 });
 
 import { generateProjectConcepts } from './projectWorkspace';
+function persistedServerBrief(value:Record<string,unknown>) {
+  const persisted=JSON.parse(JSON.stringify(value)) as Record<string,unknown>;
+  if (typeof persisted.supportingCopy === 'string') persisted.supportingCopy = persisted.supportingCopy.trim();
+  for(const key of ['headline','offerDetails','promotionalPrice','landingPageUrl','negativeInstructions']) {
+    if(typeof persisted[key]==='string'&&!String(persisted[key]).trim()) delete persisted[key];
+  }
+  return persisted;
+}
 function memoryApi(initial:WorkspaceProject) {
   let stored=structuredClone(initial); let generations=0;
   return { get stored(){return stored;},get generations(){return generations;},
     updateProject:async(id:string,body:Record<string,unknown>)=>{
-      assert.equal(id,stored.id);stored={...stored,...(body.name?{name:String(body.name)}:{}),...(body.brandKitId?{brandKitId:String(body.brandKitId)}:{}),...(body.clearBrandKit?{brandKitId:null}:{}),brief:{...stored.brief,...(body.brief as typeof stored.brief)}};return structuredClone(stored);
+      assert.equal(id,stored.id);stored={...stored,...(body.name?{name:String(body.name)}:{}),...(body.brandKitId?{brandKitId:String(body.brandKitId)}:{}),...(body.clearBrandKit?{brandKitId:null}:{}),brief:persistedServerBrief({...stored.brief,...(body.brief as typeof stored.brief)})};return structuredClone(stored);
     },generateConcepts:async()=>{generations++;return {concepts:[],generationSource:'heuristic'};}
   };
 }
@@ -142,9 +173,16 @@ test('shared save persists explicit project-name edits and reopens from server',
  const api=memoryApi(project),form=projectBriefForm(project);form.name='Renamed campaign';
  await saveWorkspaceBrief(api,project,form);assert.equal(projectBriefForm(api.stored).name,'Renamed campaign');
 });
+test('brief estimation can save when optional supporting copy is blank', async () => {
+  const initial = { ...project, brief: { ...project.brief, supportingCopy: 'Old copy' } };
+  const form = { ...projectBriefForm(initial), supportingCopy: '   ' };
+  const saved = await saveWorkspaceBrief(memoryApi(initial), initial, form, { allowCampaignIdeaEdit: true });
+  assert.equal(saved.brief?.supportingCopy, '');
+  await assert.rejects(saveWorkspaceBrief({ updateProject: async () => initial }, initial, form), /could not retain.*supportingCopy/);
+});
 test('Home and workspace use the same save and retain optional metadata and source associations',async()=>{
  const original={...project,brief:{...project.brief,offerDetails:'Existing offer',productImageAssetId:'owned-product',referenceImageAssetId:'owned-reference',preferredColors:['#101010'],legacyMetadata:{b:2,a:1}}};
- for(const options of [{},{allowBrandChange:true}]){const api=memoryApi(original),form=projectBriefForm(original);form.coreMessage='New consumer copy';await saveWorkspaceBrief(api,original,form,options);assert.deepEqual(api.stored.brief,{...original.brief,...workspaceBrief(original,form)});assert.equal(api.stored.brief?.productImageAssetId,'owned-product');assert.equal(api.stored.brief?.referenceImageAssetId,'owned-reference');}
+ for(const options of [{},{allowBrandChange:true}]){const api=memoryApi(original),form=projectBriefForm(original);form.coreMessage='New consumer copy';await saveWorkspaceBrief(api,original,form,options);assert.deepEqual(api.stored.brief,persistedServerBrief({...original.brief,...workspaceBrief(original,form)}));assert.equal(api.stored.brief?.productImageAssetId,'owned-product');assert.equal(api.stored.brief?.referenceImageAssetId,'owned-reference');}
 });
 test('shared audience/message/tone fields persist one canonical value across both save origins',async()=>{
  const api=memoryApi(project);let form=projectBriefForm(project);
@@ -181,7 +219,7 @@ test('approved presentation can explicitly edit Campaign Idea while legacy saves
  await assert.rejects(()=>saveWorkspaceBrief(api,project,{...form,campaignIdea:'   '},{allowCampaignIdeaEdit:true}),/Campaign Idea/);
 });
 
-test("modern save-and-generate consumes an explicitly edited campaign idea only after verified persistence",async()=>{const edited=projectBriefForm(project);edited.campaignIdea="A newly edited campaign idea";const calls:string[]=[];let saved:WorkspaceProject=project;await generateProjectConcepts({updateProject:async(id,body)=>{calls.push("save");saved={...project,...body,brief:{...project.brief,...body.brief as object}} as WorkspaceProject;return saved;},generateConcepts:async()=>{calls.push("generate");assert.equal(saved.brief?.campaignIdea,edited.campaignIdea);return {concepts:[]};}},project,edited,{allowCampaignIdeaEdit:true});assert.deepEqual(calls,["save","generate"]);});
+test("modern save-and-generate consumes an explicitly edited campaign idea only after verified persistence",async()=>{const edited=projectBriefForm(project);edited.campaignIdea="A newly edited campaign idea";const calls:string[]=[];let saved:WorkspaceProject=project;await generateProjectConcepts({updateProject:async(id,body)=>{calls.push("save");saved={...project,...body,brief:persistedServerBrief({...project.brief,...body.brief as object})} as WorkspaceProject;return saved;},generateConcepts:async()=>{calls.push("generate");assert.equal(saved.brief?.campaignIdea,edited.campaignIdea);return {concepts:[]};}},project,edited,{allowCampaignIdeaEdit:true});assert.deepEqual(calls,["save","generate"]);});
 
  test('template drafts are separated without hiding actual ads reused from saved templates',async()=>{
  const draft={id:'draft',name:'Draft',projectId:project.id,conceptSnapshot:{purpose:'brand-template-source'},brandSnapshot:{brandKitId:'kit-b'}};

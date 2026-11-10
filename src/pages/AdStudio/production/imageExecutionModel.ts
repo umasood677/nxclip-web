@@ -15,13 +15,14 @@ export type ImageQuote = {
   estimatedCostUsd: number | null;
   pricingVersion: string;
   imageCount: 1;
-  inputScope: "editable-ad-background" | "editable-template-proposal";
+  inputScope: "editable-ad-background" | "editable-template-proposal" | "editable-campaign-ad";
   referenceCount: number;
   productLayerCount?: number;
   sourceTreatment?: "original-photo-layer" | "background-only" | "reference-guided-proposal";
   costBasis: "configured-estimate" | "usage-only";
 };
 export type ImageInput = {
+  executionScope?:'campaign-photography';
   expectedVersion: number;
   operation: AdImageOperation;
   renderMode?: 'background' | 'template-proposal';
@@ -44,7 +45,7 @@ export function hasGeneratedBackground(creative: WorkspaceCreative) {
 export function validateImageQuote(q: ImageQuote, budget?: number) {
   if (
     q.schemaVersion !== "1.0" ||
-    !["editable-ad-background","editable-template-proposal"].includes(q.inputScope) ||
+    !["editable-ad-background","editable-template-proposal","editable-campaign-ad"].includes(q.inputScope) ||
     !validPreflightCost(q, budget) ||
     q.imageCount !== 1 ||
     !["gemini", "vertex"].includes(q.provider) ||

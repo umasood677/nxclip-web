@@ -18,6 +18,7 @@ import {
 import type { BrandKitSummary } from "../../BrandKits/CreateBrandKitDialog";
 import { normalizeBrandContext } from "../../BrandKits/lib/brandContext";
 import type { FeaturedExample } from "../lib/exampleCreatives";
+import { publishedExampleBriefs } from "../lib/publishedExampleBriefs";
 import { resolveBrandHomeCatalog } from "../lib/brandHomeCatalog";
 import { BrandKitHeaderControl } from "./BrandKitHeaderControl";
 import { BrandHomePreview, aspectForFormat } from "./BrandHomePreview";
@@ -155,10 +156,12 @@ export function AdStudioHome({
   const fullCatalog = catalogQuery.get("catalog");
   const templatesOnly = fullCatalog === "templates",
     briefsOnly = fullCatalog === "briefs";
-  const recentProjects = scopedHomeProjects(projects, selectedBrandId).slice(
-    0,
-    6,
-  );
+  const brandProjects = scopedHomeProjects(projects, selectedBrandId);
+  const showAllProjects = catalogQuery.get("projects") === "all";
+  const recentProjects = (showAllProjects ? projects : brandProjects).slice(0, 6);
+  const projectScopeQuery = new URLSearchParams(catalogQuery);
+  if (showAllProjects) projectScopeQuery.delete("projects");
+  else projectScopeQuery.set("projects", "all");
   const [ownedKit, setOwnedKit] = useState<BrandKitSummary | null>(null);
   const [brandLoadError, setBrandLoadError] = useState("");
   useEffect(() => {
@@ -326,6 +329,11 @@ export function AdStudioHome({
               >
                 Recent projects
               </h2>
+              {(showAllProjects || projects.length > brandProjects.length) && (
+                <Link className="w0a-link w0a-section-hero__link" to={{ search: projectScopeQuery.toString() }}>
+                  {showAllProjects ? "Show current Brand Kit projects" : "Show all campaigns"}
+                </Link>
+              )}
             </header>
             {recentProjects.length ? (
               <div className="w0a-project-rail">
@@ -375,7 +383,7 @@ export function AdStudioHome({
             ) : (
               <div className="w0a-project-empty">
                 <p className="w0a-meta mb-3">
-                  No projects yet — start your first campaign.
+                  {projects.length ? "No campaigns in this Brand Kit view." : "No projects yet. Start your first campaign."}
                 </p>
                 <button
                   type="button"
@@ -474,14 +482,14 @@ export function AdStudioHome({
                 </Link>
               )}
             </header>
-            {homeCatalog.examples.length ? (
+            {publishedExampleBriefs.length ? (
               <div className="w0a-grid w0a-grid-3">
-                {homeCatalog.examples
+                {publishedExampleBriefs
                   .slice(0, briefsOnly ? undefined : 6)
                   .map((ex) => {
                     const formatKey = `${selectedBrandId || "default"}/${ex.id}`;
                     const format =
-                      briefFormats[formatKey] || "portrait_1080x1350";
+                      briefFormats[formatKey] || ex.briefDefaults.outputFormat || "portrait_1080x1350";
                     const preview =
                       ex.previewImage ||
                       "/ad-studio/sample-assets/w0a-product-hero.jpg";
@@ -490,13 +498,10 @@ export function AdStudioHome({
                         key={ex.id}
                         className="w0a-card w0a-rel w0a-brief-card"
                       >
-                        <span className="w0a-example-tag">Example</span>
                         <BrandHomePreview
                           fallbackSrc={preview}
                           alt=""
-                          brand={brandContext}
                           aspect={aspectForFormat(format)}
-                          headline={ex.headline}
                         />
                         <div className="w0a-card-body">
                           <h3>{ex.title}</h3>

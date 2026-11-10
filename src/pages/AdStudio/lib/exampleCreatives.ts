@@ -2,6 +2,7 @@ import type { AdBriefFormState } from "./adStudioLabels";
 
 /** Deterministic featured examples — not user projects, not AI output. */
 export type FeaturedExample = {
+  catalogVersion?: string;
   exampleObjective?: string;
   productCategory?: string;
   creativeDirection?: string;

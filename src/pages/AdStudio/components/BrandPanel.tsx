@@ -161,9 +161,12 @@ export function BrandPanel({
           </p>
         ) : (
           <ul className="space-y-1 text-[11px]">
-            {[...logos, ...products, ...models].map((a) => (
+            {[...logos, ...products, ...models].map((a, index) => (
               <li
-                key={`${a.role}-${a.label ?? a.fileName}`}
+                key={
+                  a.id ??
+                  `${a.role}:${a.fileName ?? a.label ?? "asset"}:${index}`
+                }
                 className="rounded-md border border-border px-2 py-1.5"
               >
                 <span className="font-medium">{a.role}</span>

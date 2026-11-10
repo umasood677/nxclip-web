@@ -616,7 +616,7 @@ export default function AdStudioEditor() {
     />
   );
 
-  const templateControls = <>{brandKit&&<TemplateSourceBindings graph={graph} brand={brandKit} selectedId={selectedLayerId} readOnly={previewMode} onKitUpdated={value=>{setBrandKit(value);lastPersistedHashRef.current=null;markDirty();}} onGraph={(next,id)=>{applyGraph(()=>next);setSelectedLayerId(id);}} onRefine={()=>{void ensureSaved().then(ok=>{if(ok)navigate('/brands/'+encodeURIComponent(brandKit.id)+'/templates?tab=brand&mode=ai&source='+encodeURIComponent(creativeId!)+'&refine=1');});}}/>}<TemplateCanvasControls key={creativeId} graph={graph} brand={brandKit} selectedId={selectedLayerId} readOnly={previewMode} onSelect={setSelectedLayerId}
+  const templateControls = <>{templateDocument&&brandKit&&<TemplateSourceBindings graph={graph} brand={brandKit} selectedId={selectedLayerId} readOnly={previewMode} onKitUpdated={value=>{setBrandKit(value);lastPersistedHashRef.current=null;markDirty();}} onGraph={(next,id)=>{applyGraph(()=>next);setSelectedLayerId(id);}} onRefine={()=>{void ensureSaved().then(ok=>{if(ok)navigate('/brands/'+encodeURIComponent(brandKit.id)+'/templates?tab=brand&mode=ai&source='+encodeURIComponent(creativeId!)+'&refine=1');});}}/>}<TemplateCanvasControls key={creativeId} graph={graph} brand={brandKit} selectedId={selectedLayerId} readOnly={previewMode} onSelect={setSelectedLayerId}
     onPatch={(id,patch)=>{if(previewMode || graph.layers.find(l=>l.id===id)?.locked)return;applyGraph(g=>updateLayer(g,id,patch));}}
     onMove={liveMove} onResize={liveResize} onCommit={commitTransform} onCenter={id=>{if(previewMode)return;applyGraph(g=>safeCenter(g,id));}} onBackground={color=>{if(!previewMode)applyGraph(g=>setCanvasBackground(g,color));}}/><section className="tc-slider-typography" aria-label="Typography controls">{typographyPanel}</section></>;
   const brandPanel = (
@@ -721,7 +721,7 @@ export default function AdStudioEditor() {
       id="ad-studio-canvas"
     >
       <SEO title={`${name} | Ad Studio · ${templateDocument ? "Template Canvas" : "Editor Canvas"}`} />
-      {!templateDocument && <AdStudioTopNav
+      {!templateDocument && !projectId && <AdStudioTopNav
         hideBrand
         active="canvas"
         recentCreativeId={creativeId}
@@ -765,6 +765,7 @@ export default function AdStudioEditor() {
           <span className="text-xs text-muted-foreground">v{currentVersion}</span>
         </div>
         <div className="w0a-editor-toolbar__actions">
+          {!templateDocument&&projectId&&creativeId&&<Button type="button" size="sm" className="h-7" onClick={()=>{void ensureSaved().then(ok=>{if(ok)navigate("/create/ad/projects/"+encodeURIComponent(projectId)+"?review="+encodeURIComponent(creativeId));});}}>Review &amp; export</Button>}
           <Button
             type="button"
             variant="outline"
@@ -904,15 +905,18 @@ export default function AdStudioEditor() {
       <div className={"hidden lg:grid w0a-canvas-layout flex-1 min-h-0 overflow-hidden" + (templateDocument ? " template-canvas-layout" : "")}>
         <aside className={"w0a-pane h-full min-w-0" + (templateDocument ? " template-layers-pane" : "")}>
           <div className="w0a-pane-scroll space-y-2">
-            {templateDocument ? <LayerList {...layerListProps} presentation="advanced" readOnly={previewMode}/> : (            <CollapsiblePanel
-              title="Layers"
-              icon={<Layers size={12} />}
-              defaultOpen
-              badge={graph.layers.length}
-            >
-              <LayerList {...layerListProps} presentation={templateDocument?"advanced":"stack"} readOnly={previewMode} />
-            </CollapsiblePanel>
-)}
+            {templateDocument ? (
+              <LayerList {...layerListProps} presentation="advanced" readOnly={previewMode} />
+            ) : (
+              <CollapsiblePanel
+                title="Layers"
+                icon={<Layers size={12} />}
+                defaultOpen
+                badge={graph.layers.length}
+              >
+                <LayerList {...layerListProps} presentation="stack" readOnly={previewMode} />
+              </CollapsiblePanel>
+            )}
             {!templateDocument && <CollapsiblePanel
               title="Creative composition"
               icon={<Wand2 size={12} />}
@@ -951,15 +955,19 @@ export default function AdStudioEditor() {
 
         <aside className="w0a-pane h-full min-w-0">
           <div className="w0a-pane-scroll space-y-2">
-            {templateDocument ? templateControls : (            <CollapsiblePanel
-              title={templateDocument ? "Layer properties" : "Typography"}
-              icon={<Type size={12} />}
-              defaultOpen
-              badge={selected ? selected.name || selected.type : undefined}
-            >
-              {typographyPanel}
-            </CollapsiblePanel>
-)}
+            {templateDocument ? (
+              templateControls
+            ) : (
+              <CollapsiblePanel
+                title="Typography"
+                icon={<Type size={12} />}
+                defaultOpen
+                badge={selected ? selected.name || selected.type : undefined}
+              >
+                {typographyPanel}
+              </CollapsiblePanel>
+            )}
+
             <CollapsiblePanel
               title="Brand"
               icon={<Palette size={12} />}
@@ -968,7 +976,7 @@ export default function AdStudioEditor() {
               {brandPanel}
             </CollapsiblePanel>
             {!templateDocument && <CollapsiblePanel
-              title="Vars"
+              title="Variations"
               icon={<Sparkles size={12} />}
               defaultOpen={false}
             >
@@ -1071,7 +1079,7 @@ export default function AdStudioEditor() {
           mobileTab === "export" ||
           mobileTab === "history") && (
           <Card className="glass border-border">
-            <CardContent className="pt-4">{templateDocument && mobileTab==="typography" ? templateControls : renderSideContent(mobileTab)}</CardContent>
+            <CardContent className="pt-4">{templateDocument && mobileTab === "typography" ? templateControls : renderSideContent(mobileTab)}</CardContent>
           </Card>
         )}
       </div>

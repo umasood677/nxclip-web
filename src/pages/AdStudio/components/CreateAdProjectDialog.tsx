@@ -22,6 +22,7 @@ import {
   type WorkspaceProject,
 } from "../lib/projectWorkspace";
 import { saveEntryProject } from "../lib/homeEntryFlow";
+import { writeStoredBrandKitId } from "../lib/brandHomeCatalog";
 type FormProps = {
   brandLocked?: boolean;
   brands: BrandKitSummary[];
@@ -29,12 +30,14 @@ type FormProps = {
   brandsError?: string | null;
   onRetryBrands?: () => void;
   onCancel: () => void;
-  onCreated?: (project: WorkspaceProject) => void;
+  onCreated?: (project: WorkspaceProject) => void | Promise<void>;
   onBrandChange?: (id: string) => void;
   initialBrandId?: string;
   example?: FeaturedExample;
   format?: string;
+  defaultTemplateId?: string;
   blockers?: string[];
+  ideaFirst?: boolean;
 };
 export function AdProjectCreateForm({
   brandLocked = false,
@@ -48,13 +51,15 @@ export function AdProjectCreateForm({
   initialBrandId = "",
   example,
   format,
+  defaultTemplateId,
   blockers = [],
+  ideaFirst = false,
 }: FormProps) {
   const navigate = useNavigate(),
     pending = useRef(false);
-  const [name, setName] = useState(example?.briefDefaults.name || ""),
+  const [name, setName] = useState(example?.catalogVersion ? "" : example?.briefDefaults.name || ""),
     [idea, setIdea] = useState(
-      example?.exampleObjective || example?.briefDefaults.coreMessage || "",
+      example?.catalogVersion ? "" : example?.exampleObjective || example?.briefDefaults.coreMessage || "",
     ),
     [brandId, setBrandId] = useState(initialBrandId),
     [busy, setBusy] = useState(false),
@@ -70,11 +75,12 @@ export function AdProjectCreateForm({
         throw Error("Choose an available Brand Kit.");
       const project = await saveEntryProject(
         adStudioApi,
-        { name, idea, brandId, example, format },
+        { name: name.trim() || (ideaFirst ? idea.trim().split(/\r?\n/)[0].slice(0, 80) : ""), idea, brandId, example, format, defaultTemplateId },
         blockers,
       );
+      writeStoredBrandKitId(project.brandKitId ?? "");
       toast.success("Project created");
-      if (onCreated) onCreated(project);
+      if (onCreated) await onCreated(project);
       else navigate(projectWorkspacePath(project.id));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not create project.");
@@ -92,14 +98,13 @@ export function AdProjectCreateForm({
       return;
     onCancel();
   }
-  return (
-    <form onSubmit={submit} className="space-y-5" aria-busy={busy}>
+  const nameField = (
       <div className="space-y-2">
-        <Label htmlFor="project-name">Project name</Label>
+        <Label htmlFor="project-name">{ideaFirst ? "Campaign name (optional)" : "Project name"}</Label>
         <Input
           id="project-name"
-          autoFocus
-          required
+          autoFocus={!ideaFirst}
+          required={!ideaFirst}
           maxLength={160}
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -107,10 +112,15 @@ export function AdProjectCreateForm({
           placeholder="Name your campaign"
         />
       </div>
+  );
+  return (
+    <form onSubmit={submit} className={ideaFirst ? "space-y-5 ad-project-create-form ad-project-create-form--idea-first" : "space-y-5"} aria-busy={busy}>
+      {!ideaFirst && nameField}
       <div className="space-y-2">
-        <Label htmlFor="campaign-idea">Campaign Idea</Label>
+        <Label htmlFor="campaign-idea">{ideaFirst ? "What would you like to advertise?" : "Campaign Idea"}</Label>
         <Textarea
           id="campaign-idea"
+          autoFocus={ideaFirst}
           required
           maxLength={4000}
           rows={5}
@@ -119,11 +129,11 @@ export function AdProjectCreateForm({
           disabled={busy}
           placeholder="Describe the advertisement you want to create."
         />
-        <p className="text-xs text-muted-foreground">
-          Saved in your own words. Creating a project does not generate AI
-          content.
+        <p className="text-xs text-muted-foreground ad-project-create-form__hint">
+          {ideaFirst ? "A few sentences are enough." : "Saved in your own words."}
         </p>
       </div>
+      {ideaFirst && nameField}
       <div className="space-y-2">
         <Label htmlFor="project-brand">{brandLocked ? "Brand Kit" : "Brand Kit (optional)"}</Label>
         <select
@@ -143,10 +153,9 @@ export function AdProjectCreateForm({
             </option>
           ))}
         </select>
-        <p className="text-xs text-muted-foreground">
-          Default Brand does not inherit previous assets. Changing Brand Kit
-          keeps your typed campaign idea and rechecks source requirements.
-        </p>
+        {!ideaFirst && <p className="text-xs text-muted-foreground">
+          Changing Brand Kit keeps your typed campaign idea and rechecks source requirements.
+        </p>}
         {brandsLoading && <p role="status">Loading Brand Kits…</p>}
         {brandsError && (
           <p role="alert">
@@ -169,7 +178,7 @@ export function AdProjectCreateForm({
           {error}
         </p>
       )}
-      <DialogFooter>
+      <DialogFooter className={ideaFirst ? "ad-project-create-form__actions" : undefined}>
         <Button
           type="button"
           variant="outline"
@@ -180,11 +189,13 @@ export function AdProjectCreateForm({
         </Button>
         <Button
           type="submit"
+          variant={ideaFirst ? "ghost" : "default"}
+          className={ideaFirst ? "w0a-create-project" : undefined}
           disabled={
             busy ||
             brandsLoading ||
             !!blockers.length ||
-            !name.trim() ||
+            (!ideaFirst && !name.trim()) ||
             !idea.trim()
           }
         >
@@ -193,7 +204,7 @@ export function AdProjectCreateForm({
           ) : (
             <Plus size={15} />
           )}{" "}
-          {busy ? "Creating project…" : "Create project"}
+          {busy ? "Creating project…" : ideaFirst ? "Create campaign" : "Create project"}
         </Button>
       </DialogFooter>
     </form>

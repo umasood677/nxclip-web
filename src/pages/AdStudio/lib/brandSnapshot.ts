@@ -13,6 +13,7 @@ export type BrandSnapshotView = {
   colors: Array<{ role?: string; hex: string; name?: string }>;
   typography: Array<{ role?: string; family: string; weight?: string }>;
   assets: Array<{
+    id?: string;
     role: string;
     label?: string | null;
     description?: string | null;
@@ -52,6 +53,7 @@ export function normalizeBrandSnapshot(
     ? (s.assets as Array<Record<string, unknown>>)
         .filter((a) => typeof a.role === "string")
         .map((a) => ({
+          id: typeof a.id === "string" ? a.id : undefined,
           role: String(a.role),
           label: typeof a.label === "string" ? a.label : null,
           description: typeof a.description === "string" ? a.description : null,

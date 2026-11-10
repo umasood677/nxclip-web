@@ -23,6 +23,7 @@ import { TemplateGallery } from "./TemplateGallery";
 import type { AdSceneOutputFormatId, AdStudioTemplateId } from "../canvas/templateCatalog";
 
 type Props = {
+  creationSlot?: React.ReactNode;
   form: AdBriefFormState;
   onChange: (patch: Partial<AdBriefFormState>) => void;
   brands: BrandKitSummary[];
@@ -65,6 +66,7 @@ type Props = {
  * Gallery + live concept preview are the primary focus.
  */
 export function GuidedBriefComposer({
+  creationSlot,
   form,
   onChange,
   brands,
@@ -122,7 +124,7 @@ export function GuidedBriefComposer({
 
   return (
     <div className="ad-studio-w0a space-y-4 pb-8" id="ad-studio-concepts">
-      <div className="w0a-shell" style={{ paddingBottom: 24 }}>
+      {!creationSlot && <div className="w0a-shell" style={{ paddingBottom: 24 }}>
         <div className="w0a-topnav">
           <div className="w0a-brand">Concept Gallery</div>
           <nav className="w0a-navlinks" aria-label="Ad Studio">
@@ -139,6 +141,7 @@ export function GuidedBriefComposer({
         </p>
       </div>
 
+      }
       {/* Compact project header */}
       <header className="w0a-card mx-4 md:mx-5 px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
         <div className="flex items-center gap-2 min-w-0 flex-wrap">
@@ -204,13 +207,14 @@ export function GuidedBriefComposer({
               size="sm"
               disabled={busy}
               onClick={onGenerateConcepts}
+              variant="outline"
             >
               {busy || conceptsLoading ? (
                 <Loader2 size={14} className="mr-1 animate-spin" />
               ) : (
                 <Sparkles size={14} className="mr-1" />
               )}
-              {concepts.length ? "Regenerate concepts" : "Generate concepts"}
+              {concepts.length ? "Regenerate concepts" : "Explore concepts · optional"}
             </Button>
           )}
         </div>
@@ -224,10 +228,11 @@ export function GuidedBriefComposer({
       ) : null}
 
       <div className="mx-4 md:mx-5"><WorkingBriefPanel form={form} onChange={onChange} busy={busy} onSave={projectId && onSaveBrief ? () => { void onSaveBrief(); } : undefined} /></div>
+      {creationSlot && <div className="mx-4 md:mx-5">{creationSlot}</div>}
       {/* Primary: gallery + live preview */}
-      <div className="grid lg:grid-cols-12 gap-5 min-h-[calc(100vh-220px)] px-4 md:px-5">
+      {(!creationSlot || concepts.length > 0) && <div className="grid lg:grid-cols-12 gap-5 px-4 md:px-5">
         <div className="lg:col-span-7 w0a-pane space-y-4 order-2 lg:order-1">
-          {templatesV1Enabled && onUseTemplate ? (
+          {!creationSlot && templatesV1Enabled && onUseTemplate ? (
             <TemplateGallery
               selectedFormat={form.outputFormat}
               busy={busy}
@@ -294,6 +299,7 @@ export function GuidedBriefComposer({
         </div>
       </div>
 
+      }
       <ProjectDetailsDrawer
         brandLocked={brandLocked}
         open={detailsOpen}

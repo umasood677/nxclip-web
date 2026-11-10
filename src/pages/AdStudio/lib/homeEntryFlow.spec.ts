@@ -120,7 +120,9 @@ test("Example Brief context survives explicit project creation without copying f
   assert.equal(body.brief.creativeDirection, "Cinematic minimalism");
   assert.equal(body.brief.productOrService, "Actual product");
   assert.equal(body.brief.targetAudience, "Actual audience");
-  assert.equal(body.brief.cta, "Explore the collection");
+  assert.equal(body.brief.cta, example.cta);
+  assert.equal(body.brief.headline, example.headline);
+  assert.equal(body.brief.supportingCopy, example.supporting);
   assert.equal(body.brief.outputFormat, "vertical_1080x1920");
   assert.equal("brandKitId" in body.brief, false);
   assert.equal("name" in body.brief, false);

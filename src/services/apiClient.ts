@@ -250,7 +250,7 @@ let mineListSupportsExtendedQuery: boolean | null = null;
  */
 async function performApiRequest<T = any>(
   path: string,
-  options: RequestInit & { suppressErrorLog?: boolean } = {}
+  options: RequestInit & { suppressErrorLog?: boolean; bypassCircuitBreaker?: boolean } = {}
 ): Promise<T> {
   const method = (options.method || "GET").toUpperCase();
   const cacheKey = `nx_api_cache_${method}_${path}`;
@@ -259,8 +259,12 @@ async function performApiRequest<T = any>(
   // refine or publish looks like it quietly did nothing.
   const isReplayable = method === "GET";
 
-  const breaker = getCircuitBreaker(path);
-  const currentState = breaker.getState();
+  // A retained-generation status read is safe to repeat and must never be
+  // blocked by a failed mutation in the same broad API family.  It is the
+  // recovery path that tells us whether paid work completed, so callers can
+  // explicitly opt it out of the mutation circuit breaker.
+  const breaker = options.bypassCircuitBreaker ? null : getCircuitBreaker(path);
+  const currentState = breaker?.getState();
 
   if (currentState === "OPEN") {
     const cached = isReplayable ? getCachedResponse(cacheKey) : null;
@@ -295,7 +299,7 @@ async function performApiRequest<T = any>(
       throw result;
     }
 
-    breaker.recordSuccess();
+    breaker?.recordSuccess();
     if (isReplayable) {
       setCachedResponse(cacheKey, result);
     }
@@ -309,7 +313,7 @@ async function performApiRequest<T = any>(
     const isNetworkError = statusCode === undefined;
 
     if (isNetworkError || isServerError) {
-      breaker.recordFailure();
+      breaker?.recordFailure();
     }
 
     if (!options.suppressErrorLog && !isClientError) {
@@ -3000,6 +3004,8 @@ export const adStudioApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     }),
+  deleteCreative: async (id: string): Promise<void> =>
+    performApiRequest(`/ad-studio/creatives/${id}`, { method: "DELETE" }),
   listConcepts: async (projectId: string): Promise<any> =>
     performApiRequest(`/ad-studio/projects/${projectId}/concepts`, { method: "GET" }),
   generateConcepts: async (
@@ -3233,7 +3239,7 @@ export const brandTemplateApi = {
  generate: (kit:string,expectedBrandVersion:number,format:string):Promise<{items:import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplate[];method:'native-template-engine'}>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/generate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({expectedBrandVersion,format})}),
  action: (kit:string,id:string,expectedRevision:number,action:import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplateAction,proposalReviewed=false,fidelityReview?:import('../pages/BrandKits/templates/TemplateFidelityReview').FidelityReview):Promise<import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplate>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/${encodeURIComponent(id)}/actions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({expectedRevision,action,...(proposalReviewed?{proposalReviewed:true}:{}),...(fidelityReview?{fidelityReview}:{})})}),
  edit: (kit:string,id:string,body:{expectedRevision:number;name:string;sceneGraph:import('../pages/AdStudio/types').AdSceneGraph}):Promise<import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplate>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/${encodeURIComponent(id)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),
- reuse: (kit:string,id:string,projectId:string):Promise<{id:string}>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/${encodeURIComponent(id)}/reuse`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectId})}),
+ reuse: (kit:string,id:string,projectId:string,expectedRevision?:number):Promise<{id:string}>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/${encodeURIComponent(id)}/reuse`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectId,expectedRevision})}),
 };
 /** Real brand analysis is gated and requires a fresh quote plus explicit cost approval. */
 export const brandAnalysisApi = {
@@ -3242,14 +3248,22 @@ export const brandAnalysisApi = {
  status:(kit:string,requestId:string):Promise<{jobId:string;status:'queued'|'processing'|'completed'|'failed';result:import('../pages/BrandKits/analysis/brandAnalysisModel').BrandAnalysisResult|null}>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/analysis/requests/${encodeURIComponent(requestId)}`,{method:'GET'}),
 };/** Owner-resolved, explicitly quoted real concepts. No brief/assets are accepted from this view. */
 export const quotedConceptApi={
+ saveDirection:(project:string,id:string,input:Pick<import('../pages/AdStudio/types').AdConcept,'title'|'creativeDirection'|'composition'|'explanation'>):Promise<import('../pages/AdStudio/types').AdConcept>=>performApiRequest(`/ad-studio/projects/${encodeURIComponent(project)}/concepts/${encodeURIComponent(id)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}),
+ planningQuote:(project:string,input:import('../pages/AdStudio/production/conceptExecutionModel').PlanningInput):Promise<import('../pages/AdStudio/production/conceptExecutionModel').ConceptQuote>=>performApiRequest(`/ad-studio/projects/${encodeURIComponent(project)}/concepts/quote`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}),
+ planningExecute:(project:string,input:import('../pages/AdStudio/production/conceptExecutionModel').PlanningInput & {requestId:string;approvedQuoteHash:string;allowPaidProvider:boolean;planningSessionId:string;planningBudgetUsd?:number}):Promise<import('../pages/AdStudio/production/conceptExecutionModel').QuotedConceptResult>=>performApiRequest(`/ad-studio/projects/${encodeURIComponent(project)}/concepts/execute`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}),
  quote:(project:string,maxEstimatedCostUsd?:number):Promise<import('../pages/AdStudio/production/conceptExecutionModel').ConceptQuote>=>performApiRequest(`/ad-studio/projects/${encodeURIComponent(project)}/concepts/quote`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({maxEstimatedCostUsd,conceptCount:4})}),
  execute:(project:string,body:{maxEstimatedCostUsd?:number;requestId:string;approvedQuoteHash:string;allowPaidProvider:boolean}):Promise<import('../pages/AdStudio/production/conceptExecutionModel').QuotedConceptResult>=>performApiRequest(`/ad-studio/projects/${encodeURIComponent(project)}/concepts/execute`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,conceptCount:4})}),
  status:(project:string,requestId:string):Promise<{jobId:string;status:string;result:import('../pages/AdStudio/production/conceptExecutionModel').QuotedConceptResult|null}>=>performApiRequest(`/ad-studio/projects/${encodeURIComponent(project)}/concepts/requests/${encodeURIComponent(requestId)}?readAt=${Date.now()}`,{method:'GET'}),
 };
 export const adImageApi={
+ retryCampaign:(id:string,input:{previousRequestId:string;requestId:string;expectedVersion:number}):Promise<import('../pages/AdStudio/lib/projectWorkspace').WorkspaceCreative>=>performApiRequest(`/ad-studio/creatives/${encodeURIComponent(id)}/ai-images/retry-campaign`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}),
+  draft: async (projectId:string,input:import('../pages/AdStudio/lib/originalCampaignAd').CampaignDraftInput):Promise<import('../pages/AdStudio/lib/projectWorkspace').WorkspaceCreative> => performApiRequest(`/ad-studio/projects/${encodeURIComponent(projectId)}/ai-ads/draft`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}),
  quote:(id:string,input:import('../pages/AdStudio/production/imageExecutionModel').ImageInput):Promise<import('../pages/AdStudio/production/imageExecutionModel').ImageQuote>=>performApiRequest(`/ad-studio/creatives/${encodeURIComponent(id)}/ai-images/quote`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}),
  execute:(id:string,input:import('../pages/AdStudio/production/imageExecutionModel').ImageInput&{requestId:string;approvedQuoteHash:string;allowPaidProvider:boolean}):Promise<import('../pages/AdStudio/lib/projectWorkspace').WorkspaceCreative>=>performApiRequest(`/ad-studio/creatives/${encodeURIComponent(id)}/ai-images/execute`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}),
- status:(id:string,request:string):Promise<{jobId:string;status:string;creativeId:string|null;hasRetainedImage:boolean;provider:string|null;modelId:string|null}>=>performApiRequest(`/ad-studio/creatives/${encodeURIComponent(id)}/ai-images/requests/${encodeURIComponent(request)}?readAt=${Date.now()}`,{method:'GET'}),
+  // Status polling is recovery-only: it never starts paid work.  Keep it out
+  // of the shared /ad-studio mutation circuit so a transient execute failure
+  // cannot prevent the client from learning that a retained job completed.
+  status:(id:string,request:string):Promise<{jobId:string;status:string;creativeId:string|null;hasRetainedImage:boolean;provider:string|null;modelId:string|null}>=>performApiRequest(`/ad-studio/creatives/${encodeURIComponent(id)}/ai-images/requests/${encodeURIComponent(request)}?readAt=${Date.now()}`,{method:'GET',suppressErrorLog:true,bypassCircuitBreaker:true}),
  recover:(id:string,requestId:string):Promise<import('../pages/AdStudio/lib/projectWorkspace').WorkspaceCreative>=>performApiRequest(`/ad-studio/creatives/${encodeURIComponent(id)}/ai-images/recover`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requestId})}),
  assets:(id:string):Promise<{items:Array<{id:string;status:string;mimeType:string;readUrl:string}>}>=>performApiRequest(`/ad-studio/creatives/${encodeURIComponent(id)}/assets`,{method:'GET'}),
 };

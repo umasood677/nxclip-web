@@ -16,7 +16,14 @@ const zoeSnap = {
   ],
   typography: [{ role: "heading", family: "Playfair Display" }],
   voice: { preferredCta: "Discover Signature Red.", tone: "luxurious" },
-  assets: [{ role: "logo_primary", label: "Zoe mark", status: "ready" }],
+  assets: [
+    {
+      id: "asset-logo-primary",
+      role: "logo_primary",
+      label: "Zoe mark",
+      status: "ready",
+    },
+  ],
 };
 
 const graph = (): AdSceneGraph => ({
@@ -45,6 +52,7 @@ describe("brandSnapshot", () => {
     assert.equal(snap!.name, "ZoeArtisan");
     assert.equal(snap!.colors[0]!.hex, "#A6192E");
     assert.equal(snap!.typography[0]!.family, "Playfair Display");
+    assert.equal(snap!.assets[0]!.id, "asset-logo-primary");
   });
 
   it("applies brand color and font only when invoked", () => {

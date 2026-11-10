@@ -1,3 +1,5 @@
+import { adStudioApi } from "../../../services/apiClient";
+import {OriginalCampaignAd} from '../components/OriginalCampaignAd';
 import { BrandHomePreview } from "../components/BrandHomePreview";
 import { normalizeBrandContext } from "../../BrandKits/lib/brandContext";
 import { buildBrandAssetUrlMapByStorageKey } from "../canvas/brandAssetUrls";
@@ -22,7 +24,9 @@ import { TEMPLATE_CATALOG_V1 } from "../canvas/templateCatalog";
 import { AD_FORMATS, type AdConcept } from "../types";
 import {
   creativeEditorPath,
-  exampleBriefForm,
+  selectTemplateSource,
+  projectWorkspacePath,
+  type WorkspaceProject,
   projectBriefForm,
 } from "../lib/projectWorkspace";
 import {
@@ -82,6 +86,7 @@ export default function ProductionProjectWorkspace({
     [c.brand, c.assetUrls],
   );
   const [comparison, setComparison] = useState<string[]>([]);
+  const [templateCollection,setTemplateCollection]=useState<'brand'|'default'>('brand');
   const concept =
     c.concepts.find((item) => item.conceptId === query.get("concept")) ||
     c.concepts.find((item) => item.conceptId === c.selectedConceptId) ||
@@ -180,6 +185,15 @@ export default function ProductionProjectWorkspace({
       />
     );
   const project = c.project;
+  function openPlanningSource(saved: WorkspaceProject) {
+    const next = projectBriefForm(saved);
+    c.setProject(saved);
+    c.setForm(next);
+    c.setSavedForm(JSON.stringify(next));
+    if (["exampleBriefId", "exampleVersion", "defaultTemplateId", "startingCreativeId"].some(key =>
+      project?.brief?.[key] !== saved.brief?.[key])) c.setConcepts([]);
+    c.navigate(projectWorkspacePath(saved.id) + "?view=strategy");
+  }
   const editBrief = () => {
     if (!c.compose) {
       const restored = projectBriefForm(project);
@@ -348,6 +362,9 @@ export default function ProductionProjectWorkspace({
           </button>
         </div>
         <nav className="bp-workspace-nav" aria-label="Campaign workspace">
+          <Link className="xp-secondary" to="?view=strategy">Campaign Brief</Link>
+          <Link className="xp-secondary" to="?view=directions">Creative Directions</Link>
+          <Link className="xp-secondary" to="?view=compare">Compare Creatives</Link>
           <button className="xp-secondary" aria-current={screen === "brief" ? "page" : undefined} onClick={editBrief}>
             Working Brief
           </button>
@@ -360,10 +377,9 @@ export default function ProductionProjectWorkspace({
           <button className="xp-secondary" aria-current={screen === "director" ? "page" : undefined} onClick={() => go("director")}>
             Creative Director
           </button>
-          <button className="xp-secondary" aria-current={screen === "visual-lab" ? "page" : undefined} disabled={!creative && !project.brandKitId} title={!creative && !project.brandKitId ? "Select a saved creative first" : undefined} onClick={() => {
-            if (creative) go("visual-lab", {creativeId:creative.id});
-            else if (project.brandKitId) go("templates");
-            else if (!project.brandKitId) go("workspace");
+          <button className="xp-secondary" aria-current={screen === "visual-lab" ? "page" : undefined} onClick={() => {
+            if (creative) c.navigate(`/create/ad/projects/${project.id}?review=${creative.id}&reviewTab=refine`);
+            else go("workspace");
           }}>AI Ad Creation</button>
           {project.brandKitId && (
             <Link
@@ -483,6 +499,7 @@ export default function ProductionProjectWorkspace({
               }}
               onPreview={(id) => go("preview", { creativeId: id })}
               onExport={(item) => go("export", { creativeId: item.id })}
+              onDiscard={c.discardCreative}
               onCreate={editBrief}
             />
           </>
@@ -574,68 +591,34 @@ export default function ProductionProjectWorkspace({
               </div>
             </section>
             <aside className="xp-panel">
-              <h2>Start from an Example Brief.</h2>
-              <p>
-                These existing creative briefs provide strategy; they are
-                distinct from visual templates and category studies.
-              </p>
-              <div className="bp-brief-options">
-                {c.catalog.examples.map((example) => (
-                  <button
-                    className="xp-asset-choice"
-                    key={example.id}
-                    onClick={() => {
-                      c.setForm(exampleBriefForm(project, example));
-                      c.setCompose(true);
-                    }}
-                  >
-                    <div className="bp-brief-thumbnail">
-                      <BrandHomePreview
-                        brand={brandVisual}
-                        fallbackSrc={
-                          example.previewImage ||
-                          "/ad-studio/sample-assets/w0a-product-hero.jpg"
-                        }
-                        aspect="portrait"
-                        alt={example.title}
-                        headline={example.headline}
-                      />
-                    </div>
-                    <span>
-                      <strong>{example.title}</strong>
-                      <small>
-                        {example.exampleObjective || example.supporting}
-                      </small>
-                    </span>
-                  </button>
-                ))}
-              </div>
+              <Link className="xp-secondary" to={projectWorkspacePath(project.id) + "?view=example-source"}>Browse Example Briefs</Link>
             </aside>
           </div>
         )}
         {screen === "templates" && (
           <>
-            <p className="xp-lede">
-              Choose an existing editable template, then bind your explicitly
-              reviewed brand assets. Catalog reference previews are not
-              generated advertisements.
-            </p>
-            {project.brandKitId ? (
+            {project.brandKitId&&<div className="xp-actions" role="group" aria-label="Template collection"><button className={templateCollection==='brand'?'xp-primary':'xp-secondary'} aria-pressed={templateCollection==='brand'} onClick={()=>setTemplateCollection('brand')}>Brand Templates</button><button className={templateCollection==='default'?'xp-primary':'xp-secondary'} aria-pressed={templateCollection==='default'} onClick={()=>setTemplateCollection('default')}>Default Templates</button></div>}
+            {project.brandKitId && templateCollection==='brand' ? (
               <SavedBrandTemplates
                 brandId={project.brandKitId}
                 data={savedBrandTemplates}
                 assetUrls={c.assetUrls}
                 project={project}
+                creatives={c.creatives}
+                onPlanningProject={(saved, draft) => {
+                  c.setCreatives(items => items.some(item => item.id === draft.id) ? items : [draft, ...items]);
+                  openPlanningSource(saved);
+                }}
               />
             ) : (
               <TemplateGallery
                 selectedFormat={c.form.outputFormat}
                 busy={c.busy}
                 hideHeader
-                onUseTemplate={(id, format) => {
-                  c.setForm((old) => ({ ...old, outputFormat: format }));
-                  go("template", { templateId: id });
-                }}
+                hideNote
+                onUseTemplate={(id, format) => void c.run(async () => {
+                  openPlanningSource(await selectTemplateSource(adStudioApi, project, { defaultTemplateId: id, format }));
+                })}
               />
             )}
             {project.brandKitId && (
@@ -928,7 +911,10 @@ export default function ProductionProjectWorkspace({
                   className="xp-primary"
                   disabled={!creative}
                   onClick={() =>
-                    creative && go("visual-lab", { creativeId: creative.id })
+                    creative &&
+                    c.navigate(
+                      `/create/ad/projects/${encodeURIComponent(project.id)}?review=${encodeURIComponent(creative.id)}&reviewTab=refine`,
+                    )
                   }
                 >
                   <CreatePlus
@@ -936,16 +922,7 @@ export default function ProductionProjectWorkspace({
                     aria-hidden="true"
                     className="inline-block mr-1.5 shrink-0"
                   />
-                  Create or refine AI background
-                </button>
-                <button
-                  className="xp-secondary"
-                  disabled={!creative}
-                  onClick={() =>
-                    creative && go("variation-lab", { creativeId: creative.id })
-                  }
-                >
-                  Explore AI visual variations
+                  Create AI variation
                 </button>
                 <button
                   className="xp-secondary"
@@ -955,15 +932,6 @@ export default function ProductionProjectWorkspace({
                   }
                 >
                   Adapt placements
-                </button>
-                <button
-                  className="xp-secondary"
-                  disabled={!creative}
-                  onClick={() =>
-                    creative && go("variations", { creativeId: creative.id })
-                  }
-                >
-                  Explore native variations
                 </button>
                 <button
                   className="xp-secondary"
@@ -1000,7 +968,7 @@ export default function ProductionProjectWorkspace({
           ))}
         {["visual-lab", "variation-lab"].includes(screen) &&
           (creative ? (
-            <ProductionImageGeneration
+            creative.conceptSnapshot?.purpose==='ORIGINAL_AI'?<OriginalCampaignAd project={project} brand={c.brand} form={c.form} onChange={patch=>c.setForm(old=>({...old,...patch}))} onSaveBrief={c.saveBrief} initialSource={creative} onSaved={async()=>{await c.load();go('preview',{creativeId:creative.id});}}/>:<ProductionImageGeneration
               key={creative.id + screen}
               source={creative}
               initialInstruction={screen === "variation-lab" ? "" : c.form.creativeDirection || c.form.campaignIdea || ""}
@@ -1104,7 +1072,7 @@ export default function ProductionProjectWorkspace({
                 disabled={c.busy}
                 onClick={() => void generateDirections()}
               >
-                Save brief & generate concepts
+                Explore concepts · optional
               </button>
               <p className="xp-notice">
                 Concept planning uses the configured provider and displays its
@@ -1114,7 +1082,8 @@ export default function ProductionProjectWorkspace({
               </p>
             </section>
             <aside className="xp-panel">
-              <h2>Save before generation.</h2>
+              <OriginalCampaignAd project={project} brand={c.brand} form={c.form} onChange={patch=>c.setForm(old=>({...old,...patch}))} onSaveBrief={c.saveBrief} onSaved={item=>c.navigate(`/create/ad/projects/${project.id}?review=${item.id}&reviewTab=review`)}/>
+              <h2>Working brief</h2>
               <p>
                 Save failures stop generation through the shared project
                 controller. Existing optional fields, Brand Kit locks,

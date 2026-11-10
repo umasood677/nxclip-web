@@ -83,7 +83,7 @@ export function ProductionCreativeExtensions({
       </section>
       <section className="xp-panel">
         <span className="xp-status">
-          Deterministic / existing creative workflow
+          {mode === "formats" ? "Placement workflow" : "Campaign AI workflow"}
         </span>
         <h2>
           {mode === "formats"
@@ -148,8 +148,9 @@ export function ProductionCreativeExtensions({
         ) : creative.sceneGraph ? (
           <>
             <p>
-              Use the existing native variation engine and compare saved child
-              creatives. No generative provider is called by this action.
+              Create a campaign-specific photographic alternative from the
+              saved brief and approved Brand Kit references, then compare or
+              edit the resulting child creative. The original stays unchanged.
             </p>
             <VariationsPanel
               creativeId={creative.id}

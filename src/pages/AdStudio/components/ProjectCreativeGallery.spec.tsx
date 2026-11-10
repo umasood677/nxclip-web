@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 const { renderToStaticMarkup } = createRequire(process.cwd()+"/package.json")("react-dom/server") as { renderToStaticMarkup: (node: React.ReactNode) => string };
-import { ProjectCreativeGallery } from "./ProjectCreativeGallery";
+import { discardCreativeDescription, ProjectCreativeGallery } from "./ProjectCreativeGallery";
 import type { WorkspaceCreative } from "../lib/projectWorkspace";
 const props = {assetUrls:{},onOpen:()=>undefined,onExport:()=>undefined,onCreate:()=>undefined};
 test("empty project gallery has the requested usable creator empty state", () => {
@@ -14,8 +14,15 @@ test("empty project gallery has the requested usable creator empty state", () =>
 test("gallery renders every creative with accessible edit and additional actions", () => {
   const creatives:WorkspaceCreative[]=Array.from({length:13},(_,i)=>({id:"private-"+i,projectId:"private-project",name:"Creative "+i}));
   const html=renderToStaticMarkup(<ProjectCreativeGallery {...props} creatives={creatives} />);
-  assert.equal((html.match(/Edit creative/g)||[]).length,13);
+  assert.equal((html.match(/Open in Canvas/g)||[]).length,13);
   assert.match(html,/Creative 12/);assert.match(html,/More actions for Creative 0/);
   assert.doesNotMatch(html,/private-project|private-0/); assert.match(html,/Static ad/);
-  assert.match(html,/No preview/);
+  assert.match(html,/Loading preview/);
+});
+test("discard copy preserves the campaign and source template", () => {
+  const creative:WorkspaceCreative={id:"creative-1",projectId:"project-1",name:"Draft ad"};
+  const copy=discardCreativeDescription(creative.name);
+  assert.match(copy,/Draft ad/);
+  assert.match(copy,/saved Brand Template stay unchanged/);
+  assert.doesNotMatch(copy,/Discard template/);
 });

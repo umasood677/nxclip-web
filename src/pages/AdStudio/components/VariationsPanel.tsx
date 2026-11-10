@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { Columns2, Loader2, Sparkles } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
@@ -17,6 +16,14 @@ export type VariationItem = {
   sceneGraph?: AdSceneGraph;
   projectId?: string;
 };
+
+export function isCampaignAiVariation(item: Pick<VariationItem, "variationType">) {
+  return String(item.variationType ?? "").startsWith("ai-");
+}
+
+export function campaignAiVariationPath(projectId: string, creativeId: string) {
+  return `/create/ad/projects/${encodeURIComponent(projectId)}?review=${encodeURIComponent(creativeId)}&reviewTab=refine`;
+}
 
 interface VariationsPanelProps {
   creativeId: string;
@@ -58,7 +65,6 @@ export function VariationsPanel({
   onOpenVariation,
 }: VariationsPanelProps) {
   const navigate = useNavigate();
-  const [busy, setBusy] = useState(false);
   const [loadingList, setLoadingList] = useState(false);
   const [items, setItems] = useState<VariationItem[]>([]);
   const [compareId, setCompareId] = useState<string | null>(null);
@@ -69,7 +75,8 @@ export function VariationsPanel({
     try {
       const listed = await adStudioApi.listCreatives(projectId);
       const children = (listed.items ?? []).filter(
-        (c: VariationItem) => c.parentCreativeId === creativeId,
+        (c: VariationItem) =>
+          c.parentCreativeId === creativeId && isCampaignAiVariation(c),
       );
       setItems(
         children.map((c: VariationItem) => ({
@@ -92,19 +99,8 @@ export function VariationsPanel({
     void loadSiblings();
   }, [loadSiblings]);
 
-  const generate = async () => {
-    setBusy(true);
-    try {
-      const res = await adStudioApi.createVariations(creativeId, { count: 3 });
-      const next = (res.items ?? []) as VariationItem[];
-      setItems(next);
-      setCompareId(next[0]?.id ?? null);
-      toast.success(`${next.length} variations ready (deterministic — no AI)`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Variation generation failed");
-    } finally {
-      setBusy(false);
-    }
+  const startAiVariation = () => {
+    if (projectId) navigate(campaignAiVariationPath(projectId, creativeId));
   };
 
   const open = (id: string) => {
@@ -123,22 +119,19 @@ export function VariationsPanel({
         <div>
           <div className="text-sm font-medium">Variations</div>
           <p className="text-[11px] text-muted-foreground">
-            Deterministic layout / color / CTA variants. Original is preserved.
+            Create campaign-specific photographic alternatives from the brief
+            and approved Brand Kit references. The original stays unchanged.
           </p>
         </div>
         <Button
           type="button"
           size="sm"
           variant="outline"
-          disabled={busy}
-          onClick={() => void generate()}
+          disabled={!projectId}
+          onClick={startAiVariation}
         >
-          {busy ? (
-            <Loader2 size={14} className="mr-1 animate-spin" />
-          ) : (
-            <Sparkles size={14} className="mr-1" />
-          )}
-          Generate 3
+          <Sparkles size={14} className="mr-1" />
+          Create AI variation
         </Button>
       </div>
 
@@ -148,9 +141,11 @@ export function VariationsPanel({
         </p>
       ) : null}
 
-      {!items.length && !busy ? (
+      {!items.length ? (
         <p className="text-xs text-muted-foreground">
-          No variations yet. Generate to create child creatives you can open and edit.
+          {projectId
+            ? "No AI variations yet. Create one from the campaign review, then compare or edit it here."
+            : "Save this creative to a campaign before creating an AI variation."}
         </p>
       ) : null}
 

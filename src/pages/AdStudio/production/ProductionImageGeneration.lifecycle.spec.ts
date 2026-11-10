@@ -139,10 +139,18 @@ test('processing status advances automatically to a saved preview without refres
 });
 
 test('processing status polling is bounded and stops on unmount without generating',async()=>{
- const h=harness(true,undefined,false,'processing',true);h.render();h.flush();await settle();h.render();h.flush();h.tick(120001);await settle();h.render();h.flush();
+ const h=harness(true,undefined,false,'processing',true);h.render();h.flush();await settle();h.render();h.flush();h.tick(8 * 60_000 + 1);await settle();h.render();h.flush();
  assert.equal(h.timerCount,0);assert.equal(h.executions,0);assert.equal(h.savedCallbacks,0);
  assert.match(String(h.render().props.phase),/taking longer/);
  const unmounted=harness(true,undefined,false,'processing',true);unmounted.render();unmounted.flush();await settle();unmounted.render();unmounted.flush();assert.equal(unmounted.timerCount,1);unmounted.unmount();assert.equal(unmounted.timerCount,0);
+});
+
+test('retained status polling is read-only and backs off before its bounded deadline',()=>{
+ assert.equal(retainedStatusDelay('processing',0,0),3_000);
+ assert.equal(retainedStatusDelay('processing',0,61_000),5_000);
+ assert.equal(retainedStatusDelay('processing',0,181_000),10_000);
+ assert.equal(retainedStatusDelay('processing',0,8*60_000),null);
+ assert.equal(retainedStatusDelay('completed',0,1_000),null);
 });
 
 

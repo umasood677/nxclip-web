@@ -3,13 +3,15 @@ import { characterReviewIssues } from "../../BrandKits/guided/brandCharacterMode
 import { newWorkspaceProject, exampleBriefContext } from "./projectWorkspace";
 import type { FeaturedExample } from "./exampleCreatives";
 import type { BrandKitSummary } from "../../BrandKits/lib/brandKitTypes";
-import type { WorkspaceProject } from "./projectWorkspace";
+import type { WorkspaceBrief, WorkspaceProject } from "./projectWorkspace";
 import type { BrandTemplate } from "../../BrandKits/templates/brandTemplateModel";
 import { canReuseTemplate } from "../../BrandKits/templates/brandTemplateModel";
 export function homeEntryPath(input: {
   brandId?: string;
   exampleId?: string;
   templateId?: string;
+  brandTemplateId?: string;
+  revision?: string;
   format?: string;
 }) {
   const query = new URLSearchParams();
@@ -36,6 +38,7 @@ export function entryProjectBody(input: {
   idea: string;
   brandId: string;
   example?: FeaturedExample;
+  defaultTemplateId?: string;
   format?: string;
 }) {
   if (input.format && !AD_FORMATS.some((format) => format.id === input.format))
@@ -50,12 +53,15 @@ export function entryProjectBody(input: {
   void _name;
   void _brand;
   void _preview;
+  const source: WorkspaceBrief = input.example?.catalogVersion
+    ? { ...exampleBriefContext(input.example), productOrService: input.idea.trim().slice(0, 500) }
+    : { ...defaults, ...(input.example ? { ...exampleBriefContext(input.example), headline: input.example.headline, supportingCopy: input.example.supporting, cta: input.example.cta } : {}) };
   return {
     ...base,
     brief: {
       ...base.brief,
-      ...defaults,
-      ...(input.example ? exampleBriefContext(input.example) : {}),
+      ...source,
+      ...(input.defaultTemplateId ? { defaultTemplateId: input.defaultTemplateId } : {}),
       campaignIdea: input.idea,
       ...(input.format ? { outputFormat: input.format } : {}),
     },
