@@ -208,7 +208,11 @@ export function CampaignStages({ controller, stage, query }: {
         storeReceipt(request.projectId);
         setMessage(detail);
       } else {
-        setMessage("Planning outcome could not be confirmed. Check the saved request before trying again.");
+        const retainedFailure = detail.startsWith("Concept generation could not complete.") ||
+          detail.startsWith("Concept generation is temporarily unavailable.");
+        setMessage(retainedFailure
+          ? detail
+          : "Planning outcome could not be confirmed. Check the saved request before trying again.");
       }
     } finally {
       operation.current = false;
@@ -255,14 +259,16 @@ export function CampaignStages({ controller, stage, query }: {
   const validBudget = /^\d+(\.\d{1,6})?$/.test(budget) && Number(budget) <= 1 && Number(budget) > 0 &&
     Number(budget) >= (activeQuote?.quote.estimatedCostUsd ?? Infinity);
   const planningStatus = <div className="campaign-planning-status" aria-live="polite">
+    {!activeQuote && !activeSession && !retained && !saving && !message &&
+      <p className="campaign-planning-status__hint">Optional. Estimate planning when you are ready; no request is sent until you explicitly authorize it.</p>}
     {activeQuote && <div className="campaign-planning-status__quote">
-      <div><strong>Planning estimate</strong><span>${activeQuote.quote.estimatedCostUsd} USD for this request</span></div>
+      <div><span className="campaign-director__eyebrow">Planning estimate</span><strong>${activeQuote.quote.estimatedCostUsd} USD for this request</strong></div>
       {!activeSession && <label>Session allowance (USD)
         <input className="rounded-md border border-input bg-background px-3 py-2" inputMode="decimal"
           value={budget} onChange={event => setBudget(event.target.value)} />
       </label>}
       <div className="campaign-planning-status__actions"><button className="w0a-create-project" disabled={saving || (!activeSession && !validBudget)} type="button" onClick={() => void authorize()}>
-        {activeSession ? "Continue planning" : "Authorize and continue"}
+        {activeSession ? "Continue planning" : "Authorize planning"}
       </button><Button variant="ghost" type="button" onClick={() => setPending(undefined)}>Cancel</Button></div>
     </div>}
     {activeQuote && !activeSession && <p>Estimates guide this planning session; provider charges may differ.</p>}
@@ -381,7 +387,8 @@ export function CampaignStages({ controller, stage, query }: {
                   placeholder="Add a goal, audience, or visual constraint" value={feedback} disabled={saving}
                   onChange={event => { setFeedback(event.target.value); setPending(undefined); }} />
               </label>
-              <Button type="button" variant="outline" disabled={saving || !!retained || !form.campaignIdea?.trim()} onClick={() => void estimate("brief")}>{feedback.trim() ? "Estimate refinement" : "Estimate AI brief"}</Button>
+              <Button type="button" variant="outline" disabled={saving || !!retained || !form.campaignIdea?.trim()} onClick={() => void estimate("brief")}>{feedback.trim() ? "Estimate refinement" : "Estimate planning"}</Button>
+              <div className="campaign-director__planning">{planningStatus}</div>
             </section>
           </div>
           <section className="campaign-stage-section">
@@ -418,7 +425,6 @@ export function CampaignStages({ controller, stage, query }: {
           <div className="campaign-brief__footer"><button type="submit" className="w0a-create-project" disabled={saving || !form.campaignIdea?.trim() || (!!form.planningAssumptions?.length && !assumptionsReviewed)}>Approve and save brief</button>
           {project.brief?.planningApproved === true && !needsApproval &&
             <Button asChild variant="outline"><Link to={href("directions")}>Explore directions <ArrowRight size={16} aria-hidden="true" /></Link></Button>}</div>
-          {planningStatus}
         </form>
       )}
       {stage === "directions" && <>
