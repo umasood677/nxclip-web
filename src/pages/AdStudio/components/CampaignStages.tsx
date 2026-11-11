@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, LayoutTemplate, Lightbulb, MessageCircleMore, Palette, Type, Users, Wand2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, CircleCheckBig, ImageIcon, LayoutTemplate, Lightbulb, MessageCircleMore, Palette, ShieldCheck, Type, Users, Wand2 } from "lucide-react";
 import { adImageApi, adStudioApi, quotedConceptApi } from "../../../services/apiClient";
 import { applyCampaignStrategy, requireAiConceptResult, type PlanningInput, type QuotedConceptResult } from "../production/conceptExecutionModel";
 import { Button } from "../../../components/ui/button";
@@ -13,6 +13,7 @@ import { exampleForPlanning } from "../lib/publishedExampleBriefs";
 import { campaignProductionBrief } from "../lib/campaignProductionBrief";
 import { creativeEditorPath, projectBriefForm, projectWorkspacePath, saveWorkspaceBrief } from "../lib/projectWorkspace";
 import { generateOriginalCampaignAd, type CampaignDraftInput } from "../lib/originalCampaignAd";
+import { readSelectedConceptIds, writeSelectedConceptIds } from "../lib/selectedConceptStorage";
 import "../../BrandKits/overview/brandOverview.css";
 
 const stages = [
@@ -22,6 +23,8 @@ const stages = [
   ["production-review", "Production Review"],
   ["compare", "Compare & Approve"],
 ] as const;
+
+const workflowStages = stages.filter(([key]) => key !== "workspace");
 
 export type CampaignStage = (typeof stages)[number][0];
 export const isCampaignStage = (view: string | null): view is CampaignStage =>
@@ -65,7 +68,7 @@ export function CampaignStages({ controller, stage, query }: {
   stage: CampaignStage;
   query: URLSearchParams;
 }) {
-  const { project, form, savedForm, setForm, setProject, setSavedForm, saveBrief, creatives, assetUrls, concepts, brand } = controller;
+  const { project, form, savedForm, setForm, setProject, setSavedForm, saveBrief, creatives, assetUrls, concepts, brand, navigate } = controller;
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [feedback, setFeedback] = useState("");
@@ -75,6 +78,7 @@ export function CampaignStages({ controller, stage, query }: {
   const [productionCopy, setProductionCopy] = useState<Record<string, Partial<typeof form>>>({});
   const [previewConfirmationOpen, setPreviewConfirmationOpen] = useState(false);
   const [previewGenerating, setPreviewGenerating] = useState(false);
+  const [artDirectionExpanded, setArtDirectionExpanded] = useState(false);
   const operation = useRef(false);
   const pageStart = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -82,7 +86,9 @@ export function CampaignStages({ controller, stage, query }: {
   }, [stage, project?.id]);
   if (!project) return null;
   const base = projectWorkspacePath(project.id);
-  const selected = query.getAll("direction");
+  const querySelection = query.getAll("direction");
+  const storedSelection = readSelectedConceptIds(project.id);
+  const selected = querySelection.length ? querySelection : storedSelection;
   const example = exampleForPlanning(project.brief?.exampleBriefId ?? "");
   const defaultId = project.brief?.defaultTemplateId;
   const defaultTemplate = isAdStudioTemplateId(defaultId) ? getTemplateDef(defaultId) : undefined;
@@ -101,16 +107,24 @@ export function CampaignStages({ controller, stage, query }: {
     ids.forEach((id) => next.append("direction", id));
     return base + "?" + next;
   };
+  const persistSelection = (ids: string[]) => writeSelectedConceptIds(project.id, ids);
+  const nextDirectionSelection = (conceptId: string) => {
+    return selected.includes(conceptId)
+      ? selected.filter((id) => id !== conceptId)
+      : [...selected, conceptId];
+  };
   async function save() {
-    if (operation.current || !form.campaignIdea?.trim()) return;
+    if (operation.current || !form.campaignIdea?.trim()) return false;
     operation.current = true;
     setSaving(true);
     setMessage("");
     try {
       await saveBrief({ allowCampaignIdeaEdit: true });
       setMessage("Campaign brief saved.");
+      return true;
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not save the brief.");
+      return false;
     } finally {
       operation.current = false;
       setSaving(false);
@@ -290,8 +304,8 @@ export function CampaignStages({ controller, stage, query }: {
       <header className="campaign-stage-header">
         <h1 className="text-2xl font-semibold break-words">{stages.find(([key]) => key === stage)?.[1]}</h1>
       </header>
-      <nav aria-label="Creative Director stages" className="campaign-stage-tabs">
-        {stages.map(([key, label]) => (
+      <nav aria-label="Campaign workflow" className="campaign-stage-tabs">
+        {workflowStages.map(([key, label]) => (
           <Button key={key} asChild variant={key === stage ? "secondary" : "ghost"} className={`campaign-stage-tab${key === stage ? " is-active" : ""}`}>
             <Link to={href(key)} aria-current={key === stage ? "step" : undefined}>{label}</Link>
           </Button>
@@ -373,17 +387,56 @@ export function CampaignStages({ controller, stage, query }: {
         </>
       )}
       {stage === "strategy" && (
-        <form className="ad-project-workspace__panel campaign-brief space-y-4" onSubmit={(event) => { event.preventDefault(); void save(); }}>
-          <div className="campaign-brief__top">
+        <form className="campaign-brief-layout" onSubmit={(event) => { event.preventDefault(); void (async () => {
+          if (await save()) navigate(href("directions"));
+        })(); }}>
+          <div className="ad-project-workspace__panel campaign-brief campaign-brief__main space-y-4">
             <label className="grid gap-1.5 text-sm">
               <span className="campaign-brief__label"><Lightbulb size={18} aria-hidden="true" />Campaign idea</span>
               <textarea className="min-w-0 rounded-md border border-input bg-background px-3 py-2" placeholder="Describe the campaign you want to create."
                 rows={4} maxLength={4000} value={form.campaignIdea ?? ""} disabled={saving}
                 onChange={(event) => setForm((current) => ({ ...current, campaignIdea: event.target.value }))} />
             </label>
+            <section className="campaign-stage-section">
+              <div className="campaign-stage-section__title"><span><Users size={18} aria-hidden="true" /></span><h2>Audience and message</h2></div>
+              <div className="grid gap-3 sm:grid-cols-2">
+              {fields.slice(0, 4).map(([key, label]) => (
+                <label key={key} className="grid gap-1 text-sm">
+                  {label}
+                  <input className="min-w-0 rounded-md border border-input bg-background px-3 py-2"
+                    value={form[key] ?? ""} disabled={saving}
+                    onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} />
+                </label>
+              ))}
+              </div>
+            </section>
+            <section className="campaign-stage-section campaign-stage-section--art">
+              <button className="campaign-brief__section-toggle" type="button" aria-expanded={artDirectionExpanded} onClick={() => setArtDirectionExpanded((current) => !current)}>
+                <span className="campaign-stage-section__title"><span><Palette size={18} aria-hidden="true" /></span><span><b>Art direction & copy</b><small>Visual direction, headline, supporting copy and CTA</small></span></span>
+                {artDirectionExpanded ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
+              </button>
+              <dl className="campaign-brief__art-summary">
+                {fields.slice(4).map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{form[key]?.trim() || "Not set"}</dd></div>)}
+              </dl>
+              {artDirectionExpanded && <div className="grid gap-3 sm:grid-cols-2">
+                {fields.slice(4).map(([key, label]) => (
+                  <label key={key} className="grid gap-1 text-sm">
+                    {label}
+                    <input className="min-w-0 rounded-md border border-input bg-background px-3 py-2"
+                      value={form[key] ?? ""} disabled={saving}
+                      onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} />
+                  </label>
+                ))}
+              </div>}
+            </section>
+            {!!form.planningAssumptions?.length && <section className="campaign-brief__notes">
+              <h2>Planning notes</h2><ul>{form.planningAssumptions.map((item, index) => <li key={index}>{item}</li>)}</ul>
+            </section>}
+          </div>
+          <aside className="campaign-brief-sidebar">
             <section className="campaign-director" aria-label="Creative Director">
-              <div className="campaign-director__heading"><span className="campaign-director__icon"><Wand2 size={19} aria-hidden="true" /></span><div><span className="campaign-director__eyebrow">Creative Director</span><h2>Campaign guidance</h2></div></div>
-              <label className="grid gap-1.5 text-sm"><span className="sr-only">Feedback for the Creative Director</span>
+              <div className="campaign-director__heading"><span className="campaign-director__icon"><Wand2 size={19} aria-hidden="true" /></span><div><span className="campaign-director__eyebrow">Creative Director</span><h2>Refine the brief</h2></div></div>
+              <label className="grid gap-1 text-sm"><span className="sr-only">Feedback for the Creative Director</span>
                 <input className="min-w-0 rounded-md border border-input bg-background px-3 py-2" maxLength={1000}
                   placeholder="Optional: add a goal, audience, or visual constraint" value={feedback} disabled={saving}
                   onChange={event => setFeedback(event.target.value)} />
@@ -391,83 +444,57 @@ export function CampaignStages({ controller, stage, query }: {
               <Button type="button" variant="outline" disabled={saving || !!retained || !form.campaignIdea?.trim()} onClick={() => void plan("brief")}>{feedback.trim() ? "Refine brief" : "Develop campaign brief"}</Button>
               <div className="campaign-director__planning">{planningStatus}</div>
             </section>
-          </div>
-          <section className="campaign-stage-section">
-            <div className="campaign-stage-section__title"><span><Users size={18} aria-hidden="true" /></span><h2>Audience and message</h2></div>
-            <div className="grid gap-4 sm:grid-cols-2">
-            {fields.slice(0, 4).map(([key, label]) => (
-              <label key={key} className="grid gap-1.5 text-sm">
-                {label}
-                <input className="min-w-0 rounded-md border border-input bg-background px-3 py-2"
-                  value={form[key] ?? ""} disabled={saving}
-                  onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} />
-              </label>
-            ))}
-            </div>
-          </section>
-          <section className="campaign-stage-section campaign-stage-section--art">
-            <div className="campaign-stage-section__heading"><div className="campaign-stage-section__title"><span><Palette size={18} aria-hidden="true" /></span><h2>Visual direction and campaign copy</h2></div></div>
-            <div className="grid gap-4 sm:grid-cols-2">
-            {fields.slice(4).map(([key, label]) => (
-              <label key={key} className="grid gap-1.5 text-sm">
-                {label}
-                <input className="min-w-0 rounded-md border border-input bg-background px-3 py-2"
-                  value={form[key] ?? ""} disabled={saving}
-                  onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} />
-              </label>
-            ))}
-            </div>
-          </section>
-          {!!form.planningAssumptions?.length && <section className="space-y-2">
-            <h2 className="font-semibold">Planning notes</h2>
-            <ul className="list-disc pl-5 text-sm">{form.planningAssumptions.map((item, index) => <li key={index}>{item}</li>)}</ul>
-          </section>}
-          <div className="campaign-brief__footer">
-            <button type="submit" className="w0a-create-project" disabled={saving || !form.campaignIdea?.trim()}>{briefSaved ? "Save changes" : "Save campaign brief"}</button>
-            {briefSaved && <span className="campaign-brief__saved" role="status"><Check size={15} aria-hidden="true" /> Brief saved</span>}
-            <Button asChild variant={briefSaved ? "default" : "outline"}><Link to={href("directions")}>Explore directions <ArrowRight size={16} aria-hidden="true" /></Link></Button>
-          </div>
+            <section className="campaign-intelligence" aria-label="Campaign Intelligence">
+              <div className="campaign-intelligence__heading"><span><ShieldCheck size={18} aria-hidden="true" /></span><h2>Campaign intelligence</h2></div>
+              <div className="campaign-intelligence__identity"><span className="campaign-intelligence__avatar"><LayoutTemplate size={18} aria-hidden="true" /></span><div><strong>{project.name}</strong><small>{example ? "Example Brief" : sourceCreative ? "Brand Template" : defaultTemplate ? "Default Template" : "Original Idea"}{brand?.name ? ` · ${brand.name}` : ""}</small></div></div>
+              <div className="campaign-intelligence__section"><h3>Creative guardrails</h3><p>{form.negativeInstructions?.trim() || form.creativeDirection?.trim() || "No additional restrictions saved."}</p></div>
+              <div className="campaign-intelligence__section"><h3>Brief readiness</h3><ul>
+                <li className={form.coreMessage?.trim() && form.targetAudience?.trim() ? "is-ready" : ""}><CircleCheckBig size={15} /> Strategy {form.coreMessage?.trim() && form.targetAudience?.trim() ? "ready" : "needs audience or message"}</li>
+                <li className={form.headline?.trim() && form.cta?.trim() ? "is-ready" : ""}><CircleCheckBig size={15} /> Copy {form.headline?.trim() && form.cta?.trim() ? "ready" : "needs headline or CTA"}</li>
+                <li className={!brand || !!brand.assets?.length ? "is-ready" : ""}><CircleCheckBig size={15} /> References {!brand ? "not required" : brand.assets?.length ? "available" : "needs review"}</li>
+              </ul></div>
+            </section>
+          </aside>
+          <footer className="campaign-brief__footer campaign-brief__footer--sticky">
+            <span>{briefSaved ? <><Check size={15} aria-hidden="true" /> Brief saved</> : "Save your changes before continuing"}</span>
+            <button type="submit" className="w0a-create-project" disabled={saving || !form.campaignIdea?.trim()}>Continue to Creative Directions <ArrowRight size={16} aria-hidden="true" /></button>
+          </footer>
           {message && !saving && <p className="campaign-brief__message" role="status">{message}</p>}
         </form>
       )}
       {stage === "directions" && <>
         <div className="campaign-directions-toolbar">
-          {concepts.length > 0 && <label className="grid gap-1 text-sm">Refine the set
+          {concepts.length > 0 && <label className="grid gap-1 text-sm">Refine directions
             <input className="rounded-md border border-input bg-background px-3 py-2"
               maxLength={1000} value={directionFeedback} disabled={saving}
               onChange={event => setDirectionFeedback(event.target.value)}
               placeholder="What should change?" />
           </label>}
-          <Button variant="outline" disabled={saving || !!retained || !form.campaignIdea?.trim()} onClick={() => void plan("directions")}>{directionFeedback.trim() ? "Refine three directions" : "Generate three creative directions"}</Button>
+          <Button variant="outline" disabled={saving || !!retained || !form.campaignIdea?.trim()} onClick={() => void plan("directions")}>{directionFeedback.trim() ? "Regenerate directions" : "Generate three creative directions"}</Button>
         </div>
         {planningStatus}
-        {concepts.length ? (
-          <>
-          <div className="campaign-directions-toolbar campaign-directions-toolbar--summary">
-            <span className="text-sm text-muted-foreground">{directions.length} selected · {conceptPreviews.filter((preview) => preview.conceptPreview?.generated).length} AI concept previews ready.</span>
-            <Button variant="outline" type="button" disabled={previewGenerating || saving || !hasIncompleteConceptPreview} onClick={() => setPreviewConfirmationOpen(true)}>
-              {hasIncompleteConceptPreview ? (conceptPreviews.length ? "Resume AI concept previews" : "Generate AI concept previews") : "AI concept previews ready"}
-            </Button>
-            {directions.length > 0 && <Link className="w0a-create-project" to={href("production-review")}>Continue <ArrowRight size={16} aria-hidden="true" /></Link>}
-          </div>
+        {concepts.length ? <>
           {previewConfirmationOpen && <section className="campaign-concept-preview-consent" aria-live="polite">
-            <div><strong>Generate {concepts.length} AI concept previews?</strong><p>One image preview will be generated for each direction. Provider usage may incur charges. These previews are for creative evaluation only; final campaign ads are generated later in Production Review.</p></div>
+            <div><strong>Generate {concepts.length} AI concept previews?</strong><p>One distinct preview is generated for every saved direction. Provider usage may incur charges. These are concept previews—not final advertisements.</p></div>
             <div><Button variant="outline" type="button" disabled={previewGenerating} onClick={() => setPreviewConfirmationOpen(false)}>Cancel</Button><Button type="button" disabled={previewGenerating} onClick={() => void generateConceptPreviews()}>{previewGenerating ? "Generating previews…" : "Confirm and generate previews"}</Button></div>
           </section>}
-          <div className="campaign-direction-grid">
-            {concepts.map((concept) => (
-              <article key={concept.conceptId} className={`ad-project-workspace__panel campaign-direction-card flex min-w-0 flex-col gap-3 ${selected.includes(concept.conceptId) ? "is-selected" : ""}`}>
-                {(() => {
-                  const preview = previewForConcept(concept.conceptId);
-                  const assetId = preview?.sceneGraph?.layers.find((layer) => layer.id.startsWith("ai-background-") && "assetId" in layer)?.assetId;
-                  const previewUrl = assetId ? assetUrls[assetId] : undefined;
-                  return <div className={`campaign-direction-card__visual layout-${concept.layoutFamily ?? "centered-hero"}`} aria-label={previewUrl ? `AI concept preview: ${concept.title}` : `Composition guidance: ${concept.composition}`}>
-                    {previewUrl ? <><img src={previewUrl} alt={`AI concept preview for ${concept.title}`} /><span className="campaign-direction-card__preview-label">AI Concept Preview</span></> : <><span>{preview ? "AI concept preview saved · image loading" : "Composition guidance · preview not generated"}</span><div className="campaign-direction-card__visual-layout" aria-hidden="true"><i /><b /><em /><strong /></div></>}
-                  </div>;
-                })()}
-                <div className="campaign-direction-card__topline"><span>{selected.includes(concept.conceptId) ? "Selected direction" : "Creative direction"}</span><span>{form.outputFormat || "Format pending"}</span></div>
-                <h2 className="font-semibold">{concept.title}</h2>
-                {editing?.conceptId === concept.conceptId ? <div className="grid gap-2">
+          <div className="campaign-directions-layout">
+            <div className="campaign-direction-grid">
+              {concepts.map((concept) => {
+                const preview = previewForConcept(concept.conceptId);
+                const assetId = preview?.sceneGraph?.layers.find((layer) => layer.id.startsWith("ai-background-") && "assetId" in layer)?.assetId;
+                const previewUrl = assetId ? assetUrls[assetId] : undefined;
+                const production = campaignProductionBrief(project, concept, brand);
+                const isSelected = selected.includes(concept.conceptId);
+                const previewStatus = previewUrl ? "Generated" : previewGenerating ? "Generating" : preview ? "Recovery available" : "Preview not generated";
+                return <article key={concept.conceptId} className={`ad-project-workspace__panel campaign-direction-card flex min-w-0 flex-col gap-3 ${isSelected ? "is-selected" : ""}`}>
+                  <div className="campaign-direction-card__visual" aria-label={previewUrl ? `AI concept preview: ${concept.title}` : `AI concept preview not generated for ${concept.title}`}>
+                    {previewUrl ? <img src={previewUrl} alt={`AI concept preview for ${concept.title}`} /> : <div className="campaign-direction-card__preview-empty"><ImageIcon size={28} aria-hidden="true" /><span>{previewStatus}</span><small>Generate previews to evaluate this direction visually.</small></div>}
+                    <span className={`campaign-direction-card__preview-label${previewUrl ? " is-generated" : ""}`}>AI Concept Preview · {previewStatus}</span>
+                  </div>
+                  <div className="campaign-direction-card__topline"><span>{isSelected ? "Selected" : "Not selected"}</span><span>{form.outputFormat || "Format pending"}</span></div>
+                  <h2 className="font-semibold">{concept.title}</h2>
+                  {editing?.conceptId === concept.conceptId ? <div className="grid gap-2">
                   {(["title", "creativeDirection", "composition", "explanation"] as const).map(key => <label className="grid gap-1 text-sm" key={key}>
                     {{ title: "Title", creativeDirection: "Visual direction", composition: "Composition", explanation: "Campaign alignment" }[key]}
                     <textarea className="rounded-md border border-input bg-background px-3 py-2" rows={2} maxLength={{title:120,creativeDirection:800,composition:400,explanation:400}[key]} value={editing[key] ?? ""} onChange={event => setEditing({ ...editing, [key]: event.target.value })} />
@@ -492,30 +519,41 @@ export function CampaignStages({ controller, stage, query }: {
                     }}>Save direction</Button>
                     <Button variant="ghost" disabled={saving} onClick={() => setEditing(undefined)}>Cancel</Button>
                   </div>
-                </div> : <>
+                  </div> : <>
                   <p className="text-sm text-muted-foreground">{concept.creativeDirection}</p>
                   <dl className="campaign-direction-card__details">
                     <div><dt><LayoutTemplate size={14} aria-hidden="true" />Composition</dt><dd>{concept.composition}</dd></div>
-                    <div><dt><Palette size={14} aria-hidden="true" />Visual style</dt><dd>{concept.colorRecommendations?.join(", ") || "Direction-led palette"}</dd></div>
+                    <div><dt><Palette size={14} aria-hidden="true" />Layout</dt><dd>{concept.layoutFamily?.replace(/-/g, " ") || "Direction-led"}</dd></div>
                     <div><dt><Type size={14} aria-hidden="true" />Headline</dt><dd>{concept.primaryHeadline}</dd></div>
                     <div><dt><MessageCircleMore size={14} aria-hidden="true" />Supporting copy</dt><dd>{concept.supportingCopy || "Optional"}</dd></div>
+                    <div><dt><ArrowRight size={14} aria-hidden="true" />CTA</dt><dd>{concept.cta || "Not set"}</dd></div>
                   </dl>
                   {concept.explanation && <p className="campaign-direction-card__alignment text-sm">{concept.explanation}</p>}
-                  <Button variant="ghost" disabled={saving} className="self-start" onClick={() => setEditing(concept)}>Edit or replace direction</Button>
+                  {production.verifiedAssets.length > 0 && <div className="campaign-direction-card__assets" aria-label="Authorized campaign references">{production.verifiedAssets.slice(0, 3).map((asset) => assetUrls[asset.id] ? <img key={asset.id} src={assetUrls[asset.id]} alt={asset.label || asset.role} /> : <span key={asset.id}>{asset.label || asset.role}</span>)}</div>}
                 </>}
-                <Button asChild variant="outline" className="mt-auto self-start">
-                  <Link to={href("directions", selected.includes(concept.conceptId)
-                    ? selected.filter((id) => id !== concept.conceptId)
-                    : [...selected, concept.conceptId])}
-                    aria-label={(selected.includes(concept.conceptId) ? "Remove " : "Select ") + concept.title}>
-                    {selected.includes(concept.conceptId) ? <><Check size={16} /> Selected · Remove</> : "Select direction"}
-                  </Link>
-                </Button>
-              </article>
-            ))}
+                  <div className="campaign-direction-card__actions mt-auto">
+                    <Button variant="ghost" disabled={saving} onClick={() => setEditing(concept)}>Edit details</Button>
+                    <Button asChild variant={isSelected ? "secondary" : "outline"}>
+                      <Link to={href("directions", nextDirectionSelection(concept.conceptId))} onClick={() => persistSelection(nextDirectionSelection(concept.conceptId))} aria-label={(isSelected ? "Deselect " : "Select ") + concept.title}>
+                        {isSelected ? <><Check size={16} /> Deselect</> : "Select direction"}
+                      </Link>
+                    </Button>
+                  </div>
+                </article>;
+              })}
+            </div>
+            <aside className="campaign-selection-panel">
+              <div className="campaign-intelligence__heading"><span><Wand2 size={18} aria-hidden="true" /></span><h2>Creative selection</h2></div>
+              <strong className="campaign-selection-panel__count"><Check size={16} /> {directions.length} selected</strong>
+              <ul className="campaign-selection-panel__names">{directions.length ? directions.map((concept) => <li key={concept.conceptId}>{concept.title}</li>) : <li>Select one or more directions.</li>}</ul>
+              <div className="campaign-intelligence__section"><h3>Approved copy</h3><p><b>{form.headline || "Headline pending"}</b><br />{form.cta || "CTA pending"}</p></div>
+              <div className="campaign-intelligence__section"><h3>Sources</h3><p>{example?.title ?? sourceCreative?.name ?? defaultTemplate?.name ?? brand?.name ?? "Original campaign idea"}</p></div>
+              <div className="campaign-intelligence__section"><h3>Candidate readiness</h3><p>{directions.length ? hasIncompleteConceptPreview ? "Directions selected. Generate previews when you are ready to compare visuals." : "Selected directions are ready for Production Review." : "Choose a direction to continue."}</p></div>
+              {hasIncompleteConceptPreview && <Button variant="outline" type="button" disabled={previewGenerating || saving} onClick={() => setPreviewConfirmationOpen(true)}>{conceptPreviews.length ? "Resume AI previews" : "Generate AI previews"}</Button>}
+            </aside>
           </div>
-          </>
-        ) : <EmptyState title="No saved creative directions" description="Generate three directions when the campaign idea is ready." />}
+          <footer className="campaign-direction-footer"><span><Check size={16} /> {directions.length} of {concepts.length} directions selected</span>{directions.length ? <Link className="w0a-create-project" to={href("production-review")}>Continue to Production Review <ArrowRight size={16} /></Link> : <Button disabled>Select a direction to continue</Button>}</footer>
+        </> : <EmptyState title="No saved creative directions" description="Generate three directions when the campaign idea is ready." />}
       </>}
       {stage === "production-review" && (
         directions.length ? (

@@ -1,28 +1,42 @@
-/** Persist selected concept per project in the browser (UX-1 — no new DB column). */
+/** Persist selected concepts per project in the browser (no new DB column). */
 
 const PREFIX = "nxclip.adStudio.selectedConcept.";
 
 export function readSelectedConceptId(projectId: string): string | null {
-  try {
-    const raw = localStorage.getItem(PREFIX + projectId);
-    return raw && raw.trim() ? raw.trim() : null;
-  } catch {
-    return null;
-  }
+  return readSelectedConceptIds(projectId)[0] ?? null;
 }
 
 export function writeSelectedConceptId(
   projectId: string,
   conceptId: string | null,
 ): void {
+  writeSelectedConceptIds(projectId, conceptId ? [conceptId] : []);
+}
+
+export function readSelectedConceptIds(projectId: string): string[] {
+  try {
+    const raw = localStorage.getItem(PREFIX + projectId);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return [...new Set(parsed.filter((value): value is string => typeof value === "string" && value.trim().length > 0))];
+    }
+    return typeof parsed === "string" && parsed.trim() ? [parsed.trim()] : [raw.trim()].filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+export function writeSelectedConceptIds(projectId: string, conceptIds: readonly string[]): void {
   try {
     const key = PREFIX + projectId;
-    if (!conceptId) {
+    const ids = [...new Set(conceptIds.filter((id) => id.trim().length > 0))];
+    if (!ids.length) {
       localStorage.removeItem(key);
       return;
     }
-    localStorage.setItem(key, conceptId);
+    localStorage.setItem(key, JSON.stringify(ids));
   } catch {
-    // ignore quota / private mode
+    // Selection remains available in the current URL if browser storage is unavailable.
   }
 }
