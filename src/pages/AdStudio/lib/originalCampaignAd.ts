@@ -8,6 +8,8 @@ import {
 export type CampaignDraftInput = {
   requestId: string;
   conceptId?: string;
+  /** A paid, persisted concept preview. It is never a final campaign ad. */
+  conceptPreview?: true;
   /** A variation always creates a new child creative; the source is never overwritten. */
   sourceCreativeId?: string;
   instruction: string;
@@ -43,11 +45,8 @@ export async function generateOriginalCampaignAd(
   } = {},
 ) {
   const draft = await api.draft(projectId, input);
-  if (
-    draft.projectId !== projectId ||
-    draft.conceptSnapshot?.purpose !== "ORIGINAL_AI" ||
-    !draft.id
-  )
+  const expectedPurpose = input.conceptPreview ? "CONCEPT_PREVIEW" : "ORIGINAL_AI";
+  if (draft.projectId !== projectId || draft.conceptSnapshot?.purpose !== expectedPurpose || !draft.id)
     throw Error("Campaign draft could not be verified.");
   onPrepared(draft);
   if (

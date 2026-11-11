@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
-import { adStudioApi, quotedConceptApi } from "../../../services/apiClient";
+import { ArrowLeft, ArrowRight, Check, LayoutTemplate, Lightbulb, MessageCircleMore, Palette, Type, Users, Wand2 } from "lucide-react";
+import { adImageApi, adStudioApi, quotedConceptApi } from "../../../services/apiClient";
 import { applyCampaignStrategy, requireAiConceptResult, type PlanningInput, type QuotedConceptResult } from "../production/conceptExecutionModel";
 import { Button } from "../../../components/ui/button";
 import { EmptyState } from "../../../components/common/EmptyState";
@@ -11,7 +11,8 @@ import { OriginalCampaignAd } from "./OriginalCampaignAd";
 import { isAdStudioTemplateId, getTemplateDef } from "../canvas/templateCatalog";
 import { exampleForPlanning } from "../lib/publishedExampleBriefs";
 import { campaignProductionBrief } from "../lib/campaignProductionBrief";
-import { creativeEditorPath, projectWorkspacePath } from "../lib/projectWorkspace";
+import { creativeEditorPath, projectBriefForm, projectWorkspacePath, saveWorkspaceBrief } from "../lib/projectWorkspace";
+import { generateOriginalCampaignAd, type CampaignDraftInput } from "../lib/originalCampaignAd";
 import "../../BrandKits/overview/brandOverview.css";
 
 const stages = [
@@ -64,7 +65,7 @@ export function CampaignStages({ controller, stage, query }: {
   stage: CampaignStage;
   query: URLSearchParams;
 }) {
-  const { project, form, setForm, saveBrief, creatives, assetUrls, concepts, brand } = controller;
+  const { project, form, savedForm, setForm, setProject, setSavedForm, saveBrief, creatives, assetUrls, concepts, brand } = controller;
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [feedback, setFeedback] = useState("");
@@ -72,6 +73,8 @@ export function CampaignStages({ controller, stage, query }: {
   const [retained, setRetained] = useState<PlanningReceipt | undefined>(() => storedReceipt(project?.id));
   const [editing, setEditing] = useState<import("../types").AdConcept>();
   const [productionCopy, setProductionCopy] = useState<Record<string, Partial<typeof form>>>({});
+  const [previewConfirmationOpen, setPreviewConfirmationOpen] = useState(false);
+  const [previewGenerating, setPreviewGenerating] = useState(false);
   const operation = useRef(false);
   const pageStart = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -85,6 +88,12 @@ export function CampaignStages({ controller, stage, query }: {
   const defaultTemplate = isAdStudioTemplateId(defaultId) ? getTemplateDef(defaultId) : undefined;
   const sourceCreative = creatives.find(item => item.id === project.brief?.startingCreativeId);
   const directions = concepts.filter((concept) => selected.includes(concept.conceptId));
+  const campaignCreatives = creatives.filter((creative) => creative.documentPurpose !== "concept-preview");
+  const conceptPreviews = creatives.filter((creative) => creative.documentPurpose === "concept-preview" && !!creative.conceptPreview);
+  const previewForConcept = (conceptId: string) =>
+    conceptPreviews.find((creative) => creative.conceptPreview?.conceptId === conceptId);
+  const hasIncompleteConceptPreview = concepts.some((concept) => !previewForConcept(concept.conceptId)?.conceptPreview?.generated);
+  const briefSaved = savedForm === JSON.stringify(form);
   const href = (view: CampaignStage, ids = selected) => {
     const next = new URLSearchParams(query);
     next.set("view", view);
@@ -122,7 +131,7 @@ export function CampaignStages({ controller, stage, query }: {
       setRetained(request);
       storeReceipt(project.id, request);
       const result = await quotedConceptApi.planningExecute(project.id, { ...input, requestId: request.requestId });
-      applyPlan(action, result);
+      await applyPlan(action, result);
       storeReceipt(project.id);
       setRetained(undefined);
     } catch (error) {
@@ -136,13 +145,24 @@ export function CampaignStages({ controller, stage, query }: {
     }
   }
 
-  function applyPlan(action: PlanningInput["planningAction"], result: QuotedConceptResult) {
+  async function applyPlan(action: PlanningInput["planningAction"], result: QuotedConceptResult) {
     if (action === "brief") {
       if (!result.campaignStrategy) throw Error("The saved request has no campaign brief.");
       const strategy = result.campaignStrategy;
-      setForm((current: typeof form) => applyCampaignStrategy(current, strategy));
+      const nextForm = applyCampaignStrategy(form, strategy);
+      setForm(nextForm);
+      // Planning results are an editable draft, not an approved brief.  Save
+      // them immediately so the owner can reopen this completed request
+      // without buying or rerunning planning work.
+      const updated = await saveWorkspaceBrief(adStudioApi, project, nextForm, {
+        allowCampaignIdeaEdit: true,
+      });
+      const persistedForm = projectBriefForm(updated);
+      setProject(updated);
+      setForm(persistedForm);
+      setSavedForm(JSON.stringify(persistedForm));
       setFeedback("");
-      setMessage("Campaign brief is ready to review.");
+      setMessage("Campaign brief is ready to review and edit.");
     } else {
       controller.setConcepts(requireAiConceptResult(result).concepts);
       setDirectionFeedback("");
@@ -157,7 +177,7 @@ export function CampaignStages({ controller, stage, query }: {
     try {
       const status = await quotedConceptApi.status(retained.projectId, retained.requestId);
       if (status.status === "completed" && status.result && retained.action === "brief") {
-        applyPlan(retained.action, status.result);
+        await applyPlan(retained.action, status.result);
         storeReceipt(retained.projectId);
         setRetained(undefined);
       } else if (status.status === "completed") {
@@ -175,11 +195,81 @@ export function CampaignStages({ controller, stage, query }: {
         storeReceipt(retained.projectId);
         setRetained(undefined);
       } else setMessage("The saved request is still processing.");
-    } catch {
-      setMessage("Could not verify the saved request. No paid request was repeated.");
+    } catch (error) {
+      const detail = apiErrorMessage(error, "");
+      setMessage(
+        detail.includes("Concept request not found")
+          ? "No saved planning request was found. You can start a new request when ready."
+          : "Could not verify the saved request. No paid request was repeated.",
+      );
     } finally {
       operation.current = false;
       setSaving(false);
+    }
+  }
+
+  async function generateConceptPreviews() {
+    if (previewGenerating || !concepts.length) return;
+    setPreviewGenerating(true);
+    setMessage("");
+    try {
+      const approvedIds = new Set(brand?.voice?.studio?.approvedAssetIds ?? []);
+      const selectedProfile = (brand?.voice?.studio?.characters ?? []).find((profile) =>
+        profile.id === form.preferredModelProfile &&
+        profile.status === "approved" &&
+        profile.permissions.scopes.includes("ad-studio"),
+      );
+      for (const concept of concepts) {
+        const existing = previewForConcept(concept.conceptId);
+        if (existing?.conceptPreview?.generated) continue;
+        const production = campaignProductionBrief(project, concept, brand);
+        const modelReferences: CampaignDraftInput["references"] = selectedProfile
+          ? selectedProfile.referenceAssetIds
+              .filter((assetId) => approvedIds.has(assetId))
+              .map((assetId) => ({
+                assetId,
+                purpose: "MODEL_IDENTITY" as const,
+                profileId: selectedProfile.id,
+              }))
+          : [];
+        const references: CampaignDraftInput["references"] = [
+          ...production.verifiedAssets
+            .filter((asset) => asset.role === "product_image")
+            .map((asset) => ({ assetId: asset.id, purpose: "PRODUCT_IDENTITY" as const })),
+          ...modelReferences,
+          ...production.verifiedAssets
+            .filter((asset) => asset.role === "campaign_reference" || asset.role === "other")
+            .map((asset) => ({ assetId: asset.id, purpose: "STYLE_REFERENCE" as const })),
+        ];
+        const requestId = existing?.conceptPreview?.requestId ?? crypto.randomUUID();
+        const input: CampaignDraftInput = {
+          requestId,
+          conceptId: concept.conceptId,
+          conceptPreview: true,
+          instruction: [
+            concept.visualPrompt,
+            `Composition: ${concept.composition}`,
+            `Layout family: ${concept.layoutFamily ?? "direction-led"}`,
+            `Colour direction: ${(concept.colorRecommendations ?? []).join(", ") || "follow campaign direction"}`,
+            "Generate cohesive photographic artwork only. Do not render headlines, supporting copy, CTA text, logos, placeholder boxes, or promotional lettering into the image.",
+          ].filter(Boolean).join("\n"),
+          headline: production.headline,
+          supportingCopy: production.supportingCopy,
+          cta: production.cta,
+          references,
+        };
+        const completed = await generateOriginalCampaignAd(adImageApi, project.id, input, (draft) => {
+          controller.setCreatives((items) => [draft, ...items.filter((item) => item.id !== draft.id)]);
+        }, { authorizeQuote: async () => true });
+        if (completed) controller.setCreatives((items) => [completed, ...items.filter((item) => item.id !== completed.id)]);
+      }
+      await controller.load();
+      setMessage("AI concept previews are ready to review. Final campaign ads are generated separately in Production Review.");
+    } catch (error) {
+      setMessage(apiErrorMessage(error, "A concept preview could not complete. Its saved request was retained and was not submitted again."));
+    } finally {
+      setPreviewGenerating(false);
+      setPreviewConfirmationOpen(false);
     }
   }
 
@@ -236,7 +326,7 @@ export function CampaignStages({ controller, stage, query }: {
               <div className="campaign-workspace-meta">
                 {brand?.name && <span>{brand.name}</span>}
                 {project.brief?.outputFormat && <span>{project.brief.outputFormat.replace(/_/g, " ")}</span>}
-                <span>{creatives.length} saved {creatives.length === 1 ? "creative" : "creatives"}</span>
+                <span>{campaignCreatives.length} saved {campaignCreatives.length === 1 ? "creative" : "creatives"}</span>
               </div>
             </article>
             <article className="ad-project-workspace__panel campaign-workspace-director">
@@ -257,11 +347,11 @@ export function CampaignStages({ controller, stage, query }: {
                 <span className="campaign-director__eyebrow">Campaign output</span>
                 <h2 id="campaign-workspace-creatives-title">Project creatives</h2>
               </div>
-              {creatives.length > 0 && <Button asChild variant="ghost"><Link to={href("compare")}>Compare creatives</Link></Button>}
+              {campaignCreatives.length > 0 && <Button asChild variant="ghost"><Link to={href("compare")}>Compare creatives</Link></Button>}
             </div>
-            {creatives.length ? (
+            {campaignCreatives.length ? (
               <div className="campaign-workspace-creative-grid">
-                {creatives.slice(0, 3).map((creative) => (
+                {campaignCreatives.slice(0, 3).map((creative) => (
                   <article key={creative.id} className="ad-project-workspace__panel campaign-workspace-creative">
                     {creative.sceneGraph && <BrandTemplateScenePreview graph={creative.sceneGraph} assetUrls={assetUrls} label={creative.name} fillCard readablePlaceholder />}
                     <div className="campaign-workspace-creative__body">
@@ -286,16 +376,16 @@ export function CampaignStages({ controller, stage, query }: {
         <form className="ad-project-workspace__panel campaign-brief space-y-4" onSubmit={(event) => { event.preventDefault(); void save(); }}>
           <div className="campaign-brief__top">
             <label className="grid gap-1.5 text-sm">
-              <span className="campaign-brief__label">Campaign idea</span>
+              <span className="campaign-brief__label"><Lightbulb size={18} aria-hidden="true" />Campaign idea</span>
               <textarea className="min-w-0 rounded-md border border-input bg-background px-3 py-2" placeholder="Describe the campaign you want to create."
                 rows={4} maxLength={4000} value={form.campaignIdea ?? ""} disabled={saving}
                 onChange={(event) => setForm((current) => ({ ...current, campaignIdea: event.target.value }))} />
             </label>
             <section className="campaign-director" aria-label="Creative Director">
-              <div><span className="campaign-director__eyebrow">Creative Director</span><h2>Refine the direction</h2></div>
+              <div className="campaign-director__heading"><span className="campaign-director__icon"><Wand2 size={19} aria-hidden="true" /></span><div><span className="campaign-director__eyebrow">Creative Director</span><h2>Campaign guidance</h2></div></div>
               <label className="grid gap-1.5 text-sm"><span className="sr-only">Feedback for the Creative Director</span>
                 <input className="min-w-0 rounded-md border border-input bg-background px-3 py-2" maxLength={1000}
-                  placeholder="Add a goal, audience, or visual constraint" value={feedback} disabled={saving}
+                  placeholder="Optional: add a goal, audience, or visual constraint" value={feedback} disabled={saving}
                   onChange={event => setFeedback(event.target.value)} />
               </label>
               <Button type="button" variant="outline" disabled={saving || !!retained || !form.campaignIdea?.trim()} onClick={() => void plan("brief")}>{feedback.trim() ? "Refine brief" : "Develop campaign brief"}</Button>
@@ -303,7 +393,7 @@ export function CampaignStages({ controller, stage, query }: {
             </section>
           </div>
           <section className="campaign-stage-section">
-            <h2>Audience and message</h2>
+            <div className="campaign-stage-section__title"><span><Users size={18} aria-hidden="true" /></span><h2>Audience and message</h2></div>
             <div className="grid gap-4 sm:grid-cols-2">
             {fields.slice(0, 4).map(([key, label]) => (
               <label key={key} className="grid gap-1.5 text-sm">
@@ -316,7 +406,7 @@ export function CampaignStages({ controller, stage, query }: {
             </div>
           </section>
           <section className="campaign-stage-section campaign-stage-section--art">
-            <div className="campaign-stage-section__heading"><h2>Art direction and ad copy</h2><span>Editable campaign details</span></div>
+            <div className="campaign-stage-section__heading"><div className="campaign-stage-section__title"><span><Palette size={18} aria-hidden="true" /></span><h2>Visual direction and campaign copy</h2></div></div>
             <div className="grid gap-4 sm:grid-cols-2">
             {fields.slice(4).map(([key, label]) => (
               <label key={key} className="grid gap-1.5 text-sm">
@@ -332,8 +422,12 @@ export function CampaignStages({ controller, stage, query }: {
             <h2 className="font-semibold">Planning notes</h2>
             <ul className="list-disc pl-5 text-sm">{form.planningAssumptions.map((item, index) => <li key={index}>{item}</li>)}</ul>
           </section>}
-          <div className="campaign-brief__footer"><button type="submit" className="w0a-create-project" disabled={saving || !form.campaignIdea?.trim()}>Save campaign brief</button>
-            <Button asChild variant="outline"><Link to={href("directions")}>Explore directions <ArrowRight size={16} aria-hidden="true" /></Link></Button></div>
+          <div className="campaign-brief__footer">
+            <button type="submit" className="w0a-create-project" disabled={saving || !form.campaignIdea?.trim()}>{briefSaved ? "Save changes" : "Save campaign brief"}</button>
+            {briefSaved && <span className="campaign-brief__saved" role="status"><Check size={15} aria-hidden="true" /> Brief saved</span>}
+            <Button asChild variant={briefSaved ? "default" : "outline"}><Link to={href("directions")}>Explore directions <ArrowRight size={16} aria-hidden="true" /></Link></Button>
+          </div>
+          {message && !saving && <p className="campaign-brief__message" role="status">{message}</p>}
         </form>
       )}
       {stage === "directions" && <>
@@ -350,12 +444,27 @@ export function CampaignStages({ controller, stage, query }: {
         {concepts.length ? (
           <>
           <div className="campaign-directions-toolbar campaign-directions-toolbar--summary">
-            <span className="text-sm text-muted-foreground">{directions.length} selected</span>
+            <span className="text-sm text-muted-foreground">{directions.length} selected · {conceptPreviews.filter((preview) => preview.conceptPreview?.generated).length} AI concept previews ready.</span>
+            <Button variant="outline" type="button" disabled={previewGenerating || saving || !hasIncompleteConceptPreview} onClick={() => setPreviewConfirmationOpen(true)}>
+              {hasIncompleteConceptPreview ? (conceptPreviews.length ? "Resume AI concept previews" : "Generate AI concept previews") : "AI concept previews ready"}
+            </Button>
             {directions.length > 0 && <Link className="w0a-create-project" to={href("production-review")}>Continue <ArrowRight size={16} aria-hidden="true" /></Link>}
           </div>
+          {previewConfirmationOpen && <section className="campaign-concept-preview-consent" aria-live="polite">
+            <div><strong>Generate {concepts.length} AI concept previews?</strong><p>One image preview will be generated for each direction. Provider usage may incur charges. These previews are for creative evaluation only; final campaign ads are generated later in Production Review.</p></div>
+            <div><Button variant="outline" type="button" disabled={previewGenerating} onClick={() => setPreviewConfirmationOpen(false)}>Cancel</Button><Button type="button" disabled={previewGenerating} onClick={() => void generateConceptPreviews()}>{previewGenerating ? "Generating previews…" : "Confirm and generate previews"}</Button></div>
+          </section>}
           <div className="campaign-direction-grid">
             {concepts.map((concept) => (
               <article key={concept.conceptId} className={`ad-project-workspace__panel campaign-direction-card flex min-w-0 flex-col gap-3 ${selected.includes(concept.conceptId) ? "is-selected" : ""}`}>
+                {(() => {
+                  const preview = previewForConcept(concept.conceptId);
+                  const assetId = preview?.sceneGraph?.layers.find((layer) => layer.id.startsWith("ai-background-") && "assetId" in layer)?.assetId;
+                  const previewUrl = assetId ? assetUrls[assetId] : undefined;
+                  return <div className={`campaign-direction-card__visual layout-${concept.layoutFamily ?? "centered-hero"}`} aria-label={previewUrl ? `AI concept preview: ${concept.title}` : `Composition guidance: ${concept.composition}`}>
+                    {previewUrl ? <><img src={previewUrl} alt={`AI concept preview for ${concept.title}`} /><span className="campaign-direction-card__preview-label">AI Concept Preview</span></> : <><span>{preview ? "AI concept preview saved · image loading" : "Composition guidance · preview not generated"}</span><div className="campaign-direction-card__visual-layout" aria-hidden="true"><i /><b /><em /><strong /></div></>}
+                  </div>;
+                })()}
                 <div className="campaign-direction-card__topline"><span>{selected.includes(concept.conceptId) ? "Selected direction" : "Creative direction"}</span><span>{form.outputFormat || "Format pending"}</span></div>
                 <h2 className="font-semibold">{concept.title}</h2>
                 {editing?.conceptId === concept.conceptId ? <div className="grid gap-2">
@@ -385,11 +494,15 @@ export function CampaignStages({ controller, stage, query }: {
                   </div>
                 </div> : <>
                   <p className="text-sm text-muted-foreground">{concept.creativeDirection}</p>
-                  <p className="text-sm"><strong>Composition</strong><br />{concept.composition}</p>
-                  {concept.explanation && <p className="text-sm">{concept.explanation}</p>}
+                  <dl className="campaign-direction-card__details">
+                    <div><dt><LayoutTemplate size={14} aria-hidden="true" />Composition</dt><dd>{concept.composition}</dd></div>
+                    <div><dt><Palette size={14} aria-hidden="true" />Visual style</dt><dd>{concept.colorRecommendations?.join(", ") || "Direction-led palette"}</dd></div>
+                    <div><dt><Type size={14} aria-hidden="true" />Headline</dt><dd>{concept.primaryHeadline}</dd></div>
+                    <div><dt><MessageCircleMore size={14} aria-hidden="true" />Supporting copy</dt><dd>{concept.supportingCopy || "Optional"}</dd></div>
+                  </dl>
+                  {concept.explanation && <p className="campaign-direction-card__alignment text-sm">{concept.explanation}</p>}
                   <Button variant="ghost" disabled={saving} className="self-start" onClick={() => setEditing(concept)}>Edit or replace direction</Button>
                 </>}
-                {concept.primaryHeadline && <p className="campaign-direction-card__headline">{concept.primaryHeadline}</p>}
                 <Button asChild variant="outline" className="mt-auto self-start">
                   <Link to={href("directions", selected.includes(concept.conceptId)
                     ? selected.filter((id) => id !== concept.conceptId)
@@ -451,11 +564,11 @@ export function CampaignStages({ controller, stage, query }: {
         ) : <EmptyState title="Select a creative direction" description="Selected directions will appear here for production review." actionLabel="View directions" onAction={() => controller.navigate(href("directions"))} />
       )}
       {stage === "compare" && (
-        creatives.length ? (
+        campaignCreatives.length ? (
           <>
-            <div className="campaign-compare-heading"><p className="text-sm text-muted-foreground">Compare saved campaign creatives.</p><span>{creatives.length} saved</span></div>
+            <div className="campaign-compare-heading"><p className="text-sm text-muted-foreground">Compare saved campaign creatives.</p><span>{campaignCreatives.length} saved</span></div>
             <div className="campaign-compare-grid">
-              {creatives.map((creative) => (
+              {campaignCreatives.map((creative) => (
                 <article key={creative.id} className="ad-project-workspace__panel campaign-compare-card space-y-3">
                   {creative.sceneGraph && <BrandTemplateScenePreview graph={creative.sceneGraph} assetUrls={assetUrls} label={creative.name} fillCard readablePlaceholder />}
                   <h2 className="font-semibold">{creative.name}</h2>

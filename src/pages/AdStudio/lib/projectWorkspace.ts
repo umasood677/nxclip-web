@@ -16,7 +16,8 @@ export type WorkspaceCreative = {
   templateReferenceManifest?:import('../../BrandKits/templates/templateReferenceInput').TemplateReferenceMetadata[];
   imageRenderMode?: 'background' | 'template-proposal';
   proposalDirection?: string;
-  documentPurpose?: 'template-draft'|'campaign-ad';
+  documentPurpose?: 'template-draft'|'concept-preview'|'campaign-ad';
+  conceptPreview?: { conceptId: string; requestId: string; generated: boolean };
   templateContext?: {brandKitId:string;draftKind:'ai'|'native';brandTemplateId?:string};
   conceptSnapshot?: Record<string,unknown>|null;
   brandSnapshot?: Record<string,unknown>|null;
@@ -52,6 +53,14 @@ function conciseCampaignCopy(value: unknown, maxLength: number) {
   return copy;
 }
 
+function displayAdvertisingSubject(value: unknown) {
+  if (typeof value !== "string") return "";
+  return value
+    .trim()
+    .replace(/^(?:uat|test|campaign)\s*(?:\d+|[a-z0-9_-]+)?\s*[—–:-]\s*/i, "")
+    .trim();
+}
+
 export function campaignHeadline(brief: WorkspaceBrief | AdBriefFormState): string {
   return labelledCampaignValue(brief, "headline") || conciseCampaignCopy(brief.headline, 120);
 }
@@ -83,6 +92,7 @@ export function projectBriefForm(project: WorkspaceProject): AdBriefFormState {
     headline: savedHeadline || campaignHeadline(merged),
     supportingCopy: hasSavedSupportingCopy ? savedSupportingCopy : campaignSupportingCopy(merged),
     cta: savedCta || campaignCta(merged) || DEFAULT_AD_BRIEF.cta,
+    productOrService: displayAdvertisingSubject(merged.productOrService) || merged.productOrService,
     name: project.name,
     brandKitId: project.brandKitId ?? "", brandPreview: null,
     outputFormat: project.outputFormat || project.brief?.outputFormat || DEFAULT_AD_BRIEF.outputFormat };

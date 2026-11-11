@@ -157,6 +157,20 @@ test("replayed initial draft with completed photography is reopened without quot
   );
   assert.deepEqual(f.calls, []);
 });
+test("a direction preview remains a distinct preview draft and uses the same explicit image authorization path", async () => {
+  const f = fixture();
+  const previewInput: CampaignDraftInput = { ...input, requestId: "preview-request", conceptId: "serene-ritual", conceptPreview: true };
+  f.api.draft = async (_id, body) => {
+    f.calls.push("draft");
+    f.bodies.push(body);
+    return { ...structuredClone(draft), conceptSnapshot: { purpose: "CONCEPT_PREVIEW" } };
+  };
+  const saved = await generateOriginalCampaignAd(f.api, "campaign", previewInput, () => f.calls.push("prepared"));
+  assert.ok(saved);
+  assert.equal((f.bodies[0] as CampaignDraftInput).conceptPreview, true);
+  assert.equal((f.bodies[0] as CampaignDraftInput).conceptId, "serene-ritual");
+  assert.deepEqual(f.calls, ["draft", "prepared", "quote", "execute"]);
+});
 test("a variation always creates a distinct request-bound campaign draft before execution", async () => {
   const f = fixture();
   await generateOriginalCampaignAd(f.api, "campaign", {
