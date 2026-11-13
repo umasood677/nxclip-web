@@ -20,24 +20,20 @@ export function updateLayer(
 export function reorderLayer(
   graph: AdSceneGraph,
   layerId: string,
-  direction: "up" | "down",
+  direction: "up" | "down" | "front" | "back",
 ): AdSceneGraph {
   const sorted = sortLayers(graph.layers);
   const idx = sorted.findIndex((l) => l.id === layerId);
   if (idx < 0) return graph;
-  const swapWith = direction === "up" ? idx + 1 : idx - 1;
-  if (swapWith < 0 || swapWith >= sorted.length) return graph;
-  const a = sorted[idx]!;
-  const b = sorted[swapWith]!;
-  const zA = a.zIndex;
-  const zB = b.zIndex;
+  const target = direction === "front" ? sorted.length - 1
+    : direction === "back" ? 0
+    : direction === "up" ? idx + 1 : idx - 1;
+  if (target === idx || target < 0 || target >= sorted.length) return graph;
+  const [layer] = sorted.splice(idx, 1);
+  sorted.splice(target, 0, layer!);
   return {
     ...graph,
-    layers: graph.layers.map((l) => {
-      if (l.id === a.id) return { ...l, zIndex: zB };
-      if (l.id === b.id) return { ...l, zIndex: zA };
-      return l;
-    }),
+    layers: sorted.map((item, zIndex) => ({ ...item, zIndex })),
   };
 }
 

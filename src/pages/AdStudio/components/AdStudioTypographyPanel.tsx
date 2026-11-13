@@ -1,4 +1,3 @@
-import { Type } from "lucide-react";
 import {
   CANONICAL_EFFECT_COLORS,
   CANONICAL_FILL_COLORS,
@@ -12,6 +11,7 @@ import { Slider } from "../../../components/ui/slider";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
+import { CollapsiblePanel } from "./CollapsiblePanel";
 
 function CharacteristicSlider({
   label,
@@ -106,29 +106,10 @@ export function AdStudioTypographyPanel({
   const locked = Boolean(layer?.locked);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/20">
-          <Type size={16} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[9px] font-black uppercase tracking-wider text-primary/60">
-            Typography
-          </p>
-          <p className="text-[13px] font-bold text-foreground leading-snug">
-            Text &amp; canvas
-          </p>
-          <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
-            {text
-              ? text.name?.trim() || "Text layer"
-              : layer
-                ? `${layer.name || layer.type} · select text for fonts`
-                : "Select a text layer to refine"}
-          </p>
-        </div>
-      </div>
+    <div className="canvas-layer-properties space-y-2">
 
       {onCanvasBackground ? (
+        <CollapsiblePanel title="Canvas background">
         <div className="space-y-1.5 rounded-lg border border-border/40 bg-muted/10 p-2.5">
           <Label className="text-[10px] font-bold text-muted-foreground">
             Canvas background
@@ -140,15 +121,18 @@ export function AdStudioTypographyPanel({
               value={canvasBackground || "#111827"}
               onInput={(e) => onCanvasBackground(e.currentTarget.value)}
               aria-label="Canvas background color"
+              disabled={previewMode}
             />
             <Input
               className="h-9 text-xs font-mono"
               value={canvasBackground || "#111827"}
               onChange={(e) => onCanvasBackground(e.target.value)}
               aria-label="Canvas background hex"
+              disabled={previewMode}
             />
           </div>
         </div>
+        </CollapsiblePanel>
       ) : null}
 
       {!layer ? (
@@ -203,8 +187,8 @@ export function AdStudioTypographyPanel({
         </div>
       ) : null}
 
-      {layer ? (
-        <>
+      {layer && !compactTransforms ? (
+        <CollapsiblePanel title="Transform & alignment">
           {!compactTransforms && <CharacteristicSlider
             label="Opacity"
             value={Math.round((layer.opacity ?? 1) * 100)}
@@ -265,11 +249,12 @@ export function AdStudioTypographyPanel({
               </div>
             ))}
           </div>}
-        </>
+        </CollapsiblePanel>
       ) : null}
 
       {text ? (
         <>
+          <CollapsiblePanel title="Typography" defaultOpen>
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-muted-foreground ml-0.5">
               Font
@@ -346,6 +331,10 @@ export function AdStudioTypographyPanel({
                 onChange({ letterSpacing } as Partial<AdTextLayer>)
               }
             />
+          </div>
+          </CollapsiblePanel>
+          <CollapsiblePanel title="Effects">
+          <div className="space-y-3">
             <CharacteristicSlider
               label="Stroke"
               value={text.strokeWidth ?? 0}
@@ -405,7 +394,10 @@ export function AdStudioTypographyPanel({
               }
             />
           </div>
+          </CollapsiblePanel>
 
+          <CollapsiblePanel title="Color & appearance" defaultOpen>
+          <div className="space-y-3">
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-muted-foreground ml-0.5">
               Align
@@ -450,10 +442,13 @@ export function AdStudioTypographyPanel({
             />
             Uppercase
           </label>
+          </div>
+          </CollapsiblePanel>
         </>
       ) : null}
 
       {layer?.type === "shape" ? (
+        <CollapsiblePanel title="Color & appearance" defaultOpen>
         <div className="space-y-2">
           <div>
             <Label className="text-[10px] font-bold text-muted-foreground">
@@ -483,9 +478,11 @@ export function AdStudioTypographyPanel({
             />
           </div>
         </div>
+        </CollapsiblePanel>
       ) : null}
 
       {(layer?.type === "image" || layer?.type === "logo") && (
+        <CollapsiblePanel title="Color & appearance" defaultOpen>
         <div>
           <Label className="text-[10px] font-bold text-muted-foreground">
             Object fit
@@ -505,6 +502,7 @@ export function AdStudioTypographyPanel({
             <option value="fill">Fill</option>
           </select>
         </div>
+        </CollapsiblePanel>
       )}
     </div>
   );

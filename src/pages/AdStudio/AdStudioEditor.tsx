@@ -624,7 +624,7 @@ export default function AdStudioEditor() {
 
   const brandName = brandSnapshot?.name;
   const sideTabs: { id: SideTab; label: string; icon: React.ReactNode }[] = [
-    { id: "typography", label: "Typography", icon: <Type size={14} aria-hidden /> },
+    { id: "typography", label: "Properties", icon: <Type size={14} aria-hidden /> },
     { id: "brand", label: "Brand", icon: <Palette size={14} aria-hidden /> },
     { id: "variations", label: "Vars", icon: <Sparkles size={14} aria-hidden /> },
     { id: "export", label: "Export", icon: <Download size={14} aria-hidden /> },
@@ -782,6 +782,27 @@ export default function AdStudioEditor() {
     onReorder: (id: string, dir: "up" | "down") =>
       applyGraph((g) => reorderLayer(g, id, dir)),
   };
+  const compositionTools = selected && (
+    <CollapsiblePanel title="Composition tools" icon={<Wand2 size={12} />}>
+      <div className="flex flex-wrap gap-2">
+        {([
+          ["up", "Bring forward"],
+          ["down", "Send backward"],
+          ["front", "Bring to front"],
+          ["back", "Send to back"],
+        ] as const).map(([direction, label]) => (
+          <Button key={direction} variant="outline" size="sm"
+            disabled={previewMode || selected.locked || reorderLayer(graph, selected.id, direction) === graph}
+            onClick={() => applyGraph((current) => reorderLayer(current, selected.id, direction))}>
+            {label}
+          </Button>
+        ))}
+        <Button variant="outline" size="sm" disabled={previewMode} onClick={() => layerListProps.onDuplicate(selected.id)}>Duplicate</Button>
+        <Button variant="outline" size="sm" disabled={previewMode} onClick={() => layerListProps.onToggleLock(selected.id)}>{selected.locked ? "Unlock" : "Lock"}</Button>
+        <Button variant="outline" size="sm" disabled={previewMode} onClick={() => layerListProps.onToggleVisible(selected.id)}>{selected.visible === false ? "Show" : "Hide"}</Button>
+      </div>
+    </CollapsiblePanel>
+  );
 
   return (
     <div
@@ -834,7 +855,7 @@ export default function AdStudioEditor() {
           <span className="text-xs text-muted-foreground">v{currentVersion}</span>
         </div>
         <div className="w0a-editor-toolbar__actions">
-          {!templateDocument&&projectId&&creativeId&&<Button type="button" size="sm" className="h-7" onClick={()=>{void ensureSaved().then(ok=>{if(ok)navigate("/create/ad/projects/"+encodeURIComponent(projectId)+"?review="+encodeURIComponent(creativeId));});}}>Review &amp; export</Button>}
+          <div className="canvas-tool-group" role="group" aria-label="Edit composition">
           <Button
             type="button"
             variant="outline"
@@ -898,12 +919,15 @@ export default function AdStudioEditor() {
               </option>
             )}
           </select>
+          </div>
+          <div className="canvas-tool-group" role="group" aria-label="Canvas zoom">
           <Button
             type="button"
             variant="outline"
             size="icon"
             className="h-8 w-8"
             title="Zoom out"
+            aria-label="Zoom out"
             onClick={() => {
               setFitZoom(false);
               setZoom((z) => Math.max(0.12, z - 0.05));
@@ -927,6 +951,7 @@ export default function AdStudioEditor() {
             size="icon"
             className="h-8 w-8"
             title="Zoom in"
+            aria-label="Zoom in"
             onClick={() => {
               setFitZoom(false);
               setZoom((z) => Math.min(1.2, z + 0.05));
@@ -934,6 +959,8 @@ export default function AdStudioEditor() {
           >
             <ZoomIn size={14} />
           </Button>
+          </div>
+          <div className="canvas-tool-group" role="group" aria-label="Preview and save">
           <Button
             type="button"
             size="sm"
@@ -959,14 +986,17 @@ export default function AdStudioEditor() {
               Animate This Ad
             </Button>
           ) : null}
+          {!templateDocument&&projectId&&creativeId&&<Button type="button" variant="outline" size="sm" onClick={()=>{void ensureSaved().then(ok=>{if(ok)navigate("/create/ad/projects/"+encodeURIComponent(projectId)+"?review="+encodeURIComponent(creativeId));});}}>Review &amp; export</Button>}
           <Button
             type="button"
             size="sm"
             onClick={() => void persist()}
             disabled={saving || saveState === "saved"}
+            data-canvas-save
           >
             <Save size={14} className="mr-1" /> {templateDocument ? "Save draft" : "Save"}
           </Button>
+          </div>
         </div>
       </div>
 
@@ -1014,19 +1044,9 @@ export default function AdStudioEditor() {
 
         <aside className="w0a-pane h-full min-w-0">
           <div className="w0a-pane-scroll space-y-2">
-            {templateDocument ? (
-              templateControls
-            ) : (
-              <CollapsiblePanel
-                title={selected?.type === "text" ? "Typography" : "Layer properties"}
-                icon={<Type size={12} />}
-                defaultOpen
-                badge={selected ? selected.name || selected.type : undefined}
-              >
-                {typographyPanel}
-              </CollapsiblePanel>
-            )}
+            {templateDocument ? templateControls : typographyPanel}
             {imageAdjustments}
+            {compositionTools}
 
             <CollapsiblePanel
               title="Brand"
@@ -1043,7 +1063,7 @@ export default function AdStudioEditor() {
               {variationsPanel}
             </CollapsiblePanel>}
             <CollapsiblePanel
-              title="Export"
+              title="Canvas & export"
               icon={<Download size={12} />}
               defaultOpen={false}
             >
@@ -1056,25 +1076,7 @@ export default function AdStudioEditor() {
             >
               {historyPanel}
             </CollapsiblePanel>
-            {!templateDocument && <CollapsiblePanel
-              title="Composition tools"
-              icon={<Wand2 size={12} />}
-              defaultOpen
-            >
-              {selected ? (
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" disabled={previewMode || selected.locked} onClick={() => layerListProps.onReorder(selected.id, "up")}>Bring forward</Button>
-                  <Button variant="outline" size="sm" disabled={previewMode || selected.locked} onClick={() => layerListProps.onReorder(selected.id, "down")}>Send backward</Button>
-                  <Button variant="outline" size="sm" disabled={previewMode || selected.locked} onClick={() => onAlign("center")}>Center horizontally</Button>
-                  <Button variant="outline" size="sm" disabled={previewMode || selected.locked} onClick={() => onAlign("middle")}>Center vertically</Button>
-                </div>
-              ) : <p className="text-xs text-muted-foreground">Select a layer to arrange it.</p>}
-              <div
-                ref={setRightIntelMount}
-                className="min-h-[8px]"
-                data-testid="intel-right-dock"
-              />
-            </CollapsiblePanel>}
+            {!templateDocument && <div ref={setRightIntelMount} data-testid="intel-right-dock" />}
           </div>
         </aside>
       </div>
@@ -1150,6 +1152,7 @@ export default function AdStudioEditor() {
             <CardContent className="space-y-2 pt-4">
               {templateDocument && mobileTab === "typography" ? templateControls : renderSideContent(mobileTab)}
               {mobileTab === "typography" && imageAdjustments}
+              {mobileTab === "typography" && compositionTools}
             </CardContent>
           </Card>
         )}

@@ -16,6 +16,32 @@
   color: #72dbc6;
 }
 
+.w0a-editor-toolbar .canvas-tool-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.canvas-layer-properties button[aria-pressed][style*="background-color"] {
+  border-radius: 6px;
+  transform: none;
+}
+
+.canvas-layer-properties button[aria-pressed][style*="background-color"]:focus-visible {
+  outline: 2px solid var(--w0a-accent);
+  outline-offset: 2px;
+}
+
+.ad-studio-w0a.campaign-canvas .w0a-editor-toolbar .canvas-tool-group > :is(button, select) {
+  height: 32px;
+}
+
+.ad-studio-w0a.campaign-canvas .w0a-editor-toolbar button[data-canvas-save] {
+  background: #c4a574 !important;
+  color: #17130f !important;
+}
+
 @media (max-width: 640px) {
   .ad-studio-w0a.campaign-canvas .w0a-editor-toolbar .w0a-editor-toolbar__actions {
     flex-wrap: nowrap;
@@ -25,5 +51,9 @@
 
   .campaign-canvas .w0a-editor-toolbar__actions > * {
     flex-shrink: 0;
+  }
+
+  .campaign-canvas .canvas-tool-group {
+    flex-wrap: nowrap;
   }
 }
