@@ -31,6 +31,8 @@ export const AD_CTA_SUGGESTIONS = [
 import type { BriefBrandPreviewCache } from "../../BrandKits/lib/brandContext";
 
 export type AdBriefFormState = {
+  developedConcept?: { title: string; narrative: string; proposition: string; angle: string; storytelling: string };
+  creativeGuardrails?: string;
   planningAssumptions?: string[];
   campaignIdea?: string;
   headline?:string;

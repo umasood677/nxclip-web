@@ -99,7 +99,7 @@ export function projectBriefForm(project: WorkspaceProject): AdBriefFormState {
     outputFormat: project.outputFormat || project.brief?.outputFormat || DEFAULT_AD_BRIEF.outputFormat };
 }
 export function workspaceBrief(project: WorkspaceProject, form: AdBriefFormState, options: Pick<BriefSaveOptions,"allowCampaignIdeaEdit" | "approvePlanning"> = {}) {
-  return { ...project.brief, planningApproved: options.approvePlanning ?? project.brief?.planningApproved, planningAssumptions: form.planningAssumptions, headline:form.headline,supportingCopy:form.supportingCopy, productOrService: form.productOrService,
+  return { ...project.brief, planningApproved: options.approvePlanning ?? project.brief?.planningApproved, planningAssumptions: form.planningAssumptions, developedConcept: form.developedConcept, creativeGuardrails: form.creativeGuardrails, headline:form.headline,supportingCopy:form.supportingCopy, productOrService: form.productOrService,
     advertisingObjective: form.advertisingObjective, targetAudience: form.targetAudience,
     coreMessage: form.coreMessage, desiredTone: form.desiredTone, platform: form.platform,
     outputFormat: form.outputFormat, cta: form.cta,
@@ -241,7 +241,7 @@ export async function saveWorkspaceBrief(api: WorkspaceBriefWriter, project: Wor
   const brief = workspaceBrief(project, form, options);
   // Existing metadata may contain legacy keys rejected by the public DTO.
   // Preserve those on the server; never resubmit them as new writable properties.
-  const writable = new Set(['exampleVisualDirection','exampleImage','exampleVersion','defaultTemplateId','startingCreativeId','planningApproved','planningAssumptions','headline','supportingCopy','campaignIdea','exampleBriefId','exampleBriefTitle','exampleObjective','productCategory','creativeDirection','productFocus','productOrService','advertisingObjective','targetAudience','coreMessage','desiredTone','platform','outputFormat','offerDetails','promotionalPrice','cta','landingPageUrl','negativeInstructions','productImageAssetId','referenceImageAssetId','preferredColors','preferredModelProfile']);
+  const writable = new Set(['exampleVisualDirection','exampleImage','exampleVersion','defaultTemplateId','startingCreativeId','planningApproved','planningAssumptions','developedConcept','creativeGuardrails','headline','supportingCopy','campaignIdea','exampleBriefId','exampleBriefTitle','exampleObjective','productCategory','creativeDirection','productFocus','productOrService','advertisingObjective','targetAudience','coreMessage','desiredTone','platform','outputFormat','offerDetails','promotionalPrice','cta','landingPageUrl','negativeInstructions','productImageAssetId','referenceImageAssetId','preferredColors','preferredModelProfile']);
   const body: Record<string, unknown> = { brief: Object.fromEntries(Object.entries(brief).filter(([key]) => writable.has(key))), ...(name !== project.name ? { name } : {}) };
   const brand = options.allowBrandChange ? form.brandKitId : project.brandKitId;
   if (options.allowBrandChange && (brand ?? '') !== (project.brandKitId ?? '')) Object.assign(body, brand ? { brandKitId: brand } : { clearBrandKit: true });

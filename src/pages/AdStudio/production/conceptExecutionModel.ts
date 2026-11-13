@@ -28,8 +28,12 @@ export type PlanningInput = {
 };
 export type QuotedConceptResult = {
   campaignStrategy?: {
+    developedConcept?: AdBriefFormState["developedConcept"];
+    creativeGuardrails?: string;
+    advertisingObjective?: string;
     productOrService: string; targetAudience: string; coreMessage: string;
     desiredTone: string; creativeDirection: string; assumptions: string[];
+    headline?: string; supportingCopy?: string; cta?: string;
   };
   concepts: AdConcept[];
   generationSource: "ai";
@@ -44,14 +48,50 @@ export function applyCampaignStrategy(
   draft: AdBriefFormState,
   strategy: NonNullable<QuotedConceptResult["campaignStrategy"]>,
 ): AdBriefFormState {
+  const explicitCopy = copyExplicitlyRequestedIn(draft.campaignIdea ?? "");
   return {
     ...draft,
-    productOrService: strategy.productOrService,
+    developedConcept: strategy.developedConcept ?? draft.developedConcept,
+    advertisingObjective: strategy.advertisingObjective ?? draft.advertisingObjective,
+    creativeGuardrails: strategy.creativeGuardrails ?? draft.creativeGuardrails,
+    productOrService: normalizeAdvertisingSubject(strategy.productOrService),
     targetAudience: strategy.targetAudience,
     coreMessage: strategy.coreMessage,
     desiredTone: strategy.desiredTone,
     creativeDirection: strategy.creativeDirection,
+    // A campaign owner's explicitly requested copy always wins over a planning
+    // suggestion.  Older retained planning responses did not include these
+    // fields, so recover labelled copy from the original campaign idea.
+    headline: explicitCopy.headline || draft.headline?.trim() || strategy.headline?.trim() || "",
+    supportingCopy: explicitCopy.supportingCopy || draft.supportingCopy?.trim() || strategy.supportingCopy?.trim() || "",
+    cta: explicitCopy.cta || draft.cta?.trim() || strategy.cta?.trim() || "",
     planningAssumptions: strategy.assumptions,
+  };
+}
+
+/**
+ * Campaign names are often prefixed with a test or UAT marker.  They are not
+ * part of the advertised subject, even when an older planning response copied
+ * that marker into productOrService.  Keep ordinary product names unchanged.
+ */
+function normalizeAdvertisingSubject(value: string) {
+  return value
+    .trim()
+    .replace(/^(?:uat|test|campaign)\s*(?:\d+|[a-z0-9_-]+)?\s*[—–:-]\s*/i, "")
+    .trim();
+}
+
+function copyExplicitlyRequestedIn(idea: string) {
+  const match = (labels: string[]) => {
+    const label = labels.map((item) => item.replace(/\s+/g, "\\s+")).join("|");
+    const quoted = new RegExp(`(?:${label})\\s*(?::|is|=)?\\s*[\\"“]([^\\"”\\n]{1,500})[\\"”]`, "i").exec(idea)?.[1];
+    if (quoted?.trim()) return quoted.trim();
+    return new RegExp(`(?:${label})\\s*:\\s*([^\\n]{1,500})`, "i").exec(idea)?.[1]?.trim() ?? "";
+  };
+  return {
+    headline: match(["headline"]),
+    supportingCopy: match(["supporting copy"]),
+    cta: match(["cta", "call to action"]),
   };
 }
 

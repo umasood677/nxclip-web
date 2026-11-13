@@ -41,7 +41,7 @@ export function campaignProductionBrief(project: WorkspaceProject, concept: AdCo
     format: project.outputFormat || brief?.outputFormat,
     platform: brief?.platform,
     brandKitId: project.brandKitId,
-    restrictions: brief?.negativeInstructions,
+    restrictions: [brief?.negativeInstructions, brief?.creativeGuardrails].filter(Boolean).join("\n") || undefined,
     claimWarnings: concept.claimWarnings ?? [],
   };
 }
