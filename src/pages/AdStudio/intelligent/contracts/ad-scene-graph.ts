@@ -16,6 +16,7 @@ export const AD_SCENE_GRAPH_SCHEMA_VERSION = '1.0' as const;
 export const AD_SCENE_OUTPUT_FORMAT_IDS = [
   'square_1080',
   'portrait_1080x1350',
+  'portrait_1080x1440',
   'vertical_1080x1920',
   'landscape_1920x1080',
 ] as const;

@@ -190,7 +190,7 @@ export default function AdProjectStart() {
                 onBrandChange={setSelectedBrandId}
                 brandsLoading={kitLoading}
                 example={example}
-                format={format || example?.briefDefaults.outputFormat || undefined}
+                format={savedTemplate?.format || format || example?.briefDefaults.outputFormat || template?.formats[0]}
                 defaultTemplateId={template?.templateId}
                 blockers={blockers}
                 onCancel={() => navigate("/create/ad")}
@@ -198,9 +198,9 @@ export default function AdProjectStart() {
                   if (savedTemplate) {
                     try {
                       const source = await openBrandTemplateAd(brandTemplateApi, adStudioApi, {
-                        ...project, outputFormat: savedTemplate.format,
+                        ...project, outputFormat: project.outputFormat || savedTemplate.format,
                       }, savedTemplate);
-                      await selectTemplateSource(adStudioApi, project, { startingCreativeId: source.id, format: savedTemplate.format });
+                      await selectTemplateSource(adStudioApi, project, { startingCreativeId: source.id, format: project.outputFormat || savedTemplate.format });
                     } catch {
                       navigate(projectWorkspacePath(project.id) + "?sourceUnavailable=1");
                       return;

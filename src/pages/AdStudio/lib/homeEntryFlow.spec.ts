@@ -10,6 +10,17 @@ import {
 } from "./homeEntryFlow";
 import type { BrandTemplate } from "../../BrandKits/templates/brandTemplateModel";
 import type { FeaturedExample } from "./exampleCreatives";
+import { AD_FORMATS } from "../types";
+
+test("all five explicit campaign formats survive entry payload mapping", () => {
+  assert.equal(AD_FORMATS.length, 5);
+  for (const { id } of AD_FORMATS) {
+    for (const source of [{}, { brandId: "owned-kit" }, { example }, { defaultTemplateId: "product-hero" }]) {
+      const payload = entryProjectBody({ name: "Campaign", idea: "Advertise a refillable serum", format: id, ...source });
+      assert.equal(payload.brief.outputFormat, id);
+    }
+  }
+});
 const recipe: BrandTemplate = {
   schemaVersion: 1,
   id: "recipe",

@@ -9,8 +9,9 @@ function setup(items:WorkspaceCreative[]=[],fresh:BrandTemplate=template){let ca
 test('opening a saved template twice reopens the same campaign draft without a second creation',async()=>{
  const items:WorkspaceCreative[]=[],s=setup(items);
  assert.deepEqual(await openBrandTemplateAd(s.api,s.reader,project,template),{id:'new-ad',existing:false});
- items.push({id:'new-ad',projectId:'p',name:'Ad',documentPurpose:'campaign-ad',conceptSnapshot:{brandTemplateId:'t',brandTemplateRevision:3}});
+ items.push({id:'new-ad',projectId:'p',name:'Ad',documentPurpose:'campaign-ad',sceneGraph:{schemaVersion:'1.0',canvas:{width:1080,height:1350},layers:[]},conceptSnapshot:{brandTemplateId:'t',brandTemplateRevision:3}});
  assert.deepEqual(await openBrandTemplateAd(s.api,s.reader,project,template),{id:'new-ad',existing:true});assert.equal(s.calls(),1);
+ assert.deepEqual(await openBrandTemplateAd(s.api,s.reader,{...project,outputFormat:'portrait_1080x1440'},template),{id:'new-ad',existing:false});assert.equal(s.calls(),2);
 });
 test('other template revisions and authoring sources never replace the selected ad',async()=>{
  const s=setup([{id:'old',projectId:'p',name:'Old',conceptSnapshot:{brandTemplateId:'t',brandTemplateRevision:2}},{id:'source',projectId:'p',name:'Source',documentPurpose:'template-draft',conceptSnapshot:{brandTemplateId:'t',brandTemplateRevision:3}}]);

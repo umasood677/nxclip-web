@@ -1,6 +1,7 @@
 import {canReuseTemplate, type BrandTemplate} from '../../BrandKits/templates/brandTemplateModel';
 import type {WorkspaceCreative, WorkspaceProject} from './projectWorkspace';
 import {projectBriefForm,saveWorkspaceBrief} from './projectWorkspace';
+import { AD_FORMATS } from '../types';
 
 export async function alignProjectToTemplateFormat(
  api:{updateProject:(id:string,payload:Record<string,unknown>)=>Promise<WorkspaceProject>},
@@ -27,11 +28,15 @@ export async function openBrandTemplateAd(
  template:BrandTemplate,
 ){
  const fresh=await api.get(template.brandKitId,template.id);
- if(fresh.id!==template.id||fresh.revision!==template.revision||fresh.brandKitId!==project.brandKitId||!canReuseTemplate(fresh)||fresh.format!==project.outputFormat)
-  throw Error('Choose a saved, approved template matching this campaign’s Brand Kit and format.');
+ if(fresh.id!==template.id||fresh.revision!==template.revision||fresh.format!==template.format||fresh.brandKitId!==project.brandKitId||!canReuseTemplate(fresh))
+  throw Error('Choose a saved, approved template matching this campaign’s Brand Kit.');
  const {items}=await reader.listCreatives(project.id);
  if(items.some(item=>item.projectId!==project.id))throw Error('Campaign ownership could not be verified.');
- const existing=existingBrandTemplateAd(items,fresh);
+ const dimensions = AD_FORMATS.find(format => format.id === project.outputFormat);
+ if (!dimensions) throw Error('Choose a supported campaign format.');
+ const existing=existingBrandTemplateAd(items.filter(item =>
+  item.sceneGraph?.canvas.width === dimensions.width && item.sceneGraph.canvas.height === dimensions.height
+ ),fresh);
  if(existing)return {id:existing.id,existing:true};
  const result=await api.reuse(fresh.brandKitId,fresh.id,project.id,fresh.revision);
  if(!result.id)throw Error('The saved ad could not be confirmed. Check campaign creatives before trying again.');

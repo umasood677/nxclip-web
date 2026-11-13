@@ -1,3 +1,4 @@
+import { AD_FORMATS } from "../types";
 import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, FolderPlus, Plus } from "lucide-react";
@@ -64,6 +65,8 @@ export function AdProjectCreateForm({
     [brandId, setBrandId] = useState(initialBrandId),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [formatOverride, setFormatOverride] = useState<string>();
+  const selectedFormat = formatOverride ?? format ?? example?.briefDefaults.outputFormat ?? "portrait_1080x1350";
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (pending.current) return;
@@ -75,7 +78,7 @@ export function AdProjectCreateForm({
         throw Error("Choose an available Brand Kit.");
       const project = await saveEntryProject(
         adStudioApi,
-        { name: name.trim() || (ideaFirst ? idea.trim().split(/\r?\n/)[0].slice(0, 80) : ""), idea, brandId, example, format, defaultTemplateId },
+        { name: name.trim() || (ideaFirst ? idea.trim().split(/\r?\n/)[0].slice(0, 80) : ""), idea, brandId, example, format: selectedFormat, defaultTemplateId },
         blockers,
       );
       writeStoredBrandKitId(project.brandKitId ?? "");
@@ -166,6 +169,20 @@ export function AdProjectCreateForm({
           </p>
         )}
       </div>
+      {ideaFirst && <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">Ad Format &amp; Aspect Ratio</legend>
+        <div className="flex flex-wrap gap-2">
+          {AD_FORMATS.map(({ id, label, width, height }) => {
+            const scale = 22 / Math.max(width, height);
+            return <label key={id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-2.5 py-2 text-xs has-[:checked]:border-[var(--w0a-accent)] has-[:checked]:bg-[var(--w0a-panel-2)] has-[:focus-visible]:outline">
+              <input className="sr-only" type="radio" name="campaign-format" value={id} checked={selectedFormat === id}
+                disabled={busy} onChange={() => setFormatOverride(id)} />
+              <span aria-hidden className="rounded-sm border border-current" style={{ width: width * scale, height: height * scale }} />
+              {label}
+            </label>;
+          })}
+        </div>
+      </fieldset>}
       {blockers.length > 0 && (
         <div role="alert" className="xp-notice">
           {blockers.map((reason) => (

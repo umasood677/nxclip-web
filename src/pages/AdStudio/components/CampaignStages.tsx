@@ -14,6 +14,7 @@ import { campaignProductionBrief } from "../lib/campaignProductionBrief";
 import { creativeEditorPath, projectBriefForm, projectWorkspacePath, saveWorkspaceBrief } from "../lib/projectWorkspace";
 import { generateOriginalCampaignAd, type CampaignDraftInput } from "../lib/originalCampaignAd";
 import { readSelectedConceptIds, writeSelectedConceptIds } from "../lib/selectedConceptStorage";
+import { AD_FORMATS } from "../types";
 import "../../BrandKits/overview/brandOverview.css";
 
 const stages = [
@@ -119,6 +120,7 @@ export function CampaignStages({ controller, stage, query }: {
   };
   const hasIncompleteConceptPreview = concepts.some((concept) => !previewForConcept(concept.conceptId)?.conceptPreview?.generated);
   const briefSaved = savedForm === JSON.stringify(form);
+  const campaignFormat = AD_FORMATS.find((format) => format.id === (project.outputFormat ?? project.brief?.outputFormat));
   const href = (view: CampaignStage, ids = selected) => {
     const next = new URLSearchParams(query);
     next.set("view", view);
@@ -438,6 +440,7 @@ export function CampaignStages({ controller, stage, query }: {
                 rows={4} maxLength={4000} value={form.campaignIdea ?? ""} disabled={saving}
                 onChange={(event) => setForm((current) => ({ ...current, campaignIdea: event.target.value }))} />
             </label>
+            {campaignFormat && <p className="text-xs text-muted-foreground">Ad format · {campaignFormat.label} · {campaignFormat.width} × {campaignFormat.height}</p>}
             <section className="campaign-stage-section">
               <div className="campaign-stage-section__title"><span className="campaign-stage-section__icon"><Users size={18} aria-hidden="true" /></span><h2>Audience and message</h2></div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -532,7 +535,7 @@ export function CampaignStages({ controller, stage, query }: {
                     {previewUrl ? <img src={previewUrl} alt={`AI concept preview for ${concept.title}`} /> : <div className="campaign-direction-card__preview-empty"><ImageIcon size={28} aria-hidden="true" /><span>{previewStatus}</span><small>Generate previews to evaluate this direction visually.</small></div>}
                     <span className={`campaign-direction-card__preview-label${previewUrl ? " is-generated" : ""}`}>AI Concept Preview · {previewStatus}</span>
                   </div>
-                  <div className="campaign-direction-card__topline"><span>{isSelected ? "Selected" : "Not selected"}</span><span>{form.outputFormat || "Format pending"}</span></div>
+                  <div className="campaign-direction-card__topline"><span>{isSelected ? "Selected" : "Not selected"}</span><span>{campaignFormat?.label || "Format pending"}</span></div>
                   <h2 className="font-semibold">{concept.title}</h2>
                   {editing?.conceptId === concept.conceptId ? <div className="grid gap-2">
                   {(["title", "creativeDirection", "composition", "explanation"] as const).map(key => <label className="grid gap-1 text-sm" key={key}>
@@ -614,7 +617,7 @@ export function CampaignStages({ controller, stage, query }: {
               const preview = previewForConcept(concept.conceptId);
               const previewStatus = previewUrl ? "Generated" : preview?.conceptPreview?.generated ? "Loading preview" : "Not generated";
               return <article key={production.conceptId} className="ad-project-workspace__panel campaign-production-card min-w-0 break-words">
-                <div className="campaign-production-card__topline"><span>Production candidate</span><span>{production.format}</span></div>
+                <div className="campaign-production-card__topline"><span>Production candidate</span><span>{campaignFormat?.label ?? production.format}</span></div>
                 <div className="campaign-production-card__visual" aria-label={previewUrl ? `AI concept preview: ${production.title}` : `AI concept preview not generated for ${production.title}`}>
                   {previewUrl ? <img src={previewUrl} alt={`AI concept preview for ${production.title}`} /> : <div className="campaign-production-card__preview-empty"><ImageIcon size={28} aria-hidden="true" /><span>{previewStatus}</span><small>Return to Creative Directions to generate a preview.</small></div>}
                 </div>
