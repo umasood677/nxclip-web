@@ -360,6 +360,9 @@ function LayerVisual({
         )}
         style={{
           objectFit: img.objectFit ?? (layer.type === "logo" ? "contain" : "cover"),
+          filter: img.adjustments
+            ? `brightness(${2 ** img.adjustments.exposure}) contrast(${img.adjustments.contrast}) saturate(${img.adjustments.saturation}) hue-rotate(${img.adjustments.tint}deg)`
+            : undefined,
         }}
         draggable={false}
         onError={() => {

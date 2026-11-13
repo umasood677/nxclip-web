@@ -62,6 +62,7 @@ import { AD_FORMATS, type AdSceneGraph, type AdSceneLayer } from "./types";
 import "../ImageStudio/components/image-edit-fonts.css";
 import "./styles/ad-studio-w0a.css";
 import "./styles/templateCanvas.css";
+import "./styles/campaignCanvas.css";
 import { W87_SYNTHETIC_EDITOR_ENABLED_DEFAULT } from "./composition/w87-synthetic-editor";
 import { W87SyntheticCompositionEditor } from "./composition/W87SyntheticCompositionEditor";
 import { IntelligentAdStudioHost } from "./intelligent/IntelligentAdStudioHost";
@@ -134,6 +135,9 @@ export default function AdStudioEditor() {
   const persistConflictRef = useRef(false);
   const brandRefreshEpochRef = useRef(0);
   const stageWrapRef = useRef<HTMLDivElement | null>(null);
+  const draftKey = ownerUserId && creativeId
+    ? `nxclip:canvas-draft:${ownerUserId}:${creativeId}`
+    : null;
 
   useEffect(() => {
     graphRef.current = graph;
@@ -204,7 +208,19 @@ export default function AdStudioEditor() {
     const sourceGraph=creative.sceneGraph as AdSceneGraph;
     const synchronizeTemplate=JSON.stringify(loaded)!==JSON.stringify(sourceGraph);
     if(isTemplateDraftCreative(creative))setSelectedLayerId(current=>loaded.layers.some(l=>l.id===current)?current:defaultTemplateSelection(loaded));
-    setGraph(loaded);
+    let recovered: AdSceneGraph | null = null;
+    if (draftKey && !isTemplateDraftCreative(creative)) {
+      try {
+        const draft = JSON.parse(localStorage.getItem(draftKey) ?? "null");
+        if (draft?.version === (creative.currentVersion ?? 1) &&
+            Array.isArray(draft.graph?.layers) && draft.graph.canvas) {
+          recovered = draft.graph;
+        }
+      } catch {
+        // Browser storage may be unavailable.
+      }
+    }
+    setGraph(recovered ?? loaded);
     setFitZoom(true);
     if (!originalGraphRef.current) {
       originalGraphRef.current = structuredClone(loaded);
@@ -213,7 +229,7 @@ export default function AdStudioEditor() {
     const snap = normalizeBrandSnapshot(creative.brandSnapshot);
     setBrandSnapshot(snap);
     setCurrentVersion(creative.currentVersion ?? 1);
-    setSaveState(synchronizeTemplate?"dirty":"saved");
+    setSaveState(synchronizeTemplate || recovered ? "dirty" : "saved");
     setHistory([]);
     setFuture([]);
     editEpochRef.current = 0;
@@ -225,7 +241,7 @@ export default function AdStudioEditor() {
       projectIdHint: creative.projectId ?? null,
       snapshotKitId: snap?.brandKitId ?? null,
     });
-  }, [creativeId, canvasSearch, refreshBrandKit]);
+  }, [creativeId, canvasSearch, refreshBrandKit, draftKey]);
 
   useEffect(() => {
     if (!creativeId) return;
@@ -324,10 +340,18 @@ export default function AdStudioEditor() {
           const updated = await adStudioApi.updateCreative(creativeId, {
             // Strip private keys from client payload; server rehydrates storageKeys.
             sceneGraph,
-            changeSummary: opts?.silent ? "Autosave" : "Editor save",
+            changeSummary: "Editor save",
             expectedVersion,
           });
-          const nextVersion = updated.currentVersion ?? expectedVersion + 1;
+          const nextVersion = updated.currentVersion ?? expectedVersion;
+          versionRef.current = nextVersion;
+          if (draftKey) {
+            try {
+              localStorage.removeItem(draftKey);
+            } catch {
+              // The server save succeeded even if browser storage is unavailable.
+            }
+          }
           lastPersistedHashRef.current = payloadHash;
           if (editEpochRef.current === epochAtStart) {
             setGraph(updated.sceneGraph as AdSceneGraph);
@@ -373,7 +397,7 @@ export default function AdStudioEditor() {
         }
       }
     },
-    [creativeId, reloadCreative],
+    [creativeId, draftKey, reloadCreative],
   );
 
   const ensureSaved = useCallback(async (): Promise<boolean> => {
@@ -385,16 +409,26 @@ export default function AdStudioEditor() {
     return ok;
   }, [persist]);
 
-  // Debounced autosave
+  // Draft recovery stays separate from the server revision used for approval.
   useEffect(() => {
-    if (saveState !== "dirty" || !creativeId || !graph) return;
-    const timer = window.setTimeout(() => {
-      if (saveStateRef.current === "dirty") {
-        void persist({ silent: true });
+    if (saveState !== "dirty" || !draftKey || templateDocument) return;
+    const timer = window.setInterval(() => {
+      const draft = graphRef.current;
+      if (saveStateRef.current !== "dirty" || !draft) return;
+      try {
+        const payload = JSON.stringify({
+          version: versionRef.current,
+          graph: sanitizeSceneGraphForClient(draft) ?? draft,
+        });
+        if (localStorage.getItem(draftKey) === payload) return;
+        localStorage.setItem(draftKey, payload);
+        toast.info("Draft saved in this browser");
+      } catch {
+        toast.error("Browser draft could not be saved. Use Save to keep your edits.");
       }
-    }, 1800);
-    return () => window.clearTimeout(timer);
-  }, [saveState, graph, creativeId, persist]);
+    }, 5 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, [saveState, draftKey, templateDocument]);
 
   // Tab/window close warning (BrowserRouter — no useBlocker)
   useEffect(() => {
@@ -442,7 +476,7 @@ export default function AdStudioEditor() {
   const confirmLeave = useCallback(() => {
     if (saveState === "dirty" || saveState === "saving") {
       return window.confirm(
-        "You have unsaved changes. Leave without saving? (Autosave may still be in progress.)",
+        "Leave without saving a new version?",
       );
     }
     return true;
@@ -464,7 +498,7 @@ export default function AdStudioEditor() {
         "Save the static creative before animating? Unsaved edits will not be in the animated copy unless you save first.\n\nOK = save then animate · Cancel = abort",
       );
       if (!ok) return;
-      await persist();
+      if (!(await persist())) return;
     }
     setAnimating(true);
     try {
@@ -615,6 +649,41 @@ export default function AdStudioEditor() {
       }
     />
   );
+  const imageLayer = selected?.type === "image" || selected?.type === "logo" ? selected : null;
+  const defaultAdjustments = { exposure: 0, contrast: 1, saturation: 1, tint: 0 };
+  const adjustments = imageLayer?.adjustments ?? defaultAdjustments;
+  const adjustmentControls = [
+    { key: "exposure", label: "Exposure", min: -2, max: 2, step: 0.05 },
+    { key: "contrast", label: "Contrast", min: 0, max: 2, step: 0.05 },
+    { key: "saturation", label: "Saturation", min: 0, max: 2, step: 0.05 },
+    { key: "tint", label: "Tint (hue)", min: -180, max: 180, step: 1 },
+  ] as const;
+  const imageAdjustments = imageLayer && (
+    <CollapsiblePanel title="Image adjustments" icon={<Palette size={12} />} defaultOpen>
+      <fieldset disabled={previewMode || imageLayer.locked} className="grid gap-3">
+        {adjustmentControls.map(({ key, label, min, max, step }) => (
+          <label key={key} className="grid gap-1 text-xs">
+            <span className="flex justify-between">{label}<span>{adjustments[key]}</span></span>
+            <input type="range" min={min} max={max} step={step} value={adjustments[key]}
+              onChange={(event) => {
+                const value = event.currentTarget.valueAsNumber;
+                applyGraph((current) => {
+                  const layer = current.layers.find((item) => item.id === imageLayer.id);
+                  if (!layer || (layer.type !== "image" && layer.type !== "logo")) return current;
+                  return updateLayer(current, layer.id, {
+                    adjustments: { ...(layer.adjustments ?? defaultAdjustments), [key]: value },
+                  });
+                });
+              }} />
+          </label>
+        ))}
+        <Button type="button" variant="outline" size="sm" disabled={!imageLayer.adjustments}
+          onClick={() => applyGraph((current) => updateLayer(current, imageLayer.id, { adjustments: undefined }))}>
+          Reset adjustments
+        </Button>
+      </fieldset>
+    </CollapsiblePanel>
+  );
 
   const templateControls = <>{templateDocument&&brandKit&&<TemplateSourceBindings graph={graph} brand={brandKit} selectedId={selectedLayerId} readOnly={previewMode} onKitUpdated={value=>{setBrandKit(value);lastPersistedHashRef.current=null;markDirty();}} onGraph={(next,id)=>{applyGraph(()=>next);setSelectedLayerId(id);}} onRefine={()=>{void ensureSaved().then(ok=>{if(ok)navigate('/brands/'+encodeURIComponent(brandKit.id)+'/templates?tab=brand&mode=ai&source='+encodeURIComponent(creativeId!)+'&refine=1');});}}/>}<TemplateCanvasControls key={creativeId} graph={graph} brand={brandKit} selectedId={selectedLayerId} readOnly={previewMode} onSelect={setSelectedLayerId}
     onPatch={(id,patch)=>{if(previewMode || graph.layers.find(l=>l.id===id)?.locked)return;applyGraph(g=>updateLayer(g,id,patch));}}
@@ -716,7 +785,7 @@ export default function AdStudioEditor() {
 
   return (
     <div
-      className={(templateDocument ? "ad-template-canvas " : "") + "ad-studio-w0a ad-studio-w0a--editor flex flex-col gap-2 max-w-[100vw] overflow-hidden px-2 md:px-3 pb-2 h-[calc(100dvh-5.75rem)] md:h-[calc(100dvh-6.25rem)]"}
+      className={(templateDocument ? "ad-template-canvas " : "campaign-canvas ") + "ad-studio-w0a ad-studio-w0a--editor flex flex-col gap-2 max-w-[100vw] overflow-hidden px-2 md:px-3 pb-2 h-[calc(100dvh-5.75rem)] md:h-[calc(100dvh-6.25rem)]"}
       aria-label={templateDocument ? "Advanced template Canvas" : "Ad Studio Canvas"}
       id="ad-studio-canvas"
     >
@@ -755,7 +824,7 @@ export default function AdStudioEditor() {
           ) : (
             <Badge variant="outline">Neutral</Badge>
           ))}
-          <Badge variant="outline">
+          <Badge variant="outline" role="status" data-saved={saveState === "saved"}>
             {saveState === "saved"
               ? "Saved"
               : saveState === "saving"
@@ -909,7 +978,7 @@ export default function AdStudioEditor() {
               <LayerList {...layerListProps} presentation="advanced" readOnly={previewMode} />
             ) : (
               <CollapsiblePanel
-                title="Layers"
+                title="Creative composition"
                 icon={<Layers size={12} />}
                 defaultOpen
                 badge={graph.layers.length}
@@ -917,17 +986,7 @@ export default function AdStudioEditor() {
                 <LayerList {...layerListProps} presentation="stack" readOnly={previewMode} />
               </CollapsiblePanel>
             )}
-            {!templateDocument && <CollapsiblePanel
-              title="Creative composition"
-              icon={<Wand2 size={12} />}
-              defaultOpen
-            >
-              <div
-                ref={setLeftIntelMount}
-                className="min-h-[8px]"
-                data-testid="intel-left-dock"
-              />
-            </CollapsiblePanel>}
+            {!templateDocument && <div ref={setLeftIntelMount} data-testid="intel-left-dock" />}
           </div>
         </aside>
 
@@ -959,7 +1018,7 @@ export default function AdStudioEditor() {
               templateControls
             ) : (
               <CollapsiblePanel
-                title="Typography"
+                title={selected?.type === "text" ? "Typography" : "Layer properties"}
                 icon={<Type size={12} />}
                 defaultOpen
                 badge={selected ? selected.name || selected.type : undefined}
@@ -967,6 +1026,7 @@ export default function AdStudioEditor() {
                 {typographyPanel}
               </CollapsiblePanel>
             )}
+            {imageAdjustments}
 
             <CollapsiblePanel
               title="Brand"
@@ -1001,6 +1061,14 @@ export default function AdStudioEditor() {
               icon={<Wand2 size={12} />}
               defaultOpen
             >
+              {selected ? (
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" disabled={previewMode || selected.locked} onClick={() => layerListProps.onReorder(selected.id, "up")}>Bring forward</Button>
+                  <Button variant="outline" size="sm" disabled={previewMode || selected.locked} onClick={() => layerListProps.onReorder(selected.id, "down")}>Send backward</Button>
+                  <Button variant="outline" size="sm" disabled={previewMode || selected.locked} onClick={() => onAlign("center")}>Center horizontally</Button>
+                  <Button variant="outline" size="sm" disabled={previewMode || selected.locked} onClick={() => onAlign("middle")}>Center vertically</Button>
+                </div>
+              ) : <p className="text-xs text-muted-foreground">Select a layer to arrange it.</p>}
               <div
                 ref={setRightIntelMount}
                 className="min-h-[8px]"
@@ -1079,7 +1147,10 @@ export default function AdStudioEditor() {
           mobileTab === "export" ||
           mobileTab === "history") && (
           <Card className="glass border-border">
-            <CardContent className="pt-4">{templateDocument && mobileTab === "typography" ? templateControls : renderSideContent(mobileTab)}</CardContent>
+            <CardContent className="space-y-2 pt-4">
+              {templateDocument && mobileTab === "typography" ? templateControls : renderSideContent(mobileTab)}
+              {mobileTab === "typography" && imageAdjustments}
+            </CardContent>
           </Card>
         )}
       </div>

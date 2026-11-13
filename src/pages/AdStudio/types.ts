@@ -43,6 +43,7 @@ export interface AdImageLayer extends AdSceneLayerBase {
   assetId?: string;
   storageKey?: string;
   objectFit?: "cover" | "contain" | "fill";
+  adjustments?: { exposure: number; contrast: number; saturation: number; tint: number };
 }
 
 export interface AdShapeLayer extends AdSceneLayerBase {

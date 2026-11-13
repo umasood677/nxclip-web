@@ -1,0 +1,29 @@
+.ad-studio-w0a.campaign-canvas .w0a-editor-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-content: stretch;
+  gap: 8px;
+  border-color: var(--border);
+  background: var(--w0a-panel, #171820);
+  box-shadow: none;
+}
+
+.ad-studio-w0a.campaign-canvas .w0a-editor-toolbar .w0a-editor-toolbar__actions {
+  margin-left: 0;
+}
+
+.campaign-canvas .w0a-editor-toolbar [data-saved="true"] {
+  color: #72dbc6;
+}
+
+@media (max-width: 640px) {
+  .ad-studio-w0a.campaign-canvas .w0a-editor-toolbar .w0a-editor-toolbar__actions {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 3px;
+  }
+
+  .campaign-canvas .w0a-editor-toolbar__actions > * {
+    flex-shrink: 0;
+  }
+}
