@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, CircleCheckBig, ImageIcon, LayoutTemplate, Lightbulb, MessageCircleMore, Palette, ShieldCheck, Type, Users, Wand2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, CircleCheckBig, ImageIcon, LayoutTemplate, Lightbulb, MessageCircleMore, Palette, ShieldCheck, Trash2, Type, Users, Wand2 } from "lucide-react";
 import { adImageApi, adStudioApi, quotedConceptApi } from "../../../services/apiClient";
 import { applyCampaignStrategy, requireAiConceptResult, type PlanningInput, type QuotedConceptResult } from "../production/conceptExecutionModel";
 import { Button } from "../../../components/ui/button";
@@ -68,7 +68,7 @@ export function CampaignStages({ controller, stage, query }: {
   stage: CampaignStage;
   query: URLSearchParams;
 }) {
-  const { project, form, savedForm, setForm, setProject, setSavedForm, saveBrief, creatives, assetUrls, concepts, brand, navigate } = controller;
+  const { project, form, savedForm, setForm, setProject, setSavedForm, saveBrief, creatives, assetUrls, concepts, brand, navigate, setCreatives } = controller;
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [feedback, setFeedback] = useState("");
@@ -76,9 +76,11 @@ export function CampaignStages({ controller, stage, query }: {
   const [retained, setRetained] = useState<PlanningReceipt | undefined>(() => storedReceipt(project?.id));
   const [editing, setEditing] = useState<import("../types").AdConcept>();
   const [productionCopy, setProductionCopy] = useState<Record<string, Partial<typeof form>>>({});
+  const [preparedProductionConceptId, setPreparedProductionConceptId] = useState<string>();
   const [previewConfirmationOpen, setPreviewConfirmationOpen] = useState(false);
   const [previewGenerating, setPreviewGenerating] = useState(false);
   const [artDirectionExpanded, setArtDirectionExpanded] = useState(false);
+  const [approvingCreativeId, setApprovingCreativeId] = useState<string>();
   const operation = useRef(false);
   const pageStart = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -95,9 +97,26 @@ export function CampaignStages({ controller, stage, query }: {
   const sourceCreative = creatives.find(item => item.id === project.brief?.startingCreativeId);
   const directions = concepts.filter((concept) => selected.includes(concept.conceptId));
   const campaignCreatives = creatives.filter((creative) => creative.documentPurpose !== "concept-preview");
+  const directionForCreative = (creative: typeof campaignCreatives[number]) => {
+    const conceptId = creative.conceptSnapshot?.conceptId;
+    return typeof conceptId === "string" ? concepts.find((concept) => concept.conceptId === conceptId) : undefined;
+  };
+  const creativeHasArtwork = (creative: typeof campaignCreatives[number]) =>
+    Boolean(creative.sceneGraph?.layers.some((layer) => {
+      if (layer.type !== "image") return false;
+      const image = layer as { assetId?: unknown };
+      return typeof image.assetId === "string" && image.assetId.length > 0;
+    }));
   const conceptPreviews = creatives.filter((creative) => creative.documentPurpose === "concept-preview" && !!creative.conceptPreview);
   const previewForConcept = (conceptId: string) =>
     conceptPreviews.find((creative) => creative.conceptPreview?.conceptId === conceptId);
+  const previewUrlForConcept = (conceptId: string) => {
+    const preview = previewForConcept(conceptId);
+    const assetId = preview?.sceneGraph?.layers.find(
+      (layer) => layer.id.startsWith("ai-background-") && "assetId" in layer,
+    )?.assetId;
+    return assetId ? assetUrls[assetId] : undefined;
+  };
   const hasIncompleteConceptPreview = concepts.some((concept) => !previewForConcept(concept.conceptId)?.conceptPreview?.generated);
   const briefSaved = savedForm === JSON.stringify(form);
   const href = (view: CampaignStage, ids = selected) => {
@@ -107,6 +126,25 @@ export function CampaignStages({ controller, stage, query }: {
     ids.forEach((id) => next.append("direction", id));
     return base + "?" + next;
   };
+  async function approveCreativeVersion(creative: typeof campaignCreatives[number]) {
+    const version = creative.currentVersion ?? 1;
+    if (!window.confirm(`Approve version ${version} of this creative? Any Canvas edit will create a new draft that requires separate approval.`)) return;
+    setApprovingCreativeId(creative.id);
+    setMessage("");
+    try {
+      const updated = await adStudioApi.updateCreative(creative.id, {
+        expectedVersion: version,
+        status: "ready",
+        changeSummary: `Approved version ${version} for export`,
+      });
+      setCreatives(items => items.map(item => item.id === updated.id ? updated : item));
+      setMessage(`Version ${version} is approved and ready for export.`);
+    } catch (error) {
+      setMessage(apiErrorMessage(error, "Could not approve this creative version."));
+    } finally {
+      setApprovingCreativeId(undefined);
+    }
+  }
   const persistSelection = (ids: string[]) => writeSelectedConceptIds(project.id, ids);
   const nextDirectionSelection = (conceptId: string) => {
     return selected.includes(conceptId)
@@ -170,6 +208,9 @@ export function CampaignStages({ controller, stage, query }: {
       // without buying or rerunning planning work.
       const updated = await saveWorkspaceBrief(adStudioApi, project, nextForm, {
         allowCampaignIdeaEdit: true,
+        // A saved AI strategy is ready for direction generation. This is an
+        // approval of the persisted brief, not an authorization for images.
+        approvePlanning: true,
       });
       const persistedForm = projectBriefForm(updated);
       setProject(updated);
@@ -398,7 +439,7 @@ export function CampaignStages({ controller, stage, query }: {
                 onChange={(event) => setForm((current) => ({ ...current, campaignIdea: event.target.value }))} />
             </label>
             <section className="campaign-stage-section">
-              <div className="campaign-stage-section__title"><span><Users size={18} aria-hidden="true" /></span><h2>Audience and message</h2></div>
+              <div className="campaign-stage-section__title"><span className="campaign-stage-section__icon"><Users size={18} aria-hidden="true" /></span><h2>Audience and message</h2></div>
               <div className="grid gap-3 sm:grid-cols-2">
               {fields.slice(0, 4).map(([key, label]) => (
                 <label key={key} className="grid gap-1 text-sm">
@@ -412,7 +453,7 @@ export function CampaignStages({ controller, stage, query }: {
             </section>
             <section className="campaign-stage-section campaign-stage-section--art">
               <button className="campaign-brief__section-toggle" type="button" aria-expanded={artDirectionExpanded} onClick={() => setArtDirectionExpanded((current) => !current)}>
-                <span className="campaign-stage-section__title"><span><Palette size={18} aria-hidden="true" /></span><span><b>Art direction & copy</b><small>Visual direction, headline, supporting copy and CTA</small></span></span>
+                <span className="campaign-stage-section__title"><span className="campaign-stage-section__icon"><Palette size={18} aria-hidden="true" /></span><span><b>Art direction & copy</b><small>Visual direction, headline, supporting copy and CTA</small></span></span>
                 {artDirectionExpanded ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
               </button>
               <dl className="campaign-brief__art-summary">
@@ -482,8 +523,7 @@ export function CampaignStages({ controller, stage, query }: {
             <div className="campaign-direction-grid">
               {concepts.map((concept) => {
                 const preview = previewForConcept(concept.conceptId);
-                const assetId = preview?.sceneGraph?.layers.find((layer) => layer.id.startsWith("ai-background-") && "assetId" in layer)?.assetId;
-                const previewUrl = assetId ? assetUrls[assetId] : undefined;
+                const previewUrl = previewUrlForConcept(concept.conceptId);
                 const production = campaignProductionBrief(project, concept, brand);
                 const isSelected = selected.includes(concept.conceptId);
                 const previewStatus = previewUrl ? "Generated" : previewGenerating ? "Generating" : preview ? "Recovery available" : "Preview not generated";
@@ -556,23 +596,33 @@ export function CampaignStages({ controller, stage, query }: {
         </> : <EmptyState title="No saved creative directions" description="Generate three directions when the campaign idea is ready." />}
       </>}
       {stage === "production-review" && (
-        directions.length ? (
+        directions.length ? (() => {
+          const preparedConcept = directions.find((concept) => concept.conceptId === preparedProductionConceptId);
+          const preparedProduction = preparedConcept
+            ? campaignProductionBrief(project, preparedConcept, brand)
+            : undefined;
+          return <>
           <div className="campaign-production-grid">
-            {(sourceCreative || defaultTemplate) && <div className="flex flex-wrap gap-2 md:col-span-3">
+            {(sourceCreative || defaultTemplate) && <div className="campaign-production-actions flex flex-wrap gap-2">
               {sourceCreative && <Button asChild variant="outline"><Link to={creativeEditorPath(sourceCreative.id)}>Open faithful adaptation in Canvas</Link></Button>}
               {defaultTemplate && project.brief?.outputFormat && defaultTemplate.formats.some(format => format === project.brief?.outputFormat) &&
                 <Button variant="outline" onClick={() => controller.openTemplate(defaultTemplate.templateId, project.brief!.outputFormat as typeof defaultTemplate.formats[number])}>Open editable Default Template</Button>}
             </div>}
             {directions.map((concept) => {
               const production = campaignProductionBrief(project, concept, brand);
-              return <article key={production.conceptId} className="ad-project-workspace__panel campaign-production-card min-w-0 space-y-2 break-words">
+              const previewUrl = previewUrlForConcept(concept.conceptId);
+              const preview = previewForConcept(concept.conceptId);
+              const previewStatus = previewUrl ? "Generated" : preview?.conceptPreview?.generated ? "Loading preview" : "Not generated";
+              return <article key={production.conceptId} className="ad-project-workspace__panel campaign-production-card min-w-0 break-words">
                 <div className="campaign-production-card__topline"><span>Production candidate</span><span>{production.format}</span></div>
+                <div className="campaign-production-card__visual" aria-label={previewUrl ? `AI concept preview: ${production.title}` : `AI concept preview not generated for ${production.title}`}>
+                  {previewUrl ? <img src={previewUrl} alt={`AI concept preview for ${production.title}`} /> : <div className="campaign-production-card__preview-empty"><ImageIcon size={28} aria-hidden="true" /><span>{previewStatus}</span><small>Return to Creative Directions to generate a preview.</small></div>}
+                </div>
+                <p className={`campaign-production-card__preview-status${previewUrl ? " is-generated" : ""}`}>AI Concept Preview · {previewStatus}</p>
                 <h2 className="font-semibold">{production.title}</h2>
-
-                <p className="text-sm"><strong>Composition:</strong> {production.composition}</p>
-                <p className="text-sm text-muted-foreground">{production.direction}</p>
-                <p className="text-sm">{[production.format, production.platform, brand?.name].filter(Boolean).join(" · ")}</p>
-                <p className="text-sm campaign-production-card__assets"><strong>Asset verification</strong>{" "}
+                <p className="campaign-production-card__summary">{production.direction}</p>
+                <div className="campaign-production-card__meta"><span>{production.format}</span><span>{production.platform}</span></div>
+                <p className="campaign-production-card__assets"><strong>Asset verification</strong>{" "}
                   {production.verifiedAssets.length
                     ? production.verifiedAssets.map(asset => asset.label || asset.role).join(", ")
                     : "No verified assets selected."}
@@ -582,40 +632,65 @@ export function CampaignStages({ controller, stage, query }: {
                     </span>
                   )}
                 </p>
-                {production.selectedModelName && <p className="text-sm"><strong>Model:</strong> {production.selectedModelName}</p>}
-                {typeof production.restrictions === "string" && <p className="text-sm"><strong>Restrictions:</strong> {production.restrictions}</p>}
-                <OriginalCampaignAd project={project} brand={brand} production={production}
-                    form={{ ...form, headline: production.headline, supportingCopy: production.supportingCopy, cta: production.cta, ...productionCopy[concept.conceptId] }}
-                    onChange={patch => setProductionCopy(current => ({
-                      ...current, [concept.conceptId]: { ...current[concept.conceptId], ...patch },
-                    }))}
-                    onSaveBrief={saveBrief}
-                    onSaved={creative => {
-                      controller.setCreatives(items => [creative, ...items.filter(item => item.id !== creative.id)]);
-                      controller.navigate(href("compare"));
-                    }} />
-                {production.claimWarnings.length > 0 && <ul className="list-disc pl-5 text-sm">{production.claimWarnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul>}
+                {production.claimWarnings.length > 0 && <p className="campaign-production-card__warning">{production.claimWarnings[0]}</p>}
+                <Button type="button" variant={preparedProductionConceptId === concept.conceptId ? "secondary" : "outline"} onClick={() => setPreparedProductionConceptId(concept.conceptId)}>
+                  {preparedProductionConceptId === concept.conceptId ? "Artwork preparation open" : "Prepare artwork"}
+                </Button>
               </article>;
             })}
-
           </div>
-        ) : <EmptyState title="Select a creative direction" description="Selected directions will appear here for production review." actionLabel="View directions" onAction={() => controller.navigate(href("directions"))} />
+          {preparedConcept && preparedProduction && <section className="ad-project-workspace__panel campaign-production-preparation">
+            <div><span className="campaign-production-card__topline">Prepare final artwork</span><h2>{preparedProduction.title}</h2><p>Review copy and creative direction for this selected candidate before requesting final artwork.</p></div>
+            <OriginalCampaignAd project={project} brand={brand} production={preparedProduction}
+              form={{ ...form, headline: preparedProduction.headline, supportingCopy: preparedProduction.supportingCopy, cta: preparedProduction.cta, ...productionCopy[preparedConcept.conceptId] }}
+              onChange={patch => setProductionCopy(current => ({
+                ...current, [preparedConcept.conceptId]: { ...current[preparedConcept.conceptId], ...patch },
+              }))}
+              onSaveBrief={saveBrief}
+              onSaved={creative => {
+                controller.setCreatives(items => [creative, ...items.filter(item => item.id !== creative.id)]);
+                controller.navigate(href("compare"));
+              }} />
+          </section>}
+          </>;
+        })() : <EmptyState title="Select a creative direction" description="Selected directions will appear here for production review." actionLabel="View directions" onAction={() => controller.navigate(href("directions"))} />
       )}
       {stage === "compare" && (
         campaignCreatives.length ? (
           <>
-            <div className="campaign-compare-heading"><p className="text-sm text-muted-foreground">Compare saved campaign creatives.</p><span>{campaignCreatives.length} saved</span></div>
+            <div className="campaign-compare-heading">
+              <div>
+                <span className="campaign-compare-heading__eyebrow">Campaign candidates</span>
+                <p>Review each version, approve the one you want to finalize, then export it.</p>
+                {message && <p className="campaign-compare-heading__message" role="status">{message}</p>}
+              </div>
+              <span className="campaign-compare-heading__count">{campaignCreatives.length} saved</span>
+            </div>
             <div className="campaign-compare-grid">
-              {campaignCreatives.map((creative) => (
-                <article key={creative.id} className="ad-project-workspace__panel campaign-compare-card space-y-3">
-                  {creative.sceneGraph && <BrandTemplateScenePreview graph={creative.sceneGraph} assetUrls={assetUrls} label={creative.name} fillCard readablePlaceholder />}
-                  <h2 className="font-semibold">{creative.name}</h2>
-                  <div className="flex flex-wrap gap-2">
-                    <Button asChild variant="outline"><Link to={creativeEditorPath(creative.id)}>Open Canvas</Link></Button>
-                    <Button asChild variant="outline"><Link to={base + "?" + new URLSearchParams({ review: creative.id, reviewTab: "export" })}>Export options</Link></Button>
+              {campaignCreatives.map((creative) => {
+                const hasArtwork = creativeHasArtwork(creative);
+                const direction = directionForCreative(creative);
+                return <article key={creative.id} className="ad-project-workspace__panel campaign-compare-card">
+                  <div className={`campaign-compare-card__visual${hasArtwork ? " is-complete" : " is-empty"}`}>
+                    {hasArtwork && creative.sceneGraph
+                      ? <BrandTemplateScenePreview graph={creative.sceneGraph} assetUrls={assetUrls} label={creative.name} fillCard readablePlaceholder />
+                      : <div className="campaign-compare-card__empty-state"><ImageIcon size={25} aria-hidden="true" /><strong>Draft without artwork</strong><span>Open Canvas to add an image, or discard this unused draft.</span></div>}
                   </div>
-                </article>
-              ))}
+                  <div className="campaign-compare-card__body">
+                    <span className={`campaign-compare-card__status${creative.status === "ready" ? " is-approved" : hasArtwork ? " is-review" : ""}`}>{creative.status === "ready" ? `Approved · v${creative.currentVersion ?? 1}` : hasArtwork ? `Review needed · v${creative.currentVersion ?? 1}` : "No artwork"}</span>
+                    <h2 className="font-semibold">{creative.name}</h2>
+                    <p>{creative.sceneGraph?.canvas ? `${creative.sceneGraph.canvas.width} × ${creative.sceneGraph.canvas.height} · ${direction?.title ?? "Campaign creative"}` : direction?.title ?? "Campaign creative"}</p>
+                  </div>
+                  <div className="campaign-compare-card__actions">
+                    <Button asChild variant="outline"><Link to={creativeEditorPath(creative.id)}>Review / edit</Link></Button>
+                    {hasArtwork && creative.status !== "ready" ? <Button type="button" disabled={approvingCreativeId === creative.id} onClick={() => void approveCreativeVersion(creative)}><Check size={15} aria-hidden="true" />{approvingCreativeId === creative.id ? "Approving…" : `Approve v${creative.currentVersion ?? 1}`}</Button> : null}
+                    {hasArtwork && creative.status === "ready" ? <Button asChild><Link to={base + "?" + new URLSearchParams({ review: creative.id, reviewTab: "export" })}>Export approved version</Link></Button> : null}
+                    {!hasArtwork ? <Button type="button" variant="outline" className="campaign-compare-card__discard" onClick={() => {
+                      if (window.confirm("Discard this empty campaign draft? This cannot be undone.")) void controller.discardCreative(creative);
+                    }}><Trash2 size={15} aria-hidden="true" />Discard draft</Button> : null}
+                  </div>
+                </article>;
+              })}
             </div>
           </>
         ) : <EmptyState title="No creatives to compare" description="Saved campaign creatives will appear here." />
