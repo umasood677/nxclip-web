@@ -263,7 +263,7 @@ for (const failure of ['hash', 'expired', 'digest']) test(`controller: ${failure
 }));
 
 test('workflow: peer token is step-scoped only to coordinated operations', () => {
-  const yaml = readFileSync(new URL('../../.github/workflows/deploy-w8-selective.yml', import.meta.url), 'utf8');
+  const yaml = readFileSync(new URL('../../.github/retired-workflows/deploy-w8-selective.yml.txt', import.meta.url), 'utf8');
   const beforeSteps = yaml.slice(0, yaml.indexOf('    steps:'));
   assert(!beforeSteps.includes('W8_RELEASE_READ_TOKEN'));
   const steps = yaml.split(/\n      - name: /).slice(1);

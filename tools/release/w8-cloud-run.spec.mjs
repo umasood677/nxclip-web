@@ -277,7 +277,7 @@ test('smoke requests health only without retry or generation', async () => {
   await assert.rejects(healthProbe('https://tag---service-uc.a.run.app', 'https://service-uc.a.run.app', async () => ({ status: 503 }), 'synthetic-test-token'));
 });
 test('workflow remains manual, scoped, independently approved and artifact driven', () => {
-  const yaml = readFileSync(new URL('../../.github/workflows/deploy-w8-selective.yml', import.meta.url), 'utf8');
+  const yaml = readFileSync(new URL('../../.github/retired-workflows/deploy-w8-selective.yml.txt', import.meta.url), 'utf8');
   assert(yaml.includes('workflow_dispatch:')); assert(!/^\s+(push|pull_request|workflow_run):/m.test(yaml));
   for (const op of ['build_publish', 'stage', 'promote', 'rollback']) assert(yaml.includes(`- ${op}`));
   assert(!yaml.includes('environment: development')); assert(yaml.includes("github.ref == 'refs/heads/master'")); assert(yaml.includes('github.triggering_actor')); assert(yaml.includes('cancel-in-progress: false'));
