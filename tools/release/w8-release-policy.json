@@ -1,16 +1,15 @@
 {
   "schemaVersion": 1,
   "repository": "umasood677/nxclip-web",
-  "sourceSha": "ceec3d1f13f8933d1d8e2518c91dcccadde21f3e",
+  "sourceSha": "60874a7a29ccae75d715f5c9b88a07dbd675b09f",
   "peerRepository": "umasood677/nxclip",
-  "peerSourceSha": "bd07f92ab9ab5aad1856268de679b9e9a9f853da",
+  "peerSourceSha": "03c3c908e7b76a18e31c4ea1bb08480b2b62e73f",
   "services": [
     "nxclip-web"
   ],
   "peerServices": [
     "ai-service",
-    "content-service",
-    "api-gateway"
+    "content-service"
   ],
   "project": "nxclip-500511",
   "region": "us-central1",
@@ -30,6 +29,6 @@
     "VITE_AD_STUDIO_BRAND_TEMPLATES_ENABLED": "true",
     "VITE_AD_STUDIO_BRAND_ANALYSIS_ENABLED": "false",
     "VITE_AD_STUDIO_REAL_IMAGES_ENABLED": "true",
-    "VITE_AD_STUDIO_REAL_CONCEPTS_ENABLED": "false"
+    "VITE_AD_STUDIO_REAL_CONCEPTS_ENABLED": "true"
   }
 }

@@ -20,7 +20,7 @@ on:
         description: Approved APPLICATION source, separate from workflow revision
         required: true
         type: string
-        default: ceec3d1f13f8933d1d8e2518c91dcccadde21f3e
+        default: 60874a7a29ccae75d715f5c9b88a07dbd675b09f
       manifest_run_id:
         description: Own successful build_publish run for stage; own stage run for promote/rollback
         type: string
@@ -98,7 +98,7 @@ jobs:
       VITE_AD_STUDIO_BRAND_TEMPLATES_ENABLED: ${{ vars.VITE_AD_STUDIO_BRAND_TEMPLATES_ENABLED || secrets.VITE_AD_STUDIO_BRAND_TEMPLATES_ENABLED }}
       VITE_AD_STUDIO_BRAND_ANALYSIS_ENABLED: ${{ vars.VITE_AD_STUDIO_BRAND_ANALYSIS_ENABLED || secrets.VITE_AD_STUDIO_BRAND_ANALYSIS_ENABLED }}
       VITE_AD_STUDIO_REAL_IMAGES_ENABLED: ${{ vars.VITE_AD_STUDIO_REAL_IMAGES_ENABLED || secrets.VITE_AD_STUDIO_REAL_IMAGES_ENABLED }}
-      VITE_AD_STUDIO_REAL_CONCEPTS_ENABLED: ${{ vars.VITE_AD_STUDIO_REAL_CONCEPTS_ENABLED || secrets.VITE_AD_STUDIO_REAL_CONCEPTS_ENABLED }}
+      VITE_AD_STUDIO_REAL_CONCEPTS_ENABLED: 'true'
     steps:
       - name: Initialize private receipt directory location
         run: echo "RECEIPT_DIR=$RUNNER_TEMP/w8-receipts" >> "$GITHUB_ENV"
