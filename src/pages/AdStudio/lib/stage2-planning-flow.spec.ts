@@ -15,11 +15,13 @@ test("mocked brief expansion and refinement preserve protected input through pro
   const expanded = applyCampaignStrategy(initial, {
     productOrService: "Refillable serum", targetAudience: "Evening skincare shoppers",
     coreMessage: "Simplify the ritual", desiredTone: "Confident", creativeDirection: "Product closeups",
+    headline: "Suggested headline", supportingCopy: "Suggested copy", cta: "Suggested CTA",
     assumptions: ["Confirm refill availability"],
   });
   const refined = applyCampaignStrategy(expanded, {
     productOrService: expanded.productOrService, targetAudience: expanded.targetAudience,
     coreMessage: expanded.coreMessage, desiredTone: "Quiet", creativeDirection: "Use softer lighting",
+    headline: "Overwrite attempt", supportingCopy: "Overwrite attempt", cta: "Overwrite attempt",
     assumptions: expanded.planningAssumptions!,
     ...{ campaignIdea: "Overwrite attempt", headline: "Overwrite attempt", cta: "Overwrite attempt" },
   });
@@ -28,7 +30,7 @@ test("mocked brief expansion and refinement preserve protected input through pro
   assert.equal(refined.desiredTone, "Quiet");
   assert.equal(refined.creativeDirection, "Use softer lighting");
   assert.equal(refined.headline, "Refill your ritual");
-  assert.equal(refined.supportingCopy, "");
+  assert.equal(refined.supportingCopy, "Suggested copy");
   assert.equal(refined.cta, "Explore");
   assert.deepEqual(refined.planningAssumptions, ["Confirm refill availability"]);
 
@@ -43,9 +45,39 @@ test("mocked brief expansion and refinement preserve protected input through pro
   assert.equal(new Set(briefs.map(brief => brief.composition)).size, 3);
   for (const brief of briefs) {
     assert.equal(brief.headline, "Refill your ritual");
-    assert.equal(brief.supportingCopy, "");
+    assert.equal(brief.supportingCopy, "Suggested copy");
     assert.equal(brief.cta, "Explore");
     assert.equal(brief.unverifiedAssetCount, 2);
     assert.deepEqual(brief.verifiedAssets, []);
   }
+});
+
+test("brief expansion recovers explicitly requested copy when an older retained response has no copy fields", () => {
+  const initial = projectBriefForm({
+    id: "campaign-copy", name: "Refill", brandKitId: null,
+    brief: {
+      campaignIdea: 'A quiet serum launch. Use the headline "Refill Your Ritual" and CTA "Explore the Serum".',
+      headline: "", supportingCopy: "", cta: "Learn more",
+    },
+  });
+  const expanded = applyCampaignStrategy(initial, {
+    productOrService: "Refillable serum", targetAudience: "Evening skincare shoppers",
+    coreMessage: "A calm ritual", desiredTone: "Confident", creativeDirection: "Soft evening still life",
+    assumptions: [],
+  });
+  assert.equal(expanded.headline, "Refill Your Ritual");
+  assert.equal(expanded.cta, "Explore the Serum");
+});
+
+test("brief expansion removes a test-only campaign prefix from the advertised subject", () => {
+  const initial = projectBriefForm({
+    id: "campaign-subject", name: "UAT 01 — Refillable Skincare Serum", brandKitId: null,
+    brief: { campaignIdea: "Launch a refillable facial serum.", headline: "", supportingCopy: "", cta: "Learn more" },
+  });
+  const expanded = applyCampaignStrategy(initial, {
+    productOrService: "UAT 01 — Refillable Skincare Serum", targetAudience: "Skincare shoppers",
+    coreMessage: "A refined refill ritual", desiredTone: "Confident", creativeDirection: "Soft evening still life",
+    headline: "Refill Your Ritual", supportingCopy: "", cta: "Explore the Serum", assumptions: [],
+  });
+  assert.equal(expanded.productOrService, "Refillable Skincare Serum");
 });

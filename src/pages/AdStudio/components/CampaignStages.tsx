@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, CircleCheckBig, ImageIcon, LayoutTemplate, Lightbulb, MessageCircleMore, Palette, ShieldCheck, Trash2, Type, Users, Wand2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, CircleCheckBig, ImageIcon, LayoutTemplate, Lightbulb, MessageCircleMore, Palette, Pencil, ShieldCheck, Trash2, Type, Users, Wand2, X } from "lucide-react";
 import { adImageApi, adStudioApi, quotedConceptApi } from "../../../services/apiClient";
 import { applyCampaignStrategy, requireAiConceptResult, type PlanningInput, type QuotedConceptResult } from "../production/conceptExecutionModel";
 import { Button } from "../../../components/ui/button";
@@ -74,6 +74,7 @@ export function CampaignStages({ controller, stage, query }: {
   const [message, setMessage] = useState("");
   const [feedback, setFeedback] = useState("");
   const [previousBrief, setPreviousBrief] = useState<typeof form>();
+  const [editingDevelopedConcept, setEditingDevelopedConcept] = useState(false);
   const [directionFeedback, setDirectionFeedback] = useState("");
   const [retained, setRetained] = useState<PlanningReceipt | undefined>(() => storedReceipt(project?.id));
   const [editing, setEditing] = useState<import("../types").AdConcept>();
@@ -250,6 +251,7 @@ export function CampaignStages({ controller, stage, query }: {
         throw Error("This saved response predates developed concepts. Start a new brief request.");
       }
       setPreviousBrief(form);
+      setEditingDevelopedConcept(false);
       setForm(applyCampaignStrategy(form, result.campaignStrategy));
       setFeedback("");
       setMessage("Review the proposed concept and brief before approving.");
@@ -486,13 +488,24 @@ export function CampaignStages({ controller, stage, query }: {
                 />
             </label>
             {campaignFormat && <p className="text-xs text-muted-foreground">Ad format · {campaignFormat.label} · {campaignFormat.width} × {campaignFormat.height}</p>}
-            <section className="campaign-stage-section">
-              <div className="campaign-stage-section__title">
-                <span className="campaign-stage-section__icon"><Wand2 size={18} aria-hidden="true" /></span>
-                <h2>Developed campaign concept</h2>
+            <section className="campaign-stage-section campaign-developed-concept">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="campaign-stage-section__title">
+                  <span className="campaign-stage-section__icon"><Wand2 size={18} aria-hidden="true" /></span>
+                  <h2>Developed campaign concept</h2>
+                </div>
+                {form.developedConcept && <Button type="button" variant="outline" size="sm"
+                  className="campaign-developed-concept__action"
+                  disabled={saving} aria-expanded={editingDevelopedConcept}
+                  onClick={() => setEditingDevelopedConcept(!editingDevelopedConcept)}>
+                  {editingDevelopedConcept ? <Check aria-hidden="true" /> : <Pencil aria-hidden="true" />}
+                  {editingDevelopedConcept ? "Preview concept" : "Edit concept"}
+                </Button>}
               </div>
               {form.developedConcept ? (
-                <div className="grid gap-2">
+                <>
+                  {previousBrief && <p className="campaign-developed-concept__status">Proposal · Awaiting approval</p>}
+                  {editingDevelopedConcept ? <div className="grid gap-2">
                   {([
                     ["title", "Concept title", 160], ["narrative", "Campaign narrative", 1600],
                     ["proposition", "Central proposition", 500], ["angle", "Emotional or marketing angle", 500],
@@ -511,14 +524,24 @@ export function CampaignStages({ controller, stage, query }: {
                         }} />
                     </label>
                   ))}
-                  {previousBrief && <Button type="button" variant="outline" disabled={saving} onClick={() => {
+                  </div> : <div className="campaign-developed-concept__summary">
+                    <h3>{form.developedConcept.title}</h3>
+                    <p>{form.developedConcept.narrative}</p>
+                    <dl>
+                      <div><dt>Central proposition</dt><dd>{form.developedConcept.proposition}</dd></div>
+                      <div><dt>Marketing angle</dt><dd>{form.developedConcept.angle}</dd></div>
+                      <div><dt>Visual storytelling</dt><dd>{form.developedConcept.storytelling}</dd></div>
+                    </dl>
+                  </div>}
+                  {previousBrief && <Button type="button" variant="outline" size="sm" className="campaign-developed-concept__action campaign-developed-concept__action--discard" disabled={saving} onClick={() => {
                     setForm(previousBrief);
+                    setEditingDevelopedConcept(false);
                     setPreviousBrief(undefined);
                     storeReceipt(project.id);
                     setRetained(undefined);
                     setMessage("Previous brief restored.");
-                  }}>Discard proposal</Button>}
-                </div>
+                  }}><X aria-hidden="true" />Discard proposal</Button>}
+                </>
               ) : <p className="text-xs text-muted-foreground">Use the Creative Director to develop a concept from your original idea.</p>}
             </section>
             <section className="campaign-stage-section">
@@ -542,7 +565,7 @@ export function CampaignStages({ controller, stage, query }: {
                   value={form.advertisingObjective} disabled={saving}
                   onChange={(event) => setForm((current) => ({ ...current, advertisingObjective: event.target.value }))}>
                   {["brand_awareness", "product_promotion", "website_traffic", "lead_generation", "engagement", "event_promotion", "app_installation"].map(objective =>
-                    <option key={objective} value={objective}>{objective.replace(/_/g, " ")}</option>
+                    <option key={objective} value={objective}>{objective.split("_").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")}</option>
                   )}
                 </select>
               </label>
@@ -575,9 +598,15 @@ export function CampaignStages({ controller, stage, query }: {
                 value={form.creativeGuardrails ?? ""} disabled={saving}
                 onChange={(event) => setForm((current) => ({ ...current, creativeGuardrails: event.target.value }))} />
             </label>}
-            {!!form.planningAssumptions?.length && <section className="campaign-brief__notes">
-              <h2>Planning notes</h2><ul>{form.planningAssumptions.map((item, index) => <li key={index}>{item}</li>)}</ul>
-            </section>}
+            {!!form.planningAssumptions?.length && (
+              <aside className="campaign-brief__notes" aria-label="AI planning disclaimer">
+                <h2>AI planning disclaimer</h2>
+                <p className="m-0 text-xs italic text-muted-foreground">
+                  Review these AI-generated assumptions before approving. Confirm the audience, claims, and visual restrictions that apply to your campaign.
+                </p>
+                <ul className="italic">{form.planningAssumptions.map((item, index) => <li key={index}>{item}</li>)}</ul>
+              </aside>
+            )}
           </div>
           <aside className="campaign-brief-sidebar">
             <section className="campaign-director" aria-label="Creative Director">

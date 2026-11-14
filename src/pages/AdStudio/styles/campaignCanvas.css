@@ -1,24 +1,37 @@
-.ad-studio-w0a.campaign-canvas .w0a-editor-toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  justify-content: stretch;
-  gap: 8px;
-  border-color: var(--border);
-  background: var(--w0a-panel, #171820);
+.ad-studio-w0a .canvas-layer-properties select,
+.ad-studio-w0a .canvas-toolbar select {
+  color-scheme: dark;
+}
+
+.ad-studio-w0a .canvas-layer-properties select option,
+.ad-studio-w0a .canvas-toolbar select option {
+  background-color: var(--w0a-panel);
+  color: var(--w0a-text);
+}
+
+.ad-studio-w0a .w0a-editor-toolbar.canvas-toolbar {
+  display: block;
+  border-color: var(--w0a-border);
+  background: var(--w0a-panel);
   box-shadow: none;
+  padding: 5px 8px;
 }
 
-.ad-studio-w0a.campaign-canvas .w0a-editor-toolbar .w0a-editor-toolbar__actions {
+.ad-studio-w0a .canvas-toolbar .w0a-editor-toolbar__actions {
   margin-left: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 3px;
 }
 
-.campaign-canvas .w0a-editor-toolbar [data-saved="true"] {
-  color: #72dbc6;
+.canvas-breadcrumb a {
+  flex-shrink: 0;
 }
 
 .w0a-editor-toolbar .canvas-tool-group {
   display: flex;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 4px;
 }
@@ -33,27 +46,57 @@
   outline-offset: 2px;
 }
 
-.ad-studio-w0a.campaign-canvas .w0a-editor-toolbar .canvas-tool-group > :is(button, select) {
+.ad-studio-w0a .canvas-toolbar .canvas-tool-group > :is(button, select) {
   height: 32px;
 }
 
-.ad-studio-w0a.campaign-canvas .w0a-editor-toolbar button[data-canvas-save] {
-  background: #c4a574 !important;
+.ad-studio-w0a .canvas-toolbar button[data-canvas-save="dirty"] {
+  background: var(--w0a-accent) !important;
   color: #17130f !important;
 }
 
-@media (max-width: 640px) {
-  .ad-studio-w0a.campaign-canvas .w0a-editor-toolbar .w0a-editor-toolbar__actions {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding: 3px;
-  }
+.ad-studio-w0a .canvas-toolbar button[data-canvas-save="saved"] {
+  color: #72dbc6 !important;
+  opacity: 1;
+}
+.ad-canvas-shell {
+  background: var(--background);
+}
 
-  .campaign-canvas .w0a-editor-toolbar__actions > * {
-    flex-shrink: 0;
-  }
-
-  .campaign-canvas .canvas-tool-group {
-    flex-wrap: nowrap;
-  }
+.ad-canvas-shell .ad-studio-w0a.ad-studio-w0a--editor {
+  background: transparent;
+}
+.canvas-artwork-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  background: radial-gradient(ellipse at center, #24202d, var(--w0a-panel) 72%);
+  color: var(--w0a-text);
+  font-size: 12px;
+}
+.canvas-artwork-loading__frame {
+  display: grid;
+  gap: 7px;
+  width: 64px;
+  padding: 10px;
+  border: 1px solid var(--w0a-border);
+  border-radius: 9px;
+}
+.canvas-artwork-loading__frame i {
+  height: 4px;
+  border-radius: 4px;
+  background: var(--w0a-accent);
+  animation: canvas-artwork-pulse 1.4s ease-in-out infinite alternate;
+}
+.canvas-artwork-loading__frame i:nth-child(2) { height: 30px; animation-delay: 140ms; }
+.canvas-artwork-loading__frame i:nth-child(3) { width: 60%; animation-delay: 280ms; }
+@keyframes canvas-artwork-pulse {
+  from { opacity: .18; }
+  to { opacity: .65; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .canvas-artwork-loading__frame i { animation: none; opacity: .45; }
 }

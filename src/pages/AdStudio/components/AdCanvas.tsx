@@ -46,6 +46,7 @@ interface AdCanvasProps {
   onAssetLoadError?: (assetId: string) => void;
   /** Show dashed safe-area guide (default true). */
   showSafeArea?: boolean;
+  artworkLoading?: boolean;
 }
 
 export function AdCanvas({
@@ -63,6 +64,7 @@ export function AdCanvas({
   storageKeyUrls,
   onAssetLoadError,
   showSafeArea = true,
+  artworkLoading = false,
 }: AdCanvasProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<{
@@ -144,7 +146,12 @@ export function AdCanvas({
           height: height * zoom,
         }}
       >
-        <div
+        {artworkLoading ? (
+          <div className="canvas-artwork-loading" role="status">
+            <span className="canvas-artwork-loading__frame" aria-hidden="true"><i /><i /><i /></span>
+            <span>Loading saved artwork…</span>
+          </div>
+        ) : <div
           className="absolute origin-top-left"
           style={{
             width,
@@ -225,7 +232,7 @@ export function AdCanvas({
               </div>
             );
           })}
-        </div>
+        </div>}
       </div>
     </div>
   );

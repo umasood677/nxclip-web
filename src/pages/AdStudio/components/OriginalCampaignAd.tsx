@@ -133,7 +133,12 @@ export function OriginalCampaignAd({
     }),
     [status, setStatus] = useState(""),
     [watch, setWatch] = useState(0);
-  const [consent, setConsent] = useState<number>();
+  // A usage-only provider quote identifies a paid operation without a numeric
+  // estimate. It still needs explicit user consent; it is not a failed quote.
+  const [consent, setConsent] = useState<{
+    estimatedCostUsd: number | null;
+    costBasis: string;
+  }>();
   const consentResponse = useRef<(approved: boolean) => void>(undefined);
   function resolveConsent(approved: boolean) {
     consentResponse.current?.(approved);
@@ -324,12 +329,13 @@ export function OriginalCampaignAd({
         },
         {
           authorizeQuote: production ? async (quote) => {
-            if (quote.costBasis !== "configured-estimate" || quote.estimatedCostUsd === null)
-              throw Error("An artwork cost estimate is unavailable. No artwork was requested.");
             if (!mounted.current) return false;
             return new Promise<boolean>(resolve => {
               consentResponse.current = resolve;
-              setConsent(quote.estimatedCostUsd!);
+              setConsent({
+                estimatedCostUsd: quote.estimatedCostUsd,
+                costBasis: quote.costBasis,
+              });
             });
           } : undefined,
           onExecuting: () => {
@@ -406,7 +412,9 @@ export function OriginalCampaignAd({
     setWatch(0);
   }
   if (consent !== undefined) return <section className="original-campaign-ad" aria-label="Artwork authorization">
-    <p>Estimated artwork cost: ${consent} USD. Actual provider charges may differ.</p>
+    <p>{typeof consent.estimatedCostUsd === "number"
+      ? `Estimated artwork cost: $${consent.estimatedCostUsd} USD. Actual provider charges may differ.`
+      : "Provider usage may incur a charge. A price estimate is not available for this model."}</p>
     <div className="flex flex-wrap gap-2">
       <button className="w0a-create-project" type="button" onClick={() => resolveConsent(true)}>Authorize and generate</button>
       <button className="w0a-btn" type="button" onClick={() => resolveConsent(false)}>Cancel</button>

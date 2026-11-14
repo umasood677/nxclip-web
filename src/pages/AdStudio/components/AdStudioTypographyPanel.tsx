@@ -124,7 +124,7 @@ export function AdStudioTypographyPanel({
               disabled={previewMode}
             />
             <Input
-              className="h-9 text-xs font-mono"
+              className="h-9 text-xs md:text-xs font-mono"
               value={canvasBackground || "#111827"}
               onChange={(e) => onCanvasBackground(e.target.value)}
               aria-label="Canvas background hex"
@@ -155,7 +155,7 @@ export function AdStudioTypographyPanel({
             </Label>
             <Input
               id="ad-layer-name"
-              className="mt-1 h-8 text-xs bg-background/80"
+              className="mt-1 h-8 text-xs md:text-xs bg-background/80"
               value={layer.name ?? ""}
               disabled={locked}
               placeholder="Name only (not ad copy)"
@@ -187,7 +187,7 @@ export function AdStudioTypographyPanel({
         </div>
       ) : null}
 
-      {layer && !compactTransforms ? (
+      {layer && (!compactTransforms || text) ? (
         <CollapsiblePanel title="Transform & alignment">
           {!compactTransforms && <CharacteristicSlider
             label="Opacity"
@@ -239,7 +239,8 @@ export function AdStudioTypographyPanel({
                 </Label>
                 <Input
                   type="number"
-                  className="h-8 text-xs mt-1"
+                  aria-label={{ x: "X position", y: "Y position", width: "Width", height: "Height" }[key]}
+                  className="mt-1 h-8 text-xs md:text-xs tabular-nums"
                   value={val}
                   disabled={locked}
                   onChange={(e) =>
@@ -249,6 +250,32 @@ export function AdStudioTypographyPanel({
               </div>
             ))}
           </div>}
+          {text && (
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-muted-foreground ml-0.5">
+              Text alignment
+            </label>
+            <div className="flex gap-1.5">
+              {(["left", "center", "right"] as const).map((align) => (
+                <button
+                  key={align}
+                  type="button"
+                  disabled={locked}
+                  className={cn(
+                    "h-9 flex-1 rounded-lg border text-[10px] font-bold capitalize transition-colors disabled:opacity-50",
+                    text.align === align
+                      ? "border-primary bg-primary/15 text-primary"
+                      : "border-border/50 bg-muted/20 text-muted-foreground hover:border-primary/30",
+                  )}
+                  onClick={() => onChange({ align } as Partial<AdTextLayer>)}
+                >
+                  {align}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          )}
         </CollapsiblePanel>
       ) : null}
 
@@ -332,9 +359,29 @@ export function AdStudioTypographyPanel({
               }
             />
           </div>
+          <label className="flex items-center gap-2 text-[11px] font-medium">
+            <input
+              type="checkbox"
+              checked={Boolean(text.uppercase)}
+              disabled={locked}
+              onChange={(e) =>
+                onChange({ uppercase: e.target.checked } as Partial<AdTextLayer>)
+              }
+            />
+            Uppercase
+          </label>
           </CollapsiblePanel>
-          <CollapsiblePanel title="Effects">
+          <CollapsiblePanel title="Color & appearance" defaultOpen>
           <div className="space-y-3">
+          <ColorSwatchRow
+            livePreview
+            label="Text color"
+            value={text.color || "#FFFFFF"}
+            swatches={CANONICAL_FILL_COLORS}
+            disabled={locked}
+            onChange={(color) => onChange({ color } as Partial<AdTextLayer>)}
+          />
+
             <CharacteristicSlider
               label="Stroke"
               value={text.strokeWidth ?? 0}
@@ -395,55 +442,6 @@ export function AdStudioTypographyPanel({
             />
           </div>
           </CollapsiblePanel>
-
-          <CollapsiblePanel title="Color & appearance" defaultOpen>
-          <div className="space-y-3">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-muted-foreground ml-0.5">
-              Align
-            </label>
-            <div className="flex gap-1.5">
-              {(["left", "center", "right"] as const).map((align) => (
-                <button
-                  key={align}
-                  type="button"
-                  disabled={locked}
-                  className={cn(
-                    "h-9 flex-1 rounded-lg border text-[10px] font-bold capitalize transition-colors disabled:opacity-50",
-                    text.align === align
-                      ? "border-primary bg-primary/15 text-primary"
-                      : "border-border/50 bg-muted/20 text-muted-foreground hover:border-primary/30",
-                  )}
-                  onClick={() => onChange({ align } as Partial<AdTextLayer>)}
-                >
-                  {align}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <ColorSwatchRow
-            livePreview
-            label="Text color"
-            value={text.color || "#FFFFFF"}
-            swatches={CANONICAL_FILL_COLORS}
-            disabled={locked}
-            onChange={(color) => onChange({ color } as Partial<AdTextLayer>)}
-          />
-
-          <label className="flex items-center gap-2 text-[11px] font-medium">
-            <input
-              type="checkbox"
-              checked={Boolean(text.uppercase)}
-              disabled={locked}
-              onChange={(e) =>
-                onChange({ uppercase: e.target.checked } as Partial<AdTextLayer>)
-              }
-            />
-            Uppercase
-          </label>
-          </div>
-          </CollapsiblePanel>
         </>
       ) : null}
 
@@ -455,7 +453,7 @@ export function AdStudioTypographyPanel({
               CTA text
             </Label>
             <Input
-              className="mt-1 h-9 text-xs"
+              className="mt-1 h-9 text-xs md:text-xs"
               value={(layer as { text?: string }).text ?? ""}
               disabled={locked}
               onChange={(e) =>
@@ -488,7 +486,7 @@ export function AdStudioTypographyPanel({
             Object fit
           </Label>
           <select
-            className="mt-1 w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+            className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-xs"
             value={(layer as { objectFit?: string }).objectFit ?? "cover"}
             disabled={locked}
             onChange={(e) =>

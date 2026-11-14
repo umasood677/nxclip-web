@@ -1,6 +1,8 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {reviewImageUrls,preloadReviewImages} from "./reviewMediaLoading";
-import {LoaderCircle,ImageOff} from "lucide-react";
+import {Sparkles,ImageOff} from "lucide-react";
+import { Skeleton } from "../../../components/ui/skeleton";
+import "./scenePreviewLoading.css";
 import { SceneStage } from "../../AdStudio/canvas/SceneStage";
 type Props = React.ComponentProps<typeof SceneStage> & {fillCard?:boolean;fitHeight?:boolean;readablePlaceholder?:boolean};
 /** Fit the existing renderer to its card; retain the scene's exact aspect ratio. */
@@ -28,8 +30,8 @@ export function BrandTemplateScenePreview({fillCard=false,fitHeight=false,readab
   const waiting=!width||(fitHeight&&!height)||readablePlaceholder&&(missing||sources===null||(sources.length>0&&ready!==mediaKey));
   return (
     <div ref={host} className="bt-scene-preview">
-      {waiting?<div className="bt-thumbnail-state" style={{aspectRatio:props.graph?props.graph.canvas.width+"/"+props.graph.canvas.height:"4/5"}} role="status">
-{missing||failed===mediaKey?<><ImageOff size={24}/><span>{missing?"Add an image in Canvas":"Preview unavailable"}</span></>:<><LoaderCircle size={24} className="bt-thumbnail-spinner"/><span>Loading preview…</span></>}
+      {waiting?<div className="bt-thumbnail-state scene-preview-loading" style={{aspectRatio:props.graph?props.graph.canvas.width+"/"+props.graph.canvas.height:"4/5"}} role="status" aria-live="polite" aria-busy={!missing && failed!==mediaKey}>
+{missing||failed===mediaKey?<><ImageOff size={24}/><span>{missing?"Add an image in Canvas":"Preview unavailable"}</span></>:<><div className="scene-preview-loading__design" aria-hidden="true"><Skeleton className="scene-preview-loading__line"/><Skeleton className="scene-preview-loading__subject"/><Skeleton className="scene-preview-loading__line"/></div><Sparkles size={20} aria-hidden="true"/><span>Loading saved artwork</span></>}
 </div>:<SceneStage {...props} maxWidth={width} maxHeight={fillCard && props.graph?.canvas.width ? width*props.graph.canvas.height/props.graph.canvas.width : fitHeight?height:props.maxHeight} />}
     </div>
   );

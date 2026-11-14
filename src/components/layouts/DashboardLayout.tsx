@@ -14,7 +14,8 @@ export default function DashboardLayout() {
   const location = useLocation();
   const [title, setTitle] = useState("");
   const [canvasHeader,setCanvasHeader]=useState<{path:string;template:boolean}|null>(null);
-  const isTemplateCanvas=canvasHeader?.path===location.pathname && canvasHeader.template;
+  const isCanvas = canvasHeader?.path === location.pathname;
+  const isTemplateCanvas = isCanvas && canvasHeader.template;
 
   const isDashboard = location.pathname === "/dashboard";
   const isLibrary = location.pathname === "/my-content" || location.pathname === "/library";
@@ -25,6 +26,15 @@ export default function DashboardLayout() {
   const isTemplateReview = /^\/brands\/[^/]+\/templates\/[^/]+\/?$/.test(location.pathname);
   const isBrandKit = location.pathname === "/brands" || location.pathname.startsWith("/brands/");
   const isAdStudio = location.pathname.startsWith("/create/ad");
+  const campaignQuery = new URLSearchParams(location.search);
+  const campaignStageTitle = location.pathname.startsWith("/create/ad/projects/")
+    ? campaignQuery.has("review") ? "Creative review" : ({
+        strategy: "Campaign Brief",
+        directions: "Creative Directions",
+        "production-review": "Production Review",
+        compare: "Compare & Approve",
+      } as Record<string, string>)[campaignQuery.get("view") ?? ""]
+    : undefined;
   const isClipEditor = location.pathname.startsWith("/create/clip");
   const isCreateHub = location.pathname === "/create";
   const isPostDetail = location.pathname.startsWith("/feed/post/");
@@ -197,7 +207,7 @@ export default function DashboardLayout() {
     isNotifications;
 
   return (
-    <AppShell title={isTemplateCanvas ? t("nav.ad_studio_template_canvas",{defaultValue:"Ad Studio · Template Canvas"}) : title} subtitle={subtitle} titleIcon={titleIcon} dense={dense} contentClassName={isTemplateReview?"pt-1 md:pt-1":undefined} animateContent={!isTemplateReview}>
+    <AppShell title={isTemplateCanvas ? t("nav.ad_studio_template_canvas",{defaultValue:"Ad Studio · Template Canvas"}) : campaignStageTitle ? `Ad Studio · ${campaignStageTitle}` : title} subtitle={subtitle} titleIcon={titleIcon} dense={dense} contentClassName={isCanvas ? "ad-canvas-shell" : isTemplateReview ? "pt-1 md:pt-1" : undefined} animateContent={!isTemplateReview}>
       <Outlet context={{setCanvasHeader} satisfies StudioCanvasHeaderContext} />
     </AppShell>
   );

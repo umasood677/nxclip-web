@@ -196,3 +196,20 @@ test("production review can decline a quote without executing or allocating anot
   assert.deepEqual(f.calls, ["draft", "quote"]);
   assert.equal(f.bodies[0], retained);
 });
+
+test("a usage-only quote executes after explicit confirmation without inventing a price", async () => {
+  const f = fixture();
+  let received: ImageQuote | undefined;
+  const saved = await generateOriginalCampaignAd(f.api, "campaign", input, () => {}, {
+    authorizeQuote: async quoteToAuthorize => {
+      received = quoteToAuthorize;
+      return true;
+    },
+    onExecuting: () => f.calls.push("authorized"),
+  });
+
+  assert.equal(saved?.id, draft.id);
+  assert.equal(received?.costBasis, "usage-only");
+  assert.equal(received?.estimatedCostUsd, null);
+  assert.deepEqual(f.calls, ["draft", "quote", "authorized", "execute"]);
+});

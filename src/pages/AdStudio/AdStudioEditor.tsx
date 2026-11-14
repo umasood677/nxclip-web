@@ -6,7 +6,7 @@ import type {StudioCanvasHeaderContext} from "../../components/layouts/Dashboard
 import {TemplateCanvasControls} from "./components/TemplateCanvasControls";
 import {defaultTemplateSelection,safeCenter} from "./lib/templateCanvasModel";
 import { editorReturnPath, isTemplateDraftCreative, type WorkspaceCreative } from "./lib/projectWorkspace";
-import { useCreativeAssetUrls } from './canvas/useCreativeAssetUrls';
+import { useCreativeAssetState } from './canvas/useCreativeAssetUrls';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { Badge } from "../../components/ui/badge";
 import { SEO } from "../../components/SEO";
 import { adStudioApi, brandApi, brandTemplateApi } from "../../services/apiClient";
 import type { BrandKitSummary } from "../BrandKits/lib/brandKitTypes";
@@ -62,6 +61,7 @@ import { AD_FORMATS, type AdSceneGraph, type AdSceneLayer } from "./types";
 import "../ImageStudio/components/image-edit-fonts.css";
 import "./styles/ad-studio-w0a.css";
 import "./styles/templateCanvas.css";
+import "../BrandKits/overview/brandOverview.css";
 import "./styles/campaignCanvas.css";
 import { W87_SYNTHETIC_EDITOR_ENABLED_DEFAULT } from "./composition/w87-synthetic-editor";
 import { W87SyntheticCompositionEditor } from "./composition/W87SyntheticCompositionEditor";
@@ -282,7 +282,9 @@ export default function AdStudioEditor() {
   );
 
   const brandAssetUrls = useAuthenticatedBrandAssetUrls(brandKit);
-  const generatedUrls = useCreativeAssetUrls(creativeId && graph?.layers.some(l=>l.id.startsWith('ai-background-'))?[creativeId]:[]);
+  const { urls: generatedUrls, loading: generatedArtworkLoading } = useCreativeAssetState(
+    creativeId && graph?.layers.some(l => l.visible !== false && l.id.startsWith("ai-background-")) ? [creativeId] : [],
+  );
   const assetUrls = useMemo(()=>({...brandAssetUrls,...generatedUrls}),[brandAssetUrls,generatedUrls]);
   // Do not pass auth-gated gateway media via storageKey map into <img src>.
   // assetId → blob hydration in useAuthenticatedBrandAssetUrls is the preview path.
@@ -482,11 +484,6 @@ export default function AdStudioEditor() {
     return true;
   }, [saveState]);
 
-  const goProjects = () => {
-    if (!confirmLeave()) return;
-    navigate(templateDocument ? retainTemplateTarget(editorReturnPath(templateDocument),canvasSearch) : projectId ? "/create/ad/projects/" + encodeURIComponent(projectId) : "/create/ad");
-  };
-
   const animateThisAd = async () => {
     if (!creativeId) return;
     if (!isAdStudioAnimatedEnabled()) {
@@ -622,7 +619,6 @@ export default function AdStudioEditor() {
     return <AdStudioLoader label="Opening Editor Canvas…" />;
   }
 
-  const brandName = brandSnapshot?.name;
   const sideTabs: { id: SideTab; label: string; icon: React.ReactNode }[] = [
     { id: "typography", label: "Properties", icon: <Type size={14} aria-hidden /> },
     { id: "brand", label: "Brand", icon: <Palette size={14} aria-hidden /> },
@@ -711,6 +707,8 @@ export default function AdStudioEditor() {
         creativeId={creativeId}
         projectId={projectId}
         currentGraph={graph}
+        assetUrls={assetUrls}
+        beforeNavigate={confirmLeave}
       />
     ) : (
       <p className="text-xs text-muted-foreground">Save the creative to manage variations.</p>
@@ -824,36 +822,18 @@ export default function AdStudioEditor() {
         }}
       />}
 
-      <div className="w0a-editor-toolbar shrink-0">
-        <div className="w0a-editor-toolbar__meta min-w-0">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2"
-            onClick={goProjects}
-            aria-label={templateDocument ? "Back to template review" : "Back to Ad Studio projects"}
-          >
-            <ArrowLeft size={14} className="mr-1" aria-hidden /> {templateDocument ? "Review template" : projectId ? "Back to Project" : "Projects"}
-          </Button>
-
-          {!templateDocument && <h2 className="text-sm font-semibold truncate max-w-[12rem] sm:max-w-[18rem]">{name}</h2>}
-          {!templateDocument && (brandName ? (
-            <Badge variant="secondary" className="max-w-[10rem] truncate" title={brandName}>
-              {brandName}
-            </Badge>
-          ) : (
-            <Badge variant="outline">Neutral</Badge>
-          ))}
-          <Badge variant="outline" role="status" data-saved={saveState === "saved"}>
-            {saveState === "saved"
-              ? "Saved"
-              : saveState === "saving"
-                ? "Saving…"
-                : "Unsaved"}
-          </Badge>
-          <span className="text-xs text-muted-foreground">v{currentVersion}</span>
-        </div>
+      <nav aria-label="Breadcrumb" className="bo-breadcrumb canvas-breadcrumb shrink-0">
+        <Link
+          to={templateDocument ? retainTemplateTarget(editorReturnPath(templateDocument), canvasSearch) : projectId ? "/create/ad/projects/" + encodeURIComponent(projectId) : "/create/ad"}
+          onClick={(event) => { if (!confirmLeave()) event.preventDefault(); }}
+        >
+          <ArrowLeft size={14} aria-hidden /> {templateDocument ? "Template review" : projectId ? "Project workspace" : "Ad Studio"}
+        </Link>
+        <span aria-hidden>/</span>
+        <span aria-current="page" className="min-w-0 truncate" title={name}>{name}</span>
+        <span className="shrink-0 text-muted-foreground">v{currentVersion}</span>
+      </nav>
+      <div className="w0a-editor-toolbar canvas-toolbar shrink-0">
         <div className="w0a-editor-toolbar__actions">
           <div className="canvas-tool-group" role="group" aria-label="Edit composition">
           <Button
@@ -992,9 +972,10 @@ export default function AdStudioEditor() {
             size="sm"
             onClick={() => void persist()}
             disabled={saving || saveState === "saved"}
-            data-canvas-save
+            data-canvas-save={saveState}
           >
-            <Save size={14} className="mr-1" /> {templateDocument ? "Save draft" : "Save"}
+            <Save size={14} className="mr-1" aria-hidden />
+            {saveState === "saved" ? "Saved" : saving ? "Saving…" : "Save"}
           </Button>
           </div>
         </div>
@@ -1025,6 +1006,7 @@ export default function AdStudioEditor() {
           className="w0a-stage-wrap h-full min-h-0"
         >
           <AdCanvas
+            artworkLoading={generatedArtworkLoading}
             graph={graph}
             selectedLayerId={previewMode ? null : selectedLayerId}
             onSelectLayer={previewMode ? () => undefined : setSelectedLayerId}
@@ -1119,6 +1101,7 @@ export default function AdStudioEditor() {
             className="w0a-stage-wrap flex-1 min-h-[240px]"
           >
             <AdCanvas
+              artworkLoading={generatedArtworkLoading}
               graph={graph}
               selectedLayerId={selectedLayerId}
               onSelectLayer={setSelectedLayerId}

@@ -406,34 +406,34 @@
   place-items: center;
   width: 42px;
   height: 42px;
-  border: 1px solid rgba(139, 92, 246, .55);
+  border: 1px solid rgba(196, 165, 116, .5);
   border-radius: 14px;
-  color: #d9c6ff;
-  background: linear-gradient(135deg, rgba(124, 58, 237, .38), rgba(89, 45, 183, .22));
+  color: #ead7b0;
+  background: linear-gradient(135deg, rgba(196, 165, 116, .28), rgba(92, 55, 32, .34));
 }
 .ad-campaign-start__guide {
   position: relative;
   overflow: hidden;
-  border-color: rgba(139, 92, 246, .36) !important;
+  border-color: rgba(196, 165, 116, .32) !important;
   background:
-    radial-gradient(460px 280px at 100% 0%, rgba(112, 47, 224, .46), transparent 64%),
-    radial-gradient(340px 220px at 0% 100%, rgba(70, 38, 130, .28), transparent 68%),
-    #151428 !important;
+    radial-gradient(460px 280px at 100% 0%, rgba(104, 38, 26, .24), transparent 64%),
+    radial-gradient(340px 220px at 0% 100%, rgba(90, 57, 29, .2), transparent 68%),
+    #17151a !important;
 }
 .ad-campaign-start__guide-art {
   min-height: 136px;
   display: grid;
   place-items: center;
-  color: #c8a8ff;
+  color: #e0c28e;
   position: relative;
   margin: -4px 0 4px;
 }
-.ad-campaign-start__guide-art svg { filter: drop-shadow(0 14px 20px rgba(30, 13, 77, .45)); transform: rotate(-12deg); }
+.ad-campaign-start__guide-art svg { filter: drop-shadow(0 14px 20px rgba(54, 27, 17, .45)); transform: rotate(-12deg); }
 .ad-campaign-start__guide-art span {
   position: absolute;
   width: 28px;
   height: 28px;
-  border: 1px solid rgba(211, 188, 255, .5);
+  border: 1px solid rgba(220, 190, 139, .44);
   border-radius: 8px;
   transform: rotate(18deg);
 }
@@ -442,7 +442,7 @@
 .ad-campaign-start__guide-art span:nth-of-type(3) { bottom: 20px; right: 36%; width: 18px; height: 18px; }
 .ad-campaign-start__guide-heading { margin-bottom: 8px; }
 .ad-campaign-start__guide-heading .ad-campaign-start__icon { width: 36px; height: 36px; border-radius: 12px; }
-.ad-campaign-start__guide > p { margin: 0; color: #d0cae1; max-width: 44ch; line-height: 1.55; }
+.ad-campaign-start__guide > p { margin: 0; color: var(--w0a-muted); max-width: 44ch; line-height: 1.55; }
 .ad-campaign-start__guide ol {
   list-style: none;
   padding: 16px 0 0;
@@ -451,8 +451,8 @@
   display: grid;
   gap: 8px;
 }
-.ad-campaign-start__guide li { display: flex; align-items: center; gap: 9px; color: #f3effb; font-size: .875rem; }
-.ad-campaign-start__guide li svg { flex: 0 0 auto; color: #b999ff; }
+.ad-campaign-start__guide li { display: flex; align-items: center; gap: 9px; color: var(--w0a-text); font-size: .875rem; }
+.ad-campaign-start__guide li svg { flex: 0 0 auto; color: #d8bd8c; }
 .ad-project-create-form--idea-first textarea { min-height: 116px; resize: vertical; }
 .ad-project-create-form--idea-first .ad-project-create-form__hint { margin: -2px 0 0; }
 .ad-project-create-form__actions { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--w0a-border); }

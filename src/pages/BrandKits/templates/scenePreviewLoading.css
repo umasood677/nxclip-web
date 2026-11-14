@@ -1,0 +1,29 @@
+.bt-scene-preview .scene-preview-loading {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at center, #c4a57412, transparent 70%), #101116;
+  color: #c4a574;
+  text-align: center;
+  font-size: 12px;
+}
+.scene-preview-loading__design {
+  display: grid;
+  gap: 12px;
+  width: 104px;
+  padding: 16px;
+  border: 1px solid #c4a57440;
+  border-radius: 10px;
+  background: #ffffff03;
+}
+.scene-preview-loading__design .scene-preview-loading__line { height: 5px; background: #c4a57430; }
+.scene-preview-loading__design .scene-preview-loading__subject { height: 72px; background: #c4a57420; border-radius: 20px 20px 6px 6px; }
+.scene-preview-loading > span { color: #aaa6a0; }
+@media (prefers-reduced-motion: reduce) {
+  .scene-preview-loading__design * { animation: none !important; }
+}

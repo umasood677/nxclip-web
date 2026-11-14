@@ -5,6 +5,8 @@ import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import { adStudioApi } from "../../../services/apiClient";
 import { SceneThumb } from "./SceneThumb";
+import { useCreativeAssetUrls } from "../canvas/useCreativeAssetUrls";
+import type { BrandAssetUrlMap } from "../canvas/brandAssetUrls";
 import type { AdSceneGraph } from "../types";
 import { AD_FORMATS } from "../types";
 
@@ -30,6 +32,8 @@ interface VariationsPanelProps {
   projectId?: string | null;
   currentGraph: AdSceneGraph;
   onOpenVariation?: (id: string) => void;
+  assetUrls?: BrandAssetUrlMap;
+  beforeNavigate?: () => boolean;
 }
 
 function formatLabel(graph?: AdSceneGraph | null): string {
@@ -63,15 +67,21 @@ export function VariationsPanel({
   projectId,
   currentGraph,
   onOpenVariation,
+  assetUrls,
+  beforeNavigate,
 }: VariationsPanelProps) {
   const navigate = useNavigate();
   const [loadingList, setLoadingList] = useState(false);
   const [items, setItems] = useState<VariationItem[]>([]);
   const [compareId, setCompareId] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const previewUrls = useCreativeAssetUrls([creativeId, ...items.map(({ id }) => id)]);
+  const mediaUrls = { ...assetUrls, ...previewUrls };
 
   const loadSiblings = useCallback(async () => {
     if (!projectId) return;
     setLoadingList(true);
+    setLoadFailed(false);
     try {
       const listed = await adStudioApi.listCreatives(projectId);
       const children = (listed.items ?? []).filter(
@@ -89,7 +99,7 @@ export function VariationsPanel({
         })),
       );
     } catch {
-      /* keep session items */
+      setLoadFailed(true);
     } finally {
       setLoadingList(false);
     }
@@ -100,10 +110,11 @@ export function VariationsPanel({
   }, [loadSiblings]);
 
   const startAiVariation = () => {
-    if (projectId) navigate(campaignAiVariationPath(projectId, creativeId));
+    if (projectId && (beforeNavigate?.() ?? true)) navigate(campaignAiVariationPath(projectId, creativeId));
   };
 
   const open = (id: string) => {
+    if (!(beforeNavigate?.() ?? true)) return;
     if (onOpenVariation) onOpenVariation(id);
     else navigate(`/create/ad/${id}`);
   };
@@ -141,7 +152,14 @@ export function VariationsPanel({
         </p>
       ) : null}
 
-      {!items.length ? (
+      {loadFailed && (
+        <div role="alert" className="flex items-center gap-2 text-xs">
+          Could not load variations.
+          <Button type="button" size="sm" variant="outline" onClick={() => void loadSiblings()}>Retry</Button>
+        </div>
+      )}
+
+      {!loadingList && !loadFailed && !items.length ? (
         <p className="text-xs text-muted-foreground">
           {projectId
             ? "No AI variations yet. Create one from the campaign review, then compare or edit it here."
@@ -168,6 +186,7 @@ export function VariationsPanel({
               >
                 <SceneThumb
                   graph={v.sceneGraph}
+                  assetUrls={mediaUrls}
                   maxWidth={110}
                   maxHeight={130}
                   className="mx-auto"
@@ -215,12 +234,14 @@ export function VariationsPanel({
           <div className="flex gap-3 justify-center flex-wrap">
             <SceneThumb
               graph={currentGraph}
+              assetUrls={mediaUrls}
               maxWidth={100}
               maxHeight={120}
               label="Original"
             />
             <SceneThumb
               graph={compareItem.sceneGraph}
+              assetUrls={mediaUrls}
               maxWidth={100}
               maxHeight={120}
               label={compareItem.variationType ?? "Variation"}

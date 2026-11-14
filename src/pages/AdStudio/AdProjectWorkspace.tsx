@@ -46,7 +46,6 @@ import {CampaignIdeaSummary} from './components/CampaignIdeaSummary';
 import {OriginalCampaignAd} from './components/OriginalCampaignAd';
 import {CampaignAdReview,type CampaignReviewTab} from './components/CampaignAdReview';
 import { GuidedBriefComposer } from "./components/GuidedBriefComposer";
-import { ExportPanel } from "./components/ExportPanel";
 import "./styles/ad-studio-w0a.css";
 import "./styles/project-workspace.css";
 
@@ -154,25 +153,45 @@ export default function AdProjectWorkspace() {
   if (exportCreative)
     return (
       <main className="ad-project-workspace ad-studio-w0a ad-project-review-screen space-y-4">
-        <nav aria-label="Campaign ad navigation">
-          <Button variant="ghost" onClick={closeCampaignReview}>
-            <ArrowLeft size={16} className="mr-2" />
-            Back to {project.name}
-          </Button>
+        <nav className="bo-breadcrumb flex-wrap" aria-label="Breadcrumb">
+          <Link to="/create/ad"><ArrowLeft size={14} aria-hidden /> Ad Studio</Link>
+          <span aria-hidden>/</span>
+          <button type="button" onClick={closeCampaignReview}>{project.name}</button>
+          <span aria-hidden>/</span>
+          <span aria-current="page">{exportCreative.name}</span>
         </nav>
-        <header className="ad-project-workspace__header">
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">Ad Studio · Campaign creative</p>
-            <h1 className="text-2xl font-semibold mt-2">Review campaign ad</h1>
-            <p className="text-sm text-muted-foreground mt-1">{project.name} · Customize, create a variation, adapt formats, then export.</p>
-          </div>
-        </header>
+        <nav aria-label="Campaign workflow">
+          <ol className="campaign-workflow-steps">
+            {([
+              ["strategy", "Campaign Brief"],
+              ["directions", "Creative Directions"],
+              ["production-review", "Production Review"],
+              ["compare", "Compare & Approve"],
+            ] as const).map(([view, label], index) => {
+              const target = new URLSearchParams(query);
+              target.delete("review");
+              target.delete("reviewTab");
+              target.set("view", view);
+              return <li key={view}>
+                <Link to={`?${target}`} onClick={() => setExportCreative(null)} aria-current={view === "compare" ? "step" : undefined}>
+                  <span className="campaign-workflow-steps__number" aria-hidden="true">{index + 1}</span>
+                  <strong>{label}</strong>
+                </Link>
+              </li>;
+            })}
+          </ol>
+        </nav>
         <CampaignAdReview
           project={project}
           brand={brand}
           creative={exportCreative}
           assetUrls={assetUrls}
           initialTab={reviewTab}
+          onTabChange={(tab) => openCampaignReview(exportCreative, tab)}
+          onDelete={async () => {
+            await discardCreative(exportCreative);
+            closeCampaignReview();
+          }}
           onEdit={(id)=>{if(confirmLeave())navigate(creativeEditorPath(id));}}
           onSaved={(saved)=>{
             setCreatives(current=>current.some(creative=>creative.id===saved.id)?current.map(creative=>creative.id===saved.id?saved:creative):[saved,...current]);
