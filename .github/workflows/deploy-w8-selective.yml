@@ -1,0 +1,102 @@
+name: Frontend GCP Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Validate checkouts and cloud access, or deploy nxclip-web
+        required: true
+        type: choice
+        default: validate
+        options:
+          - validate
+          - deploy
+      release_id:
+        description: Unique release ID beginning with w8-
+        required: true
+        type: string
+
+# Keep frontend deployments serialized within this repository.
+concurrency:
+  group: gcp-deploy-web-development
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  release:
+    # GitHub Free: manual master dispatch by owner or explicitly listed maintainers.
+    # These workflow guards assume trusted repository writers; they are not environment reviews.
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' &&
+      github.workflow_ref == format('{0}/.github/workflows/deploy-w8-selective.yml@refs/heads/master', github.repository) &&
+      (github.actor == github.repository_owner || contains(fromJSON(vars.W8_RELEASE_MAINTAINERS || '[]'), github.actor)) &&
+      (github.triggering_actor == github.repository_owner || contains(fromJSON(vars.W8_RELEASE_MAINTAINERS || '[]'), github.triggering_actor))
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      W8_RELEASE_MAINTAINERS: ${{ vars.W8_RELEASE_MAINTAINERS || '[]' }}
+      OPERATION: build_publish
+      RELEASE_ID: ${{ inputs.release_id }}
+      SOURCE_SHA: 60874a7a29ccae75d715f5c9b88a07dbd675b09f
+      RELEASE_POLICY: ${{ github.workspace }}/workflow/tools/release/w8-release-policy.json
+      RELEASE_SERVICES: nxclip-web
+      AUTOMATION_SHA: 77bb0ffda28675583ff1da415775e4498b47f852
+      AUTOMATION_ROOT: ${{ github.workspace }}/automation
+      SOURCE_ROOT: ${{ github.workspace }}/application
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Initialize private receipt directory location
+        run: echo "RECEIPT_DIR=$RUNNER_TEMP/w8-receipts" >> "$GITHUB_ENV"
+      - name: Checkout frontend release policy at workflow revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: workflow
+          persist-credentials: false
+      - name: Checkout pinned shared release controller
+        uses: actions/checkout@v4
+        with:
+          repository: umasood677/nxclip
+          ref: ${{ env.AUTOMATION_SHA }}
+          path: automation
+          token: ${{ secrets.W8_RELEASE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Checkout exact approved application source
+        uses: actions/checkout@v4
+        with:
+          ref: 60874a7a29ccae75d715f5c9b88a07dbd675b09f
+          path: application
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Test shared release guards (mocked; no cloud mutations)
+        run: node --test automation/tools/release/w8-cloud-run.spec.mjs automation/tools/release/w8-cloud-run.recovery.spec.mjs
+      - name: Verify approved frontend source builds
+        if: inputs.mode == 'deploy'
+        working-directory: application
+        run: npm ci && npm run build
+      - name: Authenticate using existing repository deployment credential
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Verify hosted checkouts and read-only Cloud Run access
+        if: inputs.mode == 'validate'
+        run: node automation/tools/release/w8-cloud-run.mjs --selective-check
+      - name: Configure runner Docker authentication (no repository creation)
+        if: inputs.mode == 'deploy'
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+      - name: Deploy and verify nxclip-web
+        if: inputs.mode == 'deploy'
+        run: node automation/tools/release/w8-cloud-run.mjs --selective
+      - name: Retain recorded traffic for recovery
+        if: always() && inputs.mode == 'deploy'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-release-baseline
+          path: ${{ env.RECEIPT_DIR }}/coordinated-baseline.json
+          if-no-files-found: ignore

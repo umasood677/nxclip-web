@@ -276,15 +276,19 @@ test('smoke requests health only without retry or generation', async () => {
   assert.equal(requests.length, 1); assert.equal(new URL(requests[0].url).pathname, '/health');
   await assert.rejects(healthProbe('https://tag---service-uc.a.run.app', 'https://service-uc.a.run.app', async () => ({ status: 503 }), 'synthetic-test-token'));
 });
-test('workflow remains manual, scoped, independently approved and artifact driven', () => {
-  const yaml = readFileSync(new URL('../../.github/retired-workflows/deploy-w8-selective.yml.txt', import.meta.url), 'utf8');
+test('frontend deployment is manual and runs the pinned shared controller for web only', () => {
+  const yaml = readFileSync(new URL('../../.github/workflows/deploy-w8-selective.yml', import.meta.url), 'utf8');
   assert(yaml.includes('workflow_dispatch:')); assert(!/^\s+(push|pull_request|workflow_run):/m.test(yaml));
-  for (const op of ['build_publish', 'stage', 'promote', 'rollback']) assert(yaml.includes(`- ${op}`));
+  assert(/^  push:/m.test(readFileSync(new URL('../../.github/workflows/ci.yml', import.meta.url), 'utf8')));
+  assert(yaml.includes('--selective') && yaml.includes('--selective-check'));
+  assert(yaml.includes('RELEASE_SERVICES: nxclip-web'));
+  assert(!/ai-service|content-service/.test(yaml));
   assert(!yaml.includes('environment: development')); assert(yaml.includes("github.ref == 'refs/heads/master'")); assert(yaml.includes('github.triggering_actor')); assert(yaml.includes('cancel-in-progress: false'));
-  assert(yaml.includes('failed_revision_recovery:'));
-  assert(yaml.includes('FAILED_REVISION_RECOVERY: ${{ inputs.failed_revision_recovery }}'));
-  assert(yaml.includes('path: application')); assert(yaml.includes('path: automation'));
-  assert(yaml.includes('if: always()')); assert(!yaml.includes('docker push') && !yaml.includes('gcloud run deploy'));
+  assert(yaml.includes(`SOURCE_SHA: ${policy.sourceSha}`));
+  assert(/AUTOMATION_SHA: [a-f0-9]{40}/.test(yaml));
+  const checkout = yaml.split(/\n      - name: /).find(step => step.includes('W8_RELEASE_READ_TOKEN'));
+  assert(checkout.includes('repository: umasood677/nxclip') && checkout.includes('persist-credentials: false'));
+  assert(!yaml.includes('docker push') && !yaml.includes('gcloud run deploy'));
 });
 
 test('preservation profile accepts only an immutable, fully-serving Gateway and rejects drift', () => {
