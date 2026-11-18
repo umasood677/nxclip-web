@@ -40,10 +40,10 @@ jobs:
       W8_RELEASE_MAINTAINERS: ${{ vars.W8_RELEASE_MAINTAINERS || '[]' }}
       OPERATION: build_publish
       RELEASE_ID: ${{ inputs.release_id }}
-      SOURCE_SHA: 60874a7a29ccae75d715f5c9b88a07dbd675b09f
+      SOURCE_SHA: e7549504caf56c9fbabc96796ad263886c185c6e
       RELEASE_POLICY: ${{ github.workspace }}/workflow/tools/release/w8-release-policy.json
       RELEASE_SERVICES: nxclip-web
-      AUTOMATION_SHA: fc5dd46c3fa8e7246e63c5493debc90f010fc3c1
+      AUTOMATION_SHA: 598ab9519c5b03be32cedf2ae9433d196de19cb8
       AUTOMATION_ROOT: ${{ github.workspace }}/automation
       SOURCE_ROOT: ${{ github.workspace }}/application
       GH_TOKEN: ${{ github.token }}
@@ -67,7 +67,7 @@ jobs:
       - name: Checkout exact approved application source
         uses: actions/checkout@v4
         with:
-          ref: 60874a7a29ccae75d715f5c9b88a07dbd675b09f
+          ref: e7549504caf56c9fbabc96796ad263886c185c6e
           path: application
           persist-credentials: false
       - uses: actions/setup-node@v4

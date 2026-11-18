@@ -1,15 +1,17 @@
 {
   "schemaVersion": 1,
   "repository": "umasood677/nxclip-web",
-  "sourceSha": "60874a7a29ccae75d715f5c9b88a07dbd675b09f",
+  "sourceSha": "e7549504caf56c9fbabc96796ad263886c185c6e",
   "peerRepository": "umasood677/nxclip",
-  "peerSourceSha": "03c3c908e7b76a18e31c4ea1bb08480b2b62e73f",
+  "peerSourceSha": "45f811fb0fd1ede99f6ee06370450624a0a3290a",
   "services": [
     "nxclip-web"
   ],
   "peerServices": [
     "ai-service",
-    "content-service"
+    "content-service",
+    "media-worker",
+    "api-gateway"
   ],
   "project": "nxclip-500511",
   "region": "us-central1",
