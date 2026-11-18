@@ -69,6 +69,7 @@ import { IntelligentAdStudioHost } from "./intelligent/IntelligentAdStudioHost";
 import { getPersistedUser } from "../../services/auth/authService";
 import { AdStudioTopNav } from "./components/AdStudioTopNav";
 import { AdStudioLoader } from "./components/AdStudioLoader";
+import { useBrandKitConfirmation } from "../BrandKits/components/useBrandKitConfirmation";
 
 type SideTab = "typography" | "brand" | "variations" | "export" | "history";
 
@@ -85,6 +86,7 @@ function isConflictError(e: unknown): boolean {
 }
 
 export default function AdStudioEditor() {
+  const { confirm, confirmation } = useBrandKitConfirmation();
   const {pathname,search:canvasSearch}=useLocation();
   const headerContext=useOutletContext<StudioCanvasHeaderContext|undefined>();
   const setCanvasHeader=headerContext?.setCanvasHeader;
@@ -475,14 +477,16 @@ export default function AdStudioEditor() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  const confirmLeave = useCallback(() => {
+  const confirmLeave = useCallback(async () => {
     if (saveState === "dirty" || saveState === "saving") {
-      return window.confirm(
-        "Leave without saving a new version?",
-      );
+      return confirm({
+        title: "Leave Canvas?",
+        description: "Your latest edits have not finished saving.",
+        confirmLabel: "Leave Canvas",
+      });
     }
     return true;
-  }, [saveState]);
+  }, [saveState, confirm]);
 
   const animateThisAd = async () => {
     if (!creativeId) return;
@@ -491,9 +495,11 @@ export default function AdStudioEditor() {
       return;
     }
     if (saveState === "dirty" || saveState === "saving") {
-      const ok = window.confirm(
-        "Save the static creative before animating? Unsaved edits will not be in the animated copy unless you save first.\n\nOK = save then animate · Cancel = abort",
-      );
+      const ok = await confirm({
+        title: "Save before animating?",
+        description: "Save your latest Canvas edits to use them in the animated creative.",
+        confirmLabel: "Save and continue",
+      });
       if (!ok) return;
       if (!(await persist())) return;
     }
@@ -809,6 +815,7 @@ export default function AdStudioEditor() {
       id="ad-studio-canvas"
     >
       <SEO title={`${name} | Ad Studio · ${templateDocument ? "Template Canvas" : "Editor Canvas"}`} />
+      {confirmation}
       {!templateDocument && !projectId && <AdStudioTopNav
         hideBrand
         active="canvas"
@@ -825,7 +832,12 @@ export default function AdStudioEditor() {
       <nav aria-label="Breadcrumb" className="bo-breadcrumb canvas-breadcrumb shrink-0">
         <Link
           to={templateDocument ? retainTemplateTarget(editorReturnPath(templateDocument), canvasSearch) : projectId ? "/create/ad/projects/" + encodeURIComponent(projectId) : "/create/ad"}
-          onClick={(event) => { if (!confirmLeave()) event.preventDefault(); }}
+          onClick={(event) => {
+            if (saveState === "saved" || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            const destination = event.currentTarget.getAttribute("href");
+            void confirmLeave().then(allowed => { if (allowed && destination) navigate(destination); });
+          }}
         >
           <ArrowLeft size={14} aria-hidden /> {templateDocument ? "Template review" : projectId ? "Project workspace" : "Ad Studio"}
         </Link>
@@ -1066,7 +1078,7 @@ export default function AdStudioEditor() {
       {/* Tablet / mobile workspace (<1024px) */}
       <div className="lg:hidden flex flex-col flex-1 min-h-0 gap-3 overflow-hidden">
         <div
-          className="flex gap-1 overflow-x-auto pb-1 -mx-1 px-1 snap-x shrink-0"
+          className="canvas-mobile-tabs flex gap-1 overflow-x-auto pb-1 -mx-1 px-1 snap-x shrink-0"
           role="tablist"
           aria-label="Mobile editor sections"
         >
@@ -1086,7 +1098,7 @@ export default function AdStudioEditor() {
               size="sm"
               role="tab"
               aria-selected={mobileTab === t.id}
-              variant={mobileTab === t.id ? "default" : "outline"}
+              variant="outline"
               className="h-8 shrink-0 snap-start focus-visible:ring-2 focus-visible:ring-primary"
               onClick={() => setMobileTab(t.id)}
             >

@@ -36,6 +36,7 @@ test("multiple uploaded logo candidates remain accessible with upload and librar
   assert.match(html, /Content Library/);
   assert.match(html, /Additional assets/);
   assert.match(html, /Existing reference/);
-  assert.match(html, /Logos &amp; Assets \(3\)/);
+  assert.match(html, /Add additional image/);
+  assert.match(html, /Remove Existing reference/);
   assert.doesNotMatch(html, /Selecting a candidate changes/);
 });

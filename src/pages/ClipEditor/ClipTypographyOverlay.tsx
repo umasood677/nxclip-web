@@ -1,7 +1,10 @@
-import { useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { CanonicalCaptionPreview } from './CanonicalCaptionPreview';
 import { editorTypography } from '../../lib/clipTypography/editorTypography';
+import type { CanonicalTypographyLayout } from '../../lib/clipTypography/layoutContract';
 import { cn } from '../../lib/utils';
+// Note: editorTypography must be memoized on `raw` — validateTypographyLayout returns a
+// new object every call, which would re-paint the canvas on every video timeupdate.
 
 type PositionPatch = { positionX: number; verticalAnchor: number };
 
@@ -17,6 +20,55 @@ export type TypographyHitLayer = {
   lineCount?: number;
   text?: string;
 };
+
+type LiveDrag = PositionPatch & { layerId: string };
+
+/** Shift a plan layer's glyph boxes to a new normalized anchor (sync, no remasure). */
+function planWithLivePosition(
+  plan: CanonicalTypographyLayout,
+  live: LiveDrag,
+): CanonicalTypographyLayout {
+  const layer = plan.layers.find((pl) => pl.id === live.layerId);
+  if (!layer?.lines?.length) return plan;
+
+  const inset = 0.08;
+  const contentTop = plan.height * inset;
+  const contentBottom = plan.height * (1 - inset);
+  const contentHeight = Math.max(1, contentBottom - contentTop);
+  const xs = layer.lines.map((l) => l.x);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs.map((x, i) => x + layer.lines[i]!.width));
+  const oldAnchorX = Math.min(1, Math.max(0, (minX + maxX) / 2 / plan.width));
+  const oldAnchorY = Math.min(
+    1,
+    Math.max(0, (layer.lines[0]!.baseline - contentTop) / contentHeight),
+  );
+  const dx = (live.positionX - oldAnchorX) * plan.width;
+  const dy = (live.verticalAnchor - oldAnchorY) * contentHeight;
+  if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) return plan;
+
+  return {
+    ...plan,
+    layers: plan.layers.map((pl) =>
+      pl.id !== live.layerId
+        ? pl
+        : {
+            ...pl,
+            lines: pl.lines.map((ln) => {
+              const x = Math.min(plan.width, Math.max(0, ln.x + dx));
+              const width = Math.min(Math.max(0, ln.width), Math.max(0, plan.width - x));
+              return {
+                ...ln,
+                // Clamp so live drag never fails layout validation (that blanked the canvas).
+                x,
+                baseline: Math.min(plan.height, Math.max(0, ln.baseline + dy)),
+                width,
+              };
+            }),
+          },
+    ),
+  };
+}
 
 /** Both editor stages share the same activation/locked/final-render gates. */
 export function ClipTypographyOverlay({
@@ -43,13 +95,22 @@ export function ClipTypographyOverlay({
   layers?: TypographyHitLayer[];
   activeLayerId?: string;
   onSelectLayer?: (layerId: string) => void;
-  /** Drag updates for a specific layer (also selects it). */
+  /** Drag commit for a specific layer (fired on pointer up — not every move). */
   onPositionChange?: (layerId: string, patch: PositionPatch) => void;
 }) {
-  const state = editorTypography(raw, enabled);
+  // Stabilize plan identity across parent re-renders (playhead / volume / etc.).
+  const state = useMemo(() => editorTypography(raw, enabled), [raw, enabled]);
   const draggingRef = useRef(false);
   const dragLayerIdRef = useRef<string | null>(null);
+  const liveDragRef = useRef<LiveDrag | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const [liveDrag, setLiveDrag] = useState<LiveDrag | null>(null);
+
+  const displayPlan = useMemo(() => {
+    if (!state.plan) return null;
+    if (!liveDrag) return state.plan;
+    return planWithLivePosition(state.plan, liveDrag);
+  }, [state.plan, liveDrag]);
 
   if (!state.active || locked || finalRender) return null;
   if (state.invalid) {
@@ -59,21 +120,22 @@ export function ClipTypographyOverlay({
       </div>
     );
   }
-  if (!state.plan) return null;
+  if (!state.plan || !displayPlan) return null;
 
-  const plan = state.plan;
+  const plan = displayPlan;
   const planW = Math.max(1, plan.width);
   const planH = Math.max(1, plan.height);
 
-  const moveToPointer = (layerId: string, clientX: number, clientY: number) => {
+  const pointerToPatch = (clientX: number, clientY: number): PositionPatch | null => {
     const stage = stageRef.current;
-    if (!stage || !onPositionChange) return;
+    if (!stage) return null;
     const rect = stage.getBoundingClientRect();
-    if (rect.width < 8 || rect.height < 8) return;
-    const x = Math.min(0.94, Math.max(0.06, (clientX - rect.left) / rect.width));
-    // Pointer maps to baseline Y (glyphs sit above the baseline).
-    const y = Math.min(0.94, Math.max(0.06, (clientY - rect.top) / rect.height));
-    onPositionChange(layerId, { positionX: x, verticalAnchor: y });
+    if (rect.width < 8 || rect.height < 8) return null;
+    return {
+      positionX: Math.min(0.94, Math.max(0.06, (clientX - rect.left) / rect.width)),
+      // Pointer maps to baseline Y (glyphs sit above the baseline).
+      verticalAnchor: Math.min(0.94, Math.max(0.06, (clientY - rect.top) / rect.height)),
+    };
   };
 
   const visibleLayers = layers.filter((l) => timeMs >= l.startMs && timeMs < l.endMs);
@@ -86,8 +148,16 @@ export function ClipTypographyOverlay({
             const active = layer.id === activeLayerId;
             const planLayer = plan.layers.find((pl) => pl.id === layer.id);
             const fontSize = Math.max(16, planLayer?.fontSize ?? layer.fontSize ?? 56);
-            const padX = Math.max(6, fontSize * 0.18 + (planLayer?.outline ?? 0) + (planLayer?.shadow ?? 0) * 0.35);
+            const padX = Math.max(
+              6,
+              fontSize * 0.18 + (planLayer?.outline ?? 0) + (planLayer?.shadow ?? 0) * 0.35,
+            );
             const padY = Math.max(4, fontSize * 0.22 + (planLayer?.outline ?? 0));
+
+            const live =
+              liveDrag?.layerId === layer.id
+                ? liveDrag
+                : { positionX: layer.positionX, verticalAnchor: layer.verticalAnchor };
 
             let leftPct: number;
             let topPct: number;
@@ -115,8 +185,8 @@ export function ClipTypographyOverlay({
               const lines = Math.max(1, layer.lineCount ?? 1);
               heightPct = Math.min(18, ((fontSize * lines * 1.2) / planH) * 100);
               widthPct = 36;
-              leftPct = layer.positionX * 100 - widthPct / 2;
-              topPct = layer.verticalAnchor * 100 - heightPct;
+              leftPct = live.positionX * 100 - widthPct / 2;
+              topPct = live.verticalAnchor * 100 - heightPct;
             }
 
             return (
@@ -148,23 +218,43 @@ export function ClipTypographyOverlay({
                   draggingRef.current = true;
                   dragLayerIdRef.current = layer.id;
                   e.currentTarget.setPointerCapture(e.pointerId);
-                  moveToPointer(layer.id, e.clientX, e.clientY);
+                  const patch = pointerToPatch(e.clientX, e.clientY);
+                  if (patch) {
+                    const next = { layerId: layer.id, ...patch };
+                    liveDragRef.current = next;
+                    setLiveDrag(next);
+                  }
                 }}
                 onPointerMove={(e) => {
                   if (!draggingRef.current || dragLayerIdRef.current !== layer.id) return;
                   e.preventDefault();
-                  moveToPointer(layer.id, e.clientX, e.clientY);
+                  const patch = pointerToPatch(e.clientX, e.clientY);
+                  if (!patch) return;
+                  const next = { layerId: layer.id, ...patch };
+                  liveDragRef.current = next;
+                  setLiveDrag(next);
                 }}
                 onPointerUp={(e) => {
+                  const committed = liveDragRef.current;
                   draggingRef.current = false;
                   dragLayerIdRef.current = null;
+                  liveDragRef.current = null;
+                  setLiveDrag(null);
                   if (e.currentTarget.hasPointerCapture(e.pointerId)) {
                     e.currentTarget.releasePointerCapture(e.pointerId);
+                  }
+                  if (committed && committed.layerId === layer.id) {
+                    onPositionChange(layer.id, {
+                      positionX: committed.positionX,
+                      verticalAnchor: committed.verticalAnchor,
+                    });
                   }
                 }}
                 onPointerCancel={() => {
                   draggingRef.current = false;
                   dragLayerIdRef.current = null;
+                  liveDragRef.current = null;
+                  setLiveDrag(null);
                 }}
               />
             );

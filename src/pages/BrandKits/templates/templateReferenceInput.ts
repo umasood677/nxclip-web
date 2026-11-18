@@ -2,6 +2,11 @@ import type {WorkspaceCreative} from '../../AdStudio/lib/projectWorkspace';
 import type {BrandKitSummary} from '../lib/brandKitTypes';
 export type TemplateReferenceSelection={assetId:string;purpose:'MODEL_IDENTITY'|'PRODUCT_IDENTITY'|'STYLE_REFERENCE';profileId?:string;expectedSha256?:string};
 export type TemplateReferenceMetadata=Omit<TemplateReferenceSelection,'profileId'|'expectedSha256'>&{sha256:string;provenance:{brandKitId:string;brandVersion:number;profileId?:string}};
+export function hasStaleTemplateReferences(source: WorkspaceCreative, brand: BrandKitSummary) {
+  return brand.version !== undefined && !!source.templateReferenceManifest?.some(
+    reference => reference.provenance.brandVersion !== brand.version,
+  );
+}
 export function templateReferenceInput(source:WorkspaceCreative,brand:BrandKitSummary|null|undefined,profiles:readonly string[],styleIds:readonly string[],operation:string){
   const retained=source.templateReferenceManifest;
   const references:TemplateReferenceSelection[]=retained?.length?retained.map(r=>({assetId:r.assetId,purpose:r.purpose,profileId:r.provenance.profileId,expectedSha256:r.sha256})):

@@ -20,6 +20,7 @@ interface EmptyStateProps {
   icon?: LucideIcon;
   title: string;
   description: string;
+  action?: React.ReactNode;
   actionLabel?: string;
   onAction?: () => void;
   secondaryActionLabel?: string;
@@ -91,6 +92,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   icon: CustomIcon,
   title,
   description,
+  action,
   actionLabel,
   onAction,
   secondaryActionLabel,
@@ -151,7 +153,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center justify-center gap-3 w-full">
-          {actionLabel && onAction && (
+          {action ?? (actionLabel && onAction && (
             <Button
               variant="brand-gradient"
               size="default"
@@ -161,7 +163,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
               <Plus size={14} className="mr-1.5 transition-transform group-hover/btn:rotate-90 duration-300" />
               {actionLabel}
             </Button>
-          )}
+          ))}
 
           {secondaryActionLabel && onSecondaryAction && (
             <Button

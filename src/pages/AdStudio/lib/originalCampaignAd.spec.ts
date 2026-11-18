@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   generateOriginalCampaignAd,
+  resumeCampaignPreview,
   type CampaignDraftInput,
   type CampaignImageApi,
 } from "./originalCampaignAd";
@@ -80,6 +81,40 @@ function fixture() {
   };
   return { api, calls, bodies };
 }
+
+test("confirmed preview resume recovers saved artwork, waits for processing, or retries on the same draft", async () => {
+  for (const status of ["completed", "processing", "failed", "not-started"]) {
+    const f = fixture();
+    const previewInput = { ...input, conceptPreview: true as const, conceptId: "direction" };
+    const previous = { ...draft, conceptSnapshot: { purpose: "CONCEPT_PREVIEW" },
+      conceptPreview: { conceptId: "direction", requestId: input.requestId, generated: false } };
+    const api = {
+      ...f.api,
+      status: async () => {
+        f.calls.push("status");
+        return { status, hasRetainedImage: status === "completed", requestFound: status !== "not-started" };
+      },
+      recover: async () => { f.calls.push("recover"); return previous; },
+      retryCampaign: async (_id: string, body: { previousRequestId: string; requestId: string; expectedVersion: number }) => {
+        f.calls.push("retry");
+        assert.deepEqual(body, { previousRequestId: input.requestId, requestId: "next", expectedVersion: 1 });
+        return { ...previous, conceptPreview: { ...previous.conceptPreview, requestId: body.requestId } };
+      },
+    };
+    const run = () => resumeCampaignPreview(api, "campaign", previous, previewInput, () => f.calls.push("prepared"), () => "next");
+    if (status === "processing") {
+      await assert.rejects(run(), /still processing/);
+      assert.deepEqual(f.calls, ["status"]);
+    } else {
+      assert.equal((await run())?.id, previous.id);
+      assert.deepEqual(f.calls, status === "completed" ? ["status", "recover"]
+        : status === "failed" ? ["status", "retry", "prepared", "quote", "execute"]
+        : ["status", "prepared", "quote", "execute"]);
+      if (status !== "completed") assert.equal(
+        (f.bodies.at(-1) as { requestId: string }).requestId, status === "failed" ? "next" : input.requestId);
+    }
+  }
+});
 test("explicit generation creates one campaign creative, quotes its own scope and executes one bound request", async () => {
   const f = fixture();
   const saved = await generateOriginalCampaignAd(

@@ -27,6 +27,7 @@ export default function DashboardLayout() {
   const isBrandKit = location.pathname === "/brands" || location.pathname.startsWith("/brands/");
   const isAdStudio = location.pathname.startsWith("/create/ad");
   const campaignQuery = new URLSearchParams(location.search);
+  const adCatalog = location.pathname === "/create/ad" ? campaignQuery.get("catalog") : null;
   const campaignStageTitle = location.pathname.startsWith("/create/ad/projects/")
     ? campaignQuery.has("review") ? "Creative review" : ({
         strategy: "Campaign Brief",
@@ -71,13 +72,23 @@ export default function DashboardLayout() {
     } else if (path.startsWith("/create/image") || path === "/image-studio") {
       setTitle(t("nav.image_studio"));
     } else if (path === "/create/ad/new") {
-      setTitle(t("nav.ad_studio_new_project", {defaultValue: "Ad Studio · New project"}));
+      setTitle(t("nav.ad_studio_create_campaign", {defaultValue: "Ad Studio · Create Campaign"}));
     } else if (path === "/create/ad/uat") {
       setTitle(t("nav.ad_studio_uat", {defaultValue: "Ad Studio · UAT checklist"}));
+    } else if (/^\/brands\/[^/]+\/templates\/[^/]+\/?$/.test(path)) {
+      setTitle(t("nav.brand_kit_review_template", { defaultValue: "Brand Kit - Review Template" }));
+    } else if (/^\/brands\/[^/]+\/templates(?:\/|$)/.test(path)) {
+      setTitle(t("nav.brand_kit_templates", { defaultValue: "Brand Kit - Templates" }));
     } else if (path === "/brands" || path.startsWith("/brands/")) {
       setTitle(t("nav.brand_kit_studio", {defaultValue: "Brand Kit Studio"}));
     } else if (path.startsWith("/create/ad/projects/")) {
       setTitle(t("nav.ad_studio_project", {defaultValue: "Ad Studio · Project workspace"}));
+    } else if (adCatalog === "briefs") {
+      setTitle(t("nav.ad_studio_example_briefs", { defaultValue: "Ad Studio - Example Brief Library" }));
+    } else if (adCatalog === "templates") {
+      setTitle(t("nav.ad_studio_default_templates", { defaultValue: "Ad Studio - Default Templates" }));
+    } else if (adCatalog === "projects") {
+      setTitle(t("nav.ad_studio_all_projects", { defaultValue: "Ad Studio - All Projects" }));
     } else if (path.startsWith("/create/ad")) {
       // AppShell TopBar is the page top heading — append Editor Canvas on creative routes.
       const isEditorCanvas =
@@ -95,7 +106,7 @@ export default function DashboardLayout() {
     } else {
       setTitle(pathMap[path] || t("nav.dashboard"));
     }
-  }, [location.pathname, t]);
+  }, [location.pathname, adCatalog, t]);
 
   const subtitle = useMemo(() => {
     if (isDashboard) {
@@ -207,7 +218,7 @@ export default function DashboardLayout() {
     isNotifications;
 
   return (
-    <AppShell title={isTemplateCanvas ? t("nav.ad_studio_template_canvas",{defaultValue:"Ad Studio · Template Canvas"}) : campaignStageTitle ? `Ad Studio · ${campaignStageTitle}` : title} subtitle={subtitle} titleIcon={titleIcon} dense={dense} contentClassName={isCanvas ? "ad-canvas-shell" : isTemplateReview ? "pt-1 md:pt-1" : undefined} animateContent={!isTemplateReview}>
+    <AppShell title={isTemplateCanvas ? t("nav.ad_studio_template_canvas",{defaultValue:"Ad Studio · Template Canvas"}) : campaignStageTitle ? `Ad Studio · ${campaignStageTitle}` : title} subtitle={subtitle} titleIcon={titleIcon} dense={dense} contentClassName={isCanvas ? "ad-canvas-shell" : isTemplateReview || adCatalog === "templates" ? "pt-1 md:pt-1" : undefined} animateContent={!isTemplateReview}>
       <Outlet context={{setCanvasHeader} satisfies StudioCanvasHeaderContext} />
     </AppShell>
   );

@@ -108,6 +108,7 @@ test("a response for a different kit is never adopted as this profile's source",
     () =>
       uploadBrandImage(
         {
+          getKit: async () => ({ ...kit, additionalAssetUploadPolicy: "append-v1" }),
           requestAssetUploadUrl: async () => ({
             assetId: "asset",
             uploadUrl: "https://upload.example.test/synthetic",
@@ -120,5 +121,16 @@ test("a response for a different kit is never adopted as this profile's source",
         image,
       ),
     /association could not be verified/,
+  );
+});
+
+test("additional images require append support before requesting an upload", async () => {
+  await assert.rejects(
+    uploadBrandImage({
+      getKit: async () => kit,
+      requestAssetUploadUrl: async () => assert.fail("upload must not start"),
+      confirmAsset: async () => assert.fail("upload must not be confirmed"),
+    }, async () => assert.fail("file must not be uploaded"), "owned", "other", image),
+    /updated Content service/,
   );
 });

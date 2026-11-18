@@ -1,6 +1,7 @@
 import type { BrandKitSummary } from "../../BrandKits/lib/brandKitTypes";
 import type { AdConcept } from "../types";
 import type { WorkspaceProject } from "./projectWorkspace";
+import { isCampaignStyleReference } from "../../BrandKits/lib/assetSlots";
 
 export function campaignProductionBrief(project: WorkspaceProject, concept: AdConcept, brand?: BrandKitSummary | null) {
   const { brief } = project;
@@ -10,7 +11,7 @@ export function campaignProductionBrief(project: WorkspaceProject, concept: AdCo
   // a blocker for product, service, or unbranded campaigns.
   const selectedProfile = (brand?.voice?.studio?.characters ?? []).find(
     (profile) =>
-      profile.id === brief?.preferredModelProfile &&
+      profile.id === (brief?.brandModelProfileId ?? brief?.preferredModelProfile) &&
       profile.status === "approved" &&
       profile.permissions.scopes.includes("ad-studio"),
   );
@@ -22,7 +23,7 @@ export function campaignProductionBrief(project: WorkspaceProject, concept: AdCo
     .filter((id): id is string => typeof id === "string" && !!id);
   const verifiedAssets = brand?.id && brand.id === project.brandKitId
     ? (brand.assets ?? []).filter(asset => selectedIds.includes(asset.id) && approvedIds.has(asset.id) &&
-      asset.status === "ready")
+      asset.status === "ready" && (asset.id !== brief?.referenceImageAssetId || isCampaignStyleReference(asset, brand)))
     : [];
   return {
     verifiedAssets,

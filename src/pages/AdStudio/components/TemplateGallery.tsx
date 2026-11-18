@@ -11,6 +11,9 @@ import { templateSamplePreview } from "../lib/samplePreviewAssets";
 import { AD_FORMATS } from "../types";
 import type { NormalizedBrandContext } from "../../BrandKits/lib/brandContext";
 import { BrandHomePreview, aspectForFormat } from "./BrandHomePreview";
+import { ProjectWorkspacePreview } from "./ProjectWorkspacePreview";
+
+const standaloneSampleTemplates = new Set<AdStudioTemplateId>(["product-hero", "social-story"]);
 
 type Props = {
   useLabel?: string;
@@ -125,6 +128,7 @@ export function TemplateGallery({
                 ? (defaultFormat as AdSceneOutputFormatId)
                 : tpl.formats[0]!);
             const preview = templateSamplePreview(tpl.templateId);
+            const standaloneSample = standaloneSampleTemplates.has(tpl.templateId);
             const overlay = overlayById.get(tpl.templateId);
             const title = overlay?.displayName ?? tpl.name;
             const meta = overlay?.tagline
@@ -136,16 +140,17 @@ export function TemplateGallery({
                 key={`${catalogKey}-${tpl.templateId}`}
                 className="w0a-card"
               >
-                <BrandHomePreview
+                {preview ? <BrandHomePreview
                   fallbackSrc={preview}
                   alt={`${title} visual preview`}
-                  brand={brandContext}
-                  aspect={aspectForFormat(format)}
+                  fit={tpl.templateId === "social-story" ? "contain" : undefined}
+                  brand={standaloneSample ? null : brandContext}
+                  aspect={tpl.templateId === "product-hero" ? "portrait" : aspectForFormat(format)}
                   headline={overlay?.headline}
-                />
+                /> : <ProjectWorkspacePreview format={format} />}
                 <div className="w0a-card-body">
                   <h3>{title}</h3>
-                  <div className="w0a-meta">{meta}</div>
+                  <div className="w0a-meta">{meta}{standaloneSample && " · Gallery sample"}</div>
                   <div
                     className="w0a-formats"
                     role="group"
@@ -206,16 +211,19 @@ export function TemplateGallery({
               ? (defaultFormat as AdSceneOutputFormatId)
               : tpl.formats[0]!);
           const preview = templateSamplePreview(tpl.templateId);
+          const standaloneSample = standaloneSampleTemplates.has(tpl.templateId);
           return (
             <article key={tpl.templateId} className="w0a-card">
-              <BrandHomePreview
+              {preview ? <BrandHomePreview
                 fallbackSrc={preview}
                 alt=""
-                brand={brandContext}
-                aspect={aspectForFormat(format)}
-              />
+                fit={tpl.templateId === "social-story" ? "contain" : undefined}
+                brand={standaloneSample ? null : brandContext}
+                aspect={tpl.templateId === "product-hero" ? "portrait" : aspectForFormat(format)}
+              /> : <ProjectWorkspacePreview format={format} />}
               <div className="w0a-card-body">
                 <h3>{tpl.name}</h3>
+                {standaloneSample && <div className="w0a-meta">Gallery sample</div>}
                 <button
                   type="button"
                   className="w0a-btn"

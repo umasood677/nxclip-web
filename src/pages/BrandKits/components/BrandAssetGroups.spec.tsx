@@ -29,7 +29,9 @@ test('unlinked ready photos prepare only a new unsaved draft; foreign or non-mod
 });
 test('singleton replacement is explicit and guarded, and model selection stays brand scoped',()=>{
  const root=process.cwd()+'/src/pages/BrandKits/',cards=readFileSync(root+'components/BrandProductPhotos.tsx','utf8'),profiles=readFileSync(root+'guided/BrandCharactersSection.tsx','utf8');
- assert.match(cards,/if\(replaces&&!window.confirm/);assert.match(cards,/replaces\?'Replace image'/);
+ assert.match(cards,/if\(replaces&&!await confirm/);assert.match(cards,/replaces\?'Replace image'/);
+ assert.match(cards,/pending.current\|\|!await confirm/);
+ assert.doesNotMatch(cards,/window\.confirm/);
  assert.match(profiles,/modelPhotoRequest.brandId!==kit.id/);assert.match(profiles,/choose\(profileForModelPhoto/);
 });
 

@@ -33,7 +33,7 @@ interface VariationsPanelProps {
   currentGraph: AdSceneGraph;
   onOpenVariation?: (id: string) => void;
   assetUrls?: BrandAssetUrlMap;
-  beforeNavigate?: () => boolean;
+  beforeNavigate?: () => boolean | Promise<boolean>;
 }
 
 function formatLabel(graph?: AdSceneGraph | null): string {
@@ -109,12 +109,12 @@ export function VariationsPanel({
     void loadSiblings();
   }, [loadSiblings]);
 
-  const startAiVariation = () => {
-    if (projectId && (beforeNavigate?.() ?? true)) navigate(campaignAiVariationPath(projectId, creativeId));
+  const startAiVariation = async () => {
+    if (projectId && (await beforeNavigate?.() ?? true)) navigate(campaignAiVariationPath(projectId, creativeId));
   };
 
-  const open = (id: string) => {
-    if (!(beforeNavigate?.() ?? true)) return;
+  const open = async (id: string) => {
+    if (!(await beforeNavigate?.() ?? true)) return;
     if (onOpenVariation) onOpenVariation(id);
     else navigate(`/create/ad/${id}`);
   };

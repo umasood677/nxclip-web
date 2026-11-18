@@ -4,6 +4,7 @@ import { History, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import { adStudioApi } from "../../../services/apiClient";
+import { useBrandKitConfirmation } from "../../BrandKits/components/useBrandKitConfirmation";
 
 type VersionItem = {
   id: string;
@@ -27,6 +28,7 @@ export function VersionHistoryPanel({
   onRestored,
 }: Props) {
   const [items, setItems] = useState<VersionItem[]>([]);
+  const { confirm, confirmation } = useBrandKitConfirmation();
   const [loading, setLoading] = useState(false);
   const [busyVersion, setBusyVersion] = useState<number | null>(null);
 
@@ -50,17 +52,14 @@ export function VersionHistoryPanel({
   }, [refresh, currentVersion]);
 
   const restore = async (version: number) => {
-    if (dirty) {
-      const ok = window.confirm(
-        "You have unsaved edits. Restoring will replace the canvas with a prior version (creates a new version). Continue?",
-      );
-      if (!ok) return;
-    } else {
-      const ok = window.confirm(
-        `Restore version ${version}? This creates a new version from that snapshot.`,
-      );
-      if (!ok) return;
-    }
+    const ok = await confirm({
+      title: `Restore version ${version}?`,
+      description: dirty
+        ? "This replaces your unsaved edits and creates a new version from the selected snapshot."
+        : "This creates a new version from the selected snapshot.",
+      confirmLabel: "Restore version",
+    });
+    if (!ok) return;
     setBusyVersion(version);
     try {
       await adStudioApi.restoreCreativeVersion(creativeId, version);
@@ -76,6 +75,7 @@ export function VersionHistoryPanel({
 
   return (
     <div className="space-y-3">
+      {confirmation}
       <div className="flex items-center justify-between gap-2">
         <div className="text-sm font-medium flex items-center gap-1.5">
           <History size={14} aria-hidden /> Version history

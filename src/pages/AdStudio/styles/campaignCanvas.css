@@ -17,6 +17,22 @@
   padding: 5px 8px;
 }
 
+.ad-studio-w0a .w0a-canvas-layout {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .ad-studio-w0a .w0a-canvas-layout {
+    display: grid;
+  }
+}
+
+.ad-studio-w0a .canvas-mobile-tabs [aria-selected="true"] {
+  background: color-mix(in srgb, var(--w0a-panel) 80%, #138b7b);
+  border-color: #398e81;
+  color: #a3e8ce;
+}
+
 .ad-studio-w0a .canvas-toolbar .w0a-editor-toolbar__actions {
   margin-left: 0;
   flex-wrap: nowrap;

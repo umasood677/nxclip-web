@@ -16,12 +16,13 @@ test('partial results clearly distinguish deletion from pending cleanup and shar
  assert.deepEqual(deletionSummary(results,request),{deleted:1,pending:1,removedObjects:1,retainedObjects:1});
  for(const invalid of [[],[results[0],results[0]],[{...results[0],id:'another'},results[1]]])assert.throws(()=>deletionSummary(invalid,request));
 });
-test('multi-selection toolbar exposes selection, rejected shortcut and destructive action concisely',()=>{
+test('multi-selection uses a compact menu trigger with the selected count',()=>{
  const html=renderToStaticMarkup(<TemplateBulkActions entries={entries} selected={['template:template']} busy={false} onSelect={()=>{}} onDelete={()=>{}}/>);
- assert.match(html,/Select visible/);assert.match(html,/Select rejected/);assert.match(html,/1 selected/);assert.match(html,/Delete selected/);assert.match(html,/type="checkbox"/);
+ assert.match(html,/aria-haspopup="menu"/);assert.match(html,/1 selected/);
+ assert.doesNotMatch(html,/Select visible|Select rejected|Delete selected|type="checkbox"/);
 });
 test('empty selection offers no accidental Delete action',()=>{
- const html=renderToStaticMarkup(<TemplateBulkActions entries={entries} selected={[]} busy={false} onSelect={()=>{}} onDelete={()=>{}}/>);assert.doesNotMatch(html,/Delete selected/);
+ const html=renderToStaticMarkup(<TemplateBulkActions entries={entries} selected={[]} busy={false} onSelect={()=>{}} onDelete={()=>{}}/>);assert.match(html,/Select templates/);assert.doesNotMatch(html,/Delete selected/);
 });
 import {readFileSync} from 'node:fs';import ts from 'typescript';import vm from 'node:vm';
 test('Delete dialog is confirmation-only and explains original/shared asset protection',()=>{

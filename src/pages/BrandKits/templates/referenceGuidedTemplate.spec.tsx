@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {readFileSync} from 'node:fs';
-import {templateReferenceInput,templateRegenerationInstruction} from './templateReferenceInput';
+import {hasStaleTemplateReferences,templateReferenceInput,templateRegenerationInstruction} from './templateReferenceInput';
 import {TemplateFidelityReviewPanel,emptyFidelityReview,fidelityComplete} from './TemplateFidelityReview';
 import {assertReferenceTemplateQuote,type ImageQuote} from '../../AdStudio/production/imageExecutionModel';
 import type {WorkspaceCreative} from '../../AdStudio/lib/projectWorkspace';
@@ -17,6 +17,9 @@ test('builds product/model/style inputs together without dropping selections',()
 test('reopen/regenerate retains exact reference identities and hashes and latest editable copy',()=>{
  const retained={...source,templateReferenceManifest:[{assetId:'product',purpose:'PRODUCT_IDENTITY' as const,sha256:'a'.repeat(64),provenance:{brandKitId:'kit',brandVersion:2}}]};
  assert.equal(templateReferenceInput(retained,brand,[],[],'generate').references[0].expectedSha256,'a'.repeat(64));
+ assert.equal(hasStaleTemplateReferences(retained,{...brand,version:2}),false);
+ assert.equal(hasStaleTemplateReferences(retained,{...brand,version:3}),true);
+ assert.equal(hasStaleTemplateReferences(source,{...brand,version:3}),false);
  assert.match(templateRegenerationInstruction(source),/Headline: Latest Canvas headline/);assert.doesNotMatch(templateRegenerationInstruction(source),/Old sample/);
 });
 test('requires explicit fidelity review and leaves concerns unapproved',()=>{

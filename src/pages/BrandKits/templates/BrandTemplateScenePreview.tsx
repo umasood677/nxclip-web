@@ -4,9 +4,9 @@ import {Sparkles,ImageOff} from "lucide-react";
 import { Skeleton } from "../../../components/ui/skeleton";
 import "./scenePreviewLoading.css";
 import { SceneStage } from "../../AdStudio/canvas/SceneStage";
-type Props = React.ComponentProps<typeof SceneStage> & {fillCard?:boolean;fitHeight?:boolean;readablePlaceholder?:boolean};
+type Props = React.ComponentProps<typeof SceneStage> & {fillCard?:boolean;fitHeight?:boolean;readablePlaceholder?:boolean;mediaLoading?:boolean};
 /** Fit the existing renderer to its card; retain the scene's exact aspect ratio. */
-export function BrandTemplateScenePreview({fillCard=false,fitHeight=false,readablePlaceholder=false,...props}: Props) {
+export function BrandTemplateScenePreview({fillCard=false,fitHeight=false,readablePlaceholder=false,mediaLoading,...props}: Props) {
   const host = useRef<HTMLDivElement>(null),
     [bounds,setBounds]=useState({width:0,height:0});
   const {width,height}=bounds;
@@ -26,12 +26,26 @@ export function BrandTemplateScenePreview({fillCard=false,fitHeight=false,readab
   const sources=props.graph?reviewImageUrls(props.graph,props.assetUrls||{}):null;
   const missing=props.graph?.layers.some(l=>l.visible!==false&&(l.type==="image"||l.type==="logo")&&!("assetId" in l&&l.assetId));
   const mediaKey=JSON.stringify([sources,!!missing]),[ready,setReady]=useState(""),[failed,setFailed]=useState("");
-  useEffect(()=>{if(!readablePlaceholder)return;let active=true;const timer=setTimeout(()=>{if(active)setFailed(mediaKey);},12000);const [currentSources,unbound]=JSON.parse(mediaKey) as [string[]|null,boolean];if(currentSources&&!unbound)void preloadReviewImages(currentSources).then(()=>{if(active){clearTimeout(timer);setReady(mediaKey);}}).catch(()=>{if(active){clearTimeout(timer);setFailed(mediaKey);}});return()=>{active=false;clearTimeout(timer);};},[mediaKey,readablePlaceholder]);
+  const tracksMediaRequests = mediaLoading !== undefined;
+  useEffect(() => {
+    if (!readablePlaceholder) return;
+    const [currentSources, unbound] = JSON.parse(mediaKey) as [string[] | null, boolean];
+    if (unbound || (currentSources === null && tracksMediaRequests)) return;
+    let active = true;
+    const timer = setTimeout(() => { if (active) setFailed(mediaKey); }, 12000);
+    if (currentSources) void preloadReviewImages(currentSources).then(() => {
+      if (active) setReady(mediaKey);
+    }).catch(() => {
+      if (active) setFailed(mediaKey);
+    }).finally(() => clearTimeout(timer));
+    return () => { active = false; clearTimeout(timer); };
+  }, [mediaKey, readablePlaceholder, tracksMediaRequests]);
+  const unavailable = sources === null && tracksMediaRequests ? !mediaLoading : failed === mediaKey;
   const waiting=!width||(fitHeight&&!height)||readablePlaceholder&&(missing||sources===null||(sources.length>0&&ready!==mediaKey));
   return (
     <div ref={host} className="bt-scene-preview">
-      {waiting?<div className="bt-thumbnail-state scene-preview-loading" style={{aspectRatio:props.graph?props.graph.canvas.width+"/"+props.graph.canvas.height:"4/5"}} role="status" aria-live="polite" aria-busy={!missing && failed!==mediaKey}>
-{missing||failed===mediaKey?<><ImageOff size={24}/><span>{missing?"Add an image in Canvas":"Preview unavailable"}</span></>:<><div className="scene-preview-loading__design" aria-hidden="true"><Skeleton className="scene-preview-loading__line"/><Skeleton className="scene-preview-loading__subject"/><Skeleton className="scene-preview-loading__line"/></div><Sparkles size={20} aria-hidden="true"/><span>Loading saved artwork</span></>}
+      {waiting?<div className="bt-thumbnail-state scene-preview-loading" style={{aspectRatio:props.graph?props.graph.canvas.width+"/"+props.graph.canvas.height:"4/5"}} role="status" aria-live="polite" aria-busy={!missing && !unavailable}>
+{missing||unavailable?<><ImageOff size={24}/><span>{missing?"Add an image in Canvas":"Preview unavailable"}</span></>:<><div className="scene-preview-loading__design" aria-hidden="true"><Skeleton className="scene-preview-loading__line"/><Skeleton className="scene-preview-loading__subject"/><Skeleton className="scene-preview-loading__line"/></div><Sparkles size={20} aria-hidden="true"/><span>Loading saved artwork</span></>}
 </div>:<SceneStage {...props} maxWidth={width} maxHeight={fillCard && props.graph?.canvas.width ? width*props.graph.canvas.height/props.graph.canvas.width : fitHeight?height:props.maxHeight} />}
     </div>
   );

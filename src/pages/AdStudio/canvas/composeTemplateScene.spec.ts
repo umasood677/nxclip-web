@@ -9,6 +9,7 @@ import {
 import { sceneGraphLeaksStorageKey } from "./sanitizeSceneGraph";
 import {
   AD_STUDIO_TEMPLATE_IDS,
+  PROJECT_WORKSPACE_COPY,
   TEMPLATE_CATALOG_V1,
 } from "./templateCatalog";
 
@@ -28,6 +29,25 @@ function concept(partial: Partial<AdConcept> & Pick<AdConcept, "conceptId">): Ad
     ...partial,
   };
 }
+
+it("shows the editable Project workspace photo composition in every supported aspect ratio", () => {
+  for (const outputFormat of ["square_1080", "portrait_1080x1350", "landscape_1920x1080"]) {
+    const result = composeTemplatePreview({
+      concept: concept({ conceptId: "workspace", templateId: "project-workspace", ...PROJECT_WORKSPACE_COPY }),
+      outputFormat,
+    });
+    assert.equal(result.status, "ready");
+    const layers = result.sceneGraph!.layers;
+    for (const text of ["My projects", "In progress", "Team", PROJECT_WORKSPACE_COPY.cta]) {
+      assert.ok(layers.some(layer => layer.type === "shape" && "text" in layer && layer.text === text));
+    }
+    assert.ok(!layers.some(layer => layer.name === "Missing: Logo"));
+    assert.ok(layers.some(layer => layer.type === "image" &&
+      "assetId" in layer && layer.assetId === "nxclip-catalog-project-workspace-office-v1"));
+    const teamCard = layers.find(layer => layer.id === "project-workspace:shapeAccent:team-card");
+    assert.equal(teamCard?.y, Math.round(result.sceneGraph!.canvas.height * 0.82));
+  }
+});
 
 function fullBrand(): BrandKitSummary {
   return {
@@ -83,15 +103,15 @@ function fullBrand(): BrandKitSummary {
 }
 
 describe("composeTemplateScene (UX-2A.2 M3)", () => {
-  it("covers all ten catalog templates", () => {
-    assert.equal(TEMPLATE_CATALOG_V1.length, 10);
+  it("covers all eleven catalog templates", () => {
+    assert.equal(TEMPLATE_CATALOG_V1.length, 11);
     assert.deepEqual(
       TEMPLATE_CATALOG_V1.map((t) => t.templateId).sort(),
       [...AD_STUDIO_TEMPLATE_IDS].sort(),
     );
   });
 
-  it("builds distinct graphs for all ten templates with full kit", () => {
+  it("builds distinct graphs for all catalog templates with full kit", () => {
     const brand = fullBrand();
     const fingerprints = new Set<string>();
     for (const id of AD_STUDIO_TEMPLATE_IDS) {
@@ -119,7 +139,7 @@ describe("composeTemplateScene (UX-2A.2 M3)", () => {
         id,
       );
     }
-    assert.equal(fingerprints.size, 10);
+    assert.equal(fingerprints.size, AD_STUDIO_TEMPLATE_IDS.length);
   });
 
   it("supports all layer types across catalog", () => {

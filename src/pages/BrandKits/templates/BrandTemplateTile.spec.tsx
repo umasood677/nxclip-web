@@ -14,6 +14,14 @@ test('thumbnail reserves the real aspect before client measurement without drawi
  const before=JSON.stringify(graph),full=renderToStaticMarkup(<BrandTemplateScenePreview graph={graph} assetUrls={{}} size="card" fillCard/>),review=renderToStaticMarkup(<BrandTemplateScenePreview graph={graph} assetUrls={{}} size="card" maxHeight={256}/>);
  assert.match(full,/aspect-ratio:1080\/1350/);assert.match(review,/aspect-ratio:1080\/1350/);assert.doesNotMatch(full,/width:260px|data-scene-stage/);assert.equal(JSON.stringify(graph),before);
 });
+test('artwork retrieval shows a skeleton until requests settle',()=>{
+ const imageGraph={...graph,layers:[{id:'artwork',name:'Artwork',type:'image' as const,assetId:'owned-image',x:0,y:0,width:1080,height:1350,zIndex:1}]};
+ const pending=renderToStaticMarkup(<BrandTemplateTile {...props} graph={imageGraph} mediaLoading/>);
+ const failed=renderToStaticMarkup(<BrandTemplateTile {...props} graph={imageGraph} mediaLoading={false}/>);
+ assert.match(pending,/aria-busy="true".*Loading saved artwork/);
+ assert.doesNotMatch(pending,/Preview unavailable/);
+ assert.match(failed,/aria-busy="false".*Preview unavailable/);
+});
 test('actual stored shapes are retained for landscape and story drafts',()=>{
  for(const [width,height,label] of [[1920,1080,'16:9'],[1080,1920,'9:16']] as const){
  const html=renderToStaticMarkup(<BrandTemplateTile {...props} graph={{...graph,canvas:{width,height}}} status="Draft"/>);
@@ -36,6 +44,6 @@ test('both saved and draft rows use the same tile while all four-column breakpoi
  assert.match(css,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);assert.match(css,/@media\(max-width:1100px\)/);assert.match(css,/@media\(max-width:700px\)/);
 });
 
-test("library density is scoped away from creation and review screens",()=>{const source=readFileSync(process.cwd()+"/src/pages/BrandKits/templates/BrandTemplateLibrary.tsx","utf8"),css=readFileSync(process.cwd()+"/src/pages/BrandKits/templates/brandTemplates.css","utf8");assert.ok(source.includes('" bt-creator-page"'));assert.match(css,/bt-library-page \.xp-main\{gap:12px!important/);assert.match(css,/bt-library-page \.bt-toolbar\{padding:12px!important/);});
+test("library density is scoped away from creation and review screens",()=>{const source=readFileSync(process.cwd()+"/src/pages/BrandKits/templates/BrandTemplateLibrary.tsx","utf8"),css=readFileSync(process.cwd()+"/src/pages/BrandKits/templates/brandTemplates.css","utf8");assert.ok(source.includes('" bt-creator-page"'));assert.match(css,/bt-library-page \.xp-main\{gap:6px!important/);assert.match(css,/bt-library-page \.bt-toolbar\{padding:6px 12px!important/);});
 
 test('missing asset references show a readable tile state instead of scaled microtext',()=>{const html=renderToStaticMarkup(<BrandTemplateTile {...props} graph={{...graph,layers:[{id:'missing',type:'image',x:0,y:0,width:1080,height:1080,zIndex:0}]}}/>);assert.match(html,/Add an image in Canvas/);assert.doesNotMatch(html,/Refresh Brand Kit|Image unavailable/);});

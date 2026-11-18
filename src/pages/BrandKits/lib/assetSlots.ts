@@ -1,3 +1,5 @@
+import type { BrandAssetEntry, BrandKitSummary } from "./brandKitTypes";
+
 export type AssetSlotDef = {
   role: string;
   label: string;
@@ -59,4 +61,12 @@ export function findReadyAsset<
   T extends { role?: string; status?: string; readUrl?: string | null },
 >(assets: T[] | undefined, role: string): T | undefined {
   return assets?.find((a) => a.role === role && a.status === "ready");
+}
+
+
+export function isCampaignStyleReference(asset: BrandAssetEntry, kit: BrandKitSummary) {
+  return asset.status === "ready" &&
+    (asset.role === "other" || asset.role === "campaign_reference") &&
+    ["image/png", "image/jpeg", "image/webp"].includes(asset.mimeType ?? "") &&
+    !(kit.voice?.studio?.characters ?? []).some(profile => profile.referenceAssetIds.includes(asset.id));
 }

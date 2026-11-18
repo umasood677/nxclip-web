@@ -18,6 +18,13 @@ test('empty collection retains the add-product placeholder without creating fict
  const html=renderToStaticMarkup(<BrandProductPhotos brandId="kit" assets={[{id:'logo',role:'logo_primary',status:'ready'},{id:'pending',role:'product_image',status:'pending'}]} urls={{}} onKitUpdated={()=>{throw Error('No write');}}/>);
  assert.match(html,/Product photography \(0\)/);assert.doesNotMatch(html,/class="bpp-card"/);assert.match(html,/Add product image/);
 });
+test('product cards expose explicit approval and show saved source approval',()=>{
+ const html=renderToStaticMarkup(<BrandProductPhotos brandId="kit" assets={assets} urls={{}} onKitUpdated={()=>assert.fail('Viewing must not write')}
+  approval={{approvedIds:['red'],onChange:async()=>assert.fail('Viewing must not change approval')}}/>);
+ assert.match(html,/Approved for creative use/);
+ assert.equal((html.match(/>Revoke approval<\/button>/g)||[]).length,1);
+ assert.equal((html.match(/>Approve for creative use<\/button>/g)||[]).length,1);
+});
 test('new names derive from their own file and disambiguate existing names without reusing another product label',()=>{
  assert.equal(productPhotoName('matte-maroon.jpg',assets),'matte maroon');
  assert.equal(productPhotoName('signature-red-matte-lipstick.png',assets),'signature red matte lipstick 2');

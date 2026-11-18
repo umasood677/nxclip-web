@@ -72,6 +72,13 @@
   margin: 0 auto;
   padding: 0 20px;
 }
+.ad-studio-w0a .w0a-home-body--catalog{padding-top:8px}
+.ad-studio-w0a .w0a-home-body--default-templates{max-width:none;padding-inline:24px}
+@media(max-width:600px){.ad-studio-w0a .w0a-home-body--default-templates{padding-inline:16px}}
+.ad-studio-w0a .w0a-home-body--catalog>.bo-breadcrumb{margin:0 0 8px}
+.ad-studio-w0a .w0a-home-body--catalog>.w0a-home-section{margin-top:0}
+.ad-studio-w0a .w0a-home-body--catalog>.w0a-home-section--briefs,
+.ad-studio-w0a .w0a-home-body--catalog>.w0a-home-section--templates{padding:0;border:0;background:none}
 
 .ad-studio-w0a .w0a-topnav {
   display: flex;
@@ -367,8 +374,7 @@
   max-width: 1440px;
   padding-top: 14px;
 }
-.ad-campaign-start__heading { margin-bottom: 12px; }
-.ad-campaign-start__heading h1 { font-size: clamp(1.75rem, 2.6vw, 2.2rem); }
+.ad-campaign-start__breadcrumb { margin-bottom: 12px; }
 .ad-campaign-start__grid {
   display: grid;
   grid-template-columns: minmax(0, 1.06fr) minmax(360px, .94fr);
@@ -894,6 +900,8 @@
   border-color: rgba(196, 165, 116, 0.55);
   transform: translateY(-1px);
 }
+.ad-studio-w0a .w0a-project-rail .w0a-project-card:hover{transform:none}
+.ad-studio-w0a .w0a-project-grid .w0a-project-card__name{white-space:normal;overflow-wrap:anywhere}
 .ad-studio-w0a .w0a-project-card__icon {
   display: grid;
   place-items: center;
@@ -1144,6 +1152,24 @@
   right: 16%;
   transform: rotate(-5deg);
   animation-delay: -11s;
+}
+.ad-studio-w0a .w0a-ads-hero__frame--e {
+  width: min(15vw, 190px);
+  top: 13%;
+  left: 37%;
+  transform: rotate(-6deg);
+  animation-delay: -6s;
+}
+.ad-studio-w0a .w0a-ads-hero__frame--f {
+  width: min(14vw, 175px);
+  top: 34%;
+  left: 53%;
+  transform: rotate(6deg);
+  animation-delay: -14s;
+}
+@media (max-width: 1050px) {
+  .ad-studio-w0a .w0a-ads-hero__frame--e,
+  .ad-studio-w0a .w0a-ads-hero__frame--f { display: none; }
 }
 .ad-studio-w0a .w0a-ads-hero__veil {
   position: absolute;
@@ -1657,8 +1683,9 @@
 @media(max-width:420px){.ad-studio-w0a .w0a-hero-actions{gap:18px}}
 
 /* Brief previews follow the selected output ratio; cards do not stretch into empty space. */
-.ad-studio-w0a .w0a-brief-card { display:flex; flex-direction:column; align-self:start; }
-.ad-studio-w0a .w0a-brief-card .w0a-brand-preview { height:auto; flex:none; }
+.ad-studio-w0a .w0a-brief-card { display:flex; flex-direction:column; align-self:stretch; }
+.ad-studio-w0a .w0a-brief-card .w0a-brand-preview { aspect-ratio:3 / 4; height:auto; flex:none; }
+.ad-studio-w0a .w0a-brief-card .w0a-brand-preview__layout { object-fit:contain; }
 .ad-studio-w0a .w0a-brief-card .w0a-card-body { display:flex; flex-direction:column; flex:1; gap:4px; padding:10px 12px 12px; }
 .ad-studio-w0a .w0a-brief-card h3 { line-height:1.25; min-height:0; margin:0; }
 .ad-studio-w0a .w0a-brief-card .w0a-card-body > p { min-height:0; margin:0; }

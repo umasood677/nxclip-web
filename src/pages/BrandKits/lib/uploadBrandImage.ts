@@ -30,13 +30,14 @@ export async function uploadBrandImage(
 ) {
   if (!brandId || !role || !file.type.startsWith("image/") || file.size <= 0)
     throw Error("Choose a non-empty image file for this Brand Kit.");
-  const collection=role==='product_image'||role==='brand_model';
+  const collection=role==='product_image'||role==='brand_model'||role==='other';
   let preservedIds:string[]=[];
   if(collection){
     if(!api.getKit)throw Error('Multi-image upload safety could not be verified. Reload the Brand Kit.');
     const before=await api.getKit(brandId);
     if(before.id!==brandId||!Array.isArray(before.assets))throw Error('The Brand Kit could not be verified before uploading.');
-    if(before.assetUploadPolicy!=='append-product-model-v1')throw Error('Multi-image uploads require the updated Content service. Stop uploading until it is activated.');
+    const appendEnabled=role==='other'?before.additionalAssetUploadPolicy==='append-v1':before.assetUploadPolicy==='append-product-model-v1';
+    if(!appendEnabled)throw Error('Multi-image uploads require the updated Content service. Activate it before uploading.');
     preservedIds=before.assets.filter(a=>a.role===role&&a.status==='ready').map(a=>a.id);
   }
   const upload = await api.requestAssetUploadUrl(brandId, {

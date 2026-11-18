@@ -5,6 +5,7 @@ import { uploadBrandImage } from "../lib/uploadBrandImage";
 import { BrandContentLibraryPicker } from "../components/BrandContentLibraryPicker";
 import { useAuthenticatedBrandAssetUrls } from "../../AdStudio/canvas/useAuthenticatedBrandAssetUrls";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useBrandKitConfirmation } from "../components/useBrandKitConfirmation";
 import { Plus, Save, Upload, ImagePlus, Loader2, Users } from "lucide-react";
 import { Input } from "../../../components/ui/input";
 import { Textarea } from "../../../components/ui/textarea";
@@ -39,6 +40,7 @@ export function BrandCharactersSection({
   onKitUpdated,
   onDraftStateChange,
 }: Props) {
+  const { confirm, confirmation } = useBrandKitConfirmation();
   const [draft, setDraft] = useState<BrandCharacterProfile | null>(null),
     [saving, setSaving] = useState(false),
     [error, setError] = useState("");
@@ -71,9 +73,14 @@ export function BrandCharactersSection({
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
-  const choose = useCallback((next: BrandCharacterProfile) => {
+  const choose = useCallback(async (next: BrandCharacterProfile) => {
     if (operation.current) return;
-    if (dirty && !window.confirm("Discard unsaved character edits?")) return;
+    if (dirty && !await confirm({
+      title: "Discard profile edits?",
+      description: "Unsaved edits to this model or mascot profile will be lost.",
+      confirmLabel: "Discard edits",
+      destructive: true,
+    })) return;
     setDiscardRequested(false);
     setDraft(next);
     baseline.current = kit.voice?.studio?.characters?.some(
@@ -84,7 +91,7 @@ export function BrandCharactersSection({
     draftVersion.current = kit.version;
     setError("");
     setMessage("");
-  },[dirty,kit.version,kit.voice?.studio?.characters]);
+  },[confirm,dirty,kit.version,kit.voice?.studio?.characters]);
   const profiles = kit.voice?.studio?.characters || [],
     assets = (kit.assets || []).filter(
       (a) => a.status === "ready" && a.mimeType?.startsWith("image/"),
@@ -196,6 +203,7 @@ export function BrandCharactersSection({
   );
   return (
     <section className={"space-y-5 bp-characters"+(draft?" bp-characters--editing":"")}>
+      {confirmation}
       <header>
         <h2 className="text-xl font-semibold">
           <Users size={16}/> {draft?(draft.kind==="human-model"?"Model profile":"Character profile"):"Models & Mascots ("+profiles.length+")"}

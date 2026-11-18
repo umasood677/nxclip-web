@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { adStudioApi, brandTemplateApi } from "../../../services/apiClient";
 import { Skeleton } from "../../../components/ui/skeleton";
+import { Badge } from "../../../components/ui/badge";
 import { BrandTemplateScenePreview } from "../../BrandKits/templates/BrandTemplateScenePreview";
 import {alignProjectToTemplateFormat,openBrandTemplateAd,existingBrandTemplateAd} from '../lib/brandTemplateAd';
 import { homeEntryPath } from "../lib/homeEntryFlow";
@@ -16,6 +17,13 @@ import {
 } from "../../BrandKits/templates/brandTemplateModel";
 import { reusableHomeTemplates } from "../lib/homeEntryFlow";
 import type { BrandAssetUrlMap } from "../canvas/brandAssetUrls";
+
+function templateCardStatus(template: BrandTemplate) {
+  if (template.blockers.length) return "Needs attention";
+  if (template.state === "suggested") return "Needs approval";
+  if (!template.saved) return "Save pending";
+  return template.reuseIssues?.length ? "Needs attention" : "Ready to use";
+}
 export function useSavedBrandTemplates(brandId: string) {
   const enabled = isBrandTemplatesEnabled(),
     [result, setResult] = useState<{
@@ -85,8 +93,13 @@ export function SavedBrandTemplates({
     pending = useRef(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
-  const items = reusableHomeTemplates(data.items, brandId),
-    reviewPath = `/brands/${encodeURIComponent(brandId)}/templates`;
+  const reusable = reusableHomeTemplates(data.items, brandId);
+  const reviewOnly = !project && reusable.length === 0;
+  const items = reviewOnly
+    ? data.items.filter((template) => !template.deletion &&
+        (template.state === "suggested" || template.state === "approved"))
+    : reusable;
+  const reviewPath = `/brands/${encodeURIComponent(brandId)}/templates`;
   const generatedUrls=useCreativeAssetUrls(items.slice(0,limit).flatMap(t=>t.provenance.sourceCreativeId?[t.provenance.sourceCreativeId]:[]));
   const previewUrls={...assetUrls,...generatedUrls};
   async function useInProject(template: BrandTemplate) {
@@ -167,12 +180,15 @@ export function SavedBrandTemplates({
         </p>
       )}
       {error && <p role="alert">{error}</p>}
+      {reviewOnly && items.length > 0 && (
+        <p className="w0a-note">Review these templates in your Brand Kit before using them in a campaign.</p>
+      )}
       {!items.length ? (
         <EmptyState
           title="No reusable Brand Templates yet"
           description={
             data.items.length
-              ? `${data.items.length} recipe(s) need review, saving or blocker resolution.`
+              ? "Review this Brand Kit’s templates to see which can be approved and saved."
               : "Prepare templates from the Brand Kit, then review and save them."
           }
           actionLabel={
@@ -190,66 +206,79 @@ export function SavedBrandTemplates({
         />
       ) : (
         <div className="w0a-grid w0a-grid-3">
-          {items.slice(0, limit).map((template) => (
-            <article key={template.id} className="w0a-card">
-              <div className="w0a-brand-preview saved-template-art" style={{aspectRatio:`${template.sceneGraph.canvas.width}/${template.sceneGraph.canvas.height}`}}>
-                <BrandTemplateScenePreview
-                  graph={template.sceneGraph}
-                  fillCard
-                  readablePlaceholder
-                  assetUrls={previewUrls}
-                  label={`${template.name} saved template`}
-                />
-              </div>
-              <div className="w0a-card-body">
-                <h3>{template.name}</h3>
-                <p className="w0a-meta">
-                  {formatChip(template.format)} · {template.provenance.method === "provider-ai-creative" ? "AI artwork" : "Editable layout"}
-                </p>
-                {data.enabled ? (
-                  <Link
-                    className="w0a-link"
-                    to={`${reviewPath}/${encodeURIComponent(template.id)}`}
-                  >
-                    Review template →
-                  </Link>
-                ) : (
-                  <span className="w0a-meta">
-                    Read-only · reuse is disabled
-                  </span>
-                )}
-                {!project && data.enabled && <Link className="w0a-btn" to={homeEntryPath({
-                  brandId, brandTemplateId: template.id, revision: String(template.revision), format: template.format,
-                })}>Start campaign</Link>}
-                {project && (
-                  <>
-                    <button
-                      className="w0a-btn"
-                      disabled={
-                        !data.enabled ||
-                        busy ||
-                        project.brandKitId !== brandId
-                      }
-                      onClick={() => void useInProject(template)}
+          {items.slice(0, limit).map((template) => {
+            const status = templateCardStatus(template);
+            const issue = template.blockers[0] ??
+              (status === "Needs attention" ? template.reuseIssues?.[0] : undefined);
+            return (
+              <article key={template.id} className="w0a-card">
+                <div className="w0a-brand-preview saved-template-art" style={{aspectRatio:`${template.sceneGraph.canvas.width}/${template.sceneGraph.canvas.height}`}}>
+                  <BrandTemplateScenePreview
+                    graph={template.sceneGraph}
+                    fillCard
+                    readablePlaceholder
+                    assetUrls={previewUrls}
+                    label={`${template.name} saved template`}
+                  />
+                </div>
+                <div className="w0a-card-body">
+                  <h3>{template.name}</h3>
+                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                    <p className="w0a-meta">
+                      {formatChip(template.format)} · {template.provenance.method === "provider-ai-creative" ? "AI artwork" : "Editable layout"}
+                    </p>
+                    <Badge variant="outline" className={status === "Ready to use"
+                      ? "border-teal-400/25 bg-teal-400/10 text-teal-200"
+                      : "border-amber-300/25 bg-amber-300/10 text-amber-200"}>
+                      {status}
+                    </Badge>
+                  </div>
+                  {issue && <p className="w0a-meta">{issue}</p>}
+                  {data.enabled ? (
+                    <Link
+                      className="w0a-link"
+                      to={`${reviewPath}/${encodeURIComponent(template.id)}`}
                     >
-                      {onPlanningProject ? 'Plan with this template' : existingBrandTemplateAd(creatives,template)
-                        ? 'Open existing ad'
-                        : project.outputFormat !== template.format
-                          ? `Use ${formatChip(template.format)} format`
-                          : 'Create ad draft'}
-                    </button>
-                    {project.outputFormat !== template.format && (
-                      <p className="w0a-meta">
-                        This template uses {formatChip(template.format)}.
-                        Selecting it updates this campaign format before the ad
-                        draft opens.
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            </article>
-          ))}
+                      Review template →
+                    </Link>
+                  ) : (
+                    <span className="w0a-meta">
+                      Read-only · reuse is disabled
+                    </span>
+                  )}
+                  {!project && !reviewOnly && data.enabled && <Link className="w0a-btn" to={homeEntryPath({
+                    brandId, brandTemplateId: template.id, revision: String(template.revision), format: template.format,
+                  })}>Start campaign</Link>}
+                  {project && (
+                    <>
+                      <button
+                        className="w0a-btn"
+                        disabled={
+                          !data.enabled ||
+                          busy ||
+                          project.brandKitId !== brandId
+                        }
+                        onClick={() => void useInProject(template)}
+                      >
+                        {onPlanningProject ? 'Plan with this template' : existingBrandTemplateAd(creatives,template)
+                          ? 'Open existing ad'
+                          : project.outputFormat !== template.format
+                            ? `Use ${formatChip(template.format)} format`
+                            : 'Create ad draft'}
+                      </button>
+                      {project.outputFormat !== template.format && (
+                        <p className="w0a-meta">
+                          This template uses {formatChip(template.format)}.
+                          Selecting it updates this campaign format before the ad
+                          draft opens.
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </>

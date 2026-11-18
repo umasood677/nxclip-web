@@ -6,6 +6,7 @@ function renderPanel(editing:boolean,legacy=false){
  const profile={...newBrandCharacter('profile'),name:'New model',kind:'human-model',referenceAssetIds:['photo']},kit={id:'kit',version:82,name:'Brand',assets:[{id:'photo',role:'brand_model',status:'ready',mimeType:'image/png',label:'Portrait'}],voice:{studio:{characters:[]}}};let state=0;
  if(legacy)delete (kit as {voice?:unknown}).voice;
  const icon=()=>React.createElement('svg'),context:Record<string,unknown>={BRAND_TAXONOMY,React,useState:(initial:unknown)=>[state++===0&&editing?profile:initial,()=>{}],useRef:(initial:unknown)=>({current:initial}),useEffect:()=>{},useCallback:(fn:unknown)=>fn,useAuthenticatedBrandAssetUrls:()=>({photo:'blob:synthetic'}),CHARACTER_SCOPES,characterProfilePatch,Input:(props:object)=>React.createElement('input',props),Textarea:(props:object)=>React.createElement('textarea',props),EmptyState:()=>React.createElement('p',{},'No profiles'),toast:{success:()=>{}},brandApi:{updateKit:()=>{throw Error('Rendering must not write');}}};
+ context.useBrandKitConfirmation=()=>({confirm:async()=>false,confirmation:null});
  for(const name of ['Plus','Save','Upload','ImagePlus','Loader2','Users'])context[name]=icon;
  const code=ts.transpileModule(component.getText(parsed).replace(/^export /,''),{compilerOptions:{target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.React}}).outputText+';BrandCharactersSection';
  const Component=vm.runInNewContext(code,context) as React.ComponentType<{kit:unknown;onKitUpdated:()=>void}>;

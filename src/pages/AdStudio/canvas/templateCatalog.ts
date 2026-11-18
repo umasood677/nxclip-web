@@ -5,6 +5,7 @@
  */
 
 export const AD_STUDIO_TEMPLATE_IDS = [
+  "project-workspace",
   "product-hero",
   "model-editorial",
   "product-launch",
@@ -18,6 +19,12 @@ export const AD_STUDIO_TEMPLATE_IDS = [
 ] as const;
 
 export type AdStudioTemplateId = (typeof AD_STUDIO_TEMPLATE_IDS)[number];
+
+export const PROJECT_WORKSPACE_COPY = {
+  primaryHeadline: "Bring Your Work Together",
+  supportingCopy: "A clear workspace for organized projects and simple team collaboration.",
+  cta: "Explore the Platform",
+} as const;
 
 export type MissingAssetPolicy =
   | "blockPreview"
@@ -43,6 +50,13 @@ export type TemplateLayerRecipe = {
     | "cta"
     | "imageSlot"
     | "logoSlot";
+  fillRole?: "primary" | "text";
+  opacity?: number;
+  fill?: string;
+  cornerRadiusPct?: number;
+  label?: string;
+  labelColor?: string;
+  labelSizePct?: number;
   regionId: string;
   slotId?: TemplateSlotRole;
   zIndex: number;
@@ -118,6 +132,46 @@ function ty(
 }
 
 export const TEMPLATE_CATALOG_V1: readonly TemplateDef[] = [
+  {
+    templateId: "project-workspace",
+    name: "Project workspace",
+    layoutFamily: "top-banner",
+    formats: ["square_1080", "portrait_1080x1350", "landscape_1920x1080"],
+    missingAssetPolicy: "allowLogoOnly",
+    background: { mode: "solid" },
+    slots: [{ slotId: "logo", required: false, maxCount: 1, label: "Logo", objectFit: "contain" }],
+    regions: [
+      r("bg", 0, 0, 100, 100),
+      r("headline", 6, 13, 51, 21),
+      r("supporting", 6, 35, 46, 10),
+      r("cta", 6, 47, 34, 6),
+      r("project-list", 9, 77, 32, 13),
+      r("project-label", 10, 78, 30, 4),
+      r("in-progress", 11, 84, 17, 4),
+      r("team-card", 72, 82, 24, 10),
+      r("team-label", 73, 83, 22, 3),
+      r("team-dot-one", 76, 87, 4, 3),
+      r("team-dot-two", 82, 87, 4, 3),
+      r("team-dot-three", 88, 87, 4, 3),
+      r("logo", 6, 3, 18, 7),
+    ],
+    typography: { ...ty("left"), cta: { ...ty("left").cta, sizeScale: 0.38 } },
+    layers: [
+      { kind: "background", regionId: "bg", zIndex: 0 },
+      { kind: "shapeAccent", regionId: "project-list", zIndex: 2, fill: "#F1F3FF", cornerRadiusPct: 3 },
+      { kind: "shapeAccent", regionId: "project-label", zIndex: 3, fill: "#F1F3FF", cornerRadiusPct: 2, label: "My projects", labelColor: "#20265C", labelSizePct: 2.75 },
+      { kind: "shapeAccent", regionId: "in-progress", zIndex: 4, fill: "#DEDFFD", cornerRadiusPct: 2, label: "In progress", labelColor: "#4032A9", labelSizePct: 2.15 },
+      { kind: "shapeAccent", regionId: "team-card", zIndex: 5, fill: "#F1F3FF", cornerRadiusPct: 3 },
+      { kind: "shapeAccent", regionId: "team-label", zIndex: 6, fill: "#F1F3FF", cornerRadiusPct: 2, label: "Team", labelColor: "#20265C", labelSizePct: 2.5 },
+      { kind: "shapeAccent", regionId: "team-dot-one", zIndex: 7, fill: "#5845DC", cornerRadiusPct: 3 },
+      { kind: "shapeAccent", regionId: "team-dot-two", zIndex: 8, fill: "#9D8AF0", cornerRadiusPct: 3 },
+      { kind: "shapeAccent", regionId: "team-dot-three", zIndex: 9, fill: "#558ACF", cornerRadiusPct: 3 },
+      { kind: "headline", regionId: "headline", zIndex: 30 },
+      { kind: "supporting", regionId: "supporting", zIndex: 31 },
+      { kind: "cta", regionId: "cta", zIndex: 32 },
+      { kind: "logoSlot", regionId: "logo", slotId: "logo", zIndex: 33 },
+    ],
+  },
   {
     templateId: "product-hero",
     name: "Product hero",

@@ -8,3 +8,6 @@ coverage/
 dist/
 .tmp/
 
+# Local visual QA profiles, screenshots and isolated build output.
+.stage2-acceptance/
+

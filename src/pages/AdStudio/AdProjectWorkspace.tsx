@@ -4,6 +4,7 @@ import ProductionProjectWorkspace from "./production/ProductionProjectWorkspace"
 import React from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { publishedExampleBriefs } from "./lib/publishedExampleBriefs";
+import { CampaignWorkflow } from "./components/CampaignWorkflow";
 import { CampaignStages, isCampaignStage } from "./components/CampaignStages";
 import {
   ArrowLeft,
@@ -160,27 +161,7 @@ export default function AdProjectWorkspace() {
           <span aria-hidden>/</span>
           <span aria-current="page">{exportCreative.name}</span>
         </nav>
-        <nav aria-label="Campaign workflow">
-          <ol className="campaign-workflow-steps">
-            {([
-              ["strategy", "Campaign Brief"],
-              ["directions", "Creative Directions"],
-              ["production-review", "Production Review"],
-              ["compare", "Compare & Approve"],
-            ] as const).map(([view, label], index) => {
-              const target = new URLSearchParams(query);
-              target.delete("review");
-              target.delete("reviewTab");
-              target.set("view", view);
-              return <li key={view}>
-                <Link to={`?${target}`} onClick={() => setExportCreative(null)} aria-current={view === "compare" ? "step" : undefined}>
-                  <span className="campaign-workflow-steps__number" aria-hidden="true">{index + 1}</span>
-                  <strong>{label}</strong>
-                </Link>
-              </li>;
-            })}
-          </ol>
-        </nav>
+        <CampaignWorkflow controller={controller} stage="compare" query={query} onNavigate={() => setExportCreative(null)} />
         <CampaignAdReview
           project={project}
           brand={brand}

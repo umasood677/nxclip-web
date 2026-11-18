@@ -1,9 +1,11 @@
 import {resolveAdFontFamily} from '../../AdStudio/lib/adFonts';
 import {loadBrandFontPreviews} from '../lib/brandFontPreview';
 import type {AdSceneGraph} from '../../AdStudio/types';
+import {catalogArtworkUrl} from '../../AdStudio/canvas/catalogArtwork';
 export function reviewImageUrls(graph:AdSceneGraph,urls:Readonly<Record<string,string>>):string[]|null{
  const ids=[...new Set(graph.layers.filter(l=>l.visible!==false&&(l.type==='image'||l.type==='logo')).flatMap(l=>'assetId'in l&&l.assetId?[l.assetId]:[]))];
- return ids.some(id=>!urls[id])?null:ids.map(id=>urls[id]);
+ const sources = ids.map(id => catalogArtworkUrl(id) ?? urls[id]);
+ return sources.some(source => !source) ? null : sources;
 }
 type PreviewImage=Pick<HTMLImageElement,'onload'|'onerror'|'src'> & {decode?:()=>Promise<void>};
 export function preloadReviewImages(urls:readonly string[],create:()=>PreviewImage=()=>new Image()):Promise<void>{

@@ -7,8 +7,8 @@ import type { AdStudioTemplateId } from "../canvas/templateCatalog";
 
 const BASE = "/ad-studio/sample-assets";
 
-export const TEMPLATE_SAMPLE_PREVIEW: Record<AdStudioTemplateId, string> = {
-  "product-hero": `${BASE}/w0a-product-hero.jpg`,
+export const TEMPLATE_SAMPLE_PREVIEW: Partial<Record<AdStudioTemplateId, string>> = {
+  "product-hero": `${BASE}/default-food-product-hero.jpg`,
   "model-editorial": `${BASE}/w0a-model-editorial.jpg`,
   "product-launch": `${BASE}/w0a-product-launch.jpg`,
   "multi-shade-collection": `${BASE}/w0a-multi-shade.jpg`,
@@ -17,9 +17,9 @@ export const TEMPLATE_SAMPLE_PREVIEW: Record<AdStudioTemplateId, string> = {
   "seasonal-campaign": `${BASE}/w0a-seasonal.jpg`,
   "promotional-offer": `${BASE}/w0a-promo.jpg`,
   "minimal-editorial": `${BASE}/w0a-minimal.jpg`,
-  "social-story": `${BASE}/w0a-social-story.jpg`,
+  "social-story": `${BASE}/default-skincare-story.jpg`,
 };
 
-export function templateSamplePreview(templateId: AdStudioTemplateId): string {
+export function templateSamplePreview(templateId: AdStudioTemplateId): string | undefined {
   return TEMPLATE_SAMPLE_PREVIEW[templateId];
 }

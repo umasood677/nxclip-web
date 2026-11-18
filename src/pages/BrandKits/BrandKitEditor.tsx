@@ -676,6 +676,8 @@ export default function BrandKitEditor() {
 
           {section === "assets" && brandId ? (
             <BrandAssetsSection
+              approvalKit={kit}
+              approvalDisabled={dirty}
               modelProfilePanel={isGuidedBrandEnabled()?<section id={"brand-"+kit.id+"-characters"}><BrandCharactersSection kit={kit} modelPhotoRequest={modelPhotoRequest} photoCardSelection disabled={dirty} onKitUpdated={applyKit}/></section>:undefined}
               brandId={brandId}
               assets={kit.assets ?? []}

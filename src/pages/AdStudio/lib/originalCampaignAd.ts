@@ -42,9 +42,10 @@ export async function generateOriginalCampaignAd(
   options: {
     onExecuting?: () => void;
     authorizeQuote?: (quote: ImageQuote) => Promise<boolean>;
+    preparedDraft?: WorkspaceCreative;
   } = {},
 ) {
-  const draft = await api.draft(projectId, input);
+  const draft = options.preparedDraft ?? await api.draft(projectId, input);
   const expectedPurpose = input.conceptPreview ? "CONCEPT_PREVIEW" : "ORIGINAL_AI";
   if (draft.projectId !== projectId || draft.conceptSnapshot?.purpose !== expectedPurpose || !draft.id)
     throw Error("Campaign draft could not be verified.");
@@ -81,4 +82,38 @@ export async function generateOriginalCampaignAd(
       "Generated ad could not be confirmed. Check its saved status before retrying.",
     );
   return result;
+}
+
+type CampaignPreviewApi = CampaignImageApi & {
+  status(id: string, requestId: string): Promise<{ status: string; hasRetainedImage: boolean; requestFound?: boolean }>;
+  recover(id: string, requestId: string): Promise<WorkspaceCreative>;
+  retryCampaign(id: string, input: { previousRequestId: string; requestId: string; expectedVersion: number }): Promise<WorkspaceCreative>;
+};
+
+/** Called only after the user confirms the preview action. Recover before considering another charge. */
+export async function resumeCampaignPreview(
+  api: CampaignPreviewApi,
+  projectId: string,
+  draft: WorkspaceCreative,
+  input: CampaignDraftInput,
+  onPrepared: (draft: WorkspaceCreative) => void,
+  newRequestId: () => string = () => crypto.randomUUID(),
+) {
+  const previousRequestId = input.requestId;
+  if (draft.projectId !== projectId || draft.conceptPreview?.requestId !== previousRequestId)
+    throw Error("The saved preview request changed. Reload Creative Directions.");
+  const status = await api.status(draft.id, previousRequestId);
+  if (status.hasRetainedImage) return api.recover(draft.id, previousRequestId);
+  if (status.requestFound !== false && status.status !== "failed")
+    throw Error("The saved preview is still processing. Check again shortly.");
+  if (status.requestFound === false)
+    return generateOriginalCampaignAd(api, projectId, input, onPrepared, { preparedDraft: draft });
+
+  const requestId = newRequestId();
+  const preparedDraft = await api.retryCampaign(draft.id, {
+    previousRequestId, requestId, expectedVersion: draft.currentVersion || 1,
+  });
+  if (preparedDraft.id !== draft.id || preparedDraft.conceptPreview?.requestId !== requestId)
+    throw Error("The new preview request could not be verified. Reload Creative Directions.");
+  return generateOriginalCampaignAd(api, projectId, { ...input, requestId }, onPrepared, { preparedDraft });
 }

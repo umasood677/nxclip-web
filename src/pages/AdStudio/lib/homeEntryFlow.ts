@@ -6,6 +6,7 @@ import type { BrandKitSummary } from "../../BrandKits/lib/brandKitTypes";
 import type { WorkspaceBrief, WorkspaceProject } from "./projectWorkspace";
 import type { BrandTemplate } from "../../BrandKits/templates/brandTemplateModel";
 import { canReuseTemplate } from "../../BrandKits/templates/brandTemplateModel";
+import { PROJECT_WORKSPACE_COPY } from "../canvas/templateCatalog";
 export function homeEntryPath(input: {
   brandId?: string;
   exampleId?: string;
@@ -31,6 +32,15 @@ export function reusableHomeTemplates(items: BrandTemplate[], brandId: string) {
       "Brand Template ownership context changed. Reload before continuing.",
     );
   return items.filter(canReuseTemplate);
+}
+
+export function homeBannerTemplates(items: BrandTemplate[], brandId: string) {
+  const reusable = reusableHomeTemplates(items, brandId);
+  return [
+    ...reusable.filter(template => !template.deletion),
+    ...items.filter(template => !template.deletion && template.state === "approved" &&
+      template.saved && !canReuseTemplate(template)),
+  ];
 }
 /** Explicit project save only. A home click never creates a creative or an orphan campaign. */
 export function entryProjectBody(input: {
@@ -60,6 +70,11 @@ export function entryProjectBody(input: {
     ...base,
     brief: {
       ...base.brief,
+      ...(input.defaultTemplateId === "project-workspace" ? {
+        headline: PROJECT_WORKSPACE_COPY.primaryHeadline,
+        supportingCopy: PROJECT_WORKSPACE_COPY.supportingCopy,
+        cta: PROJECT_WORKSPACE_COPY.cta,
+      } : {}),
       ...source,
       ...(input.defaultTemplateId ? { defaultTemplateId: input.defaultTemplateId } : {}),
       campaignIdea: input.idea,
@@ -81,6 +96,10 @@ export async function saveEntryProject(
   if (!project?.id)
     throw Error(
       "Project creation did not return a saved project. Check your projects before retrying.",
+    );
+  if (input.brandId && project.brandKitId !== input.brandId)
+    throw Error(
+      "The saved campaign did not confirm the selected Brand Kit. Check your projects before creating another campaign.",
     );
   return project;
 }

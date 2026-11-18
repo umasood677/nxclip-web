@@ -5,6 +5,7 @@
  * Never accepts or returns private storageKey values.
  */
 
+import { catalogArtworkUrl } from "./catalogArtwork";
 import type {
   BrandAssetEntry,
   BrandKitSummary,
@@ -136,6 +137,8 @@ export function resolveAssetUrl(
   assetId?: string | null,
 ): string | null {
   if (!assetId) return null;
+  const artwork = catalogArtworkUrl(assetId);
+  if (artwork) return artwork;
   const url = assetUrls?.[assetId];
   if (!url || !isBrowserAssetUrl(url)) return null;
   return url;

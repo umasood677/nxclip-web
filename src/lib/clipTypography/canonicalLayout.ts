@@ -84,9 +84,15 @@ export async function prepareCanonicalLayout(input: {
 }
 
 /** Used by the editor Canvas overlay and the golden fixture; call loadCanonicalLayoutFont first. */
-export function drawCanonicalLayout(context: CanvasRenderingContext2D, input: CanonicalTypographyLayout, timeMs: number): void {
+export function drawCanonicalLayout(
+  context: CanvasRenderingContext2D,
+  input: CanonicalTypographyLayout,
+  timeMs: number,
+  opts?: { /** Studio authoring: draw every layer regardless of playhead (burn-in still uses time). */ ignoreTime?: boolean },
+): void {
   const plan = validateTypographyLayout(input);
-  for (const layer of plan.layers) if (timeMs >= layer.startMs && timeMs < layer.endMs) {
+  for (const layer of plan.layers) {
+    if (!opts?.ignoreTime && !(timeMs >= layer.startMs && timeMs < layer.endMs)) continue;
     const faceId = resolveLayerFaceId(plan, layer);
     const face = parity.faces.find(item => item.id === faceId); if (!face) throw new Error('Unknown canonical face');
     if (faceId === plan.faceId && face.sha256 !== plan.rendererSha256) throw new Error('Canonical font mismatch');

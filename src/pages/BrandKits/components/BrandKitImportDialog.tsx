@@ -1,3 +1,4 @@
+import { useBrandKitConfirmation } from "./useBrandKitConfirmation";
 import { BRAND_KIT_JSON_SAMPLE } from "../lib/brandKitJsonSample";
 import { downloadJson, stringifyExport } from "../lib/brandKitExport";
 import React, { useMemo, useState } from "react";
@@ -41,6 +42,7 @@ export function BrandKitImportDialog({
   existingKits,
   onImported,
 }: Props) {
+  const { confirm, confirmation } = useBrandKitConfirmation();
   const [step, setStep] = useState<Step>("input");
   const [paste, setPaste] = useState("");
   const [parseError, setParseError] = useState<string | null>(null);
@@ -125,9 +127,12 @@ export function BrandKitImportDialog({
       return;
     }
     if (updateConflicts > 0) {
-      const ok = window.confirm(
-        `You chose to update ${updateConflicts} existing Brand Kit(s). This overwrites name, voice, colors, and typography. Continue?`,
-      );
+      const ok = await confirm({
+        title: "Overwrite Brand Kit details?",
+        description: `This import will replace the name, voice, colors, and typography in ${updateConflicts} existing ${updateConflicts === 1 ? "Brand Kit" : "Brand Kits"}.`,
+        confirmLabel: "Update and import",
+        destructive: true,
+      });
       if (!ok) return;
     }
 
@@ -164,6 +169,7 @@ export function BrandKitImportDialog({
       }}
     >
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        {confirmation}
         <DialogHeader>
           <DialogTitle>Import Brand Kits</DialogTitle>
           <DialogDescription>

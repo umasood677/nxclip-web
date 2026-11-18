@@ -1,6 +1,6 @@
 import {applyTemplateProductShades,productShadeKey} from './templateProductShade';
 import {templateIdeaNeedsModel} from './templateCreatorSetup';
-import {templateRegenerationInstruction} from './templateReferenceInput';
+import {hasStaleTemplateReferences,templateRegenerationInstruction} from './templateReferenceInput';
 import {useTemplateAssetUrls,templateImageIds} from './useTemplateAssetUrls';
 import {templateEditTarget,saveCanvasTemplate} from './templateCanvasLink';
 import {TemplateRenderReview} from './TemplateRenderReview';
@@ -12,7 +12,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 
-import { brandTemplateApi } from "../../../services/apiClient";
+import { brandApi, brandTemplateApi } from "../../../services/apiClient";
 import { ProductionImageGeneration } from "../../AdStudio/production/ProductionImageGeneration";
 import { hasGeneratedBackground } from "../../AdStudio/production/imageExecutionModel";
 import { BrandTemplateScenePreview } from "./BrandTemplateScenePreview";
@@ -43,6 +43,7 @@ export function BrandTemplateAiWorkspace({kit:initialKit,initialFormat,onBack: _
 
   const sourceId=params.get("source"),kind=source?.templateContext?.draftKind || entryKind;
   const generated=!!source && hasGeneratedBackground(source),native=kind==="native";
+  const staleReferences = editingGeneration && source && source.id === sourceId && hasStaleTemplateReferences(source, kit);
   const imageIds=templateImageIds([source?.sceneGraph]),brandUrls=useTemplateAssetUrls(kit,imageIds),generatedUrls=useCreativeAssetUrls(source&&generated?[source.id]:[],imageIds),urls={...brandUrls,...generatedUrls};
   const remember=(value:WorkspaceCreative)=>{
     const draft=verifyTemplateSource(value,kit.id);setLoading(false);setSource(draft);
@@ -60,6 +61,33 @@ export function BrandTemplateAiWorkspace({kit:initialKit,initialFormat,onBack: _
   const layoutValid=layout==='auto'||layouts.some(t=>t.templateId===layout);
   const referenceCount=new Set(effectiveConfiguration.slots.flatMap(s=>s.assetId?[s.assetId]:[])).size+(effectiveConfiguration.modelProfileId?1:0)+styleIds.length;
   const issues=[...templateCreatorIssues(kit,effectiveConfiguration,direction,native,layoutValid),...(!native&&referenceCount>4?['Choose at most four product, model and style references.']:[])],draftIssues=templateCreatorIssues(kit,effectiveConfiguration,direction,native,layoutValid,true);
+  async function refreshReferenceSelection(value: WorkspaceCreative) {
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
+    setError("");
+    try {
+      const latest = await brandApi.getKit(kit.id);
+      if (latest.id !== kit.id || !latest.version) throw Error("Could not verify the current Brand Kit.");
+      setKit(latest);
+      setDirection(templateRegenerationInstruction(value));
+      const canvas = value.sceneGraph?.canvas;
+      const originalFormat = AD_FORMATS.find(item => item.width === canvas?.width && item.height === canvas?.height);
+      if (originalFormat) setFormat(originalFormat.id);
+      setConfiguration({ schemaVersion: 1, slots: [{ label: "Product 1" }] });
+      setSelectionMode("specific");
+      setStyleIds([]);
+      setShadeOverrides({});
+      setGenerationRequested(false);
+      setSource(null);
+      setParams({ tab: "brand", mode: "ai" }, { replace: true });
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Could not reload the Brand Kit.");
+    } finally {
+      setBusy(false);
+      pending.current = false;
+    }
+  }
   async function nativeFallback(){
     if(pending.current || !kit.version)return;
     pending.current=true;setBusy(true);setError('');
@@ -98,10 +126,17 @@ navigate("/brands/"+encodeURIComponent(kit.id)+"/templates/"+encodeURIComponent(
     {!sourceId&&<header><h2><Sparkles size={22}/>{busy&&!native?"Review template":native?"Choose your layout":"Create an AI template"}</h2></header>}
     {error && <p className="bt-blocker" role="alert">{error}</p>}
     {busy&&!source&&!native?<TemplateRenderReview name={kit.name+' · Brand Template'} format={format} phase="Preparing your template…"/>:isTemplateSourceLoading(loading,sourceId,source?.id)?<TemplateRenderReview format={format} phase="Loading template review…"/>:source && source.id===sourceId?<>
+      {editingGeneration && <div className="xp-notice">
+        {staleReferences && <p role="status">The Brand Kit changed after this artwork was generated. Review the current product and model references to create a new template.</p>}
+        <button type="button" className={staleReferences ? "xp-primary" : "xp-secondary"} disabled={busy}
+          onClick={() => void refreshReferenceSelection(source)}>Choose current Brand Kit references</button>
+      </div>}
+      {!staleReferences && <>
 
       {(native || generated && source.imageRenderMode==='template-proposal')&&!editingGeneration?<TemplateRenderReview source={source} format={format} active={!error} phase={error?"Review could not open":"Finishing your preview…"}>{error&&<button className="xp-secondary" disabled={busy} onClick={()=>void publish(source)}>Retry opening review</button>}</TemplateRenderReview>:generated && source.imageRenderMode!=="template-proposal"?<section className="xp-panel"><h3>Earlier background-only template draft</h3><BrandTemplateScenePreview graph={source.sceneGraph} assetUrls={urls} size="hero" maxHeight={560}/><button className="xp-primary" onClick={()=>{setSource(null);setLayout("product-hero");setParams({tab:"brand",mode:"ai"});}}>Start a finished template proposal</button></section>:<ProductionImageGeneration key={source.id} source={source} initialInstruction={editingGeneration?templateRegenerationInstruction(source):source.proposalDirection || direction} initialOperation={params.get('refine')==='1'?'refine':'generate'} renderMode="template-proposal" regeneration={editingGeneration} compositionMode={source.imageCompositionMode||"reference-guided-template-v1"} initialStyleReferenceIds={styleIds} compact executeRequested={generationRequested} autoPreflight={!generated && !generationRequested} onProviderUnavailable={nativeFallback} onReview={()=>void publish(source)} onCustomize={()=>navigate(creativeEditorPath(source.id))} brand={kit} assetUrls={urls} onSaved={async value=>{await publish(verifyTemplateSource(value,kit.id));}}/>}
 
-      {busy && <p role="status">Opening template review…</p>}
+      </>}
+      {busy && <p role="status">{editingGeneration ? "Loading Brand Kit references…" : "Opening template review…"}</p>}
     </>:<div className="xp-panel bt-ai-setup bt-quick-creator">
       {!native&&<div className="bt-idea-section"><label className="xp-field bt-description-field">Describe your creative idea<textarea rows={3} disabled={busy} value={direction} maxLength={4000} onChange={e=>setDirection(e.target.value)} placeholder="A cinematic product hero, an editorial story, or a collection launch…"/></label>
        <div className="bt-idea-suggestions" role="group" aria-label="Creative idea suggestions">{TEMPLATE_IDEA_SUGGESTIONS.map(s=><button type="button" key={s.name} disabled={busy} onClick={()=>setDirection(s.idea)}>{s.name}</button>)}</div></div>}

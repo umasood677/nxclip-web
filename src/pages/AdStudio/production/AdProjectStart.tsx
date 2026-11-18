@@ -46,6 +46,7 @@ export default function AdProjectStart() {
     [selectedKit, setSelectedKit] = useState<BrandKitSummary | null>(null),
     [kitLoading, setKitLoading] = useState(false),
     [kitError, setKitError] = useState("");
+  const originalIdea = !exampleId && !templateId && !brandTemplateId;
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -78,7 +79,10 @@ export default function AdProjectStart() {
     let active = true;
     setSelectedKit(null);
     setKitError("");
-    if (loading) return;
+    if (loading || originalIdea) {
+      setKitLoading(false);
+      return;
+    }
     if (!selectedBrandId) {
       setKitLoading(false);
       return;
@@ -109,7 +113,7 @@ export default function AdProjectStart() {
     return () => {
       active = false;
     };
-  }, [selectedBrandId, loading, brands]);
+  }, [selectedBrandId, loading, brands, originalIdea]);
   const example = exampleForPlanning(exampleId);
   const template = isAdStudioTemplateId(templateId)
     ? getTemplateDef(templateId)
@@ -117,7 +121,7 @@ export default function AdProjectStart() {
   const blockers = [
     ...(brandTemplateId && !savedTemplate ? ["A saved, approved Brand Template at this revision is required."] : []),
     ...(kitError ? [kitError] : []),
-    ...(selectedBrandId && selectedKit?.id !== selectedBrandId
+    ...(!originalIdea && !kitError && selectedBrandId && selectedKit?.id !== selectedBrandId
       ? ["Wait for the selected Brand Kit to finish loading."]
       : []),
     ...(kitLoading ? ["Checking selected Brand Kit sources..."] : []),
@@ -160,14 +164,13 @@ export default function AdProjectStart() {
         : "Original idea";
   return (
     <main className="xp-root nxclip-production bp-guided-root ad-campaign-start-root">
-      <SEO title="New Ad Project | NxClip" />
+      <SEO title="Create Campaign | NxClip" />
       <div className="xp-main ad-campaign-start">
-        <Link className="xp-breadcrumb" to="/create/ad">
-          ← Back to Ad Studio
-        </Link>
-        <div className="xp-page-heading ad-campaign-start__heading">
-          <h1>Create Campaign</h1>
-        </div>
+        <nav aria-label="Breadcrumb" className="ad-campaign-start__breadcrumb">
+          <Link className="xp-breadcrumb" to="/create/ad">
+            ← Back to Ad Studio
+          </Link>
+        </nav>
         <div className="ad-campaign-start__grid ad-studio-w0a">
           <section className="xp-panel ad-campaign-start__form-panel" aria-labelledby="campaign-details-title">
             <div className="ad-campaign-start__panel-heading">

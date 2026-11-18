@@ -280,12 +280,13 @@ export function ExportPanel({
       <Button
         type="button"
         size="sm"
-        className="w-full"
+        variant="ghost"
+        className="w0a-create-project w-full"
         disabled={busy || blocked || saving}
         onClick={() => void runExport()}
       >
         {busy ? (
-          <Loader2 size={14} className="mr-1 animate-spin" />
+          <Loader2 size={14} className="mr-1 motion-safe:animate-spin" aria-hidden="true" />
         ) : (
           <Download size={14} className="mr-1" />
         )}

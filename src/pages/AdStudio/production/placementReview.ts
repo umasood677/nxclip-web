@@ -22,12 +22,20 @@ export function placementPreview(
     source.canvas.height <= 0
   )
     throw Error("The saved creative has no usable scene.");
-  // The existing proportional reflow is deterministic; this does not generate pixels.
-  return adaptCanvasFormat(
+  const adapted = adaptCanvasFormat(
     structuredClone(source),
     format.width,
     format.height,
   );
+  if (source.canvas.width * format.height === format.width * source.canvas.height) return adapted;
+  // Filling a differently proportioned frame can crop subjects out of the photo.
+  return {
+    ...adapted,
+    layers: adapted.layers.map(layer =>
+      layer.type === "image" && (!layer.objectFit || layer.objectFit === "cover")
+        ? { ...layer, objectFit: "contain" }
+        : layer),
+  };
 }
 export interface PlacementWriter {
   createCreative(

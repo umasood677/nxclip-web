@@ -8,12 +8,16 @@ import { brandMediaLoader } from './brandMediaLoader';
 
 /** Share authenticated bytes; each mounted consumer owns and revokes its own blob URLs. */
 export function useAuthenticatedBrandAssetUrls(brandKit: BrandKitSummary | null | undefined, reload=0): BrandAssetUrlMap {
+  return useAuthenticatedBrandAssetState(brandKit, reload).urls;
+}
+
+export function useAuthenticatedBrandAssetState(brandKit: BrandKitSummary | null | undefined, reload=0) {
   const token = useAuthToken(), gateway = typeof window === 'undefined' ? '' : resolveBaseGatewayUrl(), brandId = brandKit?.id || '';
   const signature = JSON.stringify(buildBrandAssetUrlMap(brandKit));
   const base: BrandAssetUrlMap = useMemo(() => JSON.parse(signature) as BrandAssetUrlMap, [signature]);
   const publicUrls = useMemo(() => Object.fromEntries(Object.entries(base).filter(([, url]) => !protectedBrandMediaPath(url, brandId))), [base, brandId]);
   const scope = brandId + '\0' + signature + '\0' + gateway + '\0' + token + '\0' + reload;
-  const [hydrated, setHydrated] = useState<{scope: string; urls: BrandAssetUrlMap}>({scope: '', urls: {}});
+  const [hydrated, setHydrated] = useState<{scope: string; urls: BrandAssetUrlMap; complete: boolean}>({scope: '', urls: {}, complete: false});
   useEffect(() => {
     let cancelled = false;
     const created: string[] = [];
@@ -28,11 +32,15 @@ export function useAuthenticatedBrandAssetUrls(brandKit: BrandKitSummary | null 
           if (cancelled) return;
           const objectUrl = URL.createObjectURL(blob);
           created.push(objectUrl); next[id] = objectUrl;
+          setHydrated({scope, urls: {...next}, complete: false});
         } catch { /* No automatic retry or unauthenticated img fallback. */ }
       }));
-      if (!cancelled) setHydrated({scope, urls: next});
+      if (!cancelled) setHydrated({scope, urls: next, complete: true});
     })();
     return () => { cancelled = true; created.forEach(url => URL.revokeObjectURL(url)); };
   }, [base, brandId, gateway, publicUrls, scope, token, reload]);
-  return hydrated.scope === scope ? hydrated.urls : publicUrls;
+  return {
+    urls: hydrated.scope === scope ? hydrated.urls : publicUrls,
+    loading: Boolean(token && (hydrated.scope !== scope || !hydrated.complete) && Object.keys(base).length > Object.keys(publicUrls).length),
+  };
 }

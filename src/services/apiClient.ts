@@ -3223,6 +3223,13 @@ export const adStudioApi = {
 
 /** Editable brand template lifecycle; backend gate and ownership checks remain authoritative. */
 export const brandTemplateApi = {
+ galleryPage: (kit: string, offset: number, search: string, archived: boolean): Promise<{
+   items: import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplate[];
+   drafts: import('../pages/BrandKits/templates/templateDeletion').DeletableTemplateDraft[];
+   nextOffset: number | null;
+ }> => performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/gallery?${new URLSearchParams({
+   offset: String(offset), search, archived: String(archived),
+ })}`, { method: 'GET' }),
  bulkDelete:(kit:string,items:import('../pages/BrandKits/templates/templateDeletion').TemplateDeleteItem[]):Promise<{items:import('../pages/BrandKits/templates/templateDeletion').TemplateDeleteResult[]}>=>performApiRequest('/brands/'+encodeURIComponent(kit)+'/templates/bulk-delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items})}),
  discardDraft:(kit:string,id:string):Promise<void>=>performApiRequest('/brands/'+encodeURIComponent(kit)+'/templates/drafts/'+encodeURIComponent(id),{method:'DELETE'}),
  listDrafts:(kit:string):Promise<{items:import('../pages/AdStudio/lib/projectWorkspace').WorkspaceCreative[]}>=>performApiRequest('/brands/'+encodeURIComponent(kit)+'/templates/drafts',{method:'GET'}),
@@ -3237,7 +3244,7 @@ export const brandTemplateApi = {
  list: (kit:string):Promise<{items:import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplate[]}>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates`,{method:'GET'}),
  get: (kit:string,id:string):Promise<import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplate>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/${encodeURIComponent(id)}`,{method:'GET'}),
  generate: (kit:string,expectedBrandVersion:number,format:string):Promise<{items:import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplate[];method:'native-template-engine'}>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/generate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({expectedBrandVersion,format})}),
- action: (kit:string,id:string,expectedRevision:number,action:import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplateAction,proposalReviewed=false,fidelityReview?:import('../pages/BrandKits/templates/TemplateFidelityReview').FidelityReview):Promise<import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplate>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/${encodeURIComponent(id)}/actions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({expectedRevision,action,...(proposalReviewed?{proposalReviewed:true}:{}),...(fidelityReview?{fidelityReview}:{})})}),
+ action: (kit:string,id:string,expectedRevision:number,action:import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplateAction,proposalReviewed=false,fidelityReview?:import('../pages/BrandKits/templates/TemplateFidelityReview').FidelityReview,expectedBrandVersion?:number):Promise<import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplate>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/${encodeURIComponent(id)}/actions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({expectedRevision,action,expectedBrandVersion,...(proposalReviewed?{proposalReviewed:true}:{}),...(fidelityReview?{fidelityReview}:{})})}),
  edit: (kit:string,id:string,body:{expectedRevision:number;name:string;sceneGraph:import('../pages/AdStudio/types').AdSceneGraph}):Promise<import('../pages/BrandKits/templates/brandTemplateModel').BrandTemplate>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/${encodeURIComponent(id)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),
  reuse: (kit:string,id:string,projectId:string,expectedRevision?:number):Promise<{id:string}>=>performApiRequest(`/brands/${encodeURIComponent(kit)}/templates/${encodeURIComponent(id)}/reuse`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectId,expectedRevision})}),
 };
@@ -3263,7 +3270,7 @@ export const adImageApi={
   // Status polling is recovery-only: it never starts paid work.  Keep it out
   // of the shared /ad-studio mutation circuit so a transient execute failure
   // cannot prevent the client from learning that a retained job completed.
-  status:(id:string,request:string):Promise<{jobId:string;status:string;creativeId:string|null;hasRetainedImage:boolean;provider:string|null;modelId:string|null}>=>performApiRequest(`/ad-studio/creatives/${encodeURIComponent(id)}/ai-images/requests/${encodeURIComponent(request)}?readAt=${Date.now()}`,{method:'GET',suppressErrorLog:true,bypassCircuitBreaker:true}),
+  status:(id:string,request:string):Promise<{jobId:string;status:string;creativeId:string|null;hasRetainedImage:boolean;provider:string|null;modelId:string|null;requestFound?:boolean}>=>performApiRequest(`/ad-studio/creatives/${encodeURIComponent(id)}/ai-images/requests/${encodeURIComponent(request)}?readAt=${Date.now()}`,{method:'GET',suppressErrorLog:true,bypassCircuitBreaker:true}),
  recover:(id:string,requestId:string):Promise<import('../pages/AdStudio/lib/projectWorkspace').WorkspaceCreative>=>performApiRequest(`/ad-studio/creatives/${encodeURIComponent(id)}/ai-images/recover`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requestId})}),
  assets:(id:string):Promise<{items:Array<{id:string;status:string;mimeType:string;readUrl:string}>}>=>performApiRequest(`/ad-studio/creatives/${encodeURIComponent(id)}/assets`,{method:'GET'}),
 };

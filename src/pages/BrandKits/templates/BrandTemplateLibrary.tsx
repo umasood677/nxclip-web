@@ -4,18 +4,20 @@ import {TemplateLeaveDialog} from './TemplateLeaveDialog';
 import {templateLeaveDecision} from './templateLeaveDecision';
 import type {ReviewMediaPhase} from './reviewMediaLoading';
 import {templateReviewHandoff} from './templateReviewHandoff';
-import {useTemplateAssetUrls,templateImageIds} from './useTemplateAssetUrls';
+import {useTemplateAssetState,templateImageIds} from './useTemplateAssetUrls';
 import {templateRecency} from './templateRecency';
+import {useTemplateGalleryPages} from './useTemplateGalleryPages';
 import {templateCanvasPath} from './templateCanvasLink';
 import {TemplateReviewMedia} from './TemplateReviewMedia';
 import {TemplateRenderReview} from './TemplateRenderReview';
 import {BrandTemplateGallery} from './BrandTemplateGallery';
+import {openBrandTemplateAd} from '../../AdStudio/lib/brandTemplateAd';
 import {BrandTemplateTile} from './BrandTemplateTile';
 import './templateSources.css';
 import {TemplateBulkActions,TemplateDeleteDialog} from './TemplateBulkDelete';
-import {deletionEntries,deletionKey,deletionPayload,deletionFeedback,type TemplateDeleteEntry,type TemplateDeleteResult,type DeletableTemplateDraft} from './templateDeletion';
-import {templateResponseId,unlistedDrafts,templateError} from './templateLibraryWorkflow';
-import { useCreativeAssetUrls } from "../../AdStudio/canvas/useCreativeAssetUrls";
+import {deletionEntries,deletionKey,deletionPayload,deletionFeedback,type TemplateDeleteEntry,type TemplateDeleteResult} from './templateDeletion';
+import {templateResponseId,templateError} from './templateLibraryWorkflow';
+import { useCreativeAssetState } from "../../AdStudio/canvas/useCreativeAssetUrls";
 import { toast } from "sonner";
 import { AdProjectCreateForm } from "../../AdStudio/components/CreateAdProjectDialog";
 import { BrandTemplateAiWorkspace } from "./BrandTemplateAiWorkspace";
@@ -103,9 +105,10 @@ export default function BrandTemplateLibrary() {
   const enabled = isBrandTemplatesEnabled(),
     tab = params.get("tab") === "default" ? "default" : "brand";
   const [kit, setKit] = useState<BrandKitSummary | null>(handoff?.kit||null),
-    [items, setItems] = useState<BrandTemplate[]>(handoff?[handoff.record]:[]),
+    [reviewItems, setItems] = useState<BrandTemplate[]>(handoff?[handoff.record]:[]),
     [projects, setProjects] = useState<WorkspaceProject[]>([]);
-  const [templateDrafts,setTemplateDrafts]=useState<DeletableTemplateDraft[]>([]),[creatingCampaign,setCreatingCampaign]=useState(false);
+  const [creatingCampaign,setCreatingCampaign]=useState(false);
+  const [galleryReload,setGalleryReload]=useState(0);
   const running=useRef(false);
   const [reuseOpen,setReuseOpen]=useState(false);
   const [leaveTarget,setLeaveTarget]=useState<string|null>(null);
@@ -128,7 +131,7 @@ export default function BrandTemplateLibrary() {
   const requestVersion = useRef(0),
     activeBrand = useRef(brandId);
   activeBrand.current = brandId;
-  const storedSelection=items.find((t)=>t.id===templateId);
+  const storedSelection=reviewItems.find((t)=>t.id===templateId);
   const selected = handoff&&handoff.record.revision>=(storedSelection?.revision||0)?handoff.record:storedSelection,
     draft=selected?(draftIdentity===selected.id&&draftValue?draftValue:draftFor(selected)):null,
     dirty =
@@ -143,12 +146,15 @@ export default function BrandTemplateLibrary() {
   }, [kit, brandId]);
   const currentLocation=useRef(location.key);currentLocation.current=location.key;
   const authoring=["ai","native"].includes(params.get("mode")||"")&&!templateId;
-  const mediaGraphs=selected?[selected.sceneGraph]:authoring?[]:[...items.filter(t=>!t.deletion).map(t=>t.sceneGraph),...templateDrafts.filter(d=>!d.deletionPending).map(d=>d.sceneGraph)];
+  const gallery = useTemplateGalleryPages(enabled && assetKit && !templateId && !authoring && tab === "brand" ? brandId : "", search, archived, galleryReload);
+  const {items, drafts: templateDrafts} = gallery;
+  const mediaGraphs = selected ? [selected.sceneGraph] : [];
   const [mediaReload,setMediaReload]=useState(0);
-  const imageIds=[...new Set([...templateImageIds(mediaGraphs),...(selected?.provenance.referenceManifest?.map(r=>r.assetId)||[])])],brandUrls=useTemplateAssetUrls(assetKit,imageIds,mediaReload);
-  const mediaSources=selected?(selected.provenance.sourceCreativeId?[selected.provenance.sourceCreativeId]:[]):authoring?[]:[...items.filter(t=>!t.deletion).flatMap(t=>t.provenance.sourceCreativeId?[t.provenance.sourceCreativeId]:[]),...templateDrafts.filter(d=>!d.deletionPending).map(d=>d.id)];
-  const generatedUrls = useCreativeAssetUrls(mediaSources,imageIds,mediaReload);
-  const urls = {...brandUrls,...generatedUrls};
+  const imageIds=[...new Set([...templateImageIds(mediaGraphs),...(selected?.provenance.referenceManifest?.map(r=>r.assetId)||[])])];
+  const brandMedia = useTemplateAssetState(assetKit, imageIds, mediaReload);
+  const mediaSources=selected?.provenance.sourceCreativeId ? [selected.provenance.sourceCreativeId] : [];
+  const generatedMedia = useCreativeAssetState(mediaSources,imageIds,mediaReload);
+  const urls = {...brandMedia.urls,...generatedMedia.urls};
   const {graph:draftPreview,loading:previewLoading,error:previewError,retry:retryPreview}=useBrandTemplateDraftPreview(brandId,selected,draft);
   const load = useCallback(async () => {
     if(handoffPending.current===currentLocation.current){handoffPending.current=null;setLoading(false);return;}
@@ -163,11 +169,11 @@ export default function BrandTemplateLibrary() {
     setProjects([]);
     setBusy(false);
     setError("");
+    setGalleryReload(value => value + 1);
     try {
-      const [brand, result, drafts] = await Promise.all([
+      const [brand, result] = await Promise.all([
         brandApi.getKit(brandId),
-        authoring?Promise.resolve({items:[]}):templateId?brandTemplateApi.get(brandId,templateId).then(record=>({items:[record]})):brandTemplateApi.list(brandId),
-        templateId||authoring?Promise.resolve({items:[]}):brandTemplateApi.listDrafts(brandId).catch(()=>({items:[]})),
+        templateId ? brandTemplateApi.get(brandId,templateId).then(record=>({items:[record]})) : Promise.resolve({items:[]}),
       ]);
       if(templateId && !result.items.some(t=>t.id===templateId)) result.items.push(await brandTemplateApi.get(brandId,templateId));
       if (request !== requestVersion.current) return;
@@ -178,7 +184,6 @@ export default function BrandTemplateLibrary() {
         throw new Error("Brand context changed.");
       setKit(brand);
       setItems(result.items);
-      setTemplateDrafts(drafts.items);
     } catch {
       if (request !== requestVersion.current) return;
       setError(
@@ -240,7 +245,7 @@ export default function BrandTemplateLibrary() {
       await work();
     } catch (e) {
       if ((e as {statusCode?:number})?.statusCode === 409 && !dirty) {
-        try { if(selected)upsert(await brandTemplateApi.get(brandId,selected.id));else setItems((await brandTemplateApi.list(brandId)).items); } catch { /* retain current edits */ }
+        try { if(selected)upsert(await brandTemplateApi.get(brandId,selected.id));else setGalleryReload(value=>value+1); } catch { /* retain current edits */ }
       }
       setError(templateError(e));
     } finally {
@@ -249,7 +254,7 @@ export default function BrandTemplateLibrary() {
   };
   const reviewCard=(record:BrandTemplate,value:'reject'|'archive')=>void run(async()=>{
     const result=await brandTemplateApi.action(brandId,record.id,record.revision,value);
-    templateResponseId(result,record.id);upsert(result);toast.success(value==='reject'?'Template rejected.':'Template archived.');
+    templateResponseId(result,record.id);setGalleryReload(value=>value+1);toast.success(value==='reject'?'Template rejected.':'Template archived.');
   });
   const discardDraft=(id:string)=>{const source=templateDrafts.find(d=>d.id===id);if(source)setDeleteRequest(deletionEntries([], [source]));};
   const previewNative=(id:AdStudioTemplateId,chosen:string)=>void run(async()=>{
@@ -264,16 +269,13 @@ export default function BrandTemplateLibrary() {
   const prepare = () =>
     void run(async () => {
       if (!kit) throw new Error("Brand required");
-      const result = await brandTemplateApi.generate(
+      await brandTemplateApi.generate(
         brandId,
         kit.version,
         format,
       );
       if (activeBrand.current !== brandId) return;
-      setItems((previous) => [
-        ...result.items,
-        ...previous.filter((t) => !result.items.some((n) => n.id === t.id)),
-      ]);
+      setGalleryReload(value=>value+1);
       setMessage(
         "Editable layouts prepared.",
       );
@@ -286,7 +288,9 @@ export default function BrandTemplateLibrary() {
         selected.id,
         selected.revision,
         value,
-        value === "approve" && (selected.provenance.compositionMode==='reference-guided-template-v1' || depictionReviewed),
+        value === "approve" && (depictionReviewed || (!selected.brandReviewRequired && selected.provenance.compositionMode === "reference-guided-template-v1")),
+        undefined,
+        value === "approve" ? kit?.version : undefined,
       );
       templateResponseId(result,selected.id,value === "duplicate");
       let fresh = result;
@@ -295,7 +299,7 @@ export default function BrandTemplateLibrary() {
         try{
           fresh=await brandTemplateApi.action(brandId,fresh.id,fresh.revision,"save");
           templateResponseId(fresh,selected.id);upsert(fresh);
-        }catch{throw new Error("Template approved, but saving failed. Choose Save template to finish.");}
+        }catch(error){throw new Error("Template approved, but saving failed. " + (error instanceof Error ? error.message : "Reload the template and try again."));}
       }
       if (activeBrand.current !== brandId) return;
       if (value === "duplicate")
@@ -330,11 +334,7 @@ export default function BrandTemplateLibrary() {
       if (selected) {
         if (dirty || !canReuseTemplate(selected))
           throw new Error("Review required");
-        const creative = await brandTemplateApi.reuse(
-          brandId,
-          selected.id,
-          project.id,
-        );
+        const creative = await openBrandTemplateAd(brandTemplateApi,adStudioApi,project,selected);
         if (activeBrand.current === brandId)
           navigate(creativeEditorPath(creative.id));
       }
@@ -367,7 +367,34 @@ export default function BrandTemplateLibrary() {
         </div>
       </main>
     );
-  if (loading && (templateId || params.get("source")))return <div className="xp-root nxclip-production bp-guided-root bt-root bt-review-page ad-studio-w0a"><main className="xp-main"><nav className="xp-breadcrumb" aria-label="Breadcrumb"><Link to={"/brands/"+brandId+"/guided?step=ready"}><ArrowLeft size={14}/>Brand Kit</Link><Link to={"/brands/"+brandId+"/templates"}>Brand Templates</Link></nav><header className="xp-page-head"><h1><Palette size={26}/>Review template</h1><button type="button" disabled className="xp-primary"><Sparkles size={16}/>Generate Template</button></header><TemplateRenderReview/></main></div>;
+  const breadcrumb = (
+    <nav className="xp-breadcrumb" aria-label="Breadcrumb">
+      <Link
+        to={"/brands/" + brandId + "/guided?step=ready"}
+        onClick={e=>follow(e,"/brands/"+brandId+"/guided?step=ready")}
+      >
+        <ArrowLeft size={14} /> {kit?.name || "Brand Kit"}
+      </Link>
+      <Link to={base} onClick={e=>follow(e,base)}>Brand Templates</Link>
+    </nav>
+  );
+  const reviewNavigation = templateId ? (
+    <div className="bt-review-navigation">
+      {breadcrumb}
+      <button type="button" className="xp-primary" disabled={loading} onClick={() => go(base + "?tab=brand&mode=ai")}>
+        <Sparkles size={16} aria-hidden="true" /> Generate Template
+      </button>
+    </div>
+  ) : breadcrumb;
+  if (loading && (templateId || params.get("source"))) return (
+    <div className="xp-root nxclip-production bp-guided-root bt-root bt-review-page ad-studio-w0a">
+      <main className="xp-main">
+        {reviewNavigation}
+        {!templateId && <header className="xp-page-head"><h1><Palette size={26} aria-hidden="true" /> Review template</h1></header>}
+        <TemplateRenderReview />
+      </main>
+    </div>
+  );
   if (loading)
     return (
       <div className="grid gap-6 p-6" aria-label="Loading template library">
@@ -388,14 +415,7 @@ export default function BrandTemplateLibrary() {
         onAction={() => void load()}
       />
     );
-  const visible = items.filter(
-    (t) =>
-      (archived || t.state !== "archived" || !!t.deletion) &&
-      `${t.name} ${t.sourceTemplateId}`
-        .toLowerCase()
-        .includes(search.toLowerCase()),
-  );
-  const visibleEntries=deletionEntries(visible,unlistedDrafts(items,templateDrafts,search));
+  const visibleEntries=deletionEntries(items,templateDrafts);
   const toggleDelete=(entry:TemplateDeleteEntry)=>setDeleteSelection(previous=>previous.includes(deletionKey(entry))?previous.filter(k=>k!==deletionKey(entry)):previous.length<50?[...previous,deletionKey(entry)]:previous);
   const openBulkDelete=()=>{try{const keys=new Set(deletionPayload(visibleEntries,deleteSelection).map(deletionKey));setDeleteRequest(visibleEntries.filter(e=>keys.has(deletionKey(e))));}catch(e){toast.error(e instanceof Error?e.message:'Select templates again.');}};
   const deleteTemplates=()=>void run(async()=>{
@@ -440,7 +460,7 @@ export default function BrandTemplateLibrary() {
         }
         onClick={reuse}
       >
-        Create ad →
+        Continue to ad Canvas →
       </button>
       <Link
         className="xp-text-button"
@@ -457,25 +477,9 @@ export default function BrandTemplateLibrary() {
         <TemplateLeaveDialog open={leaveTarget!==null} onStay={()=>setLeaveTarget(null)} onDiscard={()=>{const target=leaveTarget;setLeaveTarget(null);if(target)navigate(target);}}/>
         <TemplateDeleteDialog entries={deleteRequest} busy={busy} onCancel={()=>setDeleteRequest(null)} onConfirm={deleteTemplates}/>
         {!!deleteResults.length&&<div className="bt-delete-results" role="status"><strong>Deletion results</strong><ul>{deleteResults.map(r=><li key={deletionKey(r)}>{(r.name||'Template')+': '}{r.status==='deleted'?'Deleted':r.message}{r.retainedObjects>0?' · Shared or protected files retained':''}</li>)}</ul><button type="button" className="xp-text-button" onClick={()=>setDeleteResults([])}>Dismiss</button></div>}
-        <nav className="xp-breadcrumb" aria-label="Breadcrumb">
-          <Link
-            to={"/brands/" + brandId + "/guided?step=ready"}
-            onClick={e=>follow(e,"/brands/"+brandId+"/guided?step=ready")}
-          >
-            <ArrowLeft size={14} /> {kit.name}
-          </Link>
-          <Link to={base} onClick={e=>follow(e,base)}>Brand Templates</Link>
-        </nav>
-        {(!["ai","native"].includes(params.get("mode") || "") || !!params.get("source")) && <header className="xp-page-head">
-          <div>
-
-            <h1><Palette size={26} aria-hidden="true" />
-              {selected || params.get("source")
-                ? "Review template"
-                : "Your brand. Every composition."}
-            </h1>
-
-          </div>
+        {reviewNavigation}
+        {!templateId && params.get("source") && <header className="xp-page-head">
+          <h1><Palette size={26} aria-hidden="true" /> Review template</h1>
           <button className="xp-primary" disabled={authoring&&!!params.get("source")} onClick={() => go(base + "?tab=brand&mode=ai")}><Sparkles size={16} aria-hidden="true" /> Generate Template</button>
         </header>}
         {error && (
@@ -628,7 +632,12 @@ export default function BrandTemplateLibrary() {
                   </button>
                 </fieldset>
                 <TemplateSourceReferences references={selected.provenance.referenceManifest} sourceAssetIds={selected.sourceAssetIds} kit={kit} urls={urls}/>
-                {selected.provenance.compositionMode!=='reference-guided-template-v1'&&selected.provenance.renderMode==="template-proposal" && !selected.provenance.productDepictionReviewed && <label className="xp-check"><input type="checkbox" disabled={reviewPhase!=="ready"} checked={depictionReviewed} onChange={e=>setDepictionReviewed(e.target.checked)}/>I reviewed the product, packaging and brand copy.</label>}
+                {(selected.brandReviewRequired || (selected.provenance.compositionMode !== "reference-guided-template-v1" && selected.provenance.renderMode === "template-proposal" && !selected.provenance.productDepictionReviewed)) && selected.state !== "archived" && (
+                  <label className="xp-check">
+                    <input type="checkbox" disabled={reviewPhase !== "ready"} checked={depictionReviewed} onChange={e => setDepictionReviewed(e.target.checked)} />
+                    {selected.brandReviewRequired ? "I reviewed this artwork and copy against the current Brand Kit." : "I reviewed the product, packaging and brand copy."}
+                  </label>
+                )}
                 <div className="xp-actions bt-review-actions">
                   {(
                     [
@@ -643,7 +652,7 @@ export default function BrandTemplateLibrary() {
                     .filter((a) =>
                       selected.state === "archived"
                         ? a === "restore"
-                        : a !== "restore" && (a !== "approve" || selected.state !== "approved") && (a !== "save" || selected.state === "approved" && !selected.saved),
+                        : a !== "restore" && (a !== "approve" || selected.state !== "approved" || selected.brandReviewRequired) && (a !== "save" || selected.state === "approved" && !selected.saved && !selected.brandReviewRequired),
                     )
                     .map((a) => (
                       <button
@@ -654,6 +663,7 @@ export default function BrandTemplateLibrary() {
                           busy || reviewPhase==="loading" ||
                           dirty ||
                           (a === "save" && selected.state !== "approved") ||
+                          (a === "approve" && selected.brandReviewRequired && (!depictionReviewed || !kit?.version)) ||
                           (a === "approve" && (reviewPhase!=="ready" || selected.blockers.length > 0 || (selected.provenance.compositionMode==='reference-guided-template-v1'?false:selected.provenance.renderMode === "template-proposal" && !selected.provenance.productDepictionReviewed && !depictionReviewed)))
                         }
                         key={a}
@@ -682,39 +692,47 @@ export default function BrandTemplateLibrary() {
           </>
         ) : (
           <>
-            <div
-              className="xp-actions"
-              role="tablist"
-              aria-label="Template library"
-            >
-              <button
-                className={tab === "default" ? "xp-primary" : "xp-secondary"}
-                role="tab"
-                aria-selected={tab === "default"}
-                onClick={() => {
-
-                  setParams({ tab: "default" });
-                }}
+            <div className="bt-library-actions">
+              <div
+                className="xp-actions"
+                role="tablist"
+                aria-label="Template library"
               >
-                Default Templates
-              </button>
-              <button
-                className={tab === "brand" ? "xp-primary" : "xp-secondary"}
-                role="tab"
-                aria-selected={tab === "brand"}
-                onClick={() => {
+                <button
+                  className={tab === "default" ? "xp-primary" : "xp-secondary"}
+                  role="tab"
+                  aria-selected={tab === "default"}
+                  onClick={() => {
 
-                  setParams({ tab: "brand" });
-                }}
-              >
-                My Brand Templates ({items.length + unlistedDrafts(items,templateDrafts).length})
-              </button>
+                    setParams({ tab: "default" });
+                  }}
+                >
+                  Default Templates
+                </button>
+                <button
+                  className={tab === "brand" ? "xp-primary" : "xp-secondary"}
+                  role="tab"
+                  aria-selected={tab === "brand"}
+                  onClick={() => {
+
+                    setParams({ tab: "brand" });
+                  }}
+                >
+                  My Brand Templates
+                </button>
+              </div>
+              <div className="xp-actions bt-library-utilities">
+                {tab === "brand" && <TemplateBulkActions entries={visibleEntries} selected={deleteSelection} busy={busy} onSelect={setDeleteSelection} onDelete={openBulkDelete} />}
+                <button type="button" className="xp-primary" onClick={() => go(base + "?tab=brand&mode=ai")}>
+                  <Sparkles size={16} aria-hidden="true" /> Generate Template
+                </button>
+              </div>
             </div>
 
             <div className="xp-panel bt-toolbar">
               <div className="xp-actions">
                 <label className="xp-field">
-                  Output format
+                  <span>Output format</span>
                   <select
                     value={format}
                     onChange={(e) => {
@@ -732,7 +750,7 @@ export default function BrandTemplateLibrary() {
                 {tab === "brand" && (
                   <>
                     <label className="xp-field">
-                      Find a template
+                      <span>Find a template</span>
                       <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
@@ -763,7 +781,6 @@ export default function BrandTemplateLibrary() {
               </div>
 
             </div>
-            {tab==="brand"&&<TemplateBulkActions entries={visibleEntries} selected={deleteSelection} busy={busy} onSelect={setDeleteSelection} onDelete={openBulkDelete}/>}
             {tab === "default" ? (
               <>
                 <TemplateGallery
@@ -777,15 +794,15 @@ export default function BrandTemplateLibrary() {
                 />
 
               </>
-            ) : !visible.length && !unlistedDrafts(items,templateDrafts,search).length ? (
+            ) : !items.length && !templateDrafts.length && !gallery.loading && !gallery.error ? (
               <EmptyState
                 title={
-                  items.length
+                  search.trim()
                     ? "No matching templates"
                     : "Your Brand Templates are ready to begin"
                 }
                 description={
-                  items.length
+                  search.trim()
                     ? "Change the search or include archived templates."
                     : "Complete your reviewed Brand Kit and approve source assets, then prepare native editable candidates."
                 }
@@ -794,14 +811,16 @@ export default function BrandTemplateLibrary() {
               />
             ) : (
               <BrandTemplateGallery label="My Brand Templates">
-                {templateRecency(visible,unlistedDrafts(items,templateDrafts,search)).map(entry=>entry.kind==='draft'?((d)=><BrandTemplateTile key={'draft:'+d.id}
-                  name={d.name} graph={d.sceneGraph} assetUrls={urls} status={d.deletionPending?'Cleanup pending':'Draft'}
+                {gallery.loading && !items.length && !templateDrafts.length &&
+                  Array.from({ length: 8 }, (_, index) => <Skeleton key={index} className="aspect-[4/5] w-full" />)}
+                {templateRecency(items,templateDrafts).map(entry=>entry.kind==='draft'?((d)=><BrandTemplateTile key={'draft:'+d.id}
+                  name={d.name} graph={d.sceneGraph} assetUrls={urls} mediaSourceId={d.id} mediaKit={assetKit} status={d.deletionPending?'Cleanup pending':'Draft'}
                   kind={d.templateContext?.draftKind==='native'?'Editable layout':'AI proposal'}
                   selected={deleteSelection.includes('draft:'+d.id)} busy={busy} pending={d.deletionPending}
                   onToggle={()=>toggleDelete(deletionEntries([], [d])[0])}
                   onPreview={()=>go(base+'?tab=brand&mode='+(d.templateContext?.draftKind||'ai')+'&source='+encodeURIComponent(d.id))}
                   onDelete={()=>discardDraft(d.id)}/>)(entry.draft):((t)=>
-                <BrandTemplateTile key={t.id} name={t.name} graph={t.sceneGraph} assetUrls={urls} format={t.format}
+                <BrandTemplateTile key={t.id} name={t.name} graph={t.sceneGraph} assetUrls={urls} mediaSourceId={t.provenance.sourceCreativeId} mediaKit={assetKit} format={t.format}
                   status={t.deletion?'Cleanup pending':t.saved?'Saved':t.state==='suggested'?'Review needed':t.state[0].toUpperCase()+t.state.slice(1)}
                   kind={t.provenance.method==='provider-ai-creative'?'AI artwork':'Editable layout'}
                   selected={deleteSelection.includes('template:'+t.id)} busy={busy} pending={!!t.deletion}
@@ -811,6 +830,14 @@ export default function BrandTemplateLibrary() {
                   onArchive={t.state!=='archived'?()=>reviewCard(t,'archive'):undefined}
                   onDelete={()=>setDeleteRequest(deletionEntries([t],[]))}/>)(entry.record))}
               </BrandTemplateGallery>
+            )}
+            {tab === "brand" && (gallery.nextOffset !== null || gallery.error) && (
+              <div ref={gallery.sentinel} className="xp-actions justify-center" aria-busy={gallery.loading}>
+                {gallery.loading ? <span role="status">Loading templates…</span> :
+                  <button type="button" className="xp-secondary" onClick={gallery.loadMore}>
+                    {gallery.error ? "Retry loading templates" : "Load more templates"}
+                  </button>}
+              </div>
             )}
           </>
         )}

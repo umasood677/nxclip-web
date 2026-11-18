@@ -10,15 +10,33 @@ export function useCreativeAssetUrls(ids:readonly string[],assetIds?:readonly st
 
 export function useCreativeAssetState(ids:readonly string[],assetIds?:readonly string[],reload=0){
  const token=useAuthToken(),gateway=typeof window==='undefined'?'':resolveBaseGatewayUrl(),key=[...new Set(ids)].sort().join(','),filter=assetIds===undefined?null:JSON.stringify([...new Set(assetIds)].sort()),scope=JSON.stringify([key,filter,token,gateway,reload]);
- const [state,setState]=useState<{scope:string;urls:Record<string,string>}>({scope:'',urls:{}});
+ const [state,setState]=useState<{scope:string;urls:Record<string,string>;complete:boolean}>({scope:'',urls:{},complete:false});
  useEffect(()=>{let cancelled=false;const created:string[]=[];if(!token){media.clear();return;}if(!key||filter==='[]')return;
  const allowed=filter===null?null:new Set(JSON.parse(filter) as string[]);
  if(reload)media.invalidate(key.split(','),allowed?[...allowed]:[],token,gateway);
- void(async()=>{const next:Record<string,string>={};await Promise.all(key.split(',').map(async id=>{try{const list=await media.list(id,token,gateway);await Promise.all(list.items.filter(asset=>!allowed||allowed.has(asset.id)).map(async asset=>{try{const blob=await media.image(asset,token,gateway);if(cancelled)return;const url=URL.createObjectURL(blob);created.push(url);next[asset.id]=url;}catch{/* No automatic retries or public URL fallback. */}}));}catch{/* Missing owned media remains unresolved. */}}));if(!cancelled)setState({scope,urls:next});})();
+ void(async()=>{
+  const next:Record<string,string>={};
+  await Promise.all(key.split(',').map(async id=>{
+   try{
+    const list=await media.list(id,token,gateway);
+    await Promise.all(list.items.filter(asset=>!allowed||allowed.has(asset.id)).map(async asset=>{
+     try{
+      const blob=await media.image(asset,token,gateway);
+      if(cancelled)return;
+      const url=URL.createObjectURL(blob);
+      created.push(url);
+      next[asset.id]=url;
+      setState({scope,urls:{...next},complete:false});
+     }catch{/* No automatic retries or public URL fallback. */}
+    }));
+   }catch{/* Missing owned media remains unresolved. */}
+  }));
+  if(!cancelled)setState({scope,urls:next,complete:true});
+ })();
  return()=>{cancelled=true;created.forEach(url=>URL.revokeObjectURL(url));};
  },[key,filter,token,gateway,scope,reload]);
  return {
   urls: state.scope===scope?state.urls:{},
-  loading: Boolean(token && key && filter!=='[]' && state.scope!==scope),
+  loading: Boolean(token && key && filter!=='[]' && (state.scope!==scope || !state.complete)),
  };
 }

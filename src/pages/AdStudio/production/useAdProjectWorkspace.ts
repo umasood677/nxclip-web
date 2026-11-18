@@ -98,9 +98,10 @@ export function useAdProjectWorkspace() {
       if (result.project.brandKitId) {
         try {
           const kit = await brandApi.getKit(result.project.brandKitId);
+          if (kit.id !== result.project.brandKitId) throw Error("Brand Kit context mismatch.");
           if (epoch === loadEpoch.current) setBrand(kit);
         } catch {
-          setConceptError(
+          if (epoch === loadEpoch.current) setConceptError(
             "Brand assets are unavailable. Reopen the project to retry; your saved creatives are retained.",
           );
         }
@@ -284,16 +285,18 @@ export function useAdProjectWorkspace() {
   };
   const saveBrief = async (
     options: import("../lib/projectWorkspace").BriefSaveOptions = {},
+    nextForm = form,
   ) => {
     if (!project) throw Error("Open a project before saving a brief.");
     const updated = await saveWorkspaceBrief(
       adStudioApi,
       project,
-      form,
+      nextForm,
       options,
     );
     setProject(updated);
-    setSavedForm(JSON.stringify(form));
+    setForm(nextForm);
+    setSavedForm(JSON.stringify(nextForm));
     return updated as WorkspaceProject;
   };
   const generateConcepts = async () => {

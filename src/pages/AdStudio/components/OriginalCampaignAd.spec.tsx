@@ -104,15 +104,17 @@ test("a terminal retained generation exits the progress screen even when its bro
     },
   };
   assert.equal(
-    campaignGenerationIsActive({ busy: false, retained, status: "processing" }),
+    campaignGenerationIsActive({ retained, status: "processing" }),
     true,
   );
   assert.equal(
-    campaignGenerationIsActive({ busy: false, retained, status: "failed" }),
+    campaignGenerationIsActive({ retained, status: "failed" }),
     false,
   );
   assert.equal(
-    campaignGenerationIsActive({ busy: false, retained, status: "cancelled" }),
+    campaignGenerationIsActive({ retained, status: "cancelled" }),
     false,
   );
+  assert.equal(campaignGenerationIsActive({ retained: { ...retained, phase: "prepared" }, status: "" }), false);
+  assert.equal(campaignGenerationIsActive({ retained, status: "" }), true);
 });

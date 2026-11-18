@@ -11,6 +11,7 @@ type Props = {
   brand?: NormalizedBrandContext | null;
   aspect?: Aspect;
   headline?: string;
+  fit?: "cover" | "contain";
   className?: string;
   /**
    * How to place Brand Kit product/model: never replaces the layout image.
@@ -30,6 +31,7 @@ export function BrandHomePreview({
   brand,
   aspect = "portrait",
   headline,
+  fit,
   className,
   assetMode = "inset",
 }: Props) {
@@ -75,6 +77,7 @@ export function BrandHomePreview({
         <img
           onError={() => setFailed(true)}
           className="w0a-brand-preview__layout"
+          style={fit ? { objectFit: fit } : undefined}
           src={fallbackSrc}
           alt={alt}
           loading="lazy"

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
+  ArrowLeft,
   Copy as CopyIcon,
   Download,
   FileJson,
@@ -29,9 +30,11 @@ import {
 } from "./lib/brandKitExport";
 import { duplicateBrandKit } from "./lib/duplicateBrandKit";
 import type { BrandKitSummary } from "./lib/brandKitTypes";
+import { useBrandKitConfirmation } from "./components/useBrandKitConfirmation";
 
 export default function BrandKitDashboard() {
   const navigate = useNavigate();
+  const { confirm, confirmation } = useBrandKitConfirmation();
   const [kits, setKits] = useState<BrandKitSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -122,13 +125,12 @@ export default function BrandKitDashboard() {
   };
 
   const onDelete = async (kit: BrandKitSummary) => {
-    if (
-      !window.confirm(
-        `Delete “${kit.name}”? This soft-deletes the kit. Creatives that already snapshotted the brand are unchanged.`,
-      )
-    ) {
-      return;
-    }
+    if (!await confirm({
+      title: "Delete Brand Kit?",
+      description: `“${kit.name}” will be removed from Brand Kit Studio. Existing creatives will retain their saved brand details.`,
+      confirmLabel: "Delete Brand Kit",
+      destructive: true,
+    })) return;
     setBusyId(kit.id);
     try {
       await brandApi.deleteKit(kit.id);
@@ -215,92 +217,72 @@ export default function BrandKitDashboard() {
 
   return (
     <div className="xp-root nxclip-production bk-library space-y-4">
+      {confirmation}
       <SEO title="Brand Kit Studio | NxClip" />
 
       <section className="bk-library-hero">
-        <div className="bk-library-heading">
-          <div className="bk-library-title">
-            <div className="flex items-center gap-2 text-primary">
-              <Palette size={18} />
-              <span className="text-xs font-semibold uppercase tracking-[0.16em]">
-                Brand Kit Studio
-              </span>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-display font-semibold tracking-tight text-foreground leading-[1.1]">
-              Your Brand Kits
-            </h1>
-            <p className="text-sm md:text-base text-muted-foreground">
-              Identity, assets and templates — together in one place.
-            </p>
+        <nav className="xp-breadcrumb bk-library-breadcrumb" aria-label="Breadcrumb">
+          <Link to="/create/ad"><ArrowLeft size={14} /> Create</Link>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">Brand Kits</span>
+        </nav>
+        <div className="bk-library-tools">
+          <div className="relative max-w-md flex-1">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by name, industry, tagline…" className="pl-9" aria-label="Search Brand Kits" />
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" asChild>
+          <div className="bk-library-actions">
+            <p className="whitespace-nowrap text-xs text-muted-foreground">
+              {loading
+                ? "…"
+                : `${filtered.length} kit${filtered.length === 1 ? "" : "s"}`}
+              {selectedIds.size ? ` · ${selectedIds.size} selected` : ""}
+              {busyId ? " · Working…" : ""}
+            </p>
+            <Button type="button" size="sm" variant="outline" asChild>
               <Link to="/create/ad">
                 <Megaphone size={16} className="mr-2" /> Ad Studio
               </Link>
             </Button>
             <Button
               type="button"
+              size="sm"
               variant="outline"
               onClick={() => setImportOpen(true)}
             >
               <FileJson size={16} className="mr-2" /> Import JSON
             </Button>
-            <Button type="button" className="bk-create-brand" onClick={() => navigate("/brands/new")}>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={!kits.length}
+              onClick={() => void onExportSelected()}
+            >
+              <Download size={14} className="mr-1" />
+              {selectedIds.size ? "Export selected" : "Export all"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={!kits.length}
+              onClick={() => void onCopySelected()}
+            >
+              <CopyIcon size={14} className="mr-1" /> Copy JSON
+            </Button>
+            <Button type="button" size="sm" className="bk-create-brand" onClick={() => navigate("/brands/new")}>
               <Plus size={16} className="mr-2" /> Create Brand Kit
             </Button>
           </div>
         </div>
-      <div className="bk-library-tools">
-        <div className="relative max-w-md flex-1">
-          <Search
-            size={16}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-          />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name, industry, tagline…"
-            className="pl-9"
-            aria-label="Search Brand Kits"
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-xs text-muted-foreground mr-1">
-            {loading
-              ? "…"
-              : `${filtered.length} kit${filtered.length === 1 ? "" : "s"}`}
-            {selectedIds.size ? ` · ${selectedIds.size} selected` : ""}
-            {busyId ? " · Working…" : ""}
-          </p>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={!kits.length}
-            onClick={() => void onExportSelected()}
-          >
-            <Download size={14} className="mr-1" />
-            {selectedIds.size ? "Export selected" : "Export all"}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={!kits.length}
-            onClick={() => void onCopySelected()}
-          >
-            <CopyIcon size={14} className="mr-1" /> Copy JSON
-          </Button>
-        </div>
-      </div>
-
       </section>
 
 
       {loading ? (
         <div
-          className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+          className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
           aria-label="Loading Brand Kits"
           aria-busy="true"
         >
@@ -351,7 +333,7 @@ export default function BrandKitDashboard() {
           No kits match “{query}”.
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((kit) => (
             <BrandKitCard
               key={kit.id}

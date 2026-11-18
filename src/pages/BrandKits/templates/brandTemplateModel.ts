@@ -29,6 +29,7 @@ export interface BrandTemplate {
   blockers: string[];
   warnings: string[];
   reuseIssues?: string[];
+  brandReviewRequired?: boolean;
   provenance: { compositionMode?:'source-preserving-v1'|'reference-guided-template-v1';referenceManifest?:import('./templateReferenceInput').TemplateReferenceMetadata[];fidelityReview?:import('./TemplateFidelityReview').FidelityReview; method: "native-template-engine" | "provider-ai-creative"; catalogVersion: string; sourceCreativeId?:string; sourceProjectId?:string; generatedAssetId?:string; provider?:string; modelId?:string; renderMode?:"template-proposal"; productDepictionReviewed?:true };
 }
 export function isBrandTemplatesEnabled(
@@ -68,6 +69,7 @@ export function canReuseTemplate(template: BrandTemplate): boolean {
   return (
     template.state === "approved" &&
     template.saved &&
+    !template.brandReviewRequired &&
     !template.blockers.length &&
     !template.reuseIssues?.length
   );

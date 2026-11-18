@@ -21,6 +21,7 @@ import {
 } from "./templateCatalog";
 import { fontIdForBrandFamily } from "../lib/adStudioFontId";
 import { sanitizeSceneGraphForClient } from "./sanitizeSceneGraph";
+import { projectWorkspaceArtworkId } from "./catalogArtwork";
 
 export type TemplatePreviewStatus = "ready" | "partial" | "blocked";
 
@@ -148,7 +149,10 @@ export function composeTemplatePreview(input: {
   const dims =
     FORMAT_DIMENSIONS[outputFormat] ?? FORMAT_DIMENSIONS.portrait_1080x1350!;
   const { width, height } = dims;
-  const palette = resolvePalette(brand);
+  const projectWorkspace = templateId === "project-workspace";
+  const palette = projectWorkspace
+    ? { ...resolvePalette(brand), background: "#F3F4FC", text: "#101337", accent: "#4527D3" }
+    : resolvePalette(brand);
   const fonts = resolveFonts(brand);
 
   const bound = new Map<TemplateSlotRole, ReturnType<typeof listBrandAssetsBySlotRole>>();
@@ -184,6 +188,14 @@ export function composeTemplatePreview(input: {
   }
 
   const layers: AdSceneLayer[] = [];
+  if (projectWorkspace) {
+    const top = width > height ? 0 : Math.round(height * 0.53);
+    layers.push({
+      id: layerId(templateId, "image", "office"),
+      type: "image", name: "Office photograph", assetId: projectWorkspaceArtworkId,
+      x: 0, y: top, width, height: height - top, zIndex: 1, objectFit: "cover",
+    });
+  }
   const filledImageRegions = new Set<string>();
   let emittedHint = false;
 
@@ -243,14 +255,22 @@ export function composeTemplatePreview(input: {
       layers.push({
         id: layerId(templateId, "shapeAccent", recipe.regionId),
         type: "shape",
-        name: "Accent band",
-        shape: "rectangle",
+        name: recipe.label ?? (recipe.fill || recipe.fillRole ? recipe.regionId.replace(/-/g, " ") : "Accent band"),
+        shape: recipe.cornerRadiusPct ? "roundedRectangle" : "rectangle",
         x: box.x,
         y: box.y,
         width: box.width,
         height: box.height,
         zIndex: recipe.zIndex,
-        fill: palette.primary,
+        fill: recipe.fill ?? palette[recipe.fillRole ?? "primary"],
+        ...(recipe.cornerRadiusPct ? { cornerRadius: Math.round(width * recipe.cornerRadiusPct / 100) } : {}),
+        ...(recipe.label && recipe.labelSizePct ? {
+          text: recipe.label,
+          textColor: recipe.labelColor ?? palette.text,
+          fontFamily: fonts.body,
+          fontSize: Math.round(width * recipe.labelSizePct / 100),
+        } : {}),
+        ...(recipe.opacity === undefined ? {} : { opacity: recipe.opacity }),
       });
       continue;
     }
@@ -294,10 +314,10 @@ export function composeTemplatePreview(input: {
         width: box.width,
         height: box.height,
         zIndex: recipe.zIndex,
-        fill: palette.accent,
+        fill: recipe.fillRole ? palette[recipe.fillRole] : palette.accent,
         cornerRadius: Math.round(box.height * 0.35),
         text: ctaText,
-        textColor: "#FFFFFF",
+        textColor: recipe.fillRole === "text" ? palette.background : "#FFFFFF",
         fontFamily: fonts.cta,
         fontSize: Math.max(12, Math.round(box.height * typo.sizeScale)),
       });
@@ -382,6 +402,7 @@ export function composeTemplatePreview(input: {
       }
 
       if (!assets.length) {
+        if (templateId === "project-workspace" && isLogo) continue;
         if (
           def.missingAssetPolicy === "showSlotHint" ||
           (!slotDef?.required && def.missingAssetPolicy !== "blockPreview")

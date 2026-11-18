@@ -66,6 +66,7 @@ export function AdProjectCreateForm({
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [formatOverride, setFormatOverride] = useState<string>();
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const selectedFormat = formatOverride ?? format ?? example?.briefDefaults.outputFormat ?? "portrait_1080x1350";
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -94,12 +95,11 @@ export function AdProjectCreateForm({
   }
   function cancel() {
     if (busy) return;
-    if (
-      (name.trim() || idea.trim()) &&
-      !window.confirm("Discard this unsaved project draft?")
-    )
-      return;
-    onCancel();
+    if (name.trim() || idea.trim() || formatOverride || brandId !== initialBrandId) {
+      setConfirmDiscard(true);
+    } else {
+      onCancel();
+    }
   }
   const nameField = (
       <div className="space-y-2">
@@ -177,7 +177,7 @@ export function AdProjectCreateForm({
             return <label key={id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-2.5 py-2 text-xs has-[:checked]:border-[var(--w0a-accent)] has-[:checked]:bg-[var(--w0a-panel-2)] has-[:focus-visible]:outline">
               <input className="sr-only" type="radio" name="campaign-format" value={id} checked={selectedFormat === id}
                 disabled={busy} onChange={() => setFormatOverride(id)} />
-              <span aria-hidden className="rounded-sm border border-current" style={{ width: width * scale, height: height * scale }} />
+              <span aria-hidden className="shrink-0 rounded-none border border-current" style={{ width: width * scale, height: height * scale }} />
               {label}
             </label>;
           })}
@@ -195,7 +195,13 @@ export function AdProjectCreateForm({
           {error}
         </p>
       )}
-      <DialogFooter className={ideaFirst ? "ad-project-create-form__actions" : undefined}>
+      {confirmDiscard ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-border p-3">
+          <p role="status" className="mr-auto text-sm">Discard this unsaved campaign?</p>
+          <Button type="button" variant="outline" size="sm" autoFocus onClick={() => setConfirmDiscard(false)}>Keep editing</Button>
+          <Button type="button" variant="destructive" size="sm" disabled={busy} onClick={onCancel}>Discard campaign</Button>
+        </div>
+      ) : <DialogFooter className={ideaFirst ? "ad-project-create-form__actions" : undefined}>
         <Button
           type="button"
           variant="outline"
@@ -223,7 +229,7 @@ export function AdProjectCreateForm({
           )}{" "}
           {busy ? "Creating project…" : ideaFirst ? "Create campaign" : "Create project"}
         </Button>
-      </DialogFooter>
+      </DialogFooter>}
     </form>
   );
 }

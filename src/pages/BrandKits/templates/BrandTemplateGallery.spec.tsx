@@ -12,7 +12,8 @@ test('saved and draft templates use the Default Templates grid and preserve orig
  assert.match(html,/aria-label="My Brand Templates"/);assert.match(html,/w0a-grid w0a-grid-3 bt-template-gallery/);
  assert.equal((html.match(/class="w0a-card bt-library-tile"/g)||[]).length,3);
  assert.ok(html.indexOf('Portrait')<html.indexOf('Landscape'));assert.ok(html.indexOf('Landscape')<html.indexOf('Story'));
- assert.match(html,/data-canvas-w="1920" data-canvas-h="1080"/);assert.doesNotMatch(html,/flex-grow|flex-basis|height:280px/);
+ // SSR retains each scene's ratio while the measured preview waits for a browser width.
+ assert.match(html,/aspect-ratio:1920\/1080/);assert.doesNotMatch(html,/flex-grow|flex-basis|height:280px/);
 });
 test('both Brand Template surfaces use equal-width Default-style cards without Content Library layout',()=>{
  const root=process.cwd()+'/src/pages/BrandKits/',gallery=readFileSync(root+'templates/BrandTemplateGallery.tsx','utf8'),css=readFileSync(root+'templates/brandTemplates.css','utf8');

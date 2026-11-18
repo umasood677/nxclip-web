@@ -48,6 +48,9 @@ export type AdBriefFormState = {
   productCategory?: string;
   creativeDirection?: string;
   productFocus?: string;
+  productImageAssetId?: string | null;
+  referenceImageAssetId?: string | null;
+  brandModelProfileId?: string | null;
   name: string;
   brandKitId: string;
   /** Signed URL / palette cache from active kit — cleared when brandKitId changes. */

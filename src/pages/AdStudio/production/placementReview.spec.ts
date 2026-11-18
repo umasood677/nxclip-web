@@ -55,6 +55,18 @@ test("placement preview reuses existing adaptation without mutating original or 
   assert.deepEqual(original, before);
   assert.equal((graph.layers[1] as { text?: string }).text, "Original copy");
 });
+test("landscape adaptation fits the complete photograph without changing the original crop", () => {
+  const original = source();
+  const image = original.sceneGraph!.layers[0];
+  assert.equal(image.type, "image");
+  if (image.type !== "image") throw Error("Expected an image fixture.");
+  image.objectFit = "cover";
+  const graph = placementPreview(original, "owned-project", "landscape_1920x1080");
+  assert.deepEqual([graph.canvas.width, graph.canvas.height], [1920, 1080]);
+  const adapted = graph.layers[0];
+  assert.equal(adapted.type === "image" && adapted.objectFit, "contain");
+  assert.equal(image.objectFit, "cover");
+});
 test("placement preview rejects another project, unsupported placement and missing graph", () => {
   assert.throws(
     () => placementPreview(source(), "other-project", "square_1080"),

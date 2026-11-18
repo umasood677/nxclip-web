@@ -3,16 +3,30 @@ import {Archive,RotateCcw,Trash2,X,Pencil} from 'lucide-react';
 import {formatChip} from '../../AdStudio/components/TemplateGallery';
 import {AD_FORMATS,type AdSceneGraph} from '../../AdStudio/types';
 import {BrandTemplateScenePreview} from './BrandTemplateScenePreview';
+import {useTemplateAssetState,templateImageIds} from './useTemplateAssetUrls';
+import {useCreativeAssetState} from '../../AdStudio/canvas/useCreativeAssetUrls';
+import type {BrandKitSummary} from '../lib/brandKitTypes';
 
-type Props={name:string;graph?:AdSceneGraph|null;assetUrls:Record<string,string>;format?:string;status:string;kind:string;selected:boolean;busy:boolean;pending?:boolean;onToggle:()=>void;onPreview:()=>void;onDelete:()=>void;onReject?:()=>void;onArchive?:()=>void;onEdit?:()=>void;hideSelection?:boolean};
-export function BrandTemplateTile({name,graph,assetUrls,format,status,kind,selected,busy,pending=false,onToggle,onPreview,onDelete,onReject,onArchive,onEdit,hideSelection=false}:Props){
+type Props={name:string;graph?:AdSceneGraph|null;assetUrls:Record<string,string>;mediaLoading?:boolean;mediaSourceId?:string;mediaKit?:BrandKitSummary|null;format?:string;status:string;kind:string;selected:boolean;busy:boolean;pending?:boolean;onToggle:()=>void;onPreview:()=>void;onDelete:()=>void;onReject?:()=>void;onArchive?:()=>void;onEdit?:()=>void;hideSelection?:boolean};
+export function BrandTemplateTile(props:Props){
+ return props.mediaKit ? <OwnedTemplateTile {...props}/> : <TemplateTile {...props}/>;
+}
+
+function OwnedTemplateTile(props:Props){
+ const ids = props.pending ? [] : templateImageIds([props.graph]);
+ const brand = useTemplateAssetState(props.mediaKit, ids);
+ const artwork = useCreativeAssetState(props.mediaSourceId && ids.length ? [props.mediaSourceId] : [], ids);
+ return <TemplateTile {...props} assetUrls={{...props.assetUrls,...brand.urls,...artwork.urls}} mediaLoading={brand.loading || artwork.loading}/>;
+}
+
+function TemplateTile({name,graph,assetUrls,mediaLoading,format,status,kind,selected,busy,pending=false,onToggle,onPreview,onDelete,onReject,onArchive,onEdit,hideSelection=false}:Props){
  const width=graph?.canvas.width,height=graph?.canvas.height;
  const knownFormat=format||AD_FORMATS.find(f=>width&&height&&f.width*height===f.height*width)?.id;
  const ratio=knownFormat?formatChip(knownFormat):width&&height?width+' × '+height:'Layout';
  return <article className={'w0a-card bt-library-tile'+(selected?' bt-card-selected':'')}>
   {!hideSelection&&<label className="bt-card-select"><input type="checkbox" aria-label={'Select '+name} checked={selected} disabled={busy} onChange={onToggle}/><span className="sr-only">Select template</span></label>}
   <div className="w0a-brand-preview bt-tile-art">
-   {pending?<span className="bt-cleanup-placeholder"><Trash2 size={28}/> Cleanup pending</span>:<BrandTemplateScenePreview graph={graph||null} assetUrls={assetUrls} size="card" fillCard readablePlaceholder label={name+' visual preview'}/>}
+   {pending?<span className="bt-cleanup-placeholder"><Trash2 size={28}/> Cleanup pending</span>:<BrandTemplateScenePreview graph={graph||null} assetUrls={assetUrls} mediaLoading={mediaLoading} size="card" fillCard readablePlaceholder label={name+' visual preview'}/>}
   </div>
   <div className="w0a-card-body">
    <h3>{name}</h3><div className="bt-tile-meta"><div className="w0a-meta">{kind} · {ratio}</div><span className="bt-tile-status">{status}</span></div>

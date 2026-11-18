@@ -1,14 +1,18 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { brandApi } from "../../../services/apiClient";
-import { useAuthenticatedBrandAssetUrls } from "../canvas/useAuthenticatedBrandAssetUrls";
 import {
   SavedBrandTemplates,
   useSavedBrandTemplates,
 } from "./SavedBrandTemplates";
-import { scopedHomeProjects } from "../lib/homeEntryFlow";
+import { homeBannerTemplates, reusableHomeTemplates, scopedHomeProjects } from "../lib/homeEntryFlow";
+import { useCreativeAssetUrls } from "../canvas/useCreativeAssetUrls";
+import { BrandTemplateScenePreview } from "../../BrandKits/templates/BrandTemplateScenePreview";
+import { reviewImageUrls } from "../../BrandKits/templates/reviewMediaLoading";
+import { templateImageIds, useTemplateAssetUrls } from "../../BrandKits/templates/useTemplateAssetUrls";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  ArrowLeft,
   Clock3,
   FolderOpen,
   Loader2,
@@ -21,7 +25,7 @@ import type { FeaturedExample } from "../lib/exampleCreatives";
 import { publishedExampleBriefs } from "../lib/publishedExampleBriefs";
 import { resolveBrandHomeCatalog } from "../lib/brandHomeCatalog";
 import { BrandKitHeaderControl } from "./BrandKitHeaderControl";
-import { BrandHomePreview, aspectForFormat } from "./BrandHomePreview";
+import { BrandHomePreview } from "./BrandHomePreview";
 import { TemplateGallery, formatChip } from "./TemplateGallery";
 import { AD_FORMATS } from "../types";
 
@@ -99,41 +103,9 @@ const HERO_FRAME_CLS = [
   "w0a-ads-hero__frame--b",
   "w0a-ads-hero__frame--c",
   "w0a-ads-hero__frame--d",
+  "w0a-ads-hero__frame--e",
+  "w0a-ads-hero__frame--f",
 ] as const;
-
-/**
- * Hero collage for Home: Brand Kit brief/layout imagery when present,
- * Brand Kit product/model assets as fillers, else Neutral defaults.
- */
-function resolveHeroFrames(
-  catalog: ReturnType<typeof resolveBrandHomeCatalog>,
-  brand: ReturnType<typeof normalizeBrandContext> | null,
-): { src: string; cls: string }[] {
-  if (catalog.catalogKey === "neutral") {
-    return DEFAULT_HERO_FRAMES.map((f) => ({ src: f.src, cls: f.cls }));
-  }
-  const seen = new Set<string>();
-  const srcs: string[] = [];
-  const push = (src?: string | null) => {
-    const s = (src || "").trim();
-    if (!s || seen.has(s)) return;
-    seen.add(s);
-    srcs.push(s);
-  };
-  for (const ex of catalog.examples) push(ex.previewImage);
-  if (brand) {
-    push(brand.assets.productUrl);
-    push(brand.assets.modelUrl);
-  }
-  for (const d of DEFAULT_HERO_FRAMES) {
-    if (srcs.length >= 4) break;
-    push(d.src);
-  }
-  while (srcs.length < 4) {
-    push(DEFAULT_HERO_FRAMES[srcs.length % DEFAULT_HERO_FRAMES.length].src);
-  }
-  return srcs.slice(0, 4).map((src, i) => ({ src, cls: HERO_FRAME_CLS[i] }));
-}
 
 export function AdStudioHome({
   projects,
@@ -155,10 +127,15 @@ export function AdStudioHome({
   const [catalogQuery] = useSearchParams();
   const fullCatalog = catalogQuery.get("catalog");
   const templatesOnly = fullCatalog === "templates",
-    briefsOnly = fullCatalog === "briefs";
+    briefsOnly = fullCatalog === "briefs",
+    projectsOnly = fullCatalog === "projects";
+  const catalogTitle = templatesOnly ? "Default Templates"
+    : briefsOnly ? "Example Brief Library"
+    : projectsOnly ? "All Projects" : null;
   const brandProjects = scopedHomeProjects(projects, selectedBrandId);
   const showAllProjects = catalogQuery.get("projects") === "all";
-  const recentProjects = (showAllProjects ? projects : brandProjects).slice(0, 6);
+  const scopedProjects = showAllProjects ? projects : brandProjects;
+  const recentProjects = projectsOnly ? projects : scopedProjects.slice(0, 10);
   const projectScopeQuery = new URLSearchParams(catalogQuery);
   if (showAllProjects) projectScopeQuery.delete("projects");
   else projectScopeQuery.set("projects", "all");
@@ -188,23 +165,9 @@ export function AdStudioHome({
     ownedKit?.id === selectedBrandId
       ? ownedKit
       : (brands.find((brand) => brand.id === selectedBrandId) ?? null);
-  const assetUrls = useAuthenticatedBrandAssetUrls(selectedBrand);
-  const visualKit = useMemo(
-    () =>
-      selectedBrand
-        ? {
-            ...selectedBrand,
-            assets: selectedBrand.assets?.map((asset) => ({
-              ...asset,
-              readUrl: assetUrls[asset.id] || null,
-            })),
-          }
-        : null,
-    [selectedBrand, assetUrls],
-  );
   const brandContext = useMemo(
-    () => normalizeBrandContext(visualKit),
-    [visualKit],
+    () => normalizeBrandContext(selectedBrand),
+    [selectedBrand],
   );
   const nativeTemplates = useSavedBrandTemplates(selectedBrandId);
   const homeCatalog = useMemo(
@@ -212,10 +175,19 @@ export function AdStudioHome({
     [selectedBrand],
   );
   const isNeutral = !selectedBrandId;
-  const heroFrames = useMemo(
-    () => resolveHeroFrames(homeCatalog, brandContext),
-    [homeCatalog, brandContext],
+  const heroTemplates = templatesOnly || briefsOnly || projectsOnly ? [] : homeBannerTemplates(nativeTemplates.items, selectedBrandId).slice(0, HERO_FRAME_CLS.length);
+  const reusable = reusableHomeTemplates(nativeTemplates.items, selectedBrandId);
+  const galleryTemplates = reusable.length ? reusable : nativeTemplates.items.filter(template =>
+    !template.deletion && (template.state === "suggested" || template.state === "approved"));
+  const heroImageIds = templateImageIds(heroTemplates.map(template => template.sceneGraph));
+  const galleryImageIds = catalogTitle ? [] : templateImageIds(
+    galleryTemplates.slice(0, 6).map(template => template.sceneGraph),
   );
+  const assetUrls = useTemplateAssetUrls(selectedBrand, galleryImageIds);
+  const heroBrandMedia = useTemplateAssetUrls(selectedBrand, heroImageIds);
+  const heroMedia = useCreativeAssetUrls(heroTemplates.flatMap(template =>
+    template.provenance.sourceCreativeId ? [template.provenance.sourceCreativeId] : []), heroImageIds);
+  const heroUrls = { ...heroBrandMedia, ...heroMedia };
   const heroStyle = useMemo(() => {
     if (isNeutral || !brandContext) return undefined;
     const primary = brandContext.colors.primary || "#8b1e3f";
@@ -241,18 +213,8 @@ export function AdStudioHome({
             {brandLoadError}
           </p>
         )}
-        {(templatesOnly || briefsOnly) && (
-          <header className="w0a-home-section">
-            <Link className="w0a-link" to="/create/ad">
-              Back to Ad Studio
-            </Link>
-            <h1>
-              {templatesOnly ? "Template library" : "Example Brief library"}
-            </h1>
-          </header>
-        )}
         <header
-          hidden={templatesOnly || briefsOnly}
+          hidden={templatesOnly || briefsOnly || projectsOnly}
           className={`w0a-ads-hero${isNeutral ? "" : " w0a-ads-hero--branded"}`}
           aria-label={
             isNeutral ? "Ad Studio" : `${homeCatalog.label} Ad Studio`
@@ -261,7 +223,7 @@ export function AdStudioHome({
           key={`hero-${homeCatalog.catalogKey}-${selectedBrandId || "neutral"}`}
         >
           <div className="w0a-ads-hero__world" aria-hidden="true">
-            {heroFrames.map((f) => (
+            {isNeutral && DEFAULT_HERO_FRAMES.map((f) => (
               <div
                 key={`${f.cls}-${f.src}`}
                 className={`w0a-ads-hero__frame ${f.cls}`}
@@ -275,19 +237,15 @@ export function AdStudioHome({
                 />
               </div>
             ))}
+            {!isNeutral && heroTemplates.map((template, index) => reviewImageUrls(template.sceneGraph, heroUrls) !== null && (
+              <div key={template.id} className={`w0a-ads-hero__frame ${HERO_FRAME_CLS[index]}`}
+                style={{ aspectRatio: `${template.sceneGraph.canvas.width} / ${template.sceneGraph.canvas.height}` }}>
+                <BrandTemplateScenePreview graph={template.sceneGraph} assetUrls={heroUrls} size="card" fillCard readablePlaceholder />
+              </div>
+            ))}
             <div className="w0a-ads-hero__veil" />
           </div>
           <div className="w0a-ads-hero__copy">
-            {!isNeutral && brandContext?.assets.logoUrl ? (
-              <img
-                className="w0a-ads-hero__kit-logo"
-                src={brandContext.assets.logoUrl}
-                alt=""
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-            ) : null}
             {!isNeutral ? (
               <p className="w0a-ads-hero__kit-label">{homeCatalog.label}</p>
             ) : null}
@@ -314,14 +272,19 @@ export function AdStudioHome({
           </div>
         </header>
 
-        <div className="w0a-home-body">
+        <div className={`w0a-home-body${catalogTitle ? " w0a-home-body--catalog" : ""}${templatesOnly ? " w0a-home-body--default-templates" : ""}`}>
+          {catalogTitle && <nav className="bo-breadcrumb" aria-label="Breadcrumb">
+            <Link to="/create/ad"><ArrowLeft size={15} aria-hidden="true" /> Ad Studio</Link>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">{catalogTitle}</span>
+          </nav>}
           <section
             hidden={templatesOnly || briefsOnly}
             id="ad-studio-projects"
             className="w0a-home-section w0a-home-section--projects-rail"
-            aria-labelledby="ad-studio-projects-heading"
+            aria-label={projectsOnly ? "All Projects" : "Recent projects"}
           >
-            <header className="w0a-section-hero w0a-section-hero--compact">
+            {!projectsOnly && <header className="w0a-section-hero w0a-section-hero--compact">
               <p className="w0a-section-hero__eyebrow">Continue</p>
               <h2
                 id="ad-studio-projects-heading"
@@ -329,14 +292,16 @@ export function AdStudioHome({
               >
                 Recent projects
               </h2>
-              {(showAllProjects || projects.length > brandProjects.length) && (
+              {scopedProjects.length > 10 ? (
+                <Link className="w0a-link w0a-section-hero__link" to="/create/ad?catalog=projects">All Projects &rarr;</Link>
+              ) : (showAllProjects || projects.length > brandProjects.length) && (
                 <Link className="w0a-link w0a-section-hero__link" to={{ search: projectScopeQuery.toString() }}>
                   {showAllProjects ? "Show current Brand Kit projects" : "Show all campaigns"}
                 </Link>
               )}
-            </header>
+            </header>}
             {recentProjects.length ? (
-              <div className="w0a-project-rail">
+              <div className={projectsOnly ? "w0a-project-grid" : "w0a-project-rail"}>
                 {recentProjects.map((p) => {
                   const deleting = deletingProjectId === p.id;
                   return (
@@ -349,6 +314,7 @@ export function AdStudioHome({
                         disabled={deleting}
                         onClick={() => onContinueProject(p.id)}
                         className="w0a-project-card__main"
+                        title={p.name}
                       >
                         <span className="w0a-project-card__name">{p.name}</span>
                         <span className="w0a-project-card__meta">
@@ -400,12 +366,13 @@ export function AdStudioHome({
           </section>
 
           <section
-            hidden={briefsOnly}
+            hidden={briefsOnly || projectsOnly}
             id="ad-studio-templates"
             className="w0a-home-section w0a-home-section--templates"
-            aria-labelledby="ad-studio-templates-heading"
+            aria-label={templatesOnly ? "Default Templates" : undefined}
+            aria-labelledby={templatesOnly ? undefined : "ad-studio-templates-heading"}
           >
-            <header className="w0a-section-hero">
+            {!templatesOnly && <header className="w0a-section-hero">
               <p className="w0a-section-hero__eyebrow">Gallery</p>
               <h2
                 id="ad-studio-templates-heading"
@@ -415,22 +382,20 @@ export function AdStudioHome({
                   ? "Template studio"
                   : `${homeCatalog.label} templates`}
               </h2>
-              {!templatesOnly && (
-                <Link
-                  className="w0a-link w0a-section-hero__link"
-                  to={
-                    selectedBrandId
-                      ? `/brands/${encodeURIComponent(selectedBrandId)}/templates`
-                      : "/create/ad?catalog=templates"
-                  }
-                >
-                  All Templates &rarr;
-                </Link>
-              )}
-            </header>
-            {selectedBrandId ? (
+              <Link
+                className="w0a-link w0a-section-hero__link"
+                to={
+                  selectedBrandId
+                    ? `/brands/${encodeURIComponent(selectedBrandId)}/templates`
+                    : "/create/ad?catalog=templates"
+                }
+              >
+                All Templates &rarr;
+              </Link>
+            </header>}
+            {selectedBrandId && !templatesOnly ? (
               <SavedBrandTemplates
-                limit={templatesOnly ? undefined : 6}
+                limit={6}
                 brandId={selectedBrandId}
                 data={nativeTemplates}
                 assetUrls={assetUrls}
@@ -457,13 +422,13 @@ export function AdStudioHome({
           </section>
 
           <section
-            hidden={templatesOnly}
+            hidden={templatesOnly || projectsOnly}
             id="ad-studio-briefs"
             className="w0a-home-section w0a-home-section--briefs"
-            aria-labelledby="ad-studio-briefs-heading"
+            aria-label="Example Briefs"
             key={`briefs-${homeCatalog.catalogKey}`}
           >
-            <header className="w0a-section-hero">
+            {!briefsOnly && <header className="w0a-section-hero">
               <p className="w0a-section-hero__eyebrow">Starting points</p>
               <h2
                 id="ad-studio-briefs-heading"
@@ -473,15 +438,13 @@ export function AdStudioHome({
                   ? "Example briefs"
                   : `${homeCatalog.label} example briefs`}
               </h2>
-              {!briefsOnly && (
                 <Link
                   className="w0a-link w0a-section-hero__link"
                   to="/create/ad?catalog=briefs"
                 >
                   All Example Briefs &rarr;
                 </Link>
-              )}
-            </header>
+            </header>}
             {publishedExampleBriefs.length ? (
               <div className="w0a-grid w0a-grid-3">
                 {publishedExampleBriefs
@@ -501,7 +464,6 @@ export function AdStudioHome({
                         <BrandHomePreview
                           fallbackSrc={preview}
                           alt=""
-                          aspect={aspectForFormat(format)}
                         />
                         <div className="w0a-card-body">
                           <h3>{ex.title}</h3>

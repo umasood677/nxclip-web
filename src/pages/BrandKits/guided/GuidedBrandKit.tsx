@@ -1,3 +1,4 @@
+import { useBrandKitConfirmation } from "../components/useBrandKitConfirmation";
 import '../components/brandProductPhotos.css';
 import {BrandKitReadySummary} from './BrandKitReadyCollection';
 import { toast } from "sonner";
@@ -123,7 +124,8 @@ export function GuidedBrandKitWorkspace({
   const characterEditor = useRef({ dirty: false, busy: false });
   const title = useRef<HTMLHeadingElement>(null),
     saved = useRef("");
-  const go = (next: GuidedStep) => {
+  const { confirm, confirmation } = useBrandKitConfirmation();
+  const go = async (next: GuidedStep) => {
     if (step === "assets" && next !== "assets") {
       if (characterEditor.current.busy) {
         setError(
@@ -133,9 +135,12 @@ export function GuidedBrandKitWorkspace({
       }
       if (
         characterEditor.current.dirty &&
-        !window.confirm(
-          "Leave without saving the model or mascot profile? Uploaded images remain in Brand Kit Assets.",
-        )
+        !await confirm({
+          title: "Leave Assets without saving?",
+          description: "Unsaved model or mascot profile edits will be lost. Uploaded images will remain in Brand Kit Assets.",
+          confirmLabel: "Leave Assets",
+          destructive: true,
+        })
       )
         return;
     }
@@ -327,6 +332,7 @@ export function GuidedBrandKitWorkspace({
     );
   return (
     <div className="xp-root nxclip-production bp-guided-root">
+      {confirmation}
       <main className="xp-main">
         <header className="xp-page-heading">
           <div>
@@ -640,6 +646,8 @@ export function GuidedBrandKitWorkspace({
                 </>
               ) : (
                 <BrandAssetsSection
+                  approvalKit={kit}
+                  approvalDisabled={saving || JSON.stringify(draft) !== saved.current}
                   modelProfilePanel={kit && (
                 <section
                   className="bp-character-section"
@@ -712,8 +720,6 @@ export function GuidedBrandKitWorkspace({
                                 : draft.approvedAssetIds.filter(
                                     (id) => id !== asset.id,
                                   ),
-                              identityApproved: false,
-                              guidelinesApproved: false,
                             })
                           }
                         />

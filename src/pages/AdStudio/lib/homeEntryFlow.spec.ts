@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   homeEntryPath,
+  homeBannerTemplates,
   scopedHomeProjects,
   reusableHomeTemplates,
   entryProjectBody,
@@ -11,6 +12,7 @@ import {
 import type { BrandTemplate } from "../../BrandKits/templates/brandTemplateModel";
 import type { FeaturedExample } from "./exampleCreatives";
 import { AD_FORMATS } from "../types";
+import { loadWorkspace, type WorkspaceProject } from "./projectWorkspace";
 
 test("all five explicit campaign formats survive entry payload mapping", () => {
   assert.equal(AD_FORMATS.length, 5);
@@ -117,6 +119,23 @@ test("saved-template listing excludes unapproved, unsaved and blocked recipes an
     /context/,
   );
 });
+test("the home banner prioritizes reusable templates and retains saved approved art after a Brand Kit change", () => {
+  const stale = { ...recipe, id: "needs-review", brandReviewRequired: true };
+  const pendingDeletion = { ...recipe, id: "deleting", deletion: { status: "pending" as const } };
+  const templates = [stale, recipe, pendingDeletion, { ...recipe, id: "draft", state: "suggested" as const }];
+  assert.deepEqual(homeBannerTemplates(templates, "owned-kit").map(item => item.id), ["recipe", "needs-review"]);
+  assert.deepEqual(reusableHomeTemplates(templates, "owned-kit").filter(item => !item.deletion).map(item => item.id), ["recipe"]);
+});
+test("Project workspace pre-fills editable copy and preserves the campaign idea", () => {
+  const idea = "Promote an online project management platform without performance claims.";
+  const { brief } = entryProjectBody({
+    name: "Test campaign", brandId: "", idea, defaultTemplateId: "project-workspace", format: "portrait_1080x1350",
+  });
+  assert.equal(brief.defaultTemplateId, "project-workspace");
+  assert.equal(brief.campaignIdea, idea);
+  assert.equal(brief.headline, "Bring Your Work Together");
+  assert.equal(brief.cta, "Explore the Platform");
+});
 test("Example Brief context survives explicit project creation without copying form-only IDs", () => {
   const body = entryProjectBody({
     name: "Reviewed name",
@@ -165,9 +184,9 @@ test("explicit project save performs one write, never creates a creative and nev
   let writes = 0,
     creatives = 0;
   const api = {
-    createProject: async () => {
+    createProject: async (body: ReturnType<typeof entryProjectBody>) => {
       writes++;
-      return { id: "project", name: "Name" };
+      return { id: "project", name: "Name", brandKitId: body.brandKitId };
     },
     createFromTemplate: async () => {
       creatives++;
@@ -194,6 +213,31 @@ test("explicit project save performs one write, never creates a creative and nev
     /Save failed/,
   );
   assert.equal(writes, 2);
+});
+
+test("original idea saves and reloads the selected Brand Kit or stays unbranded", async () => {
+  for (const brandId of ["", "owned-kit"]) {
+    let persisted: WorkspaceProject | undefined;
+    const created = await saveEntryProject({
+      createProject: async (body) => {
+        assert.equal(body.brandKitId, brandId || undefined);
+        persisted = { id: "project", name: body.name, brandKitId: body.brandKitId ?? null, brief: body.brief };
+        return persisted;
+      },
+    }, { name: "Campaign", idea: "Introduce a refillable serum.", brandId });
+    const reloaded = await loadWorkspace({
+      getProject: async () => structuredClone(persisted!),
+      listCreatives: async () => ({ items: [] }),
+    }, created.id);
+    assert.equal(reloaded.project.brandKitId, brandId || null);
+    assert.equal(reloaded.project.brief?.campaignIdea, "Introduce a refillable serum.");
+  }
+});
+
+test("a branded save reports when the API returns a different association", async () => {
+  await assert.rejects(saveEntryProject({
+    createProject: async () => ({ id: "project", name: "Campaign", brandKitId: null }),
+  }, { name: "Campaign", idea: "Introduce a refillable serum.", brandId: "owned-kit" }), /did not confirm the selected Brand Kit/);
 });
 test("an uploaded model is not assumed authorized for template generation", () => {
   assert.equal(selectedBrandAssetReadiness(null, ["brand_model"]).length, 1);

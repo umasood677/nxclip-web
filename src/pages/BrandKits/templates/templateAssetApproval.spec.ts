@@ -10,6 +10,15 @@ test('source approval omits unrelated model profiles and voice fields',()=>{
  const merged={...kit.voice,studio:{...kit.voice!.studio,...patch.voice.studio}};assert.deepEqual(merged.studio.characters,[expired]);assert.equal(merged.tone,'Editorial');assert.equal(merged.studio.characters![0].permissions.expiresAt,'2000-01-01T00:00:00Z');
 });
 test('approval preserves required studio fields and deduplicates source identifiers',()=>{const patch=templateAssetApprovalPatch(kit,'model-photo');assert.deepEqual(patch.voice.studio.approvedAssetIds,['model-photo']);assert.equal(patch.voice.studio.schemaVersion,1);assert.equal(patch.voice.studio.identityApproved,true);});
+test('revoking a product photo keeps other approvals, brand review and model profiles intact',()=>{
+ const input={...kit,voice:{...kit.voice,studio:{...kit.voice!.studio!,approvedAssetIds:['model-photo','product']}}};
+ const patch=templateAssetApprovalPatch(input,'product',false);
+ assert.equal(patch.expectedVersion,41);
+ assert.deepEqual(patch.voice.studio.approvedAssetIds,['model-photo']);
+ assert.equal(patch.voice.studio.identityApproved,true);
+ assert.equal('characters'in patch.voice.studio,false);
+ assert.deepEqual(input.voice.studio.approvedAssetIds,['model-photo','product']);
+});
 test('foreign, pending and unversioned sources cannot produce a patch',()=>{assert.throws(()=>templateAssetApprovalPatch(kit,'foreign'),/this Brand Kit/);assert.throws(()=>templateAssetApprovalPatch({...kit,assets:[{id:'product',status:'pending'}]},'product'),/ready/);assert.throws(()=>templateAssetApprovalPatch({...kit,version:undefined},'product'),/Reload/);});
 
 test('replaced, missing and pending historical approvals cannot poison a new source approval',()=>{

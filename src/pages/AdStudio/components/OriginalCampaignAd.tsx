@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { adImageApi, adStudioApi } from "../../../services/apiClient";
 import {
   generateOriginalCampaignAd,
@@ -12,6 +13,7 @@ import { campaignCta, campaignHeadline, campaignSupportingCopy } from "../lib/pr
 import type { AdBriefFormState } from "../lib/adStudioLabels";
 import type { BrandKitSummary } from "../../BrandKits/lib/brandKitTypes";
 import { characterReviewIssues } from "../../BrandKits/guided/brandCharacterModel";
+import { Button } from "../../../components/ui/button";
 import { realImagesEnabled } from "../production/imageExecutionModel";
 import {
   isProcessingStatus,
@@ -31,16 +33,13 @@ function isTransientStatusReadError(error: unknown) {
   return !Number.isFinite(status) || status >= 500;
 }
 export function campaignGenerationIsActive({
-  busy,
   retained,
   status,
 }: {
-  busy: boolean;
   retained: Retained | null;
   status: string;
 }) {
-  if (busy) return true;
-  if (!retained) return false;
+  if (!retained || retained.phase === "prepared") return false;
   // `phase` records what the browser last submitted. The provider status is
   // authoritative once it is known, so a stale `executing` phase must never
   // keep a failed/cancelled request trapped in the progress view.
@@ -112,7 +111,7 @@ export function OriginalCampaignAd({
     // A production candidate carries the deliberately selected Brand Kit model.
     // Do not make every approved model a reference: only the brief's selection
     // is allowed to become an identity input for campaign photography.
-    [profileId, setProfile] = useState(() => String(project.brief?.preferredModelProfile ?? "")),
+    [profileId, setProfile] = useState(() => String(project.brief?.brandModelProfileId ?? project.brief?.preferredModelProfile ?? "")),
     [instruction, setInstruction] = useState(
       initialSource
         ? [
@@ -139,6 +138,7 @@ export function OriginalCampaignAd({
     estimatedCostUsd: number | null;
     costBasis: string;
   }>();
+  const [checkingArtworkCost, setCheckingArtworkCost] = useState(false);
   const consentResponse = useRef<(approved: boolean) => void>(undefined);
   function resolveConsent(approved: boolean) {
     consentResponse.current?.(approved);
@@ -198,7 +198,7 @@ export function OriginalCampaignAd({
     supportingCopy = variationCopy.supportingCopy,
     cta = variationCopy.cta,
     needsModel =
-      !!brand && /\b(model|woman|female|mascot|character)\b/i.test(instruction),
+      !!brand && /\b(?:models?|women|woman|men|man|female|male|person|people|wearers?|mascots?|characters?)\b/i.test(instruction),
     needsProduct = !!brand && /\b(product|lipstick|shade)\b/i.test(instruction);
   const issue = production?.unverifiedAssetCount ? "Review unavailable or unauthorized campaign assets before generating." : !instruction.trim()
     ? "Describe the campaign direction."
@@ -214,7 +214,6 @@ export function OriginalCampaignAd({
               ? "Choose up to four references in total, including every photograph linked to the selected model."
               : "";
   const progressActive = campaignGenerationIsActive({
-    busy,
     retained,
     status,
   });
@@ -290,6 +289,7 @@ export function OriginalCampaignAd({
     if (flight.current || (!resume && issue) || (retained && !resume)) return;
     flight.current = true;
     setBusy(true);
+    setCheckingArtworkCost(!!production);
     setError("");
     let executing = false;
     try {
@@ -300,7 +300,10 @@ export function OriginalCampaignAd({
           : {
               requestId: crypto.randomUUID(),
               ...(production ? { conceptId: production.conceptId } : {}),
-              instruction: instruction.trim(),
+              instruction: [
+                instruction.trim(),
+                ...(brand && production && model ? ["Use only the supplied Brand Model identity. Do not introduce additional people."] : []),
+              ].join("\n"),
               headline: headline.trim(),
               supportingCopy,
               cta: cta.trim(),
@@ -330,6 +333,7 @@ export function OriginalCampaignAd({
         {
           authorizeQuote: production ? async (quote) => {
             if (!mounted.current) return false;
+            setCheckingArtworkCost(false);
             return new Promise<boolean>(resolve => {
               consentResponse.current = resolve;
               setConsent({
@@ -340,6 +344,7 @@ export function OriginalCampaignAd({
           } : undefined,
           onExecuting: () => {
             executing = true;
+            setStatus("");
             remember({ ...hold, creativeId: preparedId, phase: "executing" });
           },
         },
@@ -364,7 +369,10 @@ export function OriginalCampaignAd({
       }
     } finally {
       flight.current = false;
-      if (mounted.current) setBusy(false);
+      if (mounted.current) {
+        setCheckingArtworkCost(false);
+        setBusy(false);
+      }
     }
   }
   async function prepareRetry() {
@@ -415,9 +423,9 @@ export function OriginalCampaignAd({
     <p>{typeof consent.estimatedCostUsd === "number"
       ? `Estimated artwork cost: $${consent.estimatedCostUsd} USD. Actual provider charges may differ.`
       : "Provider usage may incur a charge. A price estimate is not available for this model."}</p>
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <button className="w0a-create-project" type="button" onClick={() => resolveConsent(true)}>Authorize and generate</button>
-      <button className="w0a-btn" type="button" onClick={() => resolveConsent(false)}>Cancel</button>
+      <Button variant="outline" className="h-9 rounded-full px-3 text-xs" type="button" onClick={() => resolveConsent(false)}>Cancel</Button>
     </div>
   </section>;
   if (progressActive) {
@@ -435,14 +443,10 @@ export function OriginalCampaignAd({
           <span className="original-campaign-ad__progress-spark" aria-hidden="true">✦</span>
           <p className="w0a-eyebrow">Campaign creative</p>
           <h3>{title}</h3>
-          <p>
-            We’re composing the campaign direction with its approved Brand Kit
-            references. Editable copy and CTA are added after the photographic
-            scene is ready.
-          </p>
+          <p>Editable copy and CTA are added once the artwork is ready.</p>
           <ol className="original-campaign-ad__progress-steps">
             <li>Campaign brief prepared</li>
-            <li>Brand Kit references attached</li>
+            {Boolean(retained?.input.references.length) && <li>Selected references attached</li>}
             <li className="is-active">Photographic composition rendering</li>
           </ol>
         </div>
@@ -563,7 +567,7 @@ export function OriginalCampaignAd({
           No Brand Kit selected. Generate original photography from your brief.
         </p>
       )}
-      {busy && (
+      {busy && !checkingArtworkCost && (
         <div className="original-campaign-ad__baking" role="status">
           <span />
           Preparing your campaign creative…
@@ -593,7 +597,12 @@ export function OriginalCampaignAd({
           </button>
         </div>
       )}
-      {!retained ? (
+      {checkingArtworkCost ? (
+        <div role="status" className="flex min-h-9 items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 size={14} className="motion-safe:animate-spin" aria-hidden="true" />
+          Checking artwork cost…
+        </div>
+      ) : !retained ? (
         <button
           type="button"
           className="w0a-btn"
@@ -627,7 +636,7 @@ export function OriginalCampaignAd({
           </div>
         ) : null
       )}
-      {retained?.phase === "prepared" && retained.creativeId && (
+      {!checkingArtworkCost && retained?.phase === "prepared" && retained.creativeId && (
         <button
           type="button"
           className="w0a-btn"

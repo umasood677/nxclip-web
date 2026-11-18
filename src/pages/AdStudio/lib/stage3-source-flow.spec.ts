@@ -6,14 +6,26 @@ import { entryProjectBody } from "./homeEntryFlow";
 import { projectBriefForm, selectProjectExample, selectTemplateSource, type WorkspaceProject } from "./projectWorkspace";
 
 test("the published catalog has distinct reviewed public images and visual descriptions", () => {
-  assert.ok(publishedExampleBriefs.length >= 2);
+  assert.equal(publishedExampleBriefs.length, 12);
+  assert.deepEqual(publishedExampleBriefs.slice(0, 2).map(example => example.id), [
+    "ex-after-dark-heels", "ex-signature-carry",
+  ]);
   assert.equal(new Set(publishedExampleBriefs.map(example => example.previewImage)).size, publishedExampleBriefs.length);
   for (const example of publishedExampleBriefs) {
     assert.ok(existsSync("public" + example.previewImage));
     assert.ok(example.creativeDirection.length > 50);
+    const { brief } = entryProjectBody({ name: "Software campaign", idea: "Advertise productivity software", brandId: "owned-kit", example });
+    assert.equal(brief.exampleBriefId, example.id);
+    assert.equal(brief.exampleVisualDirection, example.creativeDirection);
+    assert.equal(brief.exampleImage, example.previewImage);
+    assert.equal(brief.exampleVersion, example.catalogVersion);
+    assert.equal(brief.productOrService, "Advertise productivity software");
   }
   assert.equal(exampleForPlanning("ex-saas"), undefined);
   assert.equal(exampleForPlanning("zoe-ex-texture")?.title, "Texture close-up");
+  assert.deepEqual(publishedExampleBriefs.filter(example => example.includesPerson).map(example => example.id), [
+    "ex-street-in-focus", "ex-creator-night-reset", "zoe-ex-seasonal", "zoe-ex-editorial-model",
+  ]);
 });
 
 const idea = "Advertise an independent architecture practice.";

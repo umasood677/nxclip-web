@@ -31,7 +31,8 @@ function loadReady(){
  const source=readFileSync(process.cwd()+'/src/pages/BrandKits/guided/BrandKitReadyCollection.tsx','utf8');
  const exports:Record<string,unknown>={};
  vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.React,esModuleInterop:true}}).outputText,{exports,require:(id:string)=>{
- if(id==='react')return React;if(id==='react-router-dom')return {Link:({to,children,...props}:any)=>React.createElement('a',{...props,href:to},children)};
+ if(id==='react')return React;if(id==='react-router-dom')return {Link:({to,children,...props}:any)=>React.createElement('a',{...props,href:to},children),useNavigate:()=>()=>{}};
+ if(id.includes('useBrandKitConfirmation'))return {useBrandKitConfirmation:()=>({confirm:async()=>false,confirmation:null})};
  if(id==='lucide-react')return new Proxy({},{get:()=>()=>null});
  if(id.includes('brandOverviewModel'))return {brandOverviewPaths,overviewInventory,overviewCharacterState};
  if(id.endsWith('.css'))return {};throw Error(id);

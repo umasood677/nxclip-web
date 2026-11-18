@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { SEO } from "../../components/SEO";
 import { projectWorkspacePath, saveWorkspaceBrief, generateProjectConcepts } from "./lib/projectWorkspace";
 import { AdStudioLoader } from "./components/AdStudioLoader";
+import { AdStudioConfirmDialog } from "./components/AdStudioConfirmDialog";
 import { adStudioApi, brandApi } from "../../services/apiClient";
 import type { BrandKitSummary } from "../BrandKits/CreateBrandKitDialog";
 import { GuidedBrandKitWorkspace } from "../BrandKits/guided/GuidedBrandKit";
@@ -44,6 +45,7 @@ export default function AdStudio() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
   const creatingRef = useRef(false);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [concepts, setConcepts] = useState<AdConcept[]>([]);
@@ -278,19 +280,14 @@ export default function AdStudio() {
     }
   };
 
-  const deleteProject = async (project: { id: string; name: string }) => {
-    if (
-      !window.confirm(
-        `Delete “${project.name}”? This soft-deletes the project and hides it from Ad Studio.`,
-      )
-    ) {
-      return;
-    }
+  const deleteProject = async () => {
+    const project = projectToDelete;
+    if (!project || deletingProjectId) return;
     setDeletingProjectId(project.id);
     try {
       await adStudioApi.deleteProject(project.id);
-      const nextProjects = projects.filter((p) => p.id !== project.id);
-      setProjects(nextProjects);
+      setProjects((items) => items.filter((item) => item.id !== project.id));
+      setProjectToDelete(null);
       if (projectId === project.id) {
         setProjectId(null);
         setConcepts([]);
@@ -388,7 +385,7 @@ export default function AdStudio() {
           onStartIdea={() => navigate(homeEntryPath({brandId:form.brandKitId}))}
           onUseExample={useExample}
           onContinueProject={(id) => navigate(projectWorkspacePath(id))}
-          onDeleteProject={(p) => void deleteProject(p)}
+          onDeleteProject={setProjectToDelete}
           onCreateBrand={openCreateBrand}
           onEditBrand={openEditBrand}
           onImportBrand={openImportBrand}
@@ -433,6 +430,17 @@ export default function AdStudio() {
         />
       )}
 
+      <AdStudioConfirmDialog
+        open={projectToDelete !== null}
+        title="Delete campaign?"
+        description={`“${projectToDelete?.name ?? ""}” will be removed from Ad Studio.`}
+        confirmLabel="Delete campaign"
+        pendingLabel="Deleting…"
+        busy={deletingProjectId !== null}
+        destructive
+        onCancel={() => setProjectToDelete(null)}
+        onConfirm={() => void deleteProject()}
+      />
       <Dialog open={createBrandOpen} onOpenChange={(open) => { setCreateBrandOpen(open); if (!open) setEditingBrand(null); }}>
         <DialogContent className="max-w-6xl max-h-[92dvh] overflow-y-auto p-3 sm:p-6"><DialogHeader><DialogTitle>{editingBrand ? "Edit Brand Kit" : "Create Brand Kit"}</DialogTitle><DialogDescription>Build your identity in the new Brand Kit workspace. Your current advertisement brief stays open.</DialogDescription></DialogHeader>
           {createBrandOpen && <GuidedBrandKitWorkspace key={editingBrand?.id || "new"} embedded initialBrandId={editingBrand?.id} onSaved={kit => { setCreateBrandOpen(false); void handleBrandCreated(kit); }} />}

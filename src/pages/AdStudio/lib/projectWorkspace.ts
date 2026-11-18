@@ -1,6 +1,7 @@
 import { DEFAULT_AD_BRIEF, type AdBriefFormState } from "./adStudioLabels";
 import type { FeaturedExample } from "./exampleCreatives";
 import type { AdConcept, AdSceneGraph } from "../types";
+import { PROJECT_WORKSPACE_COPY } from "../canvas/templateCatalog";
 
 export type WorkspaceBrief = Partial<AdBriefFormState> & { campaignIdea?: string; [key: string]: unknown };
 export type WorkspaceProject = {
@@ -18,7 +19,7 @@ export type WorkspaceCreative = {
   imageRenderMode?: 'background' | 'template-proposal';
   proposalDirection?: string;
   documentPurpose?: 'template-draft'|'concept-preview'|'campaign-ad';
-  conceptPreview?: { conceptId: string; requestId: string; generated: boolean };
+  conceptPreview?: { conceptId: string; requestId: string; generated: boolean; modelProfileId?: string; styleReferenceAssetId?: string; instruction?: string };
   templateContext?: {brandKitId:string;draftKind:'ai'|'native';brandTemplateId?:string};
   conceptSnapshot?: Record<string,unknown>|null;
   brandSnapshot?: Record<string,unknown>|null;
@@ -115,6 +116,9 @@ export function workspaceBrief(project: WorkspaceProject, form: AdBriefFormState
     productCategory: form.productCategory,
     creativeDirection: form.creativeDirection,
     productFocus: form.productFocus,
+    productImageAssetId: form.productImageAssetId === undefined ? project.brief?.productImageAssetId : form.productImageAssetId,
+    referenceImageAssetId: form.referenceImageAssetId === undefined ? project.brief?.referenceImageAssetId : form.referenceImageAssetId,
+    brandModelProfileId: form.brandModelProfileId === undefined ? project.brief?.brandModelProfileId : form.brandModelProfileId,
   };
 }
 export function newWorkspaceProject(name: string, campaignIdea: string, brandKitId = "") {
@@ -144,10 +148,11 @@ export interface WorkspaceCreator {
   createFromConcept: (id: string, body: { conceptId: string }) => Promise<WorkspaceCreative>;
 }
 export async function createProjectTemplate(api: WorkspaceCreator, project: WorkspaceProject, templateId: string, format: string) {
+  const defaults = templateId === "project-workspace" ? PROJECT_WORKSPACE_COPY : undefined;
   const creative = await api.createFromTemplate(project.id, {
-    templateId, format, primaryHeadline: campaignHeadline(project.brief ?? {}),
-    supportingCopy: campaignSupportingCopy(project.brief ?? {}) || project.brief?.productOrService,
-    cta: campaignCta(project.brief ?? {}),
+    templateId, format, primaryHeadline: campaignHeadline(project.brief ?? {}) || defaults?.primaryHeadline || "",
+    supportingCopy: campaignSupportingCopy(project.brief ?? {}) || defaults?.supportingCopy || project.brief?.productOrService,
+    cta: campaignCta(project.brief ?? {}) || defaults?.cta || "",
   });
   if (!creative.id || creative.projectId !== project.id) throw Error("The creative's project could not be verified.");
   return creative;
@@ -241,7 +246,7 @@ export async function saveWorkspaceBrief(api: WorkspaceBriefWriter, project: Wor
   const brief = workspaceBrief(project, form, options);
   // Existing metadata may contain legacy keys rejected by the public DTO.
   // Preserve those on the server; never resubmit them as new writable properties.
-  const writable = new Set(['exampleVisualDirection','exampleImage','exampleVersion','defaultTemplateId','startingCreativeId','planningApproved','planningAssumptions','developedConcept','creativeGuardrails','headline','supportingCopy','campaignIdea','exampleBriefId','exampleBriefTitle','exampleObjective','productCategory','creativeDirection','productFocus','productOrService','advertisingObjective','targetAudience','coreMessage','desiredTone','platform','outputFormat','offerDetails','promotionalPrice','cta','landingPageUrl','negativeInstructions','productImageAssetId','referenceImageAssetId','preferredColors','preferredModelProfile']);
+  const writable = new Set(['exampleVisualDirection','exampleImage','exampleVersion','defaultTemplateId','startingCreativeId','planningApproved','planningAssumptions','developedConcept','creativeGuardrails','headline','supportingCopy','campaignIdea','exampleBriefId','exampleBriefTitle','exampleObjective','productCategory','creativeDirection','productFocus','productOrService','advertisingObjective','targetAudience','coreMessage','desiredTone','platform','outputFormat','offerDetails','promotionalPrice','cta','landingPageUrl','negativeInstructions','productImageAssetId','referenceImageAssetId','preferredColors','preferredModelProfile','brandModelProfileId']);
   const body: Record<string, unknown> = { brief: Object.fromEntries(Object.entries(brief).filter(([key]) => writable.has(key))), ...(name !== project.name ? { name } : {}) };
   const brand = options.allowBrandChange ? form.brandKitId : project.brandKitId;
   if (options.allowBrandChange && (brand ?? '') !== (project.brandKitId ?? '')) Object.assign(body, brand ? { brandKitId: brand } : { clearBrandKit: true });
